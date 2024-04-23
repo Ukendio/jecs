@@ -1,5 +1,5 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
-[![Wally]()]()
+[![Wally](https://img.shields.io/github/v/tag/ukendio/jecs)](https://wally.run/package/ukendio/jecs)
 
 Just an ECS
 
