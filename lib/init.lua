@@ -322,8 +322,6 @@ function World.archetypesWith(world: World, componentId: i53)
 	return compatibleArchetypes
 end
 
-
-
 function World.query(world: World, ...: i53): () -> (number, ...any)
 	local compatibleArchetypes = {}
 	local components = { ... }
@@ -331,6 +329,61 @@ function World.query(world: World, ...: i53): () -> (number, ...any)
 	local queryLength = #components
 	local a, b, c, d, e = ...
 	local firstArchetypeMap = world.componentIndex[components[1]]
+
+	if queryLength == 1 then 
+		local function single() 
+            local id = next(firstArchetypeMap)
+            local archetype = archetypes[id :: number]
+            local lastRow
+
+            return function(): any
+                local row, entity = next(archetype.entities, lastRow)
+                while row == nil do 
+                    id = next(firstArchetypeMap, id)
+                    if id == nil then 
+                        return
+                    end
+                    archetype = archetypes[id]
+                    row = next(archetype.entities, row)
+                end 
+                lastRow = row
+
+                return entity, archetype.columns[archetype.records[a]]
+            end
+        end
+
+        return single() 
+	elseif queryLength == 2 then 
+		for id in firstArchetypeMap do
+			local archetype = archetypes[id]
+			if archetype.records[b] then
+				table.insert(compatibleArchetypes, archetype)	
+			end
+		end
+
+		local function double(): any
+			local lastArchetype, archetype = next(compatibleArchetypes)
+			local lastRow
+	
+			return function(): any
+				local row = next(archetype.entities, lastRow)
+				while row == nil do 
+					lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
+					if lastArchetype == nil then 
+						return
+					end
+					row = next(archetype.entities, row)
+				end 
+				lastRow = row
+	
+				local entity = archetype.entities[row::number]
+				local columns = archetype.columns
+				local archetypeRecords = archetype.records
+				return entity, columns[archetypeRecords[a]], columns[archetypeRecords[b]]
+			end
+		end
+		return double()
+	end
 
 	for id in firstArchetypeMap do
 		local archetype = archetypes[id]
@@ -346,30 +399,27 @@ function World.query(world: World, ...: i53): () -> (number, ...any)
 			table.insert(compatibleArchetypes, archetype)	
 		end
 	end
-    local lastArchetype, archetype = next(compatibleArchetypes)
 	
-    local lastRow 
-
-    local function queryNext(): (...any)
-        local row = next(archetype.entities, lastRow)
-        while row == nil do 
-            lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
-            if lastArchetype == nil then 
-                return 
-            end
-            row = next(archetype.entities, row)
-        end
-        lastRow = row
-        
+	local lastArchetype, archetype = next(compatibleArchetypes)
+	
+	local lastRow 
+	
+	local function queryNext(): (...any)
+		local row = next(archetype.entities, lastRow)
+		while row == nil do 
+			lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
+			if lastArchetype == nil then 
+				return 
+			end
+			row = next(archetype.entities, row)
+		end
+		lastRow = row
+		
 		local columns = archetype.columns	
 		local entityId = archetype.entities[row :: number]
 		local archetypeRecords = archetype.records
 
-		if queryLength == 1 then 
-			return entityId, columns[archetypeRecords[a]]
-		elseif queryLength == 2 then 
-			return entityId, columns[archetypeRecords[a]], columns[archetypeRecords[b]]
-		elseif queryLength == 3 then 
+		if queryLength == 3 then 
 			return entityId, 
 				columns[archetypeRecords[a]], 
 				columns[archetypeRecords[b]], 
@@ -395,12 +445,12 @@ function World.query(world: World, ...: i53): () -> (number, ...any)
 		end
 
 		return entityId, unpack(queryOutput, 1, queryLength)
-    end
-
-	return function()
-		-- consider this to be the iterator that gets invoked each iteration step
-		return queryNext()
 	end
+
+	return function() 
+		return queryNext() 
+	end
+	
 end
 
 return {
