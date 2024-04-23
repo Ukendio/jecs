@@ -1,0 +1,38 @@
+{
+    "name": "jecs-test",
+    "tree": {
+      "$className": "DataModel",
+      "StarterPlayer": {
+        "$className": "StarterPlayer",
+        "StarterPlayerScripts": {
+          "$className": "StarterPlayerScripts",
+          "$path": "tests"
+        }
+      },
+      "ReplicatedStorage": {
+        "$className": "ReplicatedStorage",
+        "DevPackages": {
+            "$path": "DevPackages"
+        },
+        "Lib": {
+          "$path": "lib"
+        },
+        "rgb": {
+          "$path": "rgb.lua"
+        },
+        "benches": {
+          "$path": "benches"
+        }
+      },
+      "TestService": {
+        "$properties": {
+          "ExecuteWithStudioRun": true
+        },
+        "$className": "TestService",
+        "run": {
+          "$path": "tests.server.lua"
+        }
+      }
+    }
+  }
+  

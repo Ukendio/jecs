@@ -1,0 +1,6 @@
+[tools]
+wally = "upliftgames/wally@0.3.1"
+rojo = "rojo-rbx/rojo@7.4.1"
+stylua = "johnnymorganz/stylua@0.19.1"
+selene = "kampfkarren/selene@0.26.1"
+wally-patch-package="Barocena/wally-patch-package@1.2.1"

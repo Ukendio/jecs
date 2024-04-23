@@ -1,0 +1,10 @@
+[package]
+name = "marcus/jade"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dev-dependencies]
+TestEZ = "roblox/testez@0.4.1"
+Matter = "matter-ecs/matter@0.7.1"
+ecr = "centau/ecr@0.8.0"
