@@ -368,9 +368,12 @@ function World.query(world: World, ...: i53): () -> (number, ...any)
 		if queryLength == 1 then 
 			return entityId, columns[archetypeRecords[a]]
 		elseif queryLength == 2 then 
-			return entityId, columns[archetypeRecords[a]]
+			return entityId, columns[archetypeRecords[a]], columns[archetypeRecords[b]]
 		elseif queryLength == 3 then 
-			return entityId, columns[archetypeRecords[a]]
+			return entityId, 
+				columns[archetypeRecords[a]], 
+				columns[archetypeRecords[b]], 
+				columns[archetypeRecords[c]]
 		elseif queryLength == 4 then 
 			return entityId, 
 				columns[archetypeRecords[a]], 
