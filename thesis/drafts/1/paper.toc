@@ -1,0 +1,35 @@
+\contentsline {section}{\tocsection {}{1}{Introduction}}{2}{section.1}%
+\contentsline {subsection}{\tocsubsection {}{1.1}{Background}}{2}{subsection.1.1}%
+\contentsline {subsection}{\tocsubsection {}{1.2}{ECS Libraries}}{2}{subsection.1.2}%
+\contentsline {subsubsection}{\tocsubsubsection {}{1.2.1}{Matter}}{2}{subsubsection.1.2.1}%
+\contentsline {subsubsection}{\tocsubsubsection {}{1.2.2}{Flecs}}{2}{subsubsection.1.2.2}%
+\contentsline {subsubsection}{\tocsubsubsection {}{1.2.3}{Hecs}}{3}{subsubsection.1.2.3}%
+\contentsline {subsection}{\tocsubsection {}{1.3}{Purpose}}{3}{subsection.1.3}%
+\contentsline {subsection}{\tocsubsection {}{1.4}{Research Question}}{3}{subsection.1.4}%
+\contentsline {section}{\tocsection {}{2}{Method}}{3}{section.2}%
+\contentsline {subsection}{\tocsubsection {}{2.1}{Research Approach}}{3}{subsection.2.1}%
+\contentsline {subsection}{\tocsubsection {}{2.2}{Research Process}}{3}{subsection.2.2}%
+\contentsline {section}{\tocsection {}{3}{Theory}}{3}{section.3}%
+\contentsline {subsection}{\tocsubsection {}{3.1}{Entity Component System Architecture}}{4}{subsection.3.1}%
+\contentsline {subsection}{\tocsubsection {}{3.2}{Cache Locality}}{4}{subsection.3.2}%
+\contentsline {subsection}{\tocsubsection {}{3.3}{Data Layouts}}{4}{subsection.3.3}%
+\contentsline {subsubsection}{\tocsubsubsection {}{3.3.1}{Array Of Structs}}{4}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\tocsubsubsection {}{3.3.2}{Struct of Arrays}}{4}{subsubsection.3.3.2}%
+\contentsline {subsection}{\tocsubsection {}{3.4}{SIMD}}{4}{subsection.3.4}%
+\contentsline {subsection}{\tocsubsection {}{3.5}{Vectorization}}{4}{subsection.3.5}%
+\contentsline {subsection}{\tocsubsection {}{3.6}{Archetype}}{5}{subsection.3.6}%
+\contentsline {subsection}{\tocsubsection {}{3.7}{Sparse Set}}{6}{subsection.3.7}%
+\contentsline {section}{\tocsection {}{4}{Implementation}}{7}{section.4}%
+\contentsline {subsection}{\tocsubsection {}{4.1}{Data Structures}}{7}{subsection.4.1}%
+\contentsline {subsection}{\tocsubsection {}{4.2}{Functions}}{8}{subsection.4.2}%
+\contentsline {subsubsection}{\tocsubsubsection {}{4.2.1}{get(entityId, \ldots )}}{8}{subsubsection.4.2.1}%
+\contentsline {subsubsection}{\tocsubsubsection {}{4.2.2}{entity()}}{8}{subsubsection.4.2.2}%
+\contentsline {subsubsection}{\tocsubsubsection {}{4.2.3}{add(entityId, componentId, data)}}{9}{subsubsection.4.2.3}%
+\contentsline {subsubsection}{\tocsubsubsection {}{4.2.4}{query(\ldots )}}{9}{subsubsection.4.2.4}%
+\contentsline {section}{\tocsection {}{5}{Analysis}}{10}{section.5}%
+\contentsline {subsection}{\tocsubsection {}{5.1}{Random Access}}{10}{subsection.5.1}%
+\contentsline {subsection}{\tocsubsection {}{5.2}{Updating Component Data}}{10}{subsection.5.2}%
+\contentsline {subsection}{\tocsubsection {}{5.3}{Queries}}{11}{subsection.5.3}%
+\contentsline {section}{\tocsection {}{6}{Conclusions}}{12}{section.6}%
+\contentsline {section}{\tocsection {}{7}{Acknowledgments}}{12}{section.7}%
+\contentsline {section}{\tocsection {}{}{References}}{12}{section*.2}%

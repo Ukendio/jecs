@@ -49,4 +49,4 @@ WallyPatches
 # Misc
 roblox.toml
 sourcemap.json
-drafts
+drafts/*.lua
