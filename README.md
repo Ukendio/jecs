@@ -47,6 +47,4 @@ assert(world:get(opponentId, Health) == 92)
 
 ```
 
-Can iterate over 20,000 entities in a single millisecond.
-
 ![Comparison](benches/image.png)
