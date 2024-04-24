@@ -326,7 +326,7 @@ local function noop(): any
 	end
 end
 
-function World.query(world: World, ...: i53): () -> (number, ...any)
+function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> ()
 	local compatibleArchetypes = {}
 	local components = { ... }
 	local archetypes = world.archetypes
@@ -368,11 +368,11 @@ function World.query(world: World, ...: i53): () -> (number, ...any)
 			end
 		end
 
-		local function double(): any
+		local function double() 
 			local lastArchetype, archetype = next(compatibleArchetypes)
 			local lastRow
 	
-			return function(): any
+			return function()
 				local row = next(archetype.entities, lastRow)
 				while row == nil do 
 					lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
@@ -411,7 +411,7 @@ function World.query(world: World, ...: i53): () -> (number, ...any)
 	
 	local lastRow 
 	
-	local function queryNext(): (...any)
+	local function queryNext()
 		local row = next(archetype.entities, lastRow)
 		while row == nil do 
 			lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
