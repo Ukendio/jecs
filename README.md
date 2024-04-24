@@ -47,4 +47,4 @@ assert(world:get(opponentId, Health) == 92)
 
 ```
 
-![Comparison](benches/image.png)
+![Comparison](image.png)
