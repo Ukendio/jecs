@@ -331,7 +331,7 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 	local components = { ... }
 	local archetypes = world.archetypes
 	local queryLength = #components
-	local a, b, c, d, e = ...
+	local a, b, c, d, e, f, g, h = ...
 	local firstArchetypeMap = world.componentIndex[components[1]]
 	if not firstArchetypeMap then 
 		return noop()
@@ -444,6 +444,33 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 				columns[archetypeRecords[c]], 
 				columns[archetypeRecords[d]], 
 				columns[archetypeRecords[e]]
+		elseif queryLength == 6 then 
+			return entityId, 
+				columns[archetypeRecords[a]], 
+				columns[archetypeRecords[b]], 
+				columns[archetypeRecords[c]], 
+				columns[archetypeRecords[d]], 
+				columns[archetypeRecords[e]],
+				columns[archetypeRecords[f]]
+		elseif queryLength == 7 then 
+			return entityId, 
+				columns[archetypeRecords[a]], 
+				columns[archetypeRecords[b]], 
+				columns[archetypeRecords[c]], 
+				columns[archetypeRecords[d]], 
+				columns[archetypeRecords[e]],
+				columns[archetypeRecords[f]],
+				columns[archetypeRecords[g]]
+		elseif queryLength == 8 then 
+			return entityId, 
+				columns[archetypeRecords[a]], 
+				columns[archetypeRecords[b]], 
+				columns[archetypeRecords[c]], 
+				columns[archetypeRecords[d]], 
+				columns[archetypeRecords[e]],
+				columns[archetypeRecords[f]],
+				columns[archetypeRecords[g]],
+				columns[archetypeRecords[h]]
 		end
 
 		local queryOutput = {}
