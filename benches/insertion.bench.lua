@@ -80,14 +80,14 @@ return {
             
             for i = 1, 50 do 
 
-                ecs:add(e, C1, {value = false}) 
-                ecs:add(e, C2, {value = false}) 
-                ecs:add(e, C3, {value = false}) 
-                ecs:add(e, C4, {value = false}) 
-                ecs:add(e, C5, {value = false}) 
-                ecs:add(e, C6, {value = false}) 
-                ecs:add(e, C7, {value = false}) 
-                ecs:add(e, C8, {value = false}) 
+                ecs:set(e, C1, {value = false}) 
+                ecs:set(e, C2, {value = false}) 
+                ecs:set(e, C3, {value = false}) 
+                ecs:set(e, C4, {value = false}) 
+                ecs:set(e, C5, {value = false}) 
+                ecs:set(e, C6, {value = false}) 
+                ecs:set(e, C7, {value = false}) 
+                ecs:set(e, C8, {value = false}) 
 
             end
 		end

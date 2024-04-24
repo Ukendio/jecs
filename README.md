@@ -23,13 +23,13 @@ local Health = world:entity()
 local Damage = world:entity()
 local Position = world:entity()
 
-world:add(player, Health, 100)
-world:add(player, Damage, 8)
-world:add(player, Position, Vector3.new(0, 5, 0))
+world:set(player, Health, 100)
+world:set(player, Damage, 8)
+world:set(player, Position, Vector3.new(0, 5, 0))
 
-world:add(opponent, Health, 100)
-world:add(opponent, Damage, 21)
-world:add(opponent, Position, Vector3.new(0, 5, 3))
+world:set(opponent, Health, 100)
+world:set(opponent, Damage, 21)
+world:set(opponent, Position, Vector3.new(0, 5, 3))
 
 for playerId, playerPosition, health in world:query(Position, Health) do 
     local totalDamage = 0
@@ -39,7 +39,7 @@ for playerId, playerPosition, health in world:query(Position, Health) do
         end
     end
 
-    world:add(playerId, Health, health - totalDamage)  
+    world:set(playerId, Health, health - totalDamage)  
 end
 
 assert(world:get(playerId, Health) == 79)
@@ -47,4 +47,4 @@ assert(world:get(opponentId, Health) == 92)
 
 ```
 
-![Comparison](benches/image.png)
+![Comparison](image.png)

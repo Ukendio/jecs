@@ -231,7 +231,7 @@ function World.ensureRecord(world: World, entityId: i53)
 	return entityIndex[id]
 end
 
-function World.add(world: World, entityId: i53, componentId: i53, data: unknown)
+function World.set(world: World, entityId: i53, componentId: i53, data: unknown) 
 	local record = world:ensureRecord(entityId)
 	local sourceArchetype = record.archetype
 	local destinationArchetype = archetypeTraverseAdd(world, componentId, sourceArchetype)
@@ -244,7 +244,6 @@ function World.add(world: World, entityId: i53, componentId: i53, data: unknown)
 			newEntity(entityId, record, destinationArchetype)
 		end
 	end
-
 	local archetypeRecord = destinationArchetype.records[componentId]
 	destinationArchetype.columns[archetypeRecord][record.row] = data
 end
@@ -322,6 +321,11 @@ function World.archetypesWith(world: World, componentId: i53)
 	return compatibleArchetypes
 end
 
+local function noop(): any
+	return function() 
+	end
+end
+
 function World.query(world: World, ...: i53): () -> (number, ...any)
 	local compatibleArchetypes = {}
 	local components = { ... }
@@ -329,6 +333,9 @@ function World.query(world: World, ...: i53): () -> (number, ...any)
 	local queryLength = #components
 	local a, b, c, d, e = ...
 	local firstArchetypeMap = world.componentIndex[components[1]]
+	if not firstArchetypeMap then 
+		return noop()
+	end
 
 	if queryLength == 1 then 
 		local function single() 
