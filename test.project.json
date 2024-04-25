@@ -25,6 +25,9 @@
         },
         "rewrite": {
           "$path": "matterRewrite"
+        },
+        "mirror": {
+          "$path": "mirror"
         }
       },
       "TestService": {

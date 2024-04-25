@@ -11,6 +11,8 @@ local world = Rewrite.World.new()
 local component = Rewrite.component
 
 local jecs = require(ReplicatedStorage.Lib)
+local mirror = require(ReplicatedStorage.mirror)
+local mcs = mirror.World.new()
 local ecs = jecs.World.new()
 
 local A1 = Matter.component()
@@ -50,10 +52,20 @@ local D7 = ecs:entity()
 local D8 = ecs:entity()
 
 
+local E1 = mcs:entity()
+local E2 = mcs:entity()
+local E3 = mcs:entity()
+local E4 = mcs:entity()
+local E5 = mcs:entity()
+local E6 = mcs:entity()
+local E7 = mcs:entity()
+local E8 = mcs:entity()
+
+
 local registry2 = ecr.registry()
 
 local function flip() 
-	return math.random() >= 0.15
+	return math.random() >= 0.5
 end
 
 local common = 0
@@ -65,12 +77,14 @@ for i = 1, N do
 	local n = newWorld:spawn()
 	local entity = ecs:entity()
 	local e = world:spawn()
+	local m = mcs:entity()
 
 	if flip() then 
 		combination ..= "B"
 		registry2:set(id, B2, {value = true}) 
 		world:insert(e, C2({ value = true}))
 		ecs:set(entity, D2, { value = true})
+		mcs:set(m, E2, { value = 2})
 		newWorld:insert(n, A2({value = true}))
 	end
 	if flip() then 
@@ -78,6 +92,7 @@ for i = 1, N do
 		registry2:set(id, B3, {value = true}) 
 		world:insert(e, C3({ value = true}))
 		ecs:set(entity, D3, { value = true})
+		mcs:set(m, E3, { value = 2})
 		newWorld:insert(n, A3({value = true}))
 	end
 	if flip() then 
@@ -85,6 +100,8 @@ for i = 1, N do
 		registry2:set(id, B4, {value = true}) 
 		world:insert(e, C4({ value = true}))
 		ecs:set(entity, D4, { value = true})
+		mcs:set(m, E4, { value = 2})
+
 		newWorld:insert(n, A4({value = true}))		
 	end
 	if flip() then 
@@ -92,6 +109,8 @@ for i = 1, N do
 		registry2:set(id, B5, {value = true}) 
 		world:insert(e, C5({value = true}))
 		ecs:set(entity, D5, { value = true})
+		mcs:set(m, E5, { value = 2})
+
 		newWorld:insert(n, A5({value = true}))		
 	end
 	if flip() then 
@@ -99,6 +118,8 @@ for i = 1, N do
 		registry2:set(id, B6, {value = true}) 
 		world:insert(e, C6({value = true}))
 		ecs:set(entity, D6, { value = true})
+		mcs:set(m, E6, { value = 2})
+
 		newWorld:insert(n, A6({value = true}))		
 	end
 	if flip() then 
@@ -106,6 +127,8 @@ for i = 1, N do
 		registry2:set(id, B7, {value = true}) 
 		world:insert(e, C7{ value = true})
 		ecs:set(entity, D7, { value = true})
+		mcs:set(m, E7, { value = 2})
+
 
 		newWorld:insert(n, A7({value = true}))		
 	end
@@ -115,7 +138,8 @@ for i = 1, N do
 		world:insert(e, C8{ value = true})
 		newWorld:insert(n, A8({value = true}))	
 		ecs:set(entity, D8, { value = true})
-	
+		mcs:set(m, E8, { value = 2})
+
 	end
 
 	if #combination == 7 then 
@@ -125,6 +149,8 @@ for i = 1, N do
 		world:insert(e, C1{ value = true})
 		ecs:set(entity, D1, { value = true})
 		newWorld:insert(n, A1({value = true}))	
+		mcs:set(m, E1, { value = 2})
+
 	end
 
 	archetypes[combination] = true
@@ -156,34 +182,18 @@ print(
 return {
 	ParameterGenerator = function()
 		return
-	end,
+	end,	
 
 	Functions = {
-
-		Matter = function() 
+		Mirror = function() 
 			local matched = 0
-			for entityId, firstComponent in newWorld:query(A5, A6, A3, A4, A8, A7) do
+			for entityId, firstComponent in mcs:query(E1, E2, E3, E4) do
 				matched += 1
 			end
 		end,
-
-		ECR = function() 
-			local matched = 0
-			for entityId, firstComponent in registry2:view(B5, B6, B3, B4, B8, B7) do
-				matched += 1
-			end
-		end,
-
-		Rewrite = function() 
-			local matched = 0
-			for entityId, firstComponent in world:query(C5, C6, C3, C4, C8, C7) do
-				matched += 1
-			end
-		end,
-
 		Jecs = function() 
 			local matched = 0
-			for entityId, firstComponent in ecs:query(D5, D6, D3, D4, D8, D7) do
+			for entityId, firstComponent in ecs:query(D1, D2, D3, D4) do
 				matched += 1
 			end
 		end
