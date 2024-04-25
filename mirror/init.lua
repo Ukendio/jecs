@@ -276,7 +276,7 @@ end
 
 local function get(componentIndex: { [i24]: ArchetypeMap }, record: Record, componentId: i24)
 	local archetype = record.archetype
-	local archetypeRecord = componentIndex[componentId][archetype.id]
+	local archetypeRecord = componentIndex[componentId].map[archetype.id]
 
 	if not archetypeRecord then
 		return nil
@@ -338,8 +338,6 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 	local queryLength = #components
 	local firstArchetypeMap = getSmallestMap(world.componentIndex, components)
 
-	local a, b, c, d, e, f, g, h = ...
-
 	if not firstArchetypeMap then 
 		return noop()
 	end
@@ -349,85 +347,31 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
         local columns = archetype.columns
 		local archetypeRecords = archetype.records
         local indices = {}
-        if queryLength == 1 then 
-            indices = { 
-                columns[archetypeRecords[a]],
-            }
-        elseif queryLength == 2 then
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]]
-            }
-        elseif queryLength == 3 then 
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]], 
-                columns[archetypeRecords[c]]
-            }
-        elseif queryLength == 4 then
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]], 
-                columns[archetypeRecords[c]], 
-                columns[archetypeRecords[d]] 
-            }
-        elseif queryLength == 5 then 
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]], 
-                columns[archetypeRecords[c]], 
-                columns[archetypeRecords[d]],
-                columns[archetypeRecords[e]]
-            }
-        elseif queryLength == 6 then
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]], 
-                columns[archetypeRecords[c]], 
-                columns[archetypeRecords[d]],
-                columns[archetypeRecords[e]], 
-                columns[archetypeRecords[f]], 
-            }
-        elseif queryLength == 7 then
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]], 
-                columns[archetypeRecords[c]], 
-                columns[archetypeRecords[d]],
-                columns[archetypeRecords[e]], 
-                columns[archetypeRecords[f]], 
-                columns[archetypeRecords[g]],
-            }
-        elseif queryLength == 8 then
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]], 
-                columns[archetypeRecords[c]], 
-                columns[archetypeRecords[d]],
-                columns[archetypeRecords[e]], 
-                columns[archetypeRecords[f]], 
-                columns[archetypeRecords[g]],
-                columns[archetypeRecords[h]],
-            }
-        else
-            for i, componentId in components do 
-                indices[i] = columns[archetypeRecords[componentId]]
-            end
-        end
-
-        local i = 0
-        for _ in indices do 
-            i += 1
-        end
-		if queryLength == i then 
-			table.insert(compatibleArchetypes, {
-                archetype = archetype,
-                indices = indices
-            })
+		local skip = false
+		
+		for i, componentId in components do 
+			local index = archetypeRecords[componentId]
+			if not index then 
+				skip = true
+				break
+			end
+			indices[i] = columns[index]
 		end
+
+		if skip then 
+			continue
+		end
+
+		table.insert(compatibleArchetypes, {
+			archetype = archetype,
+			indices = indices
+		})
 	end
 	
 	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
+	if not compatibleArchetype then 
+		return noop()
+	end
 	
 	local lastRow 
 	 

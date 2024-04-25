@@ -276,7 +276,7 @@ end
 
 local function get(componentIndex: { [i24]: ArchetypeMap }, record: Record, componentId: i24)
 	local archetype = record.archetype
-	local archetypeRecord = componentIndex[componentId][archetype.id]
+	local archetypeRecord = componentIndex[componentId].map[archetype.id]
 
 	if not archetypeRecord then
 		return nil
@@ -347,15 +347,15 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
         local columns = archetype.columns
 		local archetypeRecords = archetype.records
         local indices = {}
-       
 		local skip = false
+		
 		for i, componentId in components do 
-			local data = columns[archetypeRecords[componentId]]
-			if not data then 
+			local index = archetypeRecords[componentId]
+			if not index then 
 				skip = true
 				break
 			end
-			indices[i] = data
+			indices[i] = columns[index]
 		end
 
 		if skip then 
@@ -369,9 +369,12 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 	end
 	
 	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
+	if not compatibleArchetype then 
+		return noop()
+	end
 	
 	local lastRow 
-	
+	 
 	return function() 
         local archetype = compatibleArchetype.archetype
         local indices = compatibleArchetype.indices

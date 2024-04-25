@@ -65,12 +65,14 @@ local E8 = mcs:entity()
 local registry2 = ecr.registry()
 
 local function flip() 
-	return math.random() >= 0.5
+	return math.random() >= 0.15
 end
 
 local common = 0
 local N = 2^16-2
 local archetypes = {}
+
+local hm = 0
 for i = 1, N do 
 	local id = registry2.create()
 	local combination = ""
@@ -153,8 +155,15 @@ for i = 1, N do
 
 	end
 
+	if combination:find("BCDF") then 
+		if not archetypes[combination] then 
+			 print(combination)
+		end 
+		hm += 1
+	end
 	archetypes[combination] = true
 end
+print("TEST", hm)
 
 local white = rgb.white
 local yellow = rgb.yellow
@@ -179,6 +188,8 @@ print(
 	..yellow("Total Archetypes: "..numberOfArchetypes)
 )
 
+local q = ecs:query(D4, D2, D3, D6)
+
 return {
 	ParameterGenerator = function()
 		return
@@ -187,16 +198,17 @@ return {
 	Functions = {
 		Mirror = function() 
 			local matched = 0
-			for entityId, firstComponent in mcs:query(E1, E2, E3, E4) do
+			for entityId, firstComponent in mcs:query(E2, E3, E4, E1) do
 				matched += 1
 			end
 		end,
 		Jecs = function() 
 			local matched = 0
-			for entityId, firstComponent in ecs:query(D1, D2, D3, D4) do
+			for entityId, firstComponent in ecs:query(E2, E3, E4, E1) do
 				matched += 1
 			end
-		end
+		
 
+		end,
 	},
 }

@@ -11,21 +11,76 @@ print("F", F)
 print("G", G)
 print("H", H)
 
-for i = 1, 256 do 
-	local entity = ecs:entity()
-	ecs:set(entity, A, true) 
-	ecs:set(entity, B, true)
-	ecs:set(entity, C, true)
-	ecs:set(entity, D, true)
-
-	--[[
-	ecs:set(entity, E, true)
-	ecs:set(entity, F, true)
-	ecs:set(entity, G, true)
-	ecs:set(entity, H, true)
-	print("end")
-	]]
+local common = 0
+local N = 2^16-2
+local archetypes = {}
+local function flip() 
+	return math.random() >= 0.5
 end
+
+local hm = 0
+for i = 1, N do 
+	local entity = ecs:entity()
+	local combination = ""
+
+	if flip() then 
+		combination ..= "2_"
+		ecs:set(entity, B, { value = true})
+	end
+	if flip() then 
+		combination ..= "3_"
+		ecs:set(entity, C, { value = true})
+	end
+	if flip() then 
+		combination ..= "4_"
+		ecs:set(entity, D, { value = true})
+	end
+	if flip() then 
+		combination ..= "5_"
+		ecs:set(entity, E, { value = true})
+	end
+	if flip() then 
+		combination ..= "6_"
+		ecs:set(entity, F, { value = true})
+	end
+	if flip() then 
+		combination ..= "7_"
+		ecs:set(entity, G, { value = true})
+	end
+	if flip() then 
+		combination ..= "8"
+		ecs:set(entity, H, { value = true})
+	end
+
+	if #combination == 7 then 
+		combination = "1_" .. combination
+		common += 1
+		ecs:set(entity, A, { value = true})
+	end
+
+	if combination:find("2") 
+		and combination:find("3") 
+		and combination:find("4")
+		and combination:find("6")
+	then 
+		hm += 1
+	end
+	archetypes[combination] = true
+end
+
+
+local arch = 0
+for combination in archetypes do 
+	if combination:find("2") 
+		and combination:find("3") 
+		and combination:find("4")
+		and combination:find("6")
+	then 
+		print(combination)
+		arch += 1
+	end
+end
+print("TEST", hm, arch)
 
 return function()
 	describe("World", function()
@@ -60,10 +115,11 @@ return function()
 		end)
 		it("query", function()
 			local added = 0
-			for e, a, b, c, d in ecs:query(A, B, C, D) do
+			for _ in ecs:query(B, C, D, F) do
 				added += 1
 			end        
-			expect(added).to.equal(256)
+			expect(added).to.equal(hm)
+			print(added, hm)
 		end)
 		
 	end)
