@@ -344,201 +344,162 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 		return noop()
 	end
 
-	if queryLength == 1 then 
-		local id = next(firstArchetypeMap)
-		local archetype = archetypes[id :: number]
-		local lastRow
-
-		return function(): any
-			local row, entity = next(archetype.entities, lastRow)
-			while row == nil do 
-				id = next(firstArchetypeMap, id)
-				if id == nil then 
-					return
-				end
-				archetype = archetypes[id]
-				row = next(archetype.entities, row)
-			end 
-			lastRow = row
-
-			return entity, archetype.columns[archetype.records[a]]
-		end
-	elseif queryLength == 2 then 
-		for id in firstArchetypeMap do
-			local archetype = archetypes[id]
-			local archetypeRecords = archetype.records
-			if archetypeRecords[a] and archetypeRecords[b] then
-				table.insert(compatibleArchetypes, archetype)	
-			end
-		end
-
-		local lastArchetype, archetype = next(compatibleArchetypes)
-		local lastRow
-
-		return function()
-			local row = next(archetype.entities, lastRow)
-			while row == nil do 
-				lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
-				if lastArchetype == nil then 
-					return
-				end
-				row = next(archetype.entities, row)
-			end 
-			lastRow = row
-
-			local entity = archetype.entities[row::number]
-			local columns = archetype.columns
-			local archetypeRecords = archetype.records
-			return entity, columns[archetypeRecords[a]], columns[archetypeRecords[b]]
-		end
-	elseif queryLength == 3 then
-		for id in firstArchetypeMap do
-			local archetype = archetypes[id]
-			local archetypeRecords = archetype.records
-			if archetypeRecords[a] 
-				and archetypeRecords[b] 
-				and archetypeRecords[c] 
-			then
-				table.insert(compatibleArchetypes, archetype)	
-			end
-		end
-
-		local lastArchetype, archetype = next(compatibleArchetypes)
-		local lastRow
-
-		return function() 
-			local row = next(archetype.entities, lastRow)
-			while row == nil do 
-				lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
-				if lastArchetype == nil then 
-					return
-				end
-				row = next(archetype.entities, row)
-			end 
-			lastRow = row
-
-			local entity = archetype.entities[row::number]
-			local columns = archetype.columns
-			local archetypeRecords = archetype.records
-			return 
-				entity, 
-				columns[archetypeRecords[a]], 
-				columns[archetypeRecords[b]], 
-				columns[archetypeRecords[c]]
-		end
-	elseif queryLength == 4 then
-		for id in firstArchetypeMap do
-			local archetype = archetypes[id]
-			local archetypeRecords = archetype.records
-			if 
-				archetypeRecords[a]
-				and archetypeRecords[b] 
-				and archetypeRecords[c] 
-				and archetypeRecords[d] 
-			then
-				table.insert(compatibleArchetypes, archetype)	
-			end
-		end
-
-		local lastArchetype, archetype = next(compatibleArchetypes)
-		local lastRow
-
-		return function() 
-			local row = next(archetype.entities, lastRow)
-			while row == nil do 
-				lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
-				if lastArchetype == nil then 
-					return
-				end
-				row = next(archetype.entities, row)
-			end 
-			lastRow = row
-
-			local entity = archetype.entities[row::number]
-			local columns = archetype.columns
-			local archetypeRecords = archetype.records
-			return 
-				entity, 
-				columns[archetypeRecords[a]], 
-				columns[archetypeRecords[b]], 
-				columns[archetypeRecords[c]], 
-				columns[archetypeRecords[d]]
-		end
-	end
-
 	for id in firstArchetypeMap do
 		local archetype = archetypes[id]
+        local columns = archetype.columns
 		local archetypeRecords = archetype.records
-		local matched = true
-		for _, componentId in components do 
-			if not archetypeRecords[componentId] then 
-				matched = false
-				break
-			end
-		end
-		if matched then 
-			table.insert(compatibleArchetypes, archetype)	
+        local indices = {}
+        if queryLength == 1 then 
+            indices = { 
+                columns[archetypeRecords[a]],
+            }
+        elseif queryLength == 2 then
+            indices = { 
+                columns[archetypeRecords[a]], 
+                columns[archetypeRecords[b]]
+            }
+        elseif queryLength == 3 then 
+            indices = { 
+                columns[archetypeRecords[a]], 
+                columns[archetypeRecords[b]], 
+                columns[archetypeRecords[c]]
+            }
+        elseif queryLength == 4 then
+            indices = { 
+                columns[archetypeRecords[a]], 
+                columns[archetypeRecords[b]], 
+                columns[archetypeRecords[c]], 
+                columns[archetypeRecords[d]] 
+            }
+        elseif queryLength == 5 then 
+            indices = { 
+                columns[archetypeRecords[a]], 
+                columns[archetypeRecords[b]], 
+                columns[archetypeRecords[c]], 
+                columns[archetypeRecords[d]],
+                columns[archetypeRecords[e]]
+            }
+        elseif queryLength == 6 then
+            indices = { 
+                columns[archetypeRecords[a]], 
+                columns[archetypeRecords[b]], 
+                columns[archetypeRecords[c]], 
+                columns[archetypeRecords[d]],
+                columns[archetypeRecords[e]], 
+                columns[archetypeRecords[f]], 
+            }
+        elseif queryLength == 7 then
+            indices = { 
+                columns[archetypeRecords[a]], 
+                columns[archetypeRecords[b]], 
+                columns[archetypeRecords[c]], 
+                columns[archetypeRecords[d]],
+                columns[archetypeRecords[e]], 
+                columns[archetypeRecords[f]], 
+                columns[archetypeRecords[g]],
+            }
+        elseif queryLength == 8 then
+            indices = { 
+                columns[archetypeRecords[a]], 
+                columns[archetypeRecords[b]], 
+                columns[archetypeRecords[c]], 
+                columns[archetypeRecords[d]],
+                columns[archetypeRecords[e]], 
+                columns[archetypeRecords[f]], 
+                columns[archetypeRecords[g]],
+            }
+        else
+            for i, componentId in components do 
+                indices[i] = columns[archetypeRecords[componentId]]
+            end
+        end
+
+        local i = 0
+        for _ in indices do 
+            i += 1
+        end
+		if queryLength == i then 
+			table.insert(compatibleArchetypes, {
+                archetype = archetype,
+                indices = indices
+            })
 		end
 	end
 	
-	local lastArchetype, archetype = next(compatibleArchetypes)
+	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
 	
 	local lastRow 
 	
 	return function() 
+        local archetype = compatibleArchetype.archetype
+        local indices = compatibleArchetype.indices
 		local row = next(archetype.entities, lastRow)
 		while row == nil do 
-			lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
+			lastArchetype, compatibleArchetype = next(compatibleArchetypes, lastArchetype)
 			if lastArchetype == nil then 
 				return 
 			end
+            archetype = compatibleArchetype.archetype
 			row = next(archetype.entities, row)
 		end
 		lastRow = row
 		
-		local columns = archetype.columns	
 		local entityId = archetype.entities[row :: number]
-		local archetypeRecords = archetype.records
 
-		if queryLength == 5 then 
+		if queryLength == 1 then 
+			return entityId, indices[1][row]
+		elseif queryLength == 2 then 
+			return entityId, indices[1][row], indices[2][row]
+		elseif queryLength == 3 then 
 			return entityId, 
-				columns[archetypeRecords[a]], 
-				columns[archetypeRecords[b]], 
-				columns[archetypeRecords[c]], 
-				columns[archetypeRecords[d]], 
-				columns[archetypeRecords[e]]
+				indices[1][row],
+				indices[2][row], 
+				indices[3][row]
+		elseif queryLength == 4 then 
+			return entityId, 
+                indices[1][row],
+                indices[2][row], 
+                indices[3][row],
+                indices[4][row]
+		elseif queryLength == 5 then 
+			return entityId, 
+                indices[1][row],
+                indices[2][row], 
+                indices[3][row],
+                indices[4][row]
 		elseif queryLength == 6 then 
 			return entityId, 
-				columns[archetypeRecords[a]], 
-				columns[archetypeRecords[b]], 
-				columns[archetypeRecords[c]], 
-				columns[archetypeRecords[d]], 
-				columns[archetypeRecords[e]],
-				columns[archetypeRecords[f]]
-		elseif queryLength == 7 then 
+                indices[1][row],
+                indices[2][row], 
+                indices[3][row],
+                indices[4][row],
+                indices[5][row],
+                indices[6][row]
+        elseif queryLength == 7 then 
 			return entityId, 
-				columns[archetypeRecords[a]], 
-				columns[archetypeRecords[b]], 
-				columns[archetypeRecords[c]], 
-				columns[archetypeRecords[d]], 
-				columns[archetypeRecords[e]],
-				columns[archetypeRecords[f]],
-				columns[archetypeRecords[g]]
+                indices[1][row],
+                indices[2][row], 
+                indices[3][row],
+                indices[4][row],
+                indices[5][row],
+                indices[6][row],
+                indices[7][row]
+
 		elseif queryLength == 8 then 
 			return entityId, 
-				columns[archetypeRecords[a]], 
-				columns[archetypeRecords[b]], 
-				columns[archetypeRecords[c]], 
-				columns[archetypeRecords[d]], 
-				columns[archetypeRecords[e]],
-				columns[archetypeRecords[f]],
-				columns[archetypeRecords[g]],
-				columns[archetypeRecords[h]]
+                indices[1][row],
+                indices[2][row], 
+                indices[3][row],
+                indices[4][row],
+                indices[5][row],
+                indices[6][row],
+                indices[7][row],
+                indices[8][row]
 		end
 
 		local queryOutput = {}
 		for i, componentId in components do 
-			queryOutput[i] = columns[archetypeRecords[componentId]]
+			queryOutput[i] = indices[i][row]
 		end
 
 		return entityId, unpack(queryOutput, 1, queryLength)
