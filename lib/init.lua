@@ -338,8 +338,6 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 	local queryLength = #components
 	local firstArchetypeMap = getSmallestMap(world.componentIndex, components)
 
-	local a, b, c, d, e, f, g, h = ...
-
 	if not firstArchetypeMap then 
 		return noop()
 	end
@@ -349,81 +347,25 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
         local columns = archetype.columns
 		local archetypeRecords = archetype.records
         local indices = {}
-        if queryLength == 1 then 
-            indices = { 
-                columns[archetypeRecords[a]],
-            }
-        elseif queryLength == 2 then
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]]
-            }
-        elseif queryLength == 3 then 
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]], 
-                columns[archetypeRecords[c]]
-            }
-        elseif queryLength == 4 then
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]], 
-                columns[archetypeRecords[c]], 
-                columns[archetypeRecords[d]] 
-            }
-        elseif queryLength == 5 then 
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]], 
-                columns[archetypeRecords[c]], 
-                columns[archetypeRecords[d]],
-                columns[archetypeRecords[e]]
-            }
-        elseif queryLength == 6 then
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]], 
-                columns[archetypeRecords[c]], 
-                columns[archetypeRecords[d]],
-                columns[archetypeRecords[e]], 
-                columns[archetypeRecords[f]], 
-            }
-        elseif queryLength == 7 then
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]], 
-                columns[archetypeRecords[c]], 
-                columns[archetypeRecords[d]],
-                columns[archetypeRecords[e]], 
-                columns[archetypeRecords[f]], 
-                columns[archetypeRecords[g]],
-            }
-        elseif queryLength == 8 then
-            indices = { 
-                columns[archetypeRecords[a]], 
-                columns[archetypeRecords[b]], 
-                columns[archetypeRecords[c]], 
-                columns[archetypeRecords[d]],
-                columns[archetypeRecords[e]], 
-                columns[archetypeRecords[f]], 
-                columns[archetypeRecords[g]],
-            }
-        else
-            for i, componentId in components do 
-                indices[i] = columns[archetypeRecords[componentId]]
-            end
-        end
-
-        local i = 0
-        for _ in indices do 
-            i += 1
-        end
-		if queryLength == i then 
-			table.insert(compatibleArchetypes, {
-                archetype = archetype,
-                indices = indices
-            })
+       
+		local skip = false
+		for i, componentId in components do 
+			local data = columns[archetypeRecords[componentId]]
+			if not data then 
+				skip = true
+				break
+			end
+			indices[i] = data
 		end
+
+		if skip then 
+			continue
+		end
+
+		table.insert(compatibleArchetypes, {
+			archetype = archetype,
+			indices = indices
+		})
 	end
 	
 	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
