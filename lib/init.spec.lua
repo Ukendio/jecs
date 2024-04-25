@@ -76,12 +76,9 @@ for combination in archetypes do
 		and combination:find("4")
 		and combination:find("6")
 	then 
-		print(combination)
 		arch += 1
 	end
 end
-print("TEST", hm, arch)
-
 return function()
 	describe("World", function()
 		it("should add component", function()

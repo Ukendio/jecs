@@ -188,23 +188,22 @@ print(
 	..yellow("Total Archetypes: "..numberOfArchetypes)
 )
 
-local q = ecs:query(D4, D2, D3, D6)
-
 return {
 	ParameterGenerator = function()
 		return
 	end,	
 
 	Functions = {
-		Mirror = function() 
+		Mater = function() 
 			local matched = 0
-			for entityId, firstComponent in mcs:query(E2, E3, E4, E1) do
+			for entityId, firstComponent in newWorld:query(A2, A3, A4, A1) do
 				matched += 1
 			end
 		end,
+
 		Jecs = function() 
 			local matched = 0
-			for entityId, firstComponent in ecs:query(E2, E3, E4, E1) do
+			for entityId, firstComponent in ecs:query(D2, D3, D4, D1) do
 				matched += 1
 			end
 		
