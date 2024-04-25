@@ -22,6 +22,9 @@
         },
         "benches": {
           "$path": "benches"
+        },
+        "rewrite": {
+          "$path": "matterRewrite"
         }
       },
       "TestService": {

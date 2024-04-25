@@ -159,6 +159,14 @@ return {
 	end,
 
 	Functions = {
+
+		Matter = function() 
+			local matched = 0
+			for entityId, firstComponent in newWorld:query(A5, A6, A3, A4, A8, A7) do
+				matched += 1
+			end
+		end,
+
 		ECR = function() 
 			local matched = 0
 			for entityId, firstComponent in registry2:view(B5, B6, B3, B4, B8, B7) do
