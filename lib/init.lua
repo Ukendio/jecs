@@ -35,7 +35,7 @@ type EntityIndex = { [i24]: Record }
 type ComponentIndex = { [i24]: ArchetypeMap}
 
 type ArchetypeRecord = number
-type ArchetypeMap = { [ArchetypeId]: ArchetypeRecord }
+type ArchetypeMap = { map: { [ArchetypeId]: ArchetypeRecord } , size: number }
 type Archetypes = { [ArchetypeId]: Archetype }
 
 local function transitionArchetype(
@@ -107,9 +107,11 @@ local function createArchetypeRecords(componentIndex: ComponentIndex, to: Archet
 		local destinationId = destinationIds[i]
 
 		if not componentIndex[destinationId] then
-			componentIndex[destinationId] = {}
+			componentIndex[destinationId] = { size = 0, map = {} }
 		end
-		componentIndex[destinationId][to.id] = i
+
+		local archetypesMap = componentIndex[destinationId]
+		archetypesMap.map[to.id] = i
 		to.records[destinationId] = i
 	end
 end
@@ -311,19 +313,22 @@ function World.entity(world: World)
 	return world.nextId
 end
 
-function World.archetypesWith(world: World, componentId: i53)
-    local archetypes = world.archetypes
-	local archetypeMap = world.componentIndex[componentId]
-	local compatibleArchetypes = {}
-	for id, archetypeRecord in archetypeMap do
-		compatibleArchetypes[archetypes[id]] = true
-	end
-	return compatibleArchetypes
-end
-
 local function noop(): any
 	return function() 
 	end
+end
+
+local function getSmallestMap(componentIndex, components) 
+	local s: any
+
+	for i, componentId in components do 
+		local map = componentIndex[componentId]
+		if s == nil or map.size < s.size then 
+			s = map	
+		end
+	end
+	
+	return s.map
 end
 
 function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> ()
@@ -331,65 +336,134 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 	local components = { ... }
 	local archetypes = world.archetypes
 	local queryLength = #components
+	local firstArchetypeMap = getSmallestMap(world.componentIndex, components)
+
 	local a, b, c, d, e, f, g, h = ...
-	local firstArchetypeMap = world.componentIndex[components[1]]
+
 	if not firstArchetypeMap then 
 		return noop()
 	end
 
 	if queryLength == 1 then 
-		local function single() 
-            local id = next(firstArchetypeMap)
-            local archetype = archetypes[id :: number]
-            local lastRow
+		local id = next(firstArchetypeMap)
+		local archetype = archetypes[id :: number]
+		local lastRow
 
-            return function(): any
-                local row, entity = next(archetype.entities, lastRow)
-                while row == nil do 
-                    id = next(firstArchetypeMap, id)
-                    if id == nil then 
-                        return
-                    end
-                    archetype = archetypes[id]
-                    row = next(archetype.entities, row)
-                end 
-                lastRow = row
+		return function(): any
+			local row, entity = next(archetype.entities, lastRow)
+			while row == nil do 
+				id = next(firstArchetypeMap, id)
+				if id == nil then 
+					return
+				end
+				archetype = archetypes[id]
+				row = next(archetype.entities, row)
+			end 
+			lastRow = row
 
-                return entity, archetype.columns[archetype.records[a]]
-            end
-        end
-
-        return single() 
+			return entity, archetype.columns[archetype.records[a]]
+		end
 	elseif queryLength == 2 then 
 		for id in firstArchetypeMap do
 			local archetype = archetypes[id]
-			if archetype.records[b] then
+			local archetypeRecords = archetype.records
+			if archetypeRecords[a] and archetypeRecords[b] then
 				table.insert(compatibleArchetypes, archetype)	
 			end
 		end
 
-		local function double() 
-			local lastArchetype, archetype = next(compatibleArchetypes)
-			local lastRow
-	
-			return function()
-				local row = next(archetype.entities, lastRow)
-				while row == nil do 
-					lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
-					if lastArchetype == nil then 
-						return
-					end
-					row = next(archetype.entities, row)
-				end 
-				lastRow = row
-	
-				local entity = archetype.entities[row::number]
-				local columns = archetype.columns
-				local archetypeRecords = archetype.records
-				return entity, columns[archetypeRecords[a]], columns[archetypeRecords[b]]
+		local lastArchetype, archetype = next(compatibleArchetypes)
+		local lastRow
+
+		return function()
+			local row = next(archetype.entities, lastRow)
+			while row == nil do 
+				lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
+				if lastArchetype == nil then 
+					return
+				end
+				row = next(archetype.entities, row)
+			end 
+			lastRow = row
+
+			local entity = archetype.entities[row::number]
+			local columns = archetype.columns
+			local archetypeRecords = archetype.records
+			return entity, columns[archetypeRecords[a]], columns[archetypeRecords[b]]
+		end
+	elseif queryLength == 3 then
+		for id in firstArchetypeMap do
+			local archetype = archetypes[id]
+			local archetypeRecords = archetype.records
+			if archetypeRecords[a] 
+				and archetypeRecords[b] 
+				and archetypeRecords[c] 
+			then
+				table.insert(compatibleArchetypes, archetype)	
 			end
 		end
-		return double()
+
+		local lastArchetype, archetype = next(compatibleArchetypes)
+		local lastRow
+
+		return function() 
+			local row = next(archetype.entities, lastRow)
+			while row == nil do 
+				lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
+				if lastArchetype == nil then 
+					return
+				end
+				row = next(archetype.entities, row)
+			end 
+			lastRow = row
+
+			local entity = archetype.entities[row::number]
+			local columns = archetype.columns
+			local archetypeRecords = archetype.records
+			return 
+				entity, 
+				columns[archetypeRecords[a]], 
+				columns[archetypeRecords[b]], 
+				columns[archetypeRecords[c]]
+		end
+	elseif queryLength == 4 then
+		for id in firstArchetypeMap do
+			local archetype = archetypes[id]
+			local archetypeRecords = archetype.records
+			if 
+				archetypeRecords[a]
+				and archetypeRecords[b] 
+				and archetypeRecords[c] 
+				and archetypeRecords[d] 
+			then
+				table.insert(compatibleArchetypes, archetype)	
+			end
+		end
+
+		local lastArchetype, archetype = next(compatibleArchetypes)
+		local lastRow
+
+		return function() 
+			local row = next(archetype.entities, lastRow)
+			while row == nil do 
+				lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
+				if lastArchetype == nil then 
+					return
+				end
+				row = next(archetype.entities, row)
+			end 
+			lastRow = row
+
+			local entity = archetype.entities[row::number]
+			local columns = archetype.columns
+			local archetypeRecords = archetype.records
+			return 
+				entity, 
+				columns[archetypeRecords[a]], 
+				columns[archetypeRecords[b]], 
+				columns[archetypeRecords[c]], 
+				columns[archetypeRecords[d]]
+		end
 	end
 
 	for id in firstArchetypeMap do
@@ -411,7 +485,7 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 	
 	local lastRow 
 	
-	local function queryNext()
+	return function() 
 		local row = next(archetype.entities, lastRow)
 		while row == nil do 
 			lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
@@ -426,18 +500,7 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 		local entityId = archetype.entities[row :: number]
 		local archetypeRecords = archetype.records
 
-		if queryLength == 3 then 
-			return entityId, 
-				columns[archetypeRecords[a]], 
-				columns[archetypeRecords[b]], 
-				columns[archetypeRecords[c]]
-		elseif queryLength == 4 then 
-			return entityId, 
-				columns[archetypeRecords[a]], 
-				columns[archetypeRecords[b]], 
-				columns[archetypeRecords[c]], 
-				columns[archetypeRecords[d]]
-		elseif queryLength == 5 then 
+		if queryLength == 5 then 
 			return entityId, 
 				columns[archetypeRecords[a]], 
 				columns[archetypeRecords[b]], 
@@ -480,11 +543,6 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 
 		return entityId, unpack(queryOutput, 1, queryLength)
 	end
-
-	return function() 
-		return queryNext() 
-	end
-	
 end
 
 return {
