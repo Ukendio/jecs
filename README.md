@@ -48,3 +48,4 @@ assert(world:get(opponentId, Health) == 92)
 ```
 
 ![Comparison](image.png)
+![ECR](image-1.png)
