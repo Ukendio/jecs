@@ -156,7 +156,6 @@ function World.new()
         nextId = 0,
         nextArchetypeId = 0 
 	}, World)
-    self.ROOT_ARCHETYPE = archetypeOf(self, {}, nil)
     return self
 end
 
@@ -164,7 +163,6 @@ type World = typeof(World.new())
 
 local function ensureArchetype(world: World, types, prev)
 	if #types < 1 then
-
 		if not world.ROOT_ARCHETYPE then 
             local ROOT_ARCHETYPE = archetypeOf(world, {}, nil)
             world.ROOT_ARCHETYPE = ROOT_ARCHETYPE
@@ -451,6 +449,6 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 	end
 end
 
-return {
+return table.freeze({
 	World = World
-} 
+})
