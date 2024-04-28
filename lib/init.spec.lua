@@ -1,7 +1,8 @@
-local ecs = require(script.Parent).World.new()
+local jecs = require(script.Parent)
+local world = jecs.World.new()
 
-local A, B, C, D = ecs:entity(), ecs:entity(), ecs:entity(), ecs:entity()
-local E, F, G, H = ecs:entity(), ecs:entity(), ecs:entity(), ecs:entity()
+local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
+local E, F, G, H = world:entity(), world:entity(), world:entity(), world:entity()
 print("A", A)
 print("B", B)
 print("C", C)
@@ -20,42 +21,42 @@ end
 
 local hm = 0
 for i = 1, N do 
-	local entity = ecs:entity()
+	local entity = world:entity()
 	local combination = ""
 
 	if flip() then 
 		combination ..= "2_"
-		ecs:set(entity, B, { value = true})
+		world:set(entity, B, { value = true})
 	end
 	if flip() then 
 		combination ..= "3_"
-		ecs:set(entity, C, { value = true})
+		world:set(entity, C, { value = true})
 	end
 	if flip() then 
 		combination ..= "4_"
-		ecs:set(entity, D, { value = true})
+		world:set(entity, D, { value = true})
 	end
 	if flip() then 
 		combination ..= "5_"
-		ecs:set(entity, E, { value = true})
+		world:set(entity, E, { value = true})
 	end
 	if flip() then 
 		combination ..= "6_"
-		ecs:set(entity, F, { value = true})
+		world:set(entity, F, { value = true})
 	end
 	if flip() then 
 		combination ..= "7_"
-		ecs:set(entity, G, { value = true})
+		world:set(entity, G, { value = true})
 	end
 	if flip() then 
 		combination ..= "8"
-		ecs:set(entity, H, { value = true})
+		world:set(entity, H, { value = true})
 	end
 
 	if #combination == 7 then 
 		combination = "1_" .. combination
 		common += 1
-		ecs:set(entity, A, { value = true})
+		world:set(entity, A, { value = true})
 	end
 
 	if combination:find("2") 
@@ -82,42 +83,57 @@ end
 return function()
 	describe("World", function()
 		it("should add component", function()
-			local id = ecs:entity()
-			ecs:set(id, A, true)
-			ecs:set(id, B, 1)
+			local id = world:entity()
+			world:set(id, A, true)
+			world:set(id, B, 1)
 
-			local id1 = ecs:entity()
-			ecs:set(id1, A, "hello")
-			expect(ecs:get(id, A)).to.equal(true)
-			expect(ecs:get(id, B)).to.equal(1)
-			expect(ecs:get(id1, A)).to.equal("hello")
+			local id1 = world:entity()
+			world:set(id1, A, "hello")
+			expect(world:get(id, A)).to.equal(true)
+			expect(world:get(id, B)).to.equal(1)
+			expect(world:get(id1, A)).to.equal("hello")
 		end)
 		it("should remove component", function() 
-			local id = ecs:entity()
-			ecs:set(id, A, true)
-			ecs:set(id, B, 1000)
-			ecs:remove(id, A, false)
+			local id = world:entity()
+			world:set(id, A, true)
+			world:set(id, B, 1000)
+			world:remove(id, A, false)
 
-			expect(ecs:get(id, A)).to.equal(nil)
+			expect(world:get(id, A)).to.equal(nil)
 		end)
 		it("should override component data", function() 
 		
-			local id = ecs:entity()
-			ecs:set(id, A, true)
-			expect(ecs:get(id, A)).to.equal(true)
+			local id = world:entity()
+			world:set(id, A, true)
+			expect(world:get(id, A)).to.equal(true)
 
-			ecs:set(id, A, false)
-			expect(ecs:get(id, A)).to.equal(false)
+			world:set(id, A, false)
+			expect(world:get(id, A)).to.equal(false)
 
 		end)
 		it("query", function()
 			local added = 0
-			for _ in ecs:query(B, C, D, F) do
+			for _ in world:query(B, C, D, F) do
 				added += 1
 			end        
 			expect(added).to.equal(hm)
 			print(added, hm)
 		end)
-		
+
+		it("track changes", function() 
+			local Position = world:entity()
+
+			local moving = world:entity()
+			world:set(moving, Position, Vector3.new(1, 2, 3))
+
+			local count = 0
+
+			for e, position in world:observer(Position).event(jecs.ON_ADD) do 
+				count += 1
+				expect(e).to.equal(moving)
+				expect(position).to.equal(Vector3.new(1, 2, 3))
+			end
+			expect(count).to.equal(1)
+		end)
 	end)
 end
