@@ -35,8 +35,19 @@ type EntityIndex = { [i24]: Record }
 type ComponentIndex = { [i24]: ArchetypeMap}
 
 type ArchetypeRecord = number
-type ArchetypeMap = { map: { [ArchetypeId]: ArchetypeRecord } , size: number }
+type ArchetypeMap = { sparse: { [ArchetypeId]: ArchetypeRecord } , size: number }
 type Archetypes = { [ArchetypeId]: Archetype }
+	
+type ArchetypeDiff = {
+	added: Ty,
+	removed: Ty,
+}
+
+local HI_COMPONENT_ID = 256
+local ON_ADD = HI_COMPONENT_ID + 1
+local ON_REMOVE = HI_COMPONENT_ID + 2
+local ON_SET = HI_COMPONENT_ID + 3
+local REST = HI_COMPONENT_ID + 4
 
 local function transitionArchetype(
 	entityIndex: EntityIndex,
@@ -89,14 +100,7 @@ local function moveEntity(entityIndex, entityId: i53, record: Record, to: Archet
 end
 
 local function hash(arr): string | number
-	if true then
-		return table.concat(arr, "_")
-	end
-	local hashed = 5381
-	for i = 1, #arr do
-		hashed = ((bit32.lshift(hashed, 5)) + hashed) + arr[i]
-	end
-	return hashed
+	return table.concat(arr, "_")
 end
 
 local function createArchetypeRecords(componentIndex: ComponentIndex, to: Archetype, from: Archetype?)
@@ -107,11 +111,11 @@ local function createArchetypeRecords(componentIndex: ComponentIndex, to: Archet
 		local destinationId = destinationIds[i]
 
 		if not componentIndex[destinationId] then
-			componentIndex[destinationId] = { size = 0, map = {} }
+			componentIndex[destinationId] = { size = 0, sparse = {} }
 		end
 
 		local archetypesMap = componentIndex[destinationId]
-		archetypesMap.map[to.id] = i
+		archetypesMap.sparse[to.id] = i
 		to.records[destinationId] = i
 	end
 end
@@ -152,24 +156,47 @@ function World.new()
 		componentIndex = {},
 		archetypes = {},
 		archetypeIndex = {},
-        ROOT_ARCHETYPE = nil :: Archetype?,
+        ROOT_ARCHETYPE = (nil :: any) :: Archetype,
         nextId = 0,
-        nextArchetypeId = 0 
+        nextArchetypeId = 0,
+		hooks = {
+			[ON_ADD] = {}
+		}
 	}, World)
-    self.ROOT_ARCHETYPE = archetypeOf(self, {}, nil)
     return self
 end
+
+local function emit(world, eventDescription) 
+	local event = eventDescription.event
+
+	table.insert(world.hooks[event], {
+		ids = eventDescription.ids,
+		archetype = eventDescription.archetype,
+		otherArchetype = eventDescription.otherArchetype,
+		offset = eventDescription.offset
+	})
+end
+
+
+
+local function onNotifyAdd(world, archetype, otherArchetype, row: number, added: Ty) 
+	if #added > 0 then 
+		emit(world, {
+			event = ON_ADD,
+			ids = added,
+			archetype = archetype,
+			otherArchetype = otherArchetype,
+			offset = row,
+		})
+	end
+end
+
 
 type World = typeof(World.new())
 
 local function ensureArchetype(world: World, types, prev)
 	if #types < 1 then
-
-		if not world.ROOT_ARCHETYPE then 
-            local ROOT_ARCHETYPE = archetypeOf(world, {}, nil)
-            world.ROOT_ARCHETYPE = ROOT_ARCHETYPE
-            return ROOT_ARCHETYPE
-        end
+		
 	end
 	local ty = hash(types)
 	local archetype = world.archetypeIndex[ty]
@@ -213,8 +240,14 @@ local function ensureEdge(archetype: Archetype, componentId: i53)
 	return archetype.edges[componentId]
 end
 
-local function archetypeTraverseAdd(world: World, componentId: i53, archetype: Archetype?): Archetype
-	local from = (archetype or world.ROOT_ARCHETYPE) :: Archetype
+local function archetypeTraverseAdd(world: World, componentId: i53, from: Archetype): Archetype
+	if not from then 
+		if not world.ROOT_ARCHETYPE then 
+            local ROOT_ARCHETYPE = archetypeOf(world, {}, nil)
+            world.ROOT_ARCHETYPE = ROOT_ARCHETYPE
+        end
+		from = world.ROOT_ARCHETYPE
+	end
 	local edge = ensureEdge(from, componentId)
 
 	if not edge.add then
@@ -224,17 +257,16 @@ local function archetypeTraverseAdd(world: World, componentId: i53, archetype: A
 	return edge.add
 end
 
-function World.ensureRecord(world: World, entityId: i53)
-    local entityIndex = world.entityIndex
+local function ensureRecord(entityIndex, entityId: i53): Record
 	local id = entityId
 	if not entityIndex[id] then
-		entityIndex[id] = {} :: Record
+		entityIndex[id] = {}
 	end
-	return entityIndex[id]
+	return entityIndex[id] :: Record
 end
 
 function World.set(world: World, entityId: i53, componentId: i53, data: unknown) 
-	local record = world:ensureRecord(entityId)
+	local record = ensureRecord(world.entityIndex, entityId)
 	local sourceArchetype = record.archetype
 	local destinationArchetype = archetypeTraverseAdd(world, componentId, sourceArchetype)
 
@@ -244,6 +276,7 @@ function World.set(world: World, entityId: i53, componentId: i53, data: unknown)
 		-- if it has any components, then it wont be the root archetype
 		if #destinationArchetype.types > 0 then
 			newEntity(entityId, record, destinationArchetype)
+			onNotifyAdd(world, destinationArchetype, sourceArchetype, record.row, { componentId })
 		end
 	end
 	local archetypeRecord = destinationArchetype.records[componentId]
@@ -265,7 +298,7 @@ local function archetypeTraverseRemove(world: World, componentId: i53, archetype
 end
 
 function World.remove(world: World, entityId: i53, componentId: i53) 
-	local record = world:ensureRecord(entityId)
+	local record = ensureRecord(world.entityIndex, entityId)
 	local sourceArchetype = record.archetype
 	local destinationArchetype = archetypeTraverseRemove(world, componentId, sourceArchetype)
 
@@ -276,7 +309,7 @@ end
 
 local function get(componentIndex: { [i24]: ArchetypeMap }, record: Record, componentId: i24)
 	local archetype = record.archetype
-	local archetypeRecord = componentIndex[componentId].map[archetype.id]
+	local archetypeRecord = componentIndex[componentId].sparse[archetype.id]
 
 	if not archetypeRecord then
 		return nil
@@ -308,10 +341,7 @@ function World.get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53
 	end
 end
 
-function World.entity(world: World)
-    world.nextId += 1
-	return world.nextId
-end
+
 
 local function noop(): any
 	return function() 
@@ -328,10 +358,11 @@ local function getSmallestMap(componentIndex, components)
 		end
 	end
 	
-	return s.map
+	return s.sparse
 end
 
 function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> ()
+	
 	local compatibleArchetypes = {}
 	local components = { ... }
 	local archetypes = world.archetypes
@@ -451,6 +482,71 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 	end
 end
 
-return {
-	World = World
-} 
+function World.component(world: World) 
+	local id = world.nextId + 1
+	if id > HI_COMPONENT_ID then 
+		error("Too many components")	
+	end
+	return id
+end
+
+function World.entity(world: World)
+    world.nextId += 1
+	return world.nextId + REST
+end
+
+function World.observer(world: World, ...)
+	local componentIds = { ... }
+	
+	return {
+		event = function(event) 
+			local hook = world.hooks[event]
+			world.hooks[event] = nil
+
+			local last, change
+			return function() 
+				last, change = next(hook, last)
+				if not last then 
+					return
+				end
+
+				local matched = false
+				
+				while not matched do 
+					local skip = false
+					for _, id in change.ids do 
+						if not table.find(componentIds, id) then 
+							skip = true
+							break
+						end
+					end
+					
+					if skip then 
+						last, change = next(hook, last)
+						continue
+					end
+
+					matched = true
+				end
+				
+				local queryOutput = {}
+				local row = change.offset
+				local archetype = change.archetype
+				local columns = archetype.columns
+				local archetypeRecords = archetype.records
+				for _, id in componentIds do 
+					table.insert(queryOutput, columns[archetypeRecords[id]][row])
+				end
+
+				return archetype.entities[row], unpack(queryOutput, 1, #queryOutput)
+			end
+		end
+	}
+end
+
+return table.freeze({
+	World = World,
+	ON_ADD = ON_ADD,
+	ON_REMOVE = ON_REMOVE,
+	ON_SET = ON_SET
+})
