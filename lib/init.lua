@@ -361,44 +361,14 @@ local function getSmallestMap(componentIndex, components)
 	return s.sparse
 end
 
-function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> ()
-	
-	local compatibleArchetypes = {}
-	local components = { ... }
-	local archetypes = world.archetypes
-	local queryLength = #components
-	local firstArchetypeMap = getSmallestMap(world.componentIndex, components)
+local PreparedQuery = {}
+PreparedQuery.__index = PreparedQuery
 
-	if not firstArchetypeMap then 
-		return noop()
-	end
+function PreparedQuery:__iter() 
+	local compatibleArchetypes = self.compatibleArchetypes
+	local queryLength = self.queryLength
+	local components = self.components
 
-	for id in firstArchetypeMap do
-		local archetype = archetypes[id]
-        local columns = archetype.columns
-		local archetypeRecords = archetype.records
-        local indices = {}
-		local skip = false
-		
-		for i, componentId in components do 
-			local index = archetypeRecords[componentId]
-			if not index then 
-				skip = true
-				break
-			end
-			indices[i] = columns[index]
-		end
-
-		if skip then 
-			continue
-		end
-
-		table.insert(compatibleArchetypes, {
-			archetype = archetype,
-			indices = indices
-		})
-	end
-	
 	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
 	if not compatibleArchetype then 
 		return noop()
@@ -480,6 +450,50 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 
 		return entityId, unpack(queryOutput, 1, queryLength)
 	end
+end
+
+function World.query(world: World, ...: i53)
+	local compatibleArchetypes = {}
+	local components = { ... }
+	local archetypes = world.archetypes
+	local queryLength = #components
+	local firstArchetypeMap = getSmallestMap(world.componentIndex, components)
+
+	if not firstArchetypeMap then 
+		return noop()
+	end
+
+	for id in firstArchetypeMap do
+		local archetype = archetypes[id]
+        local columns = archetype.columns
+		local archetypeRecords = archetype.records
+        local indices = {}
+		local skip = false
+		
+		for i, componentId in components do 
+			local index = archetypeRecords[componentId]
+			if not index then 
+				skip = true
+				break
+			end
+			indices[i] = columns[index]
+		end
+
+		if skip then 
+			continue
+		end
+
+		table.insert(compatibleArchetypes, {
+			archetype = archetype,
+			indices = indices
+		})
+	end
+	
+	return setmetatable({
+		queryLength = queryLength,
+		compatibleArchetypes = compatibleArchetypes,
+		components = components 
+	}, PreparedQuery)
 end
 
 function World.component(world: World) 
