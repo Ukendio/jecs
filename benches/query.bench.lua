@@ -196,21 +196,21 @@ return {
 	Functions = {
 		Mater = function() 
 			local matched = 0
-			for entityId, firstComponent in newWorld:query(A2, A4, A6, A8) do
+			for entityId, firstComponent in newWorld:query(A1, A4, A6, A8) do
 				matched += 1
 			end
 		end,
 
 		ECR = function() 
 			local matched = 0
-			for entityId, firstComponent in registry2:view(B2, B4, B6, B8) do
+			for entityId, firstComponent in registry2:view(B1, B4, B6, B8) do
 				matched += 1
 			end
 		end,
 
 		Jecs = function() 
 			local matched = 0
-			for entityId, firstComponent in ecs:query(D2, D4, D6, D8) do
+			for entityId, firstComponent in ecs:query(D1, D4, D6, D8) do
 				matched += 1
 			end
 		

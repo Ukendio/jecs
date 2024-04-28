@@ -361,8 +361,7 @@ local function getSmallestMap(componentIndex, components)
 	return s.sparse
 end
 
-function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> ()
-	
+function World.query(world: World, ...: i53): any
 	local compatibleArchetypes = {}
 	local components = { ... }
 	local archetypes = world.archetypes
@@ -398,88 +397,114 @@ function World.query(world: World, ...: i53): (() -> (number, ...any)) | () -> (
 			indices = indices
 		})
 	end
-	
+
 	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
-	if not compatibleArchetype then 
+	if not lastArchetype then 
 		return noop()
 	end
 	
-	local lastRow 
-	 
-	return function() 
-        local archetype = compatibleArchetype.archetype
-        local indices = compatibleArchetype.indices
-		local row = next(archetype.entities, lastRow)
-		while row == nil do 
-			lastArchetype, compatibleArchetype = next(compatibleArchetypes, lastArchetype)
-			if lastArchetype == nil then 
-				return 
+	local preparedQuery = {}
+	preparedQuery.__index = preparedQuery
+
+	function preparedQuery:without(...) 
+		local components = { ... }
+		for i, component in components do 
+			components[i] = #component
+		end
+		for i = #compatibleArchetypes, 1, - 1 do 
+			local archetype = compatibleArchetypes[i].archetype
+			local shouldRemove = false
+			for _, componentId in components do 
+				if archetype.records[componentId] then 
+					shouldRemove = true
+					break
+				end
 			end
-            archetype = compatibleArchetype.archetype
-			row = next(archetype.entities, row)
-		end
-		lastRow = row
-		
-		local entityId = archetype.entities[row :: number]
-
-		if queryLength == 1 then 
-			return entityId, indices[1][row]
-		elseif queryLength == 2 then 
-			return entityId, indices[1][row], indices[2][row]
-		elseif queryLength == 3 then 
-			return entityId, 
-				indices[1][row],
-				indices[2][row], 
-				indices[3][row]
-		elseif queryLength == 4 then 
-			return entityId, 
-                indices[1][row],
-                indices[2][row], 
-                indices[3][row],
-                indices[4][row]
-		elseif queryLength == 5 then 
-			return entityId, 
-                indices[1][row],
-                indices[2][row], 
-                indices[3][row],
-                indices[4][row]
-		elseif queryLength == 6 then 
-			return entityId, 
-                indices[1][row],
-                indices[2][row], 
-                indices[3][row],
-                indices[4][row],
-                indices[5][row],
-                indices[6][row]
-        elseif queryLength == 7 then 
-			return entityId, 
-                indices[1][row],
-                indices[2][row], 
-                indices[3][row],
-                indices[4][row],
-                indices[5][row],
-                indices[6][row],
-                indices[7][row]
-
-		elseif queryLength == 8 then 
-			return entityId, 
-                indices[1][row],
-                indices[2][row], 
-                indices[3][row],
-                indices[4][row],
-                indices[5][row],
-                indices[6][row],
-                indices[7][row],
-                indices[8][row]
-		end
-
-		local queryOutput = {}
-		for i, componentId in components do 
-			queryOutput[i] = indices[i][row]
-		end
-
-		return entityId, unpack(queryOutput, 1, queryLength)
+			if shouldRemove then 
+				table.remove(compatibleArchetypes, i)
+			end
+		end	
 	end
+
+	local lastRow
+	function preparedQuery:__iter() 
+		return function() 	
+			local archetype = compatibleArchetype.archetype
+			local indices = compatibleArchetype.indices
+			local row = next(archetype.entities, lastRow)
+			while row == nil do 
+				lastArchetype, compatibleArchetype = next(compatibleArchetypes, lastArchetype)
+				if lastArchetype == nil then 
+					return 
+				end
+				archetype = compatibleArchetype.archetype
+				row = next(archetype.entities, row)
+			end
+			lastRow = row
+			
+			local entityId = archetype.entities[row :: number]
+
+			if queryLength == 1 then 
+				return entityId, indices[1][row]
+			elseif queryLength == 2 then 
+				return entityId, indices[1][row], indices[2][row]
+			elseif queryLength == 3 then 
+				return entityId, 
+					indices[1][row],
+					indices[2][row], 
+					indices[3][row]
+			elseif queryLength == 4 then 
+				return entityId, 
+					indices[1][row],
+					indices[2][row], 
+					indices[3][row],
+					indices[4][row]
+			elseif queryLength == 5 then 
+				return entityId, 
+					indices[1][row],
+					indices[2][row], 
+					indices[3][row],
+					indices[4][row]
+			elseif queryLength == 6 then 
+				return entityId, 
+					indices[1][row],
+					indices[2][row], 
+					indices[3][row],
+					indices[4][row],
+					indices[5][row],
+					indices[6][row]
+			elseif queryLength == 7 then 
+				return entityId, 
+					indices[1][row],
+					indices[2][row], 
+					indices[3][row],
+					indices[4][row],
+					indices[5][row],
+					indices[6][row],
+					indices[7][row]
+
+			elseif queryLength == 8 then 
+				return entityId, 
+					indices[1][row],
+					indices[2][row], 
+					indices[3][row],
+					indices[4][row],
+					indices[5][row],
+					indices[6][row],
+					indices[7][row],
+					indices[8][row]
+			end
+
+			local queryOutput = {}
+			for i, componentId in components do 
+				queryOutput[i] = indices[i][row]
+			end
+
+			return entityId, unpack(queryOutput, 1, queryLength)
+		end
+	end
+
+	return setmetatable({}, preparedQuery)
 end
 
 function World.component(world: World) 
