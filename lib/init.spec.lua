@@ -117,7 +117,23 @@ return function()
 				added += 1
 			end        
 			expect(added).to.equal(hm)
-			print(added, hm)
+		end)
+
+		it("should skip iteration", function() 
+			local Position, Velocity = world:entity(), world:entity()
+			print(Position, Velocity)
+			local e = world:entity()
+			print(e)
+			world:set(e, Position, Vector3.zero)
+			world:set(e, Velocity, Vector3.one)
+			local added = 0
+			for i in world:query(Position):without(Velocity) do
+				print(i)
+				added += 1
+			end        
+			expect(added).to.equal(0)
+
+
 		end)
 
 		it("track changes", function() 
