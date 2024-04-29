@@ -19,7 +19,7 @@ local function flip()
 	return math.random() >= 0.5
 end
 
-local hm = 0
+local amountOfCombination = 0
 for i = 1, N do 
 	local entity = world:entity()
 	local combination = ""
@@ -64,22 +64,11 @@ for i = 1, N do
 		and combination:find("4")
 		and combination:find("6")
 	then 
-		hm += 1
+		amountOfCombination += 1
 	end
 	archetypes[combination] = true
 end
 
-
-local arch = 0
-for combination in archetypes do 
-	if combination:find("2") 
-		and combination:find("3") 
-		and combination:find("4")
-		and combination:find("6")
-	then 
-		arch += 1
-	end
-end
 return function()
 	describe("World", function()
 		it("should add component", function()
@@ -111,29 +100,45 @@ return function()
 			expect(world:get(id, A)).to.equal(false)
 
 		end)
-		it("query", function()
+		it("should query correct number of compatible archetypes", function()
 			local added = 0
 			for _ in world:query(B, C, D, F) do
 				added += 1
 			end        
-			expect(added).to.equal(hm)
+			expect(added).to.equal(amountOfCombination)
+		end)
+		it("should not query poisoned players", function() 
+			local Player = world:entity()
+			local Health = world:entity()
+			local Poison = world:entity()
+
+			local one = world:entity()
+			world:set(one, Player, { name = "alice"})
+			world:set(one, Health, 100)
+			world:set(one, Poison)
+
+			local two = world:entity()
+			world:set(two, Player, { name = "bob"})
+			world:set(two, Health, 90)
+
+			local withoutCount = 0
+			for _id, _player in world:query(Player):without(Poison) do
+				withoutCount += 1
+			end
+
+			expect(withoutCount).to.equal(1)
 		end)
 
 		it("should skip iteration", function() 
 			local Position, Velocity = world:entity(), world:entity()
-			print(Position, Velocity)
 			local e = world:entity()
-			print(e)
 			world:set(e, Position, Vector3.zero)
 			world:set(e, Velocity, Vector3.one)
 			local added = 0
 			for i in world:query(Position):without(Velocity) do
-				print(i)
 				added += 1
 			end        
 			expect(added).to.equal(0)
-
-
 		end)
 
 		it("track changes", function() 
