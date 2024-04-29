@@ -23,9 +23,6 @@
         "benches": {
           "$path": "benches"
         },
-        "rewrite": {
-          "$path": "matterRewrite"
-        },
         "mirror": {
           "$path": "mirror"
         }

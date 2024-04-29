@@ -408,10 +408,7 @@ function World.query(world: World, ...: i53): any
 
 	function preparedQuery:without(...) 
 		local components = { ... }
-		for i, component in components do 
-			components[i] = #component
-		end
-		for i = #compatibleArchetypes, 1, - 1 do 
+		for i = #compatibleArchetypes, 1, -1 do 
 			local archetype = compatibleArchetypes[i].archetype
 			local shouldRemove = false
 			for _, componentId in components do 
@@ -424,9 +421,17 @@ function World.query(world: World, ...: i53): any
 				table.remove(compatibleArchetypes, i)
 			end
 		end	
+
+		lastArchetype, compatibleArchetype = next(compatibleArchetypes)
+		if not lastArchetype then 
+			return noop()
+		end
+		
+		return self
 	end
 
 	local lastRow
+
 	function preparedQuery:__iter() 
 		return function() 	
 			local archetype = compatibleArchetype.archetype
