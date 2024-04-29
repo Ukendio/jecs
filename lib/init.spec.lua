@@ -82,6 +82,7 @@ return function()
 			expect(world:get(id, B)).to.equal(1)
 			expect(world:get(id1, A)).to.equal("hello")
 		end)
+
 		it("should remove component", function() 
 			local id = world:entity()
 			world:set(id, A, true)
@@ -90,6 +91,7 @@ return function()
 
 			expect(world:get(id, A)).to.equal(nil)
 		end)
+
 		it("should override component data", function() 
 		
 			local id = world:entity()
@@ -100,6 +102,23 @@ return function()
 			expect(world:get(id, A)).to.equal(false)
 
 		end)
+
+		it("should not query a removed component", function() 
+			local Tag = world:entity()
+			local AnotherTag = world:entity()
+
+			local entity = world:entity()
+			world:set(entity, Tag)
+			world:set(entity, AnotherTag)
+			world:remove(entity, AnotherTag)
+
+			local added = 0
+			for e, t, a in world:query(Tag, AnotherTag) do 
+				added += 1
+			end
+			expect(added).to.equal(0)
+		end)
+
 		it("should query correct number of compatible archetypes", function()
 			local added = 0
 			for _ in world:query(B, C, D, F) do
@@ -107,6 +126,7 @@ return function()
 			end        
 			expect(added).to.equal(amountOfCombination)
 		end)
+
 		it("should not query poisoned players", function() 
 			local Player = world:entity()
 			local Health = world:entity()
