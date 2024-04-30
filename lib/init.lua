@@ -272,15 +272,21 @@ function World.set(world: World, entityId: i53, componentId: i53, data: unknown)
 	local sourceArchetype = record.archetype
 	local destinationArchetype = archetypeTraverseAdd(world, componentId, sourceArchetype)
 
-	if sourceArchetype and not (sourceArchetype == destinationArchetype) then
+	if sourceArchetype == destinationArchetype then 
+		local archetypeRecord = destinationArchetype.records[componentId]
+		destinationArchetype.columns[archetypeRecord][record.row] = data
+		return
+	end
+
+	if sourceArchetype then
 		moveEntity(world.entityIndex, entityId, record, destinationArchetype)
 	else
-		-- if it has any components, then it wont be the root archetype
 		if #destinationArchetype.types > 0 then
 			newEntity(entityId, record, destinationArchetype)
 			onNotifyAdd(world, destinationArchetype, sourceArchetype, record.row, { componentId })
 		end
 	end
+
 	local archetypeRecord = destinationArchetype.records[componentId]
 	destinationArchetype.columns[archetypeRecord][record.row] = data
 end
@@ -433,6 +439,7 @@ function World.query(world: World, ...: i53): any
 	end
 
 	local lastRow
+	local queryOutput = {}
 
 	function preparedQuery:__iter() 
 		return function() 	
@@ -502,7 +509,6 @@ function World.query(world: World, ...: i53): any
 					indices[8][row]
 			end
 
-			local queryOutput = {}
 			for i, componentId in components do 
 				queryOutput[i] = indices[i][row]
 			end
