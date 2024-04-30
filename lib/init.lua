@@ -194,7 +194,7 @@ local function onNotifyAdd(world, archetype, otherArchetype, row: number, added:
 end
 
 
-type World = typeof(World.new())
+export type World = typeof(World.new())
 
 local function ensureArchetype(world: World, types, prev)
 	if #types < 1 then
@@ -360,7 +360,7 @@ local function getSmallestMap(componentIndex, components)
 		end
 	end
 	
-	return s.sparse
+	return s and s.sparse or nil
 end
 
 function World.query(world: World, ...: i53): any
