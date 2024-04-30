@@ -47,5 +47,9 @@ assert(world:get(opponentId, Health) == 92)
 
 ```
 125 archetypes, 4 random components queried.
-![Comparison](image-3.png)
+![Queries](image-3.png)
 Can be found under /benches/query.lua
+
+Inserting 8 components to an entity and updating them over 50 times.
+![Insertions](image-4.png)
+Can be found under /benches/insertions.lua
