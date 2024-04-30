@@ -360,7 +360,7 @@ local function getSmallestMap(componentIndex, components)
 		end
 	end
 	
-	return s and s.sparse or nil
+	return s.sparse
 end
 
 function World.query(world: World, ...: i53): any
