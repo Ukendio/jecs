@@ -84,12 +84,20 @@ return function()
 		end)
 
 		it("should remove component", function() 
-			local id = world:entity()
-			world:set(id, A, true)
-			world:set(id, B, 1000)
-			world:remove(id, A, false)
+			local Tag = world:entity()
+			local entities = {}
+			for i = 1, 10 do 
+				local entity = world:entity()
+				entities[i] = entity
+				world:set(entity, Tag)
+			end
 
-			expect(world:get(id, A)).to.equal(nil)
+			for i = 1, 10 do 
+				local entity = entities[i]
+				expect(world:get(entity, Tag)).to.equal(nil)
+				world:remove(entity, Tag)
+			end
+			
 		end)
 
 		it("should override component data", function() 
