@@ -198,7 +198,7 @@ export type World = typeof(World.new())
 
 local function ensureArchetype(world: World, types, prev)
 	if #types < 1 then
-		
+		return world.ROOT_ARCHETYPE
 	end
 	local ty = hash(types)
 	local archetype = world.archetypeIndex[ty]
@@ -350,31 +350,31 @@ local function noop(): any
 	end
 end
 
-local function getSmallestMap(componentIndex, components) 
-	local s: any
-
-	for i, componentId in components do 
-		local map = componentIndex[componentId]
-		if s == nil or map.size < s.size then 
-			s = map	
-		end
-	end
-	
-	return s.sparse
-end
-
 function World.query(world: World, ...: i53): any
 	local compatibleArchetypes = {}
 	local components = { ... }
 	local archetypes = world.archetypes
 	local queryLength = #components
-	local firstArchetypeMap = getSmallestMap(world.componentIndex, components)
 
-	if not firstArchetypeMap then 
-		return noop()
+	if queryLength == 0 then 
+		error("Missing components")
 	end
 
-	for id in firstArchetypeMap do
+	local firstArchetypeMap
+	local componentIndex = world.componentIndex
+
+	for i, componentId in components do 
+		local map = componentIndex[componentId]
+		if not map then 
+			error(tostring(componentId).." has not been added to an entity")
+		end
+
+		if firstArchetypeMap == nil or map.size < firstArchetypeMap.size then 
+			firstArchetypeMap = map
+		end
+	end
+
+	for id in firstArchetypeMap.sparse do
 		local archetype = archetypes[id]
         local columns = archetype.columns
 		local archetypeRecords = archetype.records
