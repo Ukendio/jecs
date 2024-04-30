@@ -159,7 +159,8 @@ function World.new()
 		archetypes = {},
 		archetypeIndex = {},
         ROOT_ARCHETYPE = (nil :: any) :: Archetype,
-        nextId = 0,
+        nextEntityId = 0,
+		nextComponentId = 0,
         nextArchetypeId = 0,
 		hooks = {
 			[ON_ADD] = {}
@@ -521,16 +522,17 @@ function World.query(world: World, ...: i53): any
 end
 
 function World.component(world: World) 
-	local id = world.nextId + 1
-	if id > HI_COMPONENT_ID then 
+	local componentId = world.nextComponentId + 1	
+	if componentId > HI_COMPONENT_ID then 
 		error("Too many components")	
 	end
-	return id
+	world.nextComponentId = componentId
+	return componentId
 end
 
 function World.entity(world: World)
-    world.nextId += 1
-	return world.nextId + REST
+	world.nextEntityId += 1
+	return world.nextEntityId + REST
 end
 
 function World.observer(world: World, ...)

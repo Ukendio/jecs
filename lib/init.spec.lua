@@ -157,6 +157,13 @@ return function()
 			expect(withoutCount).to.equal(1)
 		end)
 
+		it("should allow calling world:entity before world:component", function() 
+			for _ = 1, 256 do 
+				world:entity()
+			end	
+			expect(world:component()).to.be.ok()
+		end)
+
 		it("should skip iteration", function() 
 			local Position, Velocity = world:entity(), world:entity()
 			local e = world:entity()
