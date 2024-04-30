@@ -70,11 +70,13 @@ local function transitionArchetype(
 		column[#column] = nil
 	end
 
-	destinationEntities[destinationRow] = sourceEntities[sourceRow] 
-	local moveAway = #sourceEntities
-	sourceEntities[sourceRow] = sourceEntities[moveAway]
-	sourceEntities[moveAway] = nil
-	entityIndex[destinationEntities[destinationRow]].row = sourceRow
+	destinationEntities[destinationRow] = sourceEntities[sourceRow]
+	entityIndex[sourceEntities[sourceRow]].row = destinationRow
+
+	local movedAway = #sourceEntities
+	sourceEntities[sourceRow] = sourceEntities[movedAway]
+	entityIndex[sourceEntities[movedAway]].row = sourceRow
+	sourceEntities[movedAway] = nil
 end
 
 local function archetypeAppend(entity: i53, archetype: Archetype): i24
