@@ -361,7 +361,7 @@ local EmptyQuery = {
 }
 EmptyQuery.__index = EmptyQuery
 
-type Query = typeof(setmetatable({}, EmptyQuery))
+export type Query = typeof(setmetatable({}, EmptyQuery))
 
 function World.query(world: World, ...: i53): Query
 	local compatibleArchetypes = {}
