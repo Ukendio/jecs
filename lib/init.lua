@@ -350,14 +350,20 @@ function World.get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53
 	end
 end
 
-
-
-local function noop(): any
-	return function() 
-	end
+local function noop(self: Query, ...: i53): () -> (number, ...any)
+	return function()
+	end :: any
 end
 
-function World.query(world: World, ...: i53): any
+local EmptyQuery = {
+	__iter = noop,
+	without = noop
+}
+EmptyQuery.__index = EmptyQuery
+
+type Query = typeof(setmetatable({}, EmptyQuery))
+
+function World.query(world: World, ...: i53): Query
 	local compatibleArchetypes = {}
 	local components = { ... }
 	local archetypes = world.archetypes
@@ -372,8 +378,8 @@ function World.query(world: World, ...: i53): any
 
 	for i, componentId in components do 
 		local map = componentIndex[componentId]
-		if not map then 
-			error(tostring(componentId).." has not been added to an entity")
+		if not map then
+			return setmetatable({}, EmptyQuery)
 		end
 
 		if firstArchetypeMap == nil or map.size < firstArchetypeMap.size then 
@@ -409,7 +415,7 @@ function World.query(world: World, ...: i53): any
 
 	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
 	if not lastArchetype then 
-		return noop()
+		return setmetatable({}, EmptyQuery)
 	end
 	
 	local preparedQuery = {}
@@ -433,7 +439,7 @@ function World.query(world: World, ...: i53): any
 
 		lastArchetype, compatibleArchetype = next(compatibleArchetypes)
 		if not lastArchetype then 
-			return noop()
+			return setmetatable({}, EmptyQuery)
 		end
 		
 		return self
@@ -518,7 +524,7 @@ function World.query(world: World, ...: i53): any
 		end
 	end
 
-	return setmetatable({}, preparedQuery)
+	return setmetatable({}, preparedQuery) :: any
 end
 
 function World.component(world: World) 
