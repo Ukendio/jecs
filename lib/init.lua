@@ -194,7 +194,7 @@ local function onNotifyAdd(world, archetype, otherArchetype, row: number, added:
 end
 
 
-type World = typeof(World.new())
+export type World = typeof(World.new())
 
 local function ensureArchetype(world: World, types, prev)
 	if #types < 1 then
