@@ -525,7 +525,8 @@ function World.component(world: World)
 	if id > HI_COMPONENT_ID then 
 		error("Too many components")	
 	end
-	return id
+	world.nextId = id
+	return id + REST
 end
 
 function World.entity(world: World)
