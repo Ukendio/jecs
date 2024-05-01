@@ -360,8 +360,9 @@ local EmptyQuery = {
 	without = noop
 }
 EmptyQuery.__index = EmptyQuery
+setmetatable(EmptyQuery, EmptyQuery)
 
-export type Query = typeof(setmetatable({}, EmptyQuery))
+export type Query = typeof(EmptyQuery)
 
 function World.query(world: World, ...: i53): Query
 	local compatibleArchetypes = {}
@@ -379,7 +380,7 @@ function World.query(world: World, ...: i53): Query
 	for i, componentId in components do 
 		local map = componentIndex[componentId]
 		if not map then
-			return setmetatable({}, EmptyQuery)
+			return EmptyQuery
 		end
 
 		if firstArchetypeMap == nil or map.size < firstArchetypeMap.size then 
@@ -415,7 +416,7 @@ function World.query(world: World, ...: i53): Query
 
 	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
 	if not lastArchetype then 
-		return setmetatable({}, EmptyQuery)
+		return EmptyQuery
 	end
 	
 	local preparedQuery = {}
@@ -439,7 +440,7 @@ function World.query(world: World, ...: i53): Query
 
 		lastArchetype, compatibleArchetype = next(compatibleArchetypes)
 		if not lastArchetype then 
-			return setmetatable({}, EmptyQuery)
+			return EmptyQuery
 		end
 		
 		return self
