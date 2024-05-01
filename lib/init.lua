@@ -406,11 +406,7 @@ function World.query(world: World, ...: i53): Query
 		if skip then 
 			continue
 		end
-
-		table.insert(compatibleArchetypes, {
-			archetype = archetype,
-			indices = indices
-		})
+		table.insert(compatibleArchetypes, { archetype, indices })
 	end
 
 	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
@@ -424,7 +420,7 @@ function World.query(world: World, ...: i53): Query
 	function preparedQuery:without(...) 
 		local components = { ... }
 		for i = #compatibleArchetypes, 1, -1 do 
-			local archetype = compatibleArchetypes[i].archetype
+			local archetype = compatibleArchetypes[i][1]
 			local shouldRemove = false
 			for _, componentId in components do 
 				if archetype.records[componentId] then 
@@ -451,21 +447,21 @@ function World.query(world: World, ...: i53): Query
 
 	function preparedQuery:__iter() 
 		return function() 	
-			local archetype = compatibleArchetype.archetype
-			local tr = compatibleArchetype.indices
+			local archetype = compatibleArchetype[1]
 			local row = next(archetype.entities, lastRow)
 			while row == nil do 
 				lastArchetype, compatibleArchetype = next(compatibleArchetypes, lastArchetype)
 				if lastArchetype == nil then 
 					return 
 				end
-				archetype = compatibleArchetype.archetype
+				archetype = compatibleArchetype[1]
 				row = next(archetype.entities, row)
 			end
 			lastRow = row
 			
 			local entityId = archetype.entities[row :: number]
 			local columns = archetype.columns
+			local tr = compatibleArchetype[2]
 
 			if queryLength == 1 then 
 				return entityId, columns[tr[1]][row]

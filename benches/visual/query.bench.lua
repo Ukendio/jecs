@@ -170,9 +170,9 @@ return {
 	end,	
 
 	Functions = {
-		Matter = function() 
+		Mirror = function() 
 			local matched = 0
-			for entityId, firstComponent in newWorld:query(A1, A4, A6, A8) do
+			for entityId, firstComponent in mcs:query(E1, E4, E6, E8) do
 				matched += 1
 			end
 		end,

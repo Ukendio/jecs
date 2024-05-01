@@ -8,7 +8,7 @@ local function TITLE(title: string)
     print(testkit.color.white(title))
 end
 
-local jecs = require("../lib/init")
+local jecs = require("../mirror/init")
 local ecs = jecs.World.new()
 
 
