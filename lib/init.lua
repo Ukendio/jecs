@@ -389,7 +389,6 @@ function World.query(world: World, ...: i53): Query
 
 	for id in firstArchetypeMap.sparse do
 		local archetype = archetypes[id]
-        local columns = archetype.columns
 		local archetypeRecords = archetype.records
         local indices = {}
 		local skip = false
@@ -400,7 +399,7 @@ function World.query(world: World, ...: i53): Query
 				skip = true
 				break
 			end
-			indices[i] = columns[index]
+			indices[i] = archetypeRecords[componentId]
 		end
 
 		if skip then 
@@ -448,10 +447,11 @@ function World.query(world: World, ...: i53): Query
 	local lastRow
 	local queryOutput = {}
 
+
 	function preparedQuery:__iter() 
 		return function() 	
 			local archetype = compatibleArchetype.archetype
-			local indices = compatibleArchetype.indices
+			local tr = compatibleArchetype.indices
 			local row = next(archetype.entities, lastRow)
 			while row == nil do 
 				lastArchetype, compatibleArchetype = next(compatibleArchetypes, lastArchetype)
@@ -464,60 +464,61 @@ function World.query(world: World, ...: i53): Query
 			lastRow = row
 			
 			local entityId = archetype.entities[row :: number]
+			local columns = archetype.columns
 
 			if queryLength == 1 then 
-				return entityId, indices[1][row]
+				return entityId, columns[tr[1]][row]
 			elseif queryLength == 2 then 
-				return entityId, indices[1][row], indices[2][row]
+				return entityId, columns[tr[1]][row], columns[tr[2]][row]
 			elseif queryLength == 3 then 
 				return entityId, 
-					indices[1][row],
-					indices[2][row], 
-					indices[3][row]
+					columns[tr[1]][row],
+					columns[tr[2]][row],
+					columns[tr[3]][row]
 			elseif queryLength == 4 then 
 				return entityId, 
-					indices[1][row],
-					indices[2][row], 
-					indices[3][row],
-					indices[4][row]
+					columns[tr[1]][row],
+					columns[tr[2]][row],
+					columns[tr[3]][row],
+					columns[tr[4]][row]
 			elseif queryLength == 5 then 
 				return entityId, 
-					indices[1][row],
-					indices[2][row], 
-					indices[3][row],
-					indices[4][row]
+					columns[tr[1]][row],
+					columns[tr[2]][row],
+					columns[tr[3]][row],
+					columns[tr[4]][row],
+					columns[tr[5]][row]
 			elseif queryLength == 6 then 
 				return entityId, 
-					indices[1][row],
-					indices[2][row], 
-					indices[3][row],
-					indices[4][row],
-					indices[5][row],
-					indices[6][row]
+					columns[tr[1]][row],
+					columns[tr[2]][row],
+					columns[tr[3]][row],
+					columns[tr[4]][row],
+					columns[tr[5]][row],
+					columns[tr[6]][row]
 			elseif queryLength == 7 then 
 				return entityId, 
-					indices[1][row],
-					indices[2][row], 
-					indices[3][row],
-					indices[4][row],
-					indices[5][row],
-					indices[6][row],
-					indices[7][row]
-
+					columns[tr[1]][row],
+					columns[tr[2]][row],
+					columns[tr[3]][row],
+					columns[tr[4]][row],
+					columns[tr[5]][row],
+					columns[tr[6]][row],
+					columns[tr[7]][row]
 			elseif queryLength == 8 then 
 				return entityId, 
-					indices[1][row],
-					indices[2][row], 
-					indices[3][row],
-					indices[4][row],
-					indices[5][row],
-					indices[6][row],
-					indices[7][row],
-					indices[8][row]
+					columns[tr[1]][row],
+					columns[tr[2]][row],
+					columns[tr[3]][row],
+					columns[tr[4]][row],
+					columns[tr[5]][row],
+					columns[tr[6]][row],
+					columns[tr[7]][row],
+					columns[tr[8]][row]
 			end
 
-			for i, componentId in components do 
-				queryOutput[i] = indices[i][row]
+			for i in components do 
+				queryOutput[i] = tr[i][row]
 			end
 
 			return entityId, unpack(queryOutput, 1, queryLength)
