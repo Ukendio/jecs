@@ -51,31 +51,38 @@ local REST = HI_COMPONENT_ID + 4
 
 local function transitionArchetype(
 	entityIndex: EntityIndex,
-	destinationArchetype: Archetype,
+	to: Archetype,
 	destinationRow: i24,
-	sourceArchetype: Archetype,
+	from: Archetype,
 	sourceRow: i24
 )
-	local columns = sourceArchetype.columns
-	local sourceEntities = sourceArchetype.entities
-	local destinationEntities = destinationArchetype.entities
-	local destinationColumns = destinationArchetype.columns
+	local columns = from.columns
+	local sourceEntities = from.entities
+	local destinationEntities = to.entities
+	local destinationColumns = to.columns
+	local tr = to.records
+	local types = from.types
 
-	for componentId, column in columns do
-		local targetColumn = destinationColumns[componentId]
+	for i, column in columns do
+		local targetColumn = destinationColumns[tr[types[i]]]
 		if targetColumn then 
 			targetColumn[destinationRow] = column[sourceRow]
 		end
-		column[sourceRow] = column[#column]
-		column[#column] = nil
+		if sourceRow ~= #column then 
+			column[sourceRow] = column[#column]
+			column[#column] = nil
+		end
 	end
 
 	destinationEntities[destinationRow] = sourceEntities[sourceRow]
 	entityIndex[sourceEntities[sourceRow]].row = destinationRow
 
 	local movedAway = #sourceEntities
-	sourceEntities[sourceRow] = sourceEntities[movedAway]
-	entityIndex[sourceEntities[movedAway]].row = sourceRow
+	if sourceRow ~= movedAway then 
+		sourceEntities[sourceRow] = sourceEntities[movedAway]
+		entityIndex[sourceEntities[movedAway]].row = sourceRow
+	end
+	
 	sourceEntities[movedAway] = nil
 end
 
@@ -145,7 +152,9 @@ local function archetypeOf(world: World, types: { i24 }, prev: Archetype?): Arch
 	}
 	world.archetypeIndex[ty] = archetype
 	world.archetypes[id] = archetype
-	createArchetypeRecords(world.componentIndex, archetype, prev)
+	if #types > 0 then 
+		createArchetypeRecords(world.componentIndex, archetype, prev)
+	end
 
 	return archetype
 end
@@ -180,8 +189,6 @@ local function emit(world, eventDescription)
 	})
 end
 
-
-
 local function onNotifyAdd(world, archetype, otherArchetype, row: number, added: Ty) 
 	if #added > 0 then 
 		emit(world, {
@@ -194,13 +201,13 @@ local function onNotifyAdd(world, archetype, otherArchetype, row: number, added:
 	end
 end
 
-
 export type World = typeof(World.new())
 
 local function ensureArchetype(world: World, types, prev)
 	if #types < 1 then
 		return world.ROOT_ARCHETYPE
 	end
+	
 	local ty = hash(types)
 	local archetype = world.archetypeIndex[ty]
 	if archetype then
@@ -270,26 +277,25 @@ end
 
 function World.set(world: World, entityId: i53, componentId: i53, data: unknown) 
 	local record = ensureRecord(world.entityIndex, entityId)
-	local sourceArchetype = record.archetype
-	local destinationArchetype = archetypeTraverseAdd(world, componentId, sourceArchetype)
+	local from = record.archetype
+	local to = archetypeTraverseAdd(world, componentId, from)
 
-	if sourceArchetype == destinationArchetype then 
-		local archetypeRecord = destinationArchetype.records[componentId]
-		destinationArchetype.columns[archetypeRecord][record.row] = data
+	if from == to then 
+		local archetypeRecord = to.records[componentId]
+		from.columns[archetypeRecord][record.row] = data
 		return
 	end
-
-	if sourceArchetype then
-		moveEntity(world.entityIndex, entityId, record, destinationArchetype)
+	if from then
+		moveEntity(world.entityIndex, entityId, record, to)
 	else
-		if #destinationArchetype.types > 0 then
-			newEntity(entityId, record, destinationArchetype)
-			onNotifyAdd(world, destinationArchetype, sourceArchetype, record.row, { componentId })
+		if #to.types > 0 then
+			newEntity(entityId, record, to)
+			onNotifyAdd(world, to, from, record.row, { componentId })
 		end
 	end
 
-	local archetypeRecord = destinationArchetype.records[componentId]
-	destinationArchetype.columns[archetypeRecord][record.row] = data
+	local archetypeRecord = to.records[componentId]
+	to.columns[archetypeRecord][record.row] = data
 end
 
 local function archetypeTraverseRemove(world: World, componentId: i53, archetype: Archetype?): Archetype
@@ -462,7 +468,7 @@ function World.query(world: World, ...: i53): Query
 			local entityId = archetype.entities[row :: number]
 			local columns = archetype.columns
 			local tr = compatibleArchetype[2]
-
+		
 			if queryLength == 1 then 
 				return entityId, columns[tr[1]][row]
 			elseif queryLength == 2 then 
