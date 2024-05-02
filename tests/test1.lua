@@ -85,7 +85,7 @@ TEST("world:query", function()
     do CASE "should allow setting components in arbitrary order" 
         local world = jecs.World.new()
 
-        local Health = world:component()
+        local Health = world:entity()
         local Poison = world:component()
 
         local id = world:entity()
@@ -93,7 +93,21 @@ TEST("world:query", function()
         world:set(id, Health, 50)
 
         CHECK(world:get(id, Poison) == 5)
+    end
 
+    do CASE "Should allow deleting components" 
+        local world = jecs.World.new()
+
+        local Health = world:entity()
+        local Poison = world:component()
+
+        local id = world:entity()
+        world:set(id, Poison, 5)
+        world:set(id, Health, 50)
+        world:delete(id)
+
+        CHECK(world:get(id, Poison) == nil)
+        CHECK(world:get(id, Health) == nil)
     end
 
 end)
