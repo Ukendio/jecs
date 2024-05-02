@@ -64,37 +64,37 @@ do TITLE (testkit.color.white_underline("Jecs query"))
 
             if flip() then 
                 combination ..= "B"
-                ecs:set(entity, D2, true)
+                ecs:set(entity, D2, {value = true})
             end
             if flip() then 
                 combination ..= "C"
-                ecs:set(entity, D3, true)
+                ecs:set(entity, D3, { value = true })
             end
             if flip() then 
                 combination ..= "D"
-                ecs:set(entity, D4, true)
+                ecs:set(entity, D4, { value = true})
             end
             if flip() then 
                 combination ..= "E"
-                ecs:set(entity, D5, true)
+                ecs:set(entity, D5, { value = true})
             end
             if flip() then 
                 combination ..= "F"
-                ecs:set(entity, D6, true)
+                ecs:set(entity, D6, {value = true})
             end
             if flip() then 
                 combination ..= "G"
-                ecs:set(entity, D7, true)
+                ecs:set(entity, D7, { value = true})
             end
             if flip() then 
                 combination ..= "H"
-                ecs:set(entity, D8, true)
+                ecs:set(entity, D8, {value = true})
 
             end
 
             if #combination == 7 then 
                 added += 1
-                ecs:set(entity, D1, true)
+                ecs:set(entity, D1, { value = true})
             end
 			archetypes[combination] = true
         end
