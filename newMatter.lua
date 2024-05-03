@@ -265,9 +265,9 @@ local topoRuntime = {
 -- It should not be accessible through indexing into a component instance directly.
 local DIAGNOSTIC_COMPONENT_MARKER = {}
 
+local nextId = 0
 local function newComponent(name, defaultData)
 	name = name or debug.info(2, "s") .. "@" .. debug.info(2, "l")
-
 	assert(
 		defaultData == nil or type(defaultData) == "table",
 		"if component default data is specified, it must be a table"
@@ -320,12 +320,18 @@ local function newComponent(name, defaultData)
 		return patch
 	end
 
+	nextId += 1
+	local id = nextId
+
 	setmetatable(component, {
 		__call = function(_, ...)
 			return component.new(...)
 		end,
 		__tostring = function()
 			return name
+		end,
+		__len = function()
+			return id
 		end,
 		[DIAGNOSTIC_COMPONENT_MARKER] = true,
 	})
