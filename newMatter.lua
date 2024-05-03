@@ -666,17 +666,11 @@ end
 
 local function get(componentIndex: ComponentIndex, record: Record, componentId: i24): ComponentInstance?
 	local archetype = record.archetype
-	local map = componentIndex[componentId]
-	if map == nil then
-		return nil
-	end
-
 	if archetype == nil then
-		-- TODO... what?
 		return nil
 	end
 
-	local archetypeRecord = map.sparse[archetype.id]
+	local archetypeRecord = archetype.records[componentId]
 	if not archetypeRecord then
 		return nil
 	end
@@ -1414,7 +1408,7 @@ function World.queryChanged(world: World, componentToTrack, ...: nil)
 		return
 	end
 end
-
+																								
 return {
     World = World,
     component = newComponent
