@@ -1,5 +1,10 @@
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE-APACHE)
-[![Wally](https://img.shields.io/github/v/tag/ukendio/jecs)](https://wally.run/package/ukendio/jecs)
+
+<p align="center">
+  <img src="shorterbanner.png" />
+</p>
+
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache-blue.svg?style=for-the-badge)](LICENSE-APACHE)
+[![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs)
 
 Just an ECS
 
