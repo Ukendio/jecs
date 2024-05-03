@@ -43,57 +43,6 @@ local function values(dictionary)
 	return valuesList
 end
 
-local valueIds = {}
-local nextValueId = 0
-local compatibilityCache = {}
-local archetypeCache = {}
-
-local function getValueId(value)
-	local valueId = valueIds[value]
-	if valueId == nil then
-		valueIds[value] = nextValueId
-		valueId = nextValueId
-		nextValueId += 1
-	end
-
-	return valueId
-end
-
-function archetypeOf(...)
-	local length = select("#", ...)
-
-	local currentNode = archetypeCache
-
-	for i = 1, length do
-		local nextNode = currentNode[select(i, ...)]
-
-		if not nextNode then
-			nextNode = {}
-			currentNode[select(i, ...)] = nextNode
-		end
-
-		currentNode = nextNode
-	end
-
-	if currentNode._archetype then
-		return currentNode._archetype
-	end
-
-	local list = table.create(length)
-
-	for i = 1, length do
-		list[i] = getValueId(select(i, ...))
-	end
-
-	table.sort(list)
-
-	local archetype = table.concat(list, "_")
-
-	currentNode._archetype = archetype
-
-	return archetype
-end
-
 local stack = {}
 
 local function newStackFrame(node)
@@ -717,15 +666,11 @@ end
 
 local function get(componentIndex: ComponentIndex, record: Record, componentId: i24): ComponentInstance?
 	local archetype = record.archetype
-    if not archetype then 
-        return
-    end
-	local map = componentIndex[componentId]
-	if map == nil then
+	if archetype == nil then
 		return nil
 	end
 
-	local archetypeRecord = map.sparse[archetype.id]
+	local archetypeRecord = archetype.records[componentId]
 	if not archetypeRecord then
 		return nil
 	end
@@ -1272,7 +1217,8 @@ end
 
 	@param ... Component -- The component types to query. Only entities with *all* of these components will be returned.
 	@return QueryResult -- See [QueryResult](/api/QueryResult) docs.
-]=]function World.query(world: World, ...: Component): any
+]=]
+function World.query(world: World, ...: Component): any
 	local compatibleArchetypes = {}
 	local components = { ... }
 	local archetypes = world.archetypes
@@ -1280,9 +1226,7 @@ end
 	local a: any, b: any, c: any, d: any, e: any = ...
 
 	if queryLength == 0 then
-		-- TODO:
-		-- return noop query
-		warn("TODO noop query")
+		return emptyQueryResult
 	end
 
 	if queryLength == 1 then
@@ -1380,10 +1324,7 @@ end
 	for _, componentId in (components :: any) :: { number } do
 		local map = componentIndex[componentId]
 		if not map then
-			-- TODO:
-			-- see what upstream does in this case
-			-- currently replicating jecs
-			error(tostring(componentId) .. " has not been added to an entity")
+			return emptyQueryResult
 		end
 
 		if firstArchetypeMap == nil or map.size < firstArchetypeMap.size then
@@ -1407,197 +1348,7 @@ end
 		end
 	end
 
-	-- Only want to include archetype selection?
-
-	local lastArchetype, archetype = next(compatibleArchetypes)
-	if not lastArchetype then
-		return noop()
-	end
-
-	local lastRow
-	local queryOutput = {}
-	local function iterate()
-		local row = next(archetype.entities, lastRow)
-		while row == nil do
-			lastArchetype, archetype = next(compatibleArchetypes, lastArchetype)
-			if lastArchetype == nil then
-				return
-			end
-			row = next(archetype.entities, row)
-		end
-
-		lastRow = row
-
-		local columns = archetype.columns
-		local entityId = archetype.entities[row :: number]
-		local archetypeRecords = archetype.records
-
-		if queryLength == 1 then
-			return entityId, columns[archetypeRecords[a]][row]
-		elseif queryLength == 2 then
-			return entityId, columns[archetypeRecords[a]][row], columns[archetypeRecords[b]][row]
-		elseif queryLength == 3 then
-			return entityId,
-				columns[archetypeRecords[a]][row],
-				columns[archetypeRecords[b]][row],
-				columns[archetypeRecords[c]][row]
-		elseif queryLength == 4 then
-			return entityId,
-				columns[archetypeRecords[a]][row],
-				columns[archetypeRecords[b]][row],
-				columns[archetypeRecords[c]][row],
-				columns[archetypeRecords[d]][row]
-		elseif queryLength == 5 then
-			return entityId,
-				columns[archetypeRecords[a]][row],
-				columns[archetypeRecords[b]][row],
-				columns[archetypeRecords[c]][row],
-				columns[archetypeRecords[d]][row],
-				columns[archetypeRecords[e]][row]
-		end
-
-		for i, componentId in components do
-			queryOutput[i] = columns[archetypeRecords[componentId]][row]
-		end
-
-		return entityId, unpack(queryOutput, 1, queryLength)
-	end
-
-	--[=[
-	@class QueryResult
-
-	A result from the [`World:query`](/api/World#query) function.
-
-	Calling the table or the `next` method allows iteration over the results. Once all results have been returned, the
-	QueryResult is exhausted and is no longer useful.
-
-	```lua
-	for id, enemy, charge, model in world:query(Enemy, Charge, Model) do
-		-- Do something
-	end
-	```
-	]=]
-	local QueryResult = {}
-	QueryResult.__index = QueryResult
-
-	function QueryResult:__call()
-		return iterate()
-	end
-
-	function QueryResult:__iter()
-		return function()
-			return iterate()
-		end
-	end
-
-	--[=[
-	Returns the next set of values from the query result. Once all results have been returned, the
-	QueryResult is exhausted and is no longer useful.
-
-	:::info
-	This function is equivalent to calling the QueryResult as a function. When used in a for loop, this is implicitly
-	done by the language itself.
-	:::
-
-	```lua
-	-- Using world:query in this position will make Lua invoke the table as a function. This is conventional.
-	for id, enemy, charge, model in world:query(Enemy, Charge, Model) do
-		-- Do something
-	end
-	```
-
-	If you wanted to iterate over the QueryResult without a for loop, it's recommended that you call `next` directly
-	instead of calling the QueryResult as a function.
-	```lua
-	local id, enemy, charge, model = world:query(Enemy, Charge, Model):next()
-	local id, enemy, charge, model = world:query(Enemy, Charge, Model)() -- Possible, but unconventional
-	```
-
-	@return id -- Entity ID
-	@return ...ComponentInstance -- The requested component values
-	]=]
-	function QueryResult:next()
-		return iterate()
-	end
-
-	local Snapshot = {
-		__iter = function(self): any
-			local i = 0
-			return function()
-				i += 1
-
-				local data = self[i]
-
-				if data then
-					return unpack(data, 1, data.n)
-				end
-
-				return
-			end
-		end,
-	}
-
-	function QueryResult:snapshot()
-		local list = setmetatable({}, Snapshot) :: any
-
-		local function iter()
-			--local entry = table.pack(iterate())
-			--return if #entry == 0 then nil else entry
-			return "x"
-		end
-
-		for data in iter :: any do
-			if data[1] then
-				table.insert(list, data)
-			end
-		end
-
-		return list
-	end
-
-	--[=[
-	Returns an iterator that will skip any entities that also have the given components.
-
-	@param ... Component -- The component types to filter against.
-	@return () -> (id, ...ComponentInstance) -- Iterator of entity ID followed by the requested component values
-
-	```lua
-	for id in world:query(Target):without(Model) do
-		-- Do something
-	end
-	```
-	]=]
-	function QueryResult:without(...)
-		local components = { ... }
-		for i, component in components do
-			components[i] = #component
-		end
-
-		local compatibleArchetypes = compatibleArchetypes
-		for i = #compatibleArchetypes, 1, -1 do
-			local archetype = compatibleArchetypes[i]
-			local shouldRemove = false
-			for _, componentId in components do
-				if archetype.records[componentId] then
-					shouldRemove = true
-					break
-				end
-			end
-
-			if shouldRemove then
-				table.remove(compatibleArchetypes, i)
-			end
-		end
-
-		lastArchetype, archetype = next(compatibleArchetypes)
-		if not lastArchetype then
-			return noop()
-		end
-
-		return self
-	end
-
-	return setmetatable({}, QueryResult)
+	return queryResult(compatibleArchetypes, components :: any, queryLength, a, b, c, d, e)
 end
 
 local function cleanupQueryChanged(hookState)
@@ -1657,7 +1408,7 @@ function World.queryChanged(world: World, componentToTrack, ...: nil)
 		return
 	end
 end
-
+																								
 return {
     World = World,
     component = newComponent
