@@ -637,7 +637,7 @@ export type Component<T> = {
 }
 
 type It<T...> = typeof(setmetatable({} :: {
-	without: <U...>(self: It<T...>, U...) ->
+	without: <U...>(self: It<T...>, U...) -> It<T...>
 }, {} :: {
 	__iter: (self: It<T...>) -> (number, T...),
 }))
