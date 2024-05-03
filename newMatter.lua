@@ -383,13 +383,6 @@ local function assertValidComponentInstance(value, position)
 	end
 end
 
-local component = require(script.Parent.component)
-local topoRuntime = require(script.Parent.topoRuntime)
-local Component = require(script.Parent.component)
-
-local assertValidComponentInstance = Component.assertValidComponentInstance
-local assertValidComponent = Component.assertValidComponent
-
 local ERROR_NO_ENTITY = "Entity doesn't exist, use world:contains to check if needed"
 local ERROR_DUPLICATE_ENTITY =
 	"The world already contains an entity with ID %d. Use World:replace instead if this is intentional."
