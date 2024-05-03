@@ -383,9 +383,6 @@ local function assertValidComponentInstance(value, position)
 	end
 end
 
---!optimize 2
---!native
---!strict
 local component = require(script.Parent.component)
 local topoRuntime = require(script.Parent.topoRuntime)
 local Component = require(script.Parent.component)
