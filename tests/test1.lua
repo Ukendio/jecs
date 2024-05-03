@@ -6,7 +6,6 @@ local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 local N = 10
 
 TEST("world:query", function() 
-
     do CASE "should query all matching entities"
 
         local world = jecs.World.new()
@@ -81,6 +80,34 @@ TEST("world:query", function()
 
         CHECK(#entities == 0)
 
+    end
+
+    do CASE "should allow setting components in arbitrary order" 
+        local world = jecs.World.new()
+
+        local Health = world:entity()
+        local Poison = world:component()
+
+        local id = world:entity()
+        world:set(id, Poison, 5)
+        world:set(id, Health, 50)
+
+        CHECK(world:get(id, Poison) == 5)
+    end
+
+    do CASE "Should allow deleting components" 
+        local world = jecs.World.new()
+
+        local Health = world:entity()
+        local Poison = world:component()
+
+        local id = world:entity()
+        world:set(id, Poison, 5)
+        world:set(id, Health, 50)
+        world:delete(id)
+
+        CHECK(world:get(id, Poison) == nil)
+        CHECK(world:get(id, Health) == nil)
     end
 
 end)

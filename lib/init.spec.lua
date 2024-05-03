@@ -191,5 +191,113 @@ return function()
 			end
 			expect(count).to.equal(1)
 		end)
+
+		it("should query all matching entities", function()
+
+			local world = jecs.World.new()
+			local A = world:component()
+			local B = world:component()
+
+			local entities = {}
+			for i = 1, N do
+				local id = world:entity()
+
+
+				world:set(id, A, true)
+				if i > 5 then world:set(id, B, true) end
+				entities[i] = id
+			end
+
+			for id in world:query(A) do
+				local i = table.find(entities, id)
+				expect(i).to.be.ok()
+				table.remove(entities, i)
+			end
+
+			expect(#entities).to.equal(0)
+		end)
+
+		it("should query all matching entities when irrelevant component is removed", function()
+
+			
+			local world = jecs.World.new()
+			local A = world:component()
+			local B = world:component()
+	
+			local entities = {}
+			for i = 1, N do
+				local id = world:entity()
+	
+				world:set(id, A, true)
+				world:set(id, B, true)
+				if i > 5 then world:remove(id, B, true) end
+				entities[i] = id
+			end
+	
+			local added = 0
+			for id in world:query(A) do
+				added += 1
+				local i = table.find(entities, id)
+				expect(i).to.be.ok()
+				table.remove(entities, i)
+			end
+	
+			expect(added).to.equal(N)
+		end)
+
+		it("should query all entities without B", function() 
+			local world = jecs.World.new()
+			local A = world:component()
+			local B = world:component()
+	
+			local entities = {}
+			for i = 1, N do
+				local id = world:entity()
+	
+				world:set(id, A, true)
+				if i < 5 then
+					entities[i] = id
+				else
+					world:set(id, B, true)
+				end
+				
+			end
+	
+			for id in world:query(A):without(B) do
+				local i = table.find(entities, id)
+				expect(i).to.be.ok()
+				table.remove(entities, i)
+			end
+	
+			expect(#entities).to.equal(0)
+		end)
+
+		it("should allow setting components in arbitrary order", function() 
+			local world = jecs.World.new()
+
+			local Health = world:entity()
+			local Poison = world:component()
+
+			local id = world:entity()
+			world:set(id, Poison, 5)
+			world:set(id, Health, 50)
+
+			expect(world:get(id, Poison)).to.equal(5)
+		end)
+
+		it("Should allow deleting components", function() 
+			local world = jecs.World.new()
+
+			local Health = world:entity()
+			local Poison = world:component()
+
+			local id = world:entity()
+			world:set(id, Poison, 5)
+			world:set(id, Health, 50)
+			world:delete(id)
+
+			expect(world:get(id, Poison)).to.never.be.ok()
+			expect(world:get(id, Health)).to.never.be.ok()
+		end)
 	end)
 end
