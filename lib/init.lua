@@ -632,9 +632,89 @@ function World.observer(world: World, ...)
 	}
 end
 
+export type Component<T> = {
+	__nominal_type_only_dont_use_or_you_will_be_fired: T
+}
+
+type It<T...> = typeof(setmetatable({} :: {
+	without: <U...>(self: It<T...>, U...) ->
+}, {} :: {
+	__iter: (self: It<T...>) -> (number, T...),
+}))
+
+type WorldShim = {
+	observer: <T...>(self: WorldShim, T...) -> { event: (event: number) -> () -> (number, T...) },
+	new: () -> WorldShim,
+	component: (self: WorldShim) -> Component<unknown>,
+	entity: (self: WorldShim) -> number,
+	delete: (self: WorldShim, entity: number) -> (),
+	set: (<T>(self: WorldShim, entity: number, component: Component<T>, data: T) -> ()) 
+		& ((self: WorldShim, entity: number, component: number, data: unknown) -> ()),
+	get: (<T>(self: WorldShim, entity: number, component: Component<T>) -> T)
+		& ((self: WorldShim, entity: number, component: number) -> any),
+	remove: (<T>(self: WorldShim, entity: number, component: Component<T>) -> T)
+		& ((self: WorldShim, entity: number, component: number) -> any),
+	query: <T...>(self: WorldShim, T...) -> It<T...>
+		--[[
+		(<a>(self: WorldShim, a: Component<a>) -> () -> (number, a)) 
+		& (<a, b>(self: WorldShim, a: Component<a>, b: Component<b>) -> () -> (number, a, b))
+		& (<a, b, c>(
+			self: WorldShim, 
+			a: Component<a>, 
+			b: Component<b>, 
+			c: Component<c>
+		) -> (number, a, b, c))
+		& (<a, b, c, d>(
+			self: WorldShim, 
+			a: Component<a>, 
+			b: Component<b>, 
+			c: Component<c>,
+			d: Component<d>
+		) -> (number, a, b, c, d))
+		& (<a, b, c, d, e>(
+			self: WorldShim, 
+			a: Component<a>, 
+			b: Component<b>, 
+			c: Component<c>,
+			d: Component<d>,
+			e: Component<e>
+		) -> (number, a, b, c, d, e))
+		& (<a, b, c, d, e, f>(
+			self: WorldShim, 
+			a: Component<a>, 
+			b: Component<b>, 
+			c: Component<c>,
+			d: Component<d>,
+			e: Component<e>,
+			f: Component<f>
+		) -> (number, a, b, c, d, e, f))
+		& (<a, b, c, d, e, f, g>(
+			self: WorldShim, 
+			a: Component<a>, 
+			b: Component<b>, 
+			c: Component<c>,
+			d: Component<d>,
+			e: Component<e>,
+			f: Component<f>,
+			g: Component<g>
+		) -> (number, a, b, c, d, e, f, g))
+		& (<a, b, c, d, e, f, g, h>(
+			self: WorldShim, 
+			a: Component<a>, 
+			b: Component<b>, 
+			c: Component<c>,
+			d: Component<d>,
+			e: Component<e>,
+			f: Component<f>,
+			g: Component<g>,
+			g: Component<g>
+		) -> (number, a, b, c, d, e, f, g, h))
+		]]--		
+}
+
 return table.freeze({
-	World = World,
+	World = (World :: any) :: WorldShim,
 	ON_ADD = ON_ADD,
 	ON_REMOVE = ON_REMOVE,
-	ON_SET = ON_SET
+	ON_SET = ON_SET,
 })

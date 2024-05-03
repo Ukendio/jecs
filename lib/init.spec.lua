@@ -1,8 +1,13 @@
+--!strict
+
 local jecs = require(script.Parent)
 local world = jecs.World.new()
 
+type Component<T> = jecs.Component<T>
+
 local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
 local E, F, G, H = world:entity(), world:entity(), world:entity(), world:entity()
+
 print("A", A)
 print("B", B)
 print("C", C)
@@ -75,6 +80,8 @@ return function()
 			local id = world:entity()
 			world:set(id, A, true)
 			world:set(id, B, 1)
+			local s = world:component() :: jecs.Component<boolean>
+			world:set(id, s, true)
 
 			local id1 = world:entity()
 			world:set(id1, A, "hello")
@@ -112,7 +119,7 @@ return function()
 		end)
 
 		it("should not query a removed component", function() 
-			local Tag = world:entity()
+			local Tag = (world:entity() :: any) :: jecs.Component<nil>
 			local AnotherTag = world:entity()
 
 			local entity = world:entity()
@@ -121,7 +128,7 @@ return function()
 			world:remove(entity, AnotherTag)
 
 			local added = 0
-			for e, t, a in world:query(Tag, AnotherTag) do 
+			for e, t in world:query(Tag) do 
 				added += 1
 			end
 			expect(added).to.equal(0)
@@ -222,7 +229,7 @@ return function()
 			
 			local world = jecs.World.new()
 			local A = world:component()
-			local B = world:component()
+			local B = world:component() :: jecs.Component<true>
 	
 			local entities = {}
 			for i = 1, N do
@@ -230,7 +237,7 @@ return function()
 	
 				world:set(id, A, true)
 				world:set(id, B, true)
-				if i > 5 then world:remove(id, B, true) end
+				if i > 5 then world:remove(id, B) end
 				entities[i] = id
 			end
 	
@@ -298,6 +305,17 @@ return function()
 
 			expect(world:get(id, Poison)).to.never.be.ok()
 			expect(world:get(id, Health)).to.never.be.ok()
+		end)
+
+		it("try types", function() 
+
+			local test = world:component() :: Component<Vector3>
+
+			for id, t in world:query(test) do 
+				print(t)
+			end
+
+
 		end)
 	end)
 end
