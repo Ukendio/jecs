@@ -1,6 +1,7 @@
 
 <p align="center">
-  <img src="logo.png" />
+  <img src="jecs_darkmode.svg#gh-dark-mode-only" width=50%/>
+  <img src="jecs_darkmode.svg#gh-light-mode-only" width=50%/>
 </p>
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache-blue.svg?style=for-the-badge)](LICENSE-APACHE)
