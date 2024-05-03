@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="shorterbanner.png" />
+  <img src="logo.png" />
 </p>
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache-blue.svg?style=for-the-badge)](LICENSE-APACHE)
