@@ -185,6 +185,8 @@ function World.new()
 			[ON_ADD] = {}
 		}
 	}, World)
+	local ROOT_ARCHETYPE = archetypeOf(self, {}, nil)
+	self.ROOT_ARCHETYPE = ROOT_ARCHETYPE
     return self
 end
 
@@ -266,14 +268,8 @@ local function ensureEdge(archetype: Archetype, componentId: i53)
 end
 
 local function archetypeTraverseAdd(world: World, componentId: i53, from: Archetype): Archetype
-	if not from then 
-		-- If there was no source archetype then it should return the ROOT_ARCHETYPE
-		if not world.ROOT_ARCHETYPE then 
-            local ROOT_ARCHETYPE = archetypeOf(world, {}, nil)
-            world.ROOT_ARCHETYPE = ROOT_ARCHETYPE
-        end
-		from = world.ROOT_ARCHETYPE
-	end
+	from = from or world.ROOT_ARCHETYPE
+
 	local edge = ensureEdge(from, componentId)
 
 	if not edge.add then
@@ -293,10 +289,26 @@ local function ensureRecord(entityIndex, entityId: i53): Record
 	return entityIndex[id] :: Record
 end
 
+-- Symmetric
+function World.add(world: World, entityId: i53, componentId: i53) 
+	local record = ensureRecord(world.entityIndex, entityId)
+	local from = record.archetype
+	local to = archetypeTraverseAdd(world, entityId, from)
+	if from then
+		moveEntity(world.entityIndex, entityId, record, to)
+	else
+		if #to.types > 0 then
+			newEntity(entityId, record, to)
+			onNotifyAdd(world, to, from, record.row, { componentId })
+		end
+	end
+end
+
+-- Symmetric like `World.add` but idempotent
 function World.set(world: World, entityId: i53, componentId: i53, data: unknown) 
 	local record = ensureRecord(world.entityIndex, entityId)
 	local from = record.archetype
-	local to = archetypeTraverseAdd(world, componentId, from)
+	local to = archetypeTraverseAdd(world, entityId, from)
 
 	if from == to then 
 		-- If the archetypes are the same it can avoid moving the entity 
@@ -317,7 +329,7 @@ function World.set(world: World, entityId: i53, componentId: i53, data: unknown)
 			onNotifyAdd(world, to, from, record.row, { componentId })
 		end
 	end
-
+	
 	local archetypeRecord = to.records[componentId]
 	to.columns[archetypeRecord][record.row] = data
 end
