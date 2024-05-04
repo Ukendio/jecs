@@ -470,9 +470,10 @@ function World.query(world: World, ...: i53): Query
 		local withoutComponents = {...}
 		for index = #compatibleArchetypes, 1, -1 do
 			local archetype = compatibleArchetypes[index][1]
+			local records = archetype.records
 			local shouldRemove = false
 			for _, componentId in withoutComponents do
-				if archetype.records[componentId] then
+				if records[componentId] then
 					shouldRemove = true
 					break
 				end
@@ -634,15 +635,23 @@ function World.observer(world: World, ...)
 				end
 
 				local queryOutput = {}
+				local length = 0
+
 				local row = change.offset
 				local archetype = change.archetype
 				local columns = archetype.columns
 				local archetypeRecords = archetype.records
 				for _, id in componentIds do
-					table.insert(queryOutput, columns[archetypeRecords[id]][row])
+					local value = columns[archetypeRecords[id]][row]
+					if value == nil then
+						continue
+					end
+
+					length += 1
+					queryOutput[length] = value
 				end
 
-				return archetype.entities[row], unpack(queryOutput, 1, #queryOutput)
+				return archetype.entities[row], unpack(queryOutput, 1, length)
 			end
 		end;
 	}
