@@ -500,20 +500,18 @@ function World.query(world: World, ...: i53): Query
 	function preparedQuery:__iter()
 		return function()
 			local archetype = compatibleArchetype[1]
-			local entities = archetype.entities
-			local row = next(entities, lastRow)
+			local row = next(archetype.entities, lastRow)
 			while row == nil do
 				lastArchetype, compatibleArchetype = next(compatibleArchetypes, lastArchetype)
 				if lastArchetype == nil then
 					return
 				end
 				archetype = compatibleArchetype[1]
-				entities = archetype.entities
-				row = next(entities, row)
+				row = next(archetype.entities, row)
 			end
 			lastRow = row
 
-			local entityId = entities[row :: number]
+			local entityId = archetype.entities[row :: number]
 			local columns = archetype.columns
 			local tr = compatibleArchetype[2]
 
