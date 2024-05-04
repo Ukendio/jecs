@@ -35,14 +35,17 @@ TEST("world:query", function()
         local world = jecs.World.new()
         local A = world:component()
         local B = world:component()
+        local C = world:component()
 
         local entities = {}
         for i = 1, N do
             local id = world:entity()
 
-            world:set(id, A, true)
+            -- specifically put them in disorder to track regression
+            -- https://github.com/Ukendio/jecs/pull/15
             world:set(id, B, true)
-            if i > 5 then world:remove(id, B, true) end
+            world:set(id, A, true)
+            if i > 5 then world:remove(id, B) end
             entities[i] = id
         end
 
@@ -110,6 +113,19 @@ TEST("world:query", function()
         CHECK(world:get(id, Health) == nil)
     end
 
+    do CASE "show allow remove that doesn't exist on entity" 
+        local world = jecs.World.new()
+
+        local Health = world:entity()
+        local Poison = world:component()
+
+        local id = world:entity()
+        world:set(id, Health, 50)
+        world:remove(id, Poison)
+
+        CHECK(world:get(id, Poison) == nil)
+        CHECK(world:get(id, Health) == 50)
+    end
 end)
 
 FINISH()
