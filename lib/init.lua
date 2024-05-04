@@ -343,11 +343,11 @@ function World.remove(world: World, entityId: i53, componentId: i53)
 	local record = ensureRecord(world.entityIndex, entityId)
 	local sourceArchetype = record.archetype
 	local destinationArchetype = archetypeTraverseRemove(world, componentId, sourceArchetype)
-	if not sourceArchetype or not destinationArchetype then 
+	if not destinationArchetype then 
 		return
 	end
 
-	if not (sourceArchetype == destinationArchetype) then 
+	if sourceArchetype and not (sourceArchetype == destinationArchetype) then 
 		moveEntity(world.entityIndex, entityId, record, destinationArchetype)
 	end
 end
