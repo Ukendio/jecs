@@ -157,13 +157,13 @@ local function archetypeOf(world: World, types: {i24}, prev: Archetype?): Archet
 	end
 
 	local archetype = {
-		id = id;
-		types = types;
-		type = ty;
 		columns = columns;
-		entities = {};
 		edges = {};
+		entities = {};
+		id = id;
 		records = {};
+		type = ty;
+		types = types;
 	}
 	world.archetypeIndex[ty] = archetype
 	world.archetypes[id] = archetype
@@ -178,17 +178,17 @@ local World = {}
 World.__index = World
 function World.new()
 	local self = setmetatable({
-		entityIndex = {};
-		componentIndex = {};
-		archetypes = {};
 		archetypeIndex = {};
-		ROOT_ARCHETYPE = (nil :: any) :: Archetype;
-		nextEntityId = 0;
-		nextComponentId = 0;
-		nextArchetypeId = 0;
+		archetypes = {};
+		componentIndex = {};
+		entityIndex = {};
 		hooks = {
 			[ON_ADD] = {};
 		};
+		nextArchetypeId = 0;
+		nextComponentId = 0;
+		nextEntityId = 0;
+		ROOT_ARCHETYPE = (nil :: any) :: Archetype;
 	}, World)
 	return self
 end
@@ -197,21 +197,21 @@ local function emit(world, eventDescription)
 	local event = eventDescription.event
 
 	table.insert(world.hooks[event], {
-		ids = eventDescription.ids;
 		archetype = eventDescription.archetype;
-		otherArchetype = eventDescription.otherArchetype;
+		ids = eventDescription.ids;
 		offset = eventDescription.offset;
+		otherArchetype = eventDescription.otherArchetype;
 	})
 end
 
 local function onNotifyAdd(world, archetype, otherArchetype, row: number, added: Ty)
 	if #added > 0 then
 		emit(world, {
+			archetype = archetype;
 			event = ON_ADD;
 			ids = added;
-			archetype = archetype;
-			otherArchetype = otherArchetype;
 			offset = row;
+			otherArchetype = otherArchetype;
 		})
 	end
 end
