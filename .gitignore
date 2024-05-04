@@ -50,3 +50,5 @@ WallyPatches
 roblox.toml
 sourcemap.json
 drafts/*.lua
+
+*.code-workspace
