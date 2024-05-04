@@ -598,6 +598,7 @@ end
 
 function World.observer(world: World, ...)
 	local componentIds = {...}
+	local idsCount = #componentIds
 	local hooks = world.hooks
 
 	return {
@@ -633,19 +634,16 @@ function World.observer(world: World, ...)
 					matched = true
 				end
 
-				local queryOutput = {}
-				local length = 0
-
+				local queryOutput = table.create(idsCount)
 				local row = change.offset
 				local archetype = change.archetype
 				local columns = archetype.columns
 				local archetypeRecords = archetype.records
-				for _, id in componentIds do
-					length += 1
-					queryOutput[length] = columns[archetypeRecords[id]][row]
+				for index, id in componentIds do
+					queryOutput[index] = columns[archetypeRecords[id]][row]
 				end
 
-				return archetype.entities[row], unpack(queryOutput, 1, length)
+				return archetype.entities[row], unpack(queryOutput, 1, idsCount)
 			end
 		end;
 	}
