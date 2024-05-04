@@ -362,7 +362,7 @@ function World.remove(world: World, entityId: i53, componentId: i53)
 end
 
 -- Keeping the function as small as possible to enable inlining
-local function get(_componentIndex: {[i24]: ArchetypeMap}, record: Record, componentId: i24)
+local function get(record: Record, componentId: i24)
 	local archetype = record.archetype
 	local archetypeRecord = archetype.records[componentId]
 
@@ -375,22 +375,21 @@ end
 
 function World.get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?)
 	local id = entityId
-	local componentIndex = world.componentIndex
 	local record = world.entityIndex[id]
 	if not record then
 		return nil
 	end
 
-	local va = get(componentIndex, record, a)
+	local va = get(record, a)
 
 	if b == nil then
 		return va
 	elseif c == nil then
-		return va, get(componentIndex, record, b)
+		return va, get(record, b)
 	elseif d == nil then
-		return va, get(componentIndex, record, b), get(componentIndex, record, c)
+		return va, get(record, b), get(record, c)
 	elseif e == nil then
-		return va, get(componentIndex, record, b), get(componentIndex, record, c), get(componentIndex, record, d)
+		return va, get(record, b), get(record, c), get(record, d)
 	else
 		error("args exceeded")
 	end
@@ -447,7 +446,7 @@ function World.query(world: World, ...: i53): Query
 				skip = true
 				break
 			end
-			indices[i] = archetypeRecords[componentId]
+			indices[i] = index
 		end
 
 		if skip then
@@ -642,13 +641,8 @@ function World.observer(world: World, ...)
 				local columns = archetype.columns
 				local archetypeRecords = archetype.records
 				for _, id in componentIds do
-					local value = columns[archetypeRecords[id]][row]
-					if value == nil then
-						continue
-					end
-
 					length += 1
-					queryOutput[length] = value
+					queryOutput[length] = columns[archetypeRecords[id]][row]
 				end
 
 				return archetype.entities[row], unpack(queryOutput, 1, length)
