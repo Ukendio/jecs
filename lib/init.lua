@@ -293,7 +293,7 @@ end
 function World.add(world: World, entityId: i53, componentId: i53) 
 	local record = ensureRecord(world.entityIndex, entityId)
 	local from = record.archetype
-	local to = archetypeTraverseAdd(world, entityId, from)
+	local to = archetypeTraverseAdd(world, componentId, from)
 	if from then
 		moveEntity(world.entityIndex, entityId, record, to)
 	else
@@ -308,7 +308,7 @@ end
 function World.set(world: World, entityId: i53, componentId: i53, data: unknown) 
 	local record = ensureRecord(world.entityIndex, entityId)
 	local from = record.archetype
-	local to = archetypeTraverseAdd(world, entityId, from)
+	local to = archetypeTraverseAdd(world, componentId, from)
 
 	if from == to then 
 		-- If the archetypes are the same it can avoid moving the entity 
