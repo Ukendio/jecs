@@ -125,7 +125,7 @@ local function hash(arr): string | number
 	return table.concat(arr, "_")
 end
 
-local function createArchetypeRecords(componentIndex: ComponentIndex, to: Archetype, from: Archetype?)
+local function createArchetypeRecords(componentIndex: ComponentIndex, to: Archetype, _from: Archetype?)
 	local destinationIds = to.types
 	local records = to.records
 	local id = to.id
@@ -295,12 +295,11 @@ local function archetypeTraverseAdd(world: World, componentId: i53, from: Archet
 end
 
 local function ensureRecord(entityIndex, entityId: i53): Record
-	local id = entityId
-	local record = entityIndex[id]
+	local record = entityIndex[entityId]
 
 	if not record then
 		record = {}
-		entityIndex[id] = record
+		entityIndex[entityId] = record
 	end
 
 	return record :: Record
@@ -395,8 +394,10 @@ function World.get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53
 	end
 end
 
+-- the less creation the better
+local function actualNoOperation() end
 local function noop(_self: Query, ...: i53): () -> (number, ...any)
-	return function() end :: any
+	return actualNoOperation :: any
 end
 
 local EmptyQuery = {
@@ -409,16 +410,17 @@ setmetatable(EmptyQuery, EmptyQuery)
 export type Query = typeof(EmptyQuery)
 
 function World.query(world: World, ...: i53): Query
+	-- breaking?
+	if (...) == nil then
+		error("Missing components")
+	end
+
 	local compatibleArchetypes = {}
 	local length = 0
 
 	local components = {...}
 	local archetypes = world.archetypes
 	local queryLength = #components
-
-	if queryLength == 0 then
-		error("Missing components")
-	end
 
 	local firstArchetypeMap
 	local componentIndex = world.componentIndex
@@ -466,19 +468,21 @@ function World.query(world: World, ...: i53): Query
 	preparedQuery.__index = preparedQuery
 
 	function preparedQuery:without(...)
-		local withoutComponents = {...}
-		for index = #compatibleArchetypes, 1, -1 do
-			local archetype = compatibleArchetypes[index][1]
+		local components = {...}
+		for i = #compatibleArchetypes, 1, -1 do
+			local archetype = compatibleArchetypes[i][1]
 			local records = archetype.records
 			local shouldRemove = false
-			for _, componentId in withoutComponents do
+
+			for _, componentId in components do
 				if records[componentId] then
 					shouldRemove = true
 					break
 				end
 			end
+
 			if shouldRemove then
-				table.remove(compatibleArchetypes, index)
+				table.remove(compatibleArchetypes, i)
 			end
 		end
 
@@ -557,8 +561,8 @@ function World.query(world: World, ...: i53): Query
 					columns[tr[8]][row]
 			end
 
-			for index in components do
-				queryOutput[index] = tr[index][row]
+			for i in components do
+				queryOutput[i] = tr[i][row]
 			end
 
 			return entityId, unpack(queryOutput, 1, queryLength)
