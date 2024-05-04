@@ -468,13 +468,13 @@ function World.query(world: World, ...: i53): Query
 	preparedQuery.__index = preparedQuery
 
 	function preparedQuery:without(...)
-		local components = {...}
+		local withoutComponents = {...}
 		for i = #compatibleArchetypes, 1, -1 do
 			local archetype = compatibleArchetypes[i][1]
 			local records = archetype.records
 			local shouldRemove = false
 
-			for _, componentId in components do
+			for _, componentId in withoutComponents do
 				if records[componentId] then
 					shouldRemove = true
 					break
