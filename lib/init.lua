@@ -178,7 +178,7 @@ local World = {}
 World.__index = World
 function World.new()
 	local self = setmetatable({
-		archetypeIndex = {};
+    archetypeIndex = {};
 		archetypes = {};
 		componentIndex = {};
 		entityIndex = {};
@@ -649,6 +649,37 @@ function World.observer(world: World, ...)
 			end
 		end;
 	}
+end
+
+function World.__iter(world: World): () -> (number?, unknown?)
+	local entityIndex = world.entityIndex
+	local last
+
+	return function() 
+		local entity, record = next(entityIndex, last)
+		if not entity then 
+			return
+		end
+		last = entity
+
+		local archetype = record.archetype
+		if not archetype then 
+			-- Returns only the entity id as an entity without data should not return
+			-- data and allow the user to get an error if they don't handle the case.
+			return entity 
+		end
+
+		local row = record.row
+		local types = archetype.types
+		local columns = archetype.columns
+		local entityData = {}
+		for i, column in columns do
+			-- We use types because the key should be the component ID not the column index
+			entityData[types[i]] = column[row]
+		end
+		
+		return entity, entityData
+	end
 end
 
 return table.freeze({
