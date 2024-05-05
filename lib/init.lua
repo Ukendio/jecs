@@ -560,7 +560,7 @@ function World.query(world: World, ...: i53): Query
 			end
 
 			for i in components do
-				queryOutput[i] = tr[i][row]
+				queryOutput[i] = columns[tr[i]][row]
 			end
 
 			return entityId, unpack(queryOutput, 1, queryLength)
