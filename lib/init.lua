@@ -29,9 +29,10 @@ type Archetype = {
 type Record = {
 	archetype: Archetype,
 	row: number,
+	dense: i24,
 }
 
-type EntityIndex = {[i24]: Record}
+type EntityIndex = {dense: {[i24]: i53}, sparse: {[i53]: Record}}
 type ComponentIndex = {[i24]: ArchetypeMap}
 
 type ArchetypeRecord = number
@@ -81,10 +82,12 @@ local function transitionArchetype(
 		column[last] = nil
 	end
 
+	local dense, sparse = entityIndex.dense, entityIndex.sparse
 	-- Move the entity from the source to the destination archetype.
 	local atSourceRow = sourceEntities[sourceRow]
 	destinationEntities[destinationRow] = atSourceRow
-	entityIndex[atSourceRow].row = destinationRow
+	local record = sparse[atSourceRow]
+	record.row = destinationRow
 
 	-- Because we have swapped columns we now have to update the records
 	-- corresponding to the entities' rows that were swapped.
@@ -92,7 +95,7 @@ local function transitionArchetype(
 	if sourceRow ~= movedAway then
 		local atMovedAway = sourceEntities[movedAway]
 		sourceEntities[sourceRow] = atMovedAway
-		entityIndex[atMovedAway].row = sourceRow
+		sparse[atMovedAway].row = sourceRow
 	end
 
 	sourceEntities[movedAway] = nil
@@ -178,10 +181,13 @@ local World = {}
 World.__index = World
 function World.new()
 	local self = setmetatable({
-    archetypeIndex = {};
+		archetypeIndex = {};
 		archetypes = {};
 		componentIndex = {};
-		entityIndex = {};
+		entityIndex = {
+			dense = {},
+			sparse = {}
+		} :: EntityIndex;
 		hooks = {
 			[ON_ADD] = {};
 		};
@@ -294,15 +300,18 @@ local function archetypeTraverseAdd(world: World, componentId: i53, from: Archet
 	return add
 end
 
-local function ensureRecord(entityIndex, entityId: i53): Record
-	local record = entityIndex[entityId]
-
-	if not record then
-		record = {}
-		entityIndex[entityId] = record
+local function ensureRecord(entityIndex: EntityIndex, entityId: i53): Record
+	local sparse = entityIndex.sparse
+	local dense = entityIndex.dense
+	local page = sparse[entityId]
+	if not page then
+		local i = #dense + 1
+		page = { dense = i } :: Record
+		sparse[entityId] = page
+		dense[i] = entityId
 	end
 
-	return record :: Record
+	return page
 end
 
 function World.set(world: World, entityId: i53, componentId: i53, data: unknown)
@@ -374,7 +383,7 @@ end
 
 function World.get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?)
 	local id = entityId
-	local record = world.entityIndex[id]
+	local record = world.entityIndex.sparse[id]
 	if not record then
 		return nil
 	end
@@ -587,15 +596,64 @@ function World.entity(world: World)
 	return nextEntityId + REST
 end
 
-function World.delete(world: World, entityId: i53)
+-- should reuse this logic in World.set instead of swap removing in transition archetype
+local function destructColumns(columns, count, row) 
+	if row == count then 
+		for _, column in columns do 
+			column[count] = nil
+		end
+	else
+		for _, column in columns do 
+			column[row] = column[count]
+			column[count] = nil
+		end
+	end
+end
+
+local function archetypeDelete(entityIndex, entityId: i53, destruct: boolean) 
+	local sparse = entityIndex.sparse
+	local dense = entityIndex.dense
+	local record = sparse[entityId]
+	local archetype = record.archetype
+	local row = record.row
+	local denseIndex = record.dense
+
+	local entities = archetype.entities
+	local last = #entities
+
+	local entityToMove = entities[last]
+	--local entityToDelete = entities[row]
+	entities[row] = entityToMove
+	entities[last] = nil
+
+	if row ~= last then 
+		local recordToMove = sparse[entityToMove]
+		if recordToMove then 
+			recordToMove.row = row
+			record.dense = denseIndex
+			dense[denseIndex] = entityToMove
+		end
+
+	end
+
+	record.archetype = nil
+	record.row = nil
+	entityIndex.sparse[entityId] = nil
+
+	local atDense = record.dense
+	entityIndex[atDense] = nil
+	local columns = archetype.columns
+
+	if not destruct then 
+		return
+	end
+
+	destructColumns(columns, last, row)
+end
+
+function World.delete(world: World, entityId: i53) 
 	local entityIndex = world.entityIndex
-	local record = entityIndex[entityId]
-	moveEntity(entityIndex, entityId, record, world.ROOT_ARCHETYPE)
-	-- Since we just appended an entity to the ROOT_ARCHETYPE we have to remove it from
-	-- the entities array and delete the record. We know there won't be the hole since
-	-- we are always removing the last row.
-	--world.ROOT_ARCHETYPE.entities[record.row] = nil
-	--entityIndex[entityId] = nil
+	archetypeDelete(entityIndex, entityId, true)
 end
 
 function World.observer(world: World, ...)
@@ -652,21 +710,23 @@ function World.observer(world: World, ...)
 end
 
 function World.__iter(world: World): () -> (number?, unknown?)
-	local entityIndex = world.entityIndex
+	local dense = world.entityIndex.dense
+	local sparse = world.entityIndex.sparse
 	local last
 
 	return function() 
-		local entity, record = next(entityIndex, last)
-		if not entity then 
+		local lastEntity, entityId = next(dense, last)
+		if not lastEntity then 
 			return
 		end
-		last = entity
+		last = lastEntity
 
+		local record = sparse[entityId]
 		local archetype = record.archetype
 		if not archetype then 
 			-- Returns only the entity id as an entity without data should not return
 			-- data and allow the user to get an error if they don't handle the case.
-			return entity 
+			return entityId
 		end
 
 		local row = record.row
@@ -678,7 +738,7 @@ function World.__iter(world: World): () -> (number?, unknown?)
 			entityData[types[i]] = column[row]
 		end
 		
-		return entity, entityData
+		return entityId, entityData
 	end
 end
 
