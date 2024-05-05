@@ -614,34 +614,26 @@ local function archetypeDelete(entityIndex, entityId: i53, destruct: boolean)
 	local sparse = entityIndex.sparse
 	local dense = entityIndex.dense
 	local record = sparse[entityId]
+	if not record then 
+		return
+	end
 	local archetype = record.archetype
 	local row = record.row
-	local denseIndex = record.dense
-
 	local entities = archetype.entities
 	local last = #entities
 
 	local entityToMove = entities[last]
-	--local entityToDelete = entities[row]
-	entities[row] = entityToMove
-	entities[last] = nil
 
 	if row ~= last then 
-		local recordToMove = sparse[entityToMove]
-		if recordToMove then 
-			recordToMove.row = row
-			record.dense = denseIndex
-			dense[denseIndex] = entityToMove
-		end
-
+		dense[record.dense] = entityToMove
+		sparse[entityToMove] = record
 	end
 
-	record.archetype = nil
-	record.row = nil
-	entityIndex.sparse[entityId] = nil
+	sparse[entityId] = nil
+	dense[#dense] = nil
 
-	local atDense = record.dense
-	entityIndex[atDense] = nil
+	entities[row], entities[last] = entities[last], nil
+
 	local columns = archetype.columns
 
 	if not destruct then 
@@ -649,6 +641,8 @@ local function archetypeDelete(entityIndex, entityId: i53, destruct: boolean)
 	end
 
 	destructColumns(columns, last, row)
+
+	
 end
 
 function World.delete(world: World, entityId: i53) 
