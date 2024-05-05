@@ -610,13 +610,8 @@ local function destructColumns(columns, count, row)
 	end
 end
 
-local function archetypeDelete(entityIndex, entityId: i53, destruct: boolean) 
-	local sparse = entityIndex.sparse
-	local dense = entityIndex.dense
-	local record = sparse[entityId]
-	if not record then 
-		return
-	end
+local function archetypeDelete(entityIndex, record: Record, entityId: i53, destruct: boolean) 
+	local sparse, dense = entityIndex.sparse, entityIndex.dense
 	local archetype = record.archetype
 	local row = record.row
 	local entities = archetype.entities
@@ -647,7 +642,11 @@ end
 
 function World.delete(world: World, entityId: i53) 
 	local entityIndex = world.entityIndex
-	archetypeDelete(entityIndex, entityId, true)
+	local record = entityIndex.sparse[entityId]
+	if not record then 
+		return
+	end
+	archetypeDelete(entityIndex, record, entityId, true)
 end
 
 function World.observer(world: World, ...)
