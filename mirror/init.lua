@@ -318,7 +318,11 @@ end
 
 local function get(componentIndex: { [i24]: ArchetypeMap }, record: Record, componentId: i24)
 	local archetype = record.archetype
-	local archetypeRecord = componentIndex[componentId].sparse[archetype.id]
+	local archetypesMap = componentIndex[componentId]
+	if not archetypesMap then 
+		return nil
+	end
+	local archetypeRecord = archetypesMap[archetype.id]
 
 	if not archetypeRecord then
 		return nil
