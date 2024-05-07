@@ -126,6 +126,40 @@ TEST("world:query", function()
         CHECK(world:get(id, Poison) == nil)
         CHECK(world:get(id, Health) == 50)
     end
+    
+    do CASE "Should allow iterating the whole world" 
+        local world = jecs.World.new()
+
+        local A, B = world:entity(), world:entity()
+
+			local eA = world:entity()
+			world:set(eA, A, true)
+			local eB = world:entity()
+			world:set(eB, B, true)
+			local eAB = world:entity()
+			world:set(eAB, A, true)
+			world:set(eAB, B, true)
+
+			local count = 0
+			for id, data in world do
+				count += 1
+				if id == eA then
+					CHECK(data[A] == true)
+                    CHECK(data[B] == nil)
+				elseif id == eB then
+                    CHECK(data[B] == true)
+                    CHECK(data[A] == nil)
+				elseif id == eAB then
+					CHECK(data[A] == true)
+					CHECK(data[B] == true)
+				else
+					error("unknown entity", id)
+				end
+			end
+
+			CHECK(count == 3)
+    end
+
 end)
 
 FINISH()
