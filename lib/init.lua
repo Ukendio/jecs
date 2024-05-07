@@ -596,15 +596,51 @@ function World.entity(world: World)
 	return nextEntityId + REST
 end
 
-function World.delete(world: World, entityId: i53)
+-- should reuse this logic in World.set instead of swap removing in transition archetype
+local function destructColumns(columns, count, row) 
+	if row == count then 
+		for _, column in columns do 
+			column[count] = nil
+		end
+	else
+		for _, column in columns do 
+			column[row] = column[count]
+			column[count] = nil
+		end
+	end
+end
+
+local function archetypeDelete(entityIndex, archetype: Archetype, row: i24, destruct: boolean) 
+	local entities = archetype.entities
+	local last = #entities
+
+	local entityToMove = entities[last]
+	--local entityToDelete = entities[row]
+	entities[row] = entityToMove
+	entities[last] = nil
+
+	if row ~= last then 
+		local recordToMove = entityIndex[entityToMove]
+		if recordToMove then 
+			recordToMove.row = row
+		end
+	end
+
+	local columns = archetype.columns
+
+	if not destruct then 
+		return
+	end
+	
+	destructColumns(columns, last, row)
+end
+
+function World.delete(world: World, entityId: i53) 
 	local entityIndex = world.entityIndex
 	local record = entityIndex[entityId]
-	moveEntity(entityIndex, entityId, record, world.ROOT_ARCHETYPE)
-	-- Since we just appended an entity to the ROOT_ARCHETYPE we have to remove it from
-	-- the entities array and delete the record. We know there won't be the hole since
-	-- we are always removing the last row.
-	--world.ROOT_ARCHETYPE.entities[record.row] = nil
-	--entityIndex[entityId] = nil
+	local archetype = record.archetype
+	archetypeDelete(entityIndex, archetype, record.row, true)
+	entityIndex[entityId] = nil
 end
 
 function World.observer(world: World, ...)
