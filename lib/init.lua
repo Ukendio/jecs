@@ -274,15 +274,6 @@ end
 
 local function archetypeTraverseAdd(world: World, componentId: i53, from: Archetype): Archetype
 	from = from or world.ROOT_ARCHETYPE
-	if not from then
-		-- If there was no source archetype then it should return the ROOT_ARCHETYPE
-		local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
-		if not ROOT_ARCHETYPE then
-			ROOT_ARCHETYPE = archetypeOf(world, {}, nil)
-			world.ROOT_ARCHETYPE = ROOT_ARCHETYPE :: never
-		end
-		from = ROOT_ARCHETYPE
-	end
 
 	local edge = ensureEdge(from, componentId)
 	local add = edge.add
@@ -307,7 +298,23 @@ local function ensureRecord(entityIndex, entityId: i53): Record
 	return record :: Record
 end
 
-function World.set(world: World, entityId: i53, componentId: i53, data: unknown)
+
+function World.add(world: World, entityId: i53, componentId: i53) 
+	local record = ensureRecord(world.entityIndex, entityId)
+	local from = record.archetype
+	local to = archetypeTraverseAdd(world, componentId, from)
+	if from then
+		moveEntity(world.entityIndex, entityId, record, to)
+	else
+		if #to.types > 0 then
+			newEntity(entityId, record, to)
+			onNotifyAdd(world, to, from, record.row, { componentId })
+		end
+	end
+end
+
+-- Symmetric like `World.add` but idempotent
+function World.set(world: World, entityId: i53, componentId: i53, data: unknown) 
 	local record = ensureRecord(world.entityIndex, entityId)
 	local from = record.archetype
 	local to = archetypeTraverseAdd(world, componentId, from)
@@ -331,7 +338,7 @@ function World.set(world: World, entityId: i53, componentId: i53, data: unknown)
 			onNotifyAdd(world, to, from, record.row, {componentId})
 		end
 	end
-
+	
 	local archetypeRecord = to.records[componentId]
 	to.columns[archetypeRecord][record.row] = data
 end
