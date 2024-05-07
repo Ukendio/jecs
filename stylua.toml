@@ -1,0 +1,5 @@
+column_width = 120
+quote_style = "ForceDouble"
+
+[sort_requires]
+enabled = true

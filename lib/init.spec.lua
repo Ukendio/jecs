@@ -299,5 +299,38 @@ return function()
 			expect(world:get(id, Poison)).to.never.be.ok()
 			expect(world:get(id, Health)).to.never.be.ok()
 		end)
+
+		it("should allow iterating the whole world", function() 
+			local world = jecs.World.new()
+
+			local A, B = world:entity(), world:entity()
+
+			local eA = world:entity()
+			world:set(eA, A, true)
+			local eB = world:entity()
+			world:set(eB, B, true)
+			local eAB = world:entity()
+			world:set(eAB, A, true)
+			world:set(eAB, B, true)
+
+			local count = 0
+			for id, data in world do
+				count += 1
+				if id == eA then
+					expect(data[A]).to.be.ok()
+					expect(data[B]).to.never.be.ok()
+				elseif id == eB then
+					expect(data[B]).to.be.ok()
+					expect(data[A]).to.never.be.ok()
+				elseif id == eAB then
+					expect(data[A]).to.be.ok()
+					expect(data[B]).to.be.ok()
+				else
+					error("unknown entity", id)
+				end
+			end
+
+			expect(count).to.equal(3)
+		end)
 	end)
 end
