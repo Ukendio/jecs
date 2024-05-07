@@ -287,23 +287,31 @@ local function archetypeTraverseAdd(world: World, componentId: i53, from: Archet
 	return add
 end
 
-local function ensureRecord(entityIndex, entityId: i53): Record
+local function ensureRecord(world, entityId: i53): Record
+	local entityIndex = world.entityIndex
 	local record = entityIndex[entityId]
 
-	if not record then
-		record = {}
-		entityIndex[entityId] = record
+	if record then 
+		return record	
 	end
 
-	return record :: Record
+	local ROOT = world.ROOT_ARCHETYPE
+	local row = #ROOT.entities + 1
+	ROOT.entities[row] = entityId
+	record = {
+		archetype = ROOT,
+		row = row
+	}
+	entityIndex[entityId] = record
+	return record
 end
 
 
 function World.add(world: World, entityId: i53, componentId: i53) 
-	local record = ensureRecord(world.entityIndex, entityId)
+	local record = ensureRecord(world, entityId)
 	local from = record.archetype
 	local to = archetypeTraverseAdd(world, componentId, from)
-	if from then
+	if from and not (from == world.ROOT_ARCHETYPE) then
 		moveEntity(world.entityIndex, entityId, record, to)
 	else
 		if #to.types > 0 then
@@ -315,18 +323,19 @@ end
 
 -- Symmetric like `World.add` but idempotent
 function World.set(world: World, entityId: i53, componentId: i53, data: unknown) 
-	local record = ensureRecord(world.entityIndex, entityId)
+	local record = ensureRecord(world, entityId)
 	local from = record.archetype
-	local to = archetypeTraverseAdd(world, componentId, from)
 
-	if from == to then
+	local archetypeRecord = from.records[componentId]
+	if archetypeRecord then
 		-- If the archetypes are the same it can avoid moving the entity
 		-- and just set the data directly.
-		local archetypeRecord = to.records[componentId]
 		from.columns[archetypeRecord][record.row] = data
 		-- Should fire an OnSet event here.
 		return
 	end
+
+	local to = archetypeTraverseAdd(world, componentId, from)
 
 	if from then
 		-- If there was a previous archetype, then the entity needs to move the archetype
@@ -335,16 +344,15 @@ function World.set(world: World, entityId: i53, componentId: i53, data: unknown)
 		if #to.types > 0 then
 			-- When there is no previous archetype it should create the archetype
 			newEntity(entityId, record, to)
-			onNotifyAdd(world, to, from, record.row, {componentId})
+			--onNotifyAdd(world, to, from, record.row, {componentId})
 		end
 	end
 	
-	local archetypeRecord = to.records[componentId]
+	archetypeRecord = to.records[componentId]
 	to.columns[archetypeRecord][record.row] = data
 end
 
-local function archetypeTraverseRemove(world: World, componentId: i53, archetype: Archetype?): Archetype?
-	local from = (archetype or world.ROOT_ARCHETYPE) :: Archetype
+local function archetypeTraverseRemove(world: World, componentId: i53, from: Archetype): Archetype
 	local edge = ensureEdge(from, componentId)
 
 	local remove = edge.remove
@@ -354,7 +362,7 @@ local function archetypeTraverseRemove(world: World, componentId: i53, archetype
 		if not at then 
 			return from
 		end
-		table.remove(to, at, component)
+		table.remove(to, at)
 		remove = ensureArchetype(world, to, from)
 		edge.remove = remove :: never
 	end
@@ -363,16 +371,12 @@ local function archetypeTraverseRemove(world: World, componentId: i53, archetype
 end
 
 function World.remove(world: World, entityId: i53, componentId: i53)
-	local entityIndex = world.entityIndex
-	local record = ensureRecord(entityIndex, entityId)
+	local record = ensureRecord(world, entityId)
 	local sourceArchetype = record.archetype
 	local destinationArchetype = archetypeTraverseRemove(world, componentId, sourceArchetype)
-	if not destinationArchetype then 
-		return
-	end
 
 	if sourceArchetype and not (sourceArchetype == destinationArchetype) then
-		moveEntity(entityIndex, entityId, record, destinationArchetype)
+		moveEntity(world.entityIndex, entityId, record, destinationArchetype)
 	end
 end
 
