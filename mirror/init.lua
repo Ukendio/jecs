@@ -138,7 +138,10 @@ local function createArchetypeRecords(componentIndex: ComponentIndex, to: Archet
 			componentIndex[destinationId] = archetypesMap
 		end
 
+	--	print(to.id)
+		
 		archetypesMap.sparse[id] = i
+		archetypesMap.size += 1
 		records[destinationId] = i
 	end
 end
@@ -178,7 +181,7 @@ local World = {}
 World.__index = World
 function World.new()
 	local self = setmetatable({
-		archetypeIndex = {};
+    archetypeIndex = {};
 		archetypes = {};
 		componentIndex = {};
 		entityIndex = {};
@@ -190,6 +193,7 @@ function World.new()
 		nextEntityId = 0;
 		ROOT_ARCHETYPE = (nil :: any) :: Archetype;
 	}, World)
+	self.ROOT_ARCHETYPE = archetypeOf(self, {}, nil)
 	return self
 end
 
@@ -272,15 +276,7 @@ local function ensureEdge(archetype: Archetype, componentId: i53)
 end
 
 local function archetypeTraverseAdd(world: World, componentId: i53, from: Archetype): Archetype
-	if not from then
-		-- If there was no source archetype then it should return the ROOT_ARCHETYPE
-		local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
-		if not ROOT_ARCHETYPE then
-			ROOT_ARCHETYPE = archetypeOf(world, {}, nil)
-			world.ROOT_ARCHETYPE = ROOT_ARCHETYPE :: never
-		end
-		from = ROOT_ARCHETYPE
-	end
+	from = from or world.ROOT_ARCHETYPE
 
 	local edge = ensureEdge(from, componentId)
 	local add = edge.add
@@ -294,30 +290,55 @@ local function archetypeTraverseAdd(world: World, componentId: i53, from: Archet
 	return add
 end
 
-local function ensureRecord(entityIndex, entityId: i53): Record
+local function ensureRecord(world, entityId: i53): Record
+	local entityIndex = world.entityIndex
 	local record = entityIndex[entityId]
 
-	if not record then
-		record = {}
-		entityIndex[entityId] = record
+	if record then 
+		return record	
 	end
 
-	return record :: Record
+	local ROOT = world.ROOT_ARCHETYPE
+	local row = #ROOT.entities + 1
+	ROOT.entities[row] = entityId
+	record = {
+		archetype = ROOT,
+		row = row
+	}
+	entityIndex[entityId] = record
+	return record
 end
 
-function World.set(world: World, entityId: i53, componentId: i53, data: unknown)
-	local record = ensureRecord(world.entityIndex, entityId)
+
+function World.add(world: World, entityId: i53, componentId: i53) 
+	local record = ensureRecord(world, entityId)
 	local from = record.archetype
 	local to = archetypeTraverseAdd(world, componentId, from)
+	if from and not (from == world.ROOT_ARCHETYPE) then
+		moveEntity(world.entityIndex, entityId, record, to)
+	else
+		if #to.types > 0 then
+			newEntity(entityId, record, to)
+			onNotifyAdd(world, to, from, record.row, { componentId })
+		end
+	end
+end
 
-	if from == to then
+-- Symmetric like `World.add` but idempotent
+function World.set(world: World, entityId: i53, componentId: i53, data: unknown) 
+	local record = ensureRecord(world, entityId)
+	local from = record.archetype
+
+	local archetypeRecord = from.records[componentId]
+	if archetypeRecord then
 		-- If the archetypes are the same it can avoid moving the entity
 		-- and just set the data directly.
-		local archetypeRecord = to.records[componentId]
 		from.columns[archetypeRecord][record.row] = data
 		-- Should fire an OnSet event here.
 		return
 	end
+
+	local to = archetypeTraverseAdd(world, componentId, from)
 
 	if from then
 		-- If there was a previous archetype, then the entity needs to move the archetype
@@ -326,22 +347,25 @@ function World.set(world: World, entityId: i53, componentId: i53, data: unknown)
 		if #to.types > 0 then
 			-- When there is no previous archetype it should create the archetype
 			newEntity(entityId, record, to)
-			onNotifyAdd(world, to, from, record.row, {componentId})
+			--onNotifyAdd(world, to, from, record.row, {componentId})
 		end
 	end
-
-	local archetypeRecord = to.records[componentId]
+	
+	archetypeRecord = to.records[componentId]
 	to.columns[archetypeRecord][record.row] = data
 end
 
-local function archetypeTraverseRemove(world: World, componentId: i53, archetype: Archetype?): Archetype
-	local from = (archetype or world.ROOT_ARCHETYPE) :: Archetype
+local function archetypeTraverseRemove(world: World, componentId: i53, from: Archetype): Archetype
 	local edge = ensureEdge(from, componentId)
 
 	local remove = edge.remove
 	if not remove then
 		local to = table.clone(from.types)
-		table.remove(to, table.find(to, componentId))
+		local at = table.find(to, componentId)
+		if not at then 
+			return from
+		end
+		table.remove(to, at)
 		remove = ensureArchetype(world, to, from)
 		edge.remove = remove :: never
 	end
@@ -350,13 +374,12 @@ local function archetypeTraverseRemove(world: World, componentId: i53, archetype
 end
 
 function World.remove(world: World, entityId: i53, componentId: i53)
-	local entityIndex = world.entityIndex
-	local record = ensureRecord(entityIndex, entityId)
+	local record = ensureRecord(world, entityId)
 	local sourceArchetype = record.archetype
 	local destinationArchetype = archetypeTraverseRemove(world, componentId, sourceArchetype)
 
 	if sourceArchetype and not (sourceArchetype == destinationArchetype) then
-		moveEntity(entityIndex, entityId, record, destinationArchetype)
+		moveEntity(world.entityIndex, entityId, record, destinationArchetype)
 	end
 end
 
@@ -587,68 +610,82 @@ function World.entity(world: World)
 	return nextEntityId + REST
 end
 
-function World.delete(world: World, entityId: i53)
-	local entityIndex = world.entityIndex
-	local record = entityIndex[entityId]
-	moveEntity(entityIndex, entityId, record, world.ROOT_ARCHETYPE)
-	-- Since we just appended an entity to the ROOT_ARCHETYPE we have to remove it from
-	-- the entities array and delete the record. We know there won't be the hole since
-	-- we are always removing the last row.
-	--world.ROOT_ARCHETYPE.entities[record.row] = nil
-	--entityIndex[entityId] = nil
+-- should reuse this logic in World.set instead of swap removing in transition archetype
+local function destructColumns(columns, count, row) 
+	if row == count then 
+		for _, column in columns do 
+			column[count] = nil
+		end
+	else
+		for _, column in columns do 
+			column[row] = column[count]
+			column[count] = nil
+		end
+	end
 end
 
-function World.observer(world: World, ...)
-	local componentIds = {...}
-	local idsCount = #componentIds
-	local hooks = world.hooks
+local function archetypeDelete(entityIndex, archetype: Archetype, row: i24, destruct: boolean) 
+	local entities = archetype.entities
+	local last = #entities
 
-	return {
-		event = function(event)
-			local hook = hooks[event]
-			hooks[event] = nil
+	local entityToMove = entities[last]
+	--local entityToDelete = entities[row]
+	entities[row] = entityToMove
+	entities[last] = nil
 
-			local last, change
-			return function()
-				last, change = next(hook, last)
-				if not last then
-					return
-				end
+	if row ~= last then 
+		local recordToMove = entityIndex[entityToMove]
+		if recordToMove then 
+			recordToMove.row = row
+		end
+	end
 
-				local matched = false
-				local ids = change.ids
+	local columns = archetype.columns
 
-				while not matched do
-					local skip = false
-					for _, id in ids do
-						if not table.find(componentIds, id) then
-							skip = true
-							break
-						end
-					end
+	if not destruct then 
+		return
+	end
+	
+	destructColumns(columns, last, row)
+end
 
-					if skip then
-						last, change = next(hook, last)
-						ids = change.ids
-						continue
-					end
+function World.delete(world: World, entityId: i53) 
+	local entityIndex = world.entityIndex
+	local record = entityIndex[entityId]
+	local archetype = record.archetype
+	archetypeDelete(entityIndex, archetype, record.row, true)
+	entityIndex[entityId] = nil
+end
 
-					matched = true
-				end
+function World.__iter(world: World): () -> (number?, unknown?)
+	local entityIndex = world.entityIndex
+	local last
 
-				local queryOutput = table.create(idsCount)
-				local row = change.offset
-				local archetype = change.archetype
-				local columns = archetype.columns
-				local archetypeRecords = archetype.records
-				for index, id in componentIds do
-					queryOutput[index] = columns[archetypeRecords[id]][row]
-				end
+	return function() 
+		local entity, record = next(entityIndex, last)
+		if not entity then 
+			return
+		end
+		last = entity
 
-				return archetype.entities[row], unpack(queryOutput, 1, idsCount)
-			end
-		end;
-	}
+		local archetype = record.archetype
+		if not archetype then 
+			-- Returns only the entity id as an entity without data should not return
+			-- data and allow the user to get an error if they don't handle the case.
+			return entity 
+		end
+
+		local row = record.row
+		local types = archetype.types
+		local columns = archetype.columns
+		local entityData = {}
+		for i, column in columns do
+			-- We use types because the key should be the component ID not the column index
+			entityData[types[i]] = column[row]
+		end
+		
+		return entity, entityData
+	end
 end
 
 return table.freeze({
