@@ -190,6 +190,7 @@ function World.new()
 		nextEntityId = 0;
 		ROOT_ARCHETYPE = (nil :: any) :: Archetype;
 	}, World)
+	self.ROOT_ARCHETYPE = archetypeOf(self, {}, nil)
 	return self
 end
 
@@ -272,6 +273,7 @@ local function ensureEdge(archetype: Archetype, componentId: i53)
 end
 
 local function archetypeTraverseAdd(world: World, componentId: i53, from: Archetype): Archetype
+	from = from or world.ROOT_ARCHETYPE
 	if not from then
 		-- If there was no source archetype then it should return the ROOT_ARCHETYPE
 		local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
