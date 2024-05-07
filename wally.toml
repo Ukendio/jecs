@@ -10,6 +10,3 @@ include = ["default.project.json", "lib", "wally.toml", "README.md"]
 TestEZ = "roblox/testez@0.4.1"
 Matter = "matter-ecs/matter@0.8.0"
 ecr = "centau/ecr@0.8.0"
-
-
-

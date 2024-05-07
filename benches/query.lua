@@ -1,299 +1,200 @@
 --!optimize 2
 --!native
 
-local testkit = require('../testkit')
+local testkit = require("../testkit")
 local BENCH, START = testkit.benchmark()
 local function TITLE(title: string)
-    print()
-    print(testkit.color.white(title))
+	print()
+	print(testkit.color.white(title))
 end
 
-local jecs = require("../mirror/init")
+local jecs = require("../lib/init")
+local mirror = require("../mirror/init")
 
-local oldMatter = require("../oldMatter")
-
-local newMatter = require("../newMatter")
 type i53 = number
 
-do TITLE (testkit.color.white_underline("Jecs query"))
-    local ecs = jecs.World.new()
-    do TITLE "one component in common"
+do
+	TITLE(testkit.color.white_underline("Jecs query"))
+	local ecs = jecs.World.new()
+	do
+		TITLE("one component in common")
 
-        local function view_bench(
-            world: jecs.World,
-            A: i53, B: i53, C: i53, D: i53, E: i53, F: i53, G: i53, H: i53
-        )
+		local function view_bench(world: jecs.World, A: i53, B: i53, C: i53, D: i53, E: i53, F: i53, G: i53, H: i53)
+			BENCH("1 component", function()
+				for _ in world:query(A) do
+				end
+			end)
 
-            BENCH("1 component", function()
-                for _ in world:query(A) do end
-            end)
+			BENCH("2 component", function()
+				for _ in world:query(A, B) do
+				end
+			end)
 
-            BENCH("2 component", function()
-                for _ in world:query(A, B) do end
-            end)
+			BENCH("4 component", function()
+				for _ in world:query(A, B, C, D) do
+				end
+			end)
 
-            BENCH("4 component", function()
-                for _ in world:query(A, B, C, D) do 
-                end
-            end)
+			BENCH("8 component", function()
+				for _ in world:query(A, B, C, D, E, F, G, H) do
+				end
+			end)
+		end
 
-            BENCH("8 component", function()
-                for _ in world:query(A, B, C, D, E, F, G, H) do end
-            end)
-        end
+		local D1 = ecs:component()
+		local D2 = ecs:component()
+		local D3 = ecs:component()
+		local D4 = ecs:component()
+		local D5 = ecs:component()
+		local D6 = ecs:component()
+		local D7 = ecs:component()
+		local D8 = ecs:component()
 
-        local D1 = ecs:component()
-        local D2 = ecs:component()
-        local D3 = ecs:component()
-        local D4 = ecs:component()
-        local D5 = ecs:component()
-        local D6 = ecs:component()
-        local D7 = ecs:component()
-        local D8 = ecs:component()
+		local function flip()
+			return math.random() >= 0.15
+		end
 
-        local function flip() 
-            return math.random() >= 0.15
-        end
-
-        local added = 0
+		local added = 0
 		local archetypes = {}
-        for i = 1, 2^16-2 do 
-            local entity = ecs:entity()
+		for i = 1, 2 ^ 16 - 2 do
+			local entity = ecs:entity()
 
-            local combination = ""
+			local combination = ""
 
-            if flip() then 
-                combination ..= "B"
-                ecs:set(entity, D2, {value = true})
-            end
-            if flip() then 
-                combination ..= "C"
-                ecs:set(entity, D3, { value = true })
-            end
-            if flip() then 
-                combination ..= "D"
-                ecs:set(entity, D4, { value = true})
-            end
-            if flip() then 
-                combination ..= "E"
-                ecs:set(entity, D5, { value = true})
-            end
-            if flip() then 
-                combination ..= "F"
-                ecs:set(entity, D6, {value = true})
-            end
-            if flip() then 
-                combination ..= "G"
-                ecs:set(entity, D7, { value = true})
-            end
-            if flip() then 
-                combination ..= "H"
-                ecs:set(entity, D8, {value = true})
+			if flip() then
+				combination ..= "B"
+				ecs:set(entity, D2, {value = true})
+			end
+			if flip() then
+				combination ..= "C"
+				ecs:set(entity, D3, {value = true})
+			end
+			if flip() then
+				combination ..= "D"
+				ecs:set(entity, D4, {value = true})
+			end
+			if flip() then
+				combination ..= "E"
+				ecs:set(entity, D5, {value = true})
+			end
+			if flip() then
+				combination ..= "F"
+				ecs:set(entity, D6, {value = true})
+			end
+			if flip() then
+				combination ..= "G"
+				ecs:set(entity, D7, {value = true})
+			end
+			if flip() then
+				combination ..= "H"
+				ecs:set(entity, D8, {value = true})
+			end
 
-            end
-
-            if #combination == 7 then 
-                added += 1
-                ecs:set(entity, D1, { value = true})
-            end
+			if #combination == 7 then
+				added += 1
+				ecs:set(entity, D1, {value = true})
+			end
 			archetypes[combination] = true
-        end
+		end
 
 		local a = 0
-		for _ in archetypes do a+= 1 end
+		for _ in archetypes do
+			a += 1
+		end
 
-        view_bench(ecs, D1, D2, D3, D4, D5, D6, D7, D8)
-    end
+		view_bench(ecs, D1, D2, D3, D4, D5, D6, D7, D8)
+	end
 end
 
-do TITLE(testkit.color.white_underline("OldMatter query")) 
+do
+	TITLE(testkit.color.white_underline("Mirror query"))
+	local ecs = mirror.World.new()
+	do
+		TITLE("one component in common")
 
-    local ecs = oldMatter.World.new()
-    local component = oldMatter.component
+		local function view_bench(world: jecs.World, A: i53, B: i53, C: i53, D: i53, E: i53, F: i53, G: i53, H: i53)
+			BENCH("1 component", function()
+				for _ in world:query(A) do
+				end
+			end)
 
-    do TITLE "one component in common"
-        local function view_bench(
-            world: jecs.World,
-            A: i53, B: i53, C: i53, D: i53, E: i53, F: i53, G: i53, H: i53
-        )
+			BENCH("2 component", function()
+				for _ in world:query(A, B) do
+				end
+			end)
 
-            BENCH("1 component", function()
-                for _ in world:query(A) do end
-            end)
+			BENCH("4 component", function()
+				for _ in world:query(A, B, C, D) do
+				end
+			end)
 
-            BENCH("2 component", function()
-                for _ in world:query(A, B) do end
-            end)
+			BENCH("8 component", function()
+				for _ in world:query(A, B, C, D, E, F, G, H) do
+				end
+			end)
+		end
 
-            BENCH("4 component", function()
-                for _ in world:query(A, B, C, D) do 
-                end
-            end)
+		local D1 = ecs:component()
+		local D2 = ecs:component()
+		local D3 = ecs:component()
+		local D4 = ecs:component()
+		local D5 = ecs:component()
+		local D6 = ecs:component()
+		local D7 = ecs:component()
+		local D8 = ecs:component()
 
-            BENCH("8 component", function()
-                for _ in world:query(A, B, C, D, E, F, G, H) do end
-            end)
-        end
+		local function flip()
+			return math.random() >= 0.15
+		end
 
-        local D1 = component()
-        local D2 = component()
-        local D3 = component()
-        local D4 = component()
-        local D5 = component()
-        local D6 = component()
-        local D7 = component()
-        local D8 = component()
-
-        local function flip() 
-            return math.random() >= 0.15
-        end
-
-        local added = 0
+		local added = 0
 		local archetypes = {}
-        for i = 1, 2^16-2 do 
-            local entity = ecs:spawn()
+		for i = 1, 2 ^ 16 - 2 do
+			local entity = ecs:entity()
 
-            local combination = ""
+			local combination = ""
 
-            if flip() then 
-                combination ..= "B"
-                ecs:insert(entity, D2({value =  true}))
-            end
-            if flip() then 
-                combination ..= "C"
-                ecs:insert(entity, D3({value =  true}))
-            end
-            if flip() then 
-                combination ..= "D"
-                ecs:insert(entity, D4({value =  true}))
-            end
-            if flip() then 
-                combination ..= "E"
-                ecs:insert(entity, D5({value =  true}))
-            end
-            if flip() then 
-                combination ..= "F"
-                ecs:insert(entity, D6({value =  true}))
+			if flip() then
+				combination ..= "B"
+				ecs:set(entity, D2, {value = true})
+			end
+			if flip() then
+				combination ..= "C"
+				ecs:set(entity, D3, {value = true})
+			end
+			if flip() then
+				combination ..= "D"
+				ecs:set(entity, D4, {value = true})
+			end
+			if flip() then
+				combination ..= "E"
+				ecs:set(entity, D5, {value = true})
+			end
+			if flip() then
+				combination ..= "F"
+				ecs:set(entity, D6, {value = true})
+			end
+			if flip() then
+				combination ..= "G"
+				ecs:set(entity, D7, {value = true})
+			end
+			if flip() then
+				combination ..= "H"
+				ecs:set(entity, D8, {value = true})
+			end
 
-            end
-            if flip() then 
-                combination ..= "G"
-                ecs:insert(entity, D7({value =  true}))
-
-            end
-            if flip() then 
-                combination ..= "H"
-                ecs:insert(entity, D8({value =  true}))
-            end
-
-            if #combination == 7 then 
-                added += 1
-                ecs:insert(entity, D1({value =  true}))
-
-            end
+			if #combination == 7 then
+				added += 1
+				ecs:set(entity, D1, {value = true})
+			end
 			archetypes[combination] = true
-        end
+		end
 
 		local a = 0
-		for _ in archetypes do a+= 1 end
+		for _ in archetypes do
+			a += 1
+		end
 
-        view_bench(ecs, D1, D2, D3, D4, D5, D6, D7, D8)
-    end
-
-end
-
-do TITLE(testkit.color.white_underline("NewMatter query")) 
-
-    local ecs = newMatter.World.new()
-    local component = newMatter.component
-
-    do TITLE "one component in common"
-        local function view_bench(
-            world: jecs.World,
-            A: i53, B: i53, C: i53, D: i53, E: i53, F: i53, G: i53, H: i53
-        )
-
-            BENCH("1 component", function()
-                for _ in world:query(A) do end
-            end)
-
-            BENCH("2 component", function()
-                for _ in world:query(A, B) do end
-            end)
-
-            BENCH("4 component", function()
-                for _ in world:query(A, B, C, D) do 
-                end
-            end)
-
-            BENCH("8 component", function()
-                for _ in world:query(A, B, C, D, E, F, G, H) do end
-            end)
-        end
-
-        local D1 = component()
-        local D2 = component()
-        local D3 = component()
-        local D4 = component()
-        local D5 = component()
-        local D6 = component()
-        local D7 = component()
-        local D8 = component()
-
-        local function flip() 
-            return math.random() >= 0.15
-        end
-
-        local added = 0
-		local archetypes = {}
-        for i = 1, 2^16-2 do 
-            local entity = ecs:spawn()
-
-            local combination = ""
-
-            if flip() then 
-                combination ..= "B"
-                ecs:insert(entity, D2({value =  true}))
-            end
-            if flip() then 
-                combination ..= "C"
-                ecs:insert(entity, D3({value =  true}))
-            end
-            if flip() then 
-                combination ..= "D"
-                ecs:insert(entity, D4({value =  true}))
-            end
-            if flip() then 
-                combination ..= "E"
-                ecs:insert(entity, D5({value =  true}))
-            end
-            if flip() then 
-                combination ..= "F"
-                ecs:insert(entity, D6({value =  true}))
-
-            end
-            if flip() then 
-                combination ..= "G"
-                ecs:insert(entity, D7({value =  true}))
-
-            end
-            if flip() then 
-                combination ..= "H"
-                ecs:insert(entity, D8({value =  true}))
-            end
-
-            if #combination == 7 then 
-                added += 1
-                ecs:insert(entity, D1({value =  true}))
-
-            end
-			archetypes[combination] = true
-        end
-
-		local a = 0
-		for _ in archetypes do a+= 1 end
-
-        view_bench(ecs, D1, D2, D3, D4, D5, D6, D7, D8)
-    end
-
+		view_bench(ecs, D1, D2, D3, D4, D5, D6, D7, D8)
+	end
 end
