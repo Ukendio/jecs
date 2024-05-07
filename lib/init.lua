@@ -654,59 +654,6 @@ function World.delete(world: World, entityId: i53)
 	entityIndex[entityId] = nil
 end
 
-function World.observer(world: World, ...)
-	local componentIds = {...}
-	local idsCount = #componentIds
-	local hooks = world.hooks
-
-	return {
-		event = function(event)
-			local hook = hooks[event]
-			hooks[event] = nil
-
-			local last, change
-			return function()
-				last, change = next(hook, last)
-				if not last then
-					return
-				end
-
-				local matched = false
-				local ids = change.ids
-
-				while not matched do
-					local skip = false
-					for _, id in ids do
-						if not table.find(componentIds, id) then
-							skip = true
-							break
-						end
-					end
-
-					if skip then
-						last, change = next(hook, last)
-						ids = change.ids
-						continue
-					end
-
-					matched = true
-				end
-
-				local queryOutput = table.create(idsCount)
-				local row = change.offset
-				local archetype = change.archetype
-				local columns = archetype.columns
-				local archetypeRecords = archetype.records
-				for index, id in componentIds do
-					queryOutput[index] = columns[archetypeRecords[id]][row]
-				end
-
-				return archetype.entities[row], unpack(queryOutput, 1, idsCount)
-			end
-		end;
-	}
-end
-
 function World.__iter(world: World): () -> (number?, unknown?)
 	local entityIndex = world.entityIndex
 	local last
