@@ -32,11 +32,10 @@ type Record = {
 }
 
 type EntityIndex = {[i24]: Record}
-type ComponentIndex = {[i24]: ArchetypeMap}
+type ComponentIndex = {[i24]: ArchetypeMap }
 
 type ArchetypeRecord = number
-type ArchetypeMap = {sparse: {[ArchetypeId]: ArchetypeRecord}, size: number}
-type Archetypes = {[ArchetypeId]: Archetype}
+type ArchetypeMap = { Archetype }
 
 type ArchetypeDiff = {
 	added: Ty,
@@ -128,17 +127,16 @@ end
 local function createArchetypeRecords(componentIndex: ComponentIndex, to: Archetype, _from: Archetype?)
 	local destinationIds = to.types
 	local records = to.records
-	local id = to.id
 
 	for i, destinationId in destinationIds do
 		local archetypesMap = componentIndex[destinationId]
 
 		if not archetypesMap then
-			archetypesMap = {size = 0, sparse = {}}
+			archetypesMap = {}
 			componentIndex[destinationId] = archetypesMap
 		end
 
-		archetypesMap.sparse[id] = i
+		table.insert(archetypesMap, to)
 		records[destinationId] = i
 	end
 end
@@ -166,7 +164,6 @@ local function archetypeOf(world: World, types: {i24}, prev: Archetype?): Archet
 		types = types;
 	}
 	world.archetypeIndex[ty] = archetype
-	world.archetypes[id] = archetype
 	if length > 0 then
 		createArchetypeRecords(world.componentIndex, archetype, prev)
 	end
@@ -436,10 +433,8 @@ function World.query(world: World, ...: i53): Query
 	end
 
 	local compatibleArchetypes = {}
-	local length = 0
 
 	local components = {...}
-	local archetypes = world.archetypes
 	local queryLength = #components
 
 	local firstArchetypeMap
@@ -447,17 +442,21 @@ function World.query(world: World, ...: i53): Query
 
 	for _, componentId in components do
 		local map = componentIndex[componentId]
-		if not map then
+		if not map then 
 			return EmptyQuery
 		end
 
-		if firstArchetypeMap == nil or map.size < firstArchetypeMap.size then
+		local len = #map
+		if len == 0 then
+			return EmptyQuery
+		end
+
+		if firstArchetypeMap == nil or len < #firstArchetypeMap then
 			firstArchetypeMap = map
 		end
 	end
 
-	for id in firstArchetypeMap.sparse do
-		local archetype = archetypes[id]
+	for _, archetype in firstArchetypeMap do
 		local archetypeRecords = archetype.records
 		local indices = {}
 		local skip = false
@@ -475,8 +474,7 @@ function World.query(world: World, ...: i53): Query
 			continue
 		end
 
-		length += 1
-		compatibleArchetypes[length] = {archetype, indices}
+		table.insert(compatibleArchetypes, {archetype, indices})
 	end
 
 	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
@@ -520,18 +518,18 @@ function World.query(world: World, ...: i53): Query
 	function preparedQuery:__iter()
 		return function()
 			local archetype = compatibleArchetype[1]
-			local row = next(archetype.entities, lastRow)
+			local row = next(archetype.entities, lastRow) :: number
 			while row == nil do
 				lastArchetype, compatibleArchetype = next(compatibleArchetypes, lastArchetype)
 				if lastArchetype == nil then
 					return
 				end
 				archetype = compatibleArchetype[1]
-				row = next(archetype.entities, row)
+				row = next(archetype.entities, row) :: number
 			end
 			lastRow = row
 
-			local entityId = archetype.entities[row :: number]
+			local entityId = archetype.entities[row]
 			local columns = archetype.columns
 			local tr = compatibleArchetype[2]
 
