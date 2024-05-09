@@ -143,14 +143,14 @@ local function createArchetypeRecords(componentIndex: ComponentIndex, to: Archet
 	end
 end
 
-local function archetypeOf(world: World, types: {i24}, prev: Archetype?): Archetype
+local function archetypeOf(world: any, types: {i24}, prev: Archetype?): Archetype
 	local ty = hash(types)
 
 	local id = world.nextArchetypeId + 1
 	world.nextArchetypeId = id
 
 	local length = #types
-	local columns = table.create(length) :: {any}
+	local columns = table.create(length)
 
 	for index in types do
 		columns[index] = {}
@@ -173,51 +173,6 @@ local function archetypeOf(world: World, types: {i24}, prev: Archetype?): Archet
 
 	return archetype
 end
-
-local World = {}
-World.__index = World
-function World.new()
-	local self = setmetatable({
-    archetypeIndex = {};
-		archetypes = {};
-		componentIndex = {};
-		entityIndex = {};
-		hooks = {
-			[ON_ADD] = {};
-		};
-		nextArchetypeId = 0;
-		nextComponentId = 0;
-		nextEntityId = 0;
-		ROOT_ARCHETYPE = (nil :: any) :: Archetype;
-	}, World)
-	self.ROOT_ARCHETYPE = archetypeOf(self, {}, nil)
-	return self
-end
-
-local function emit(world, eventDescription)
-	local event = eventDescription.event
-
-	table.insert(world.hooks[event], {
-		archetype = eventDescription.archetype;
-		ids = eventDescription.ids;
-		offset = eventDescription.offset;
-		otherArchetype = eventDescription.otherArchetype;
-	})
-end
-
-local function onNotifyAdd(world, archetype, otherArchetype, row: number, added: Ty)
-	if #added > 0 then
-		emit(world, {
-			archetype = archetype;
-			event = ON_ADD;
-			ids = added;
-			offset = row;
-			otherArchetype = otherArchetype;
-		})
-	end
-end
-
-export type World = typeof(World.new())
 
 local function ensureArchetype(world: World, types, prev)
 	if #types < 1 then
@@ -305,6 +260,51 @@ local function ensureRecord(world, entityId: i53): Record
 	entityIndex[entityId] = record
 	return record
 end
+
+local World = {}
+World.__index = World
+function World.new()
+	local self = setmetatable({
+    archetypeIndex = {};
+		archetypes = {};
+		componentIndex = {};
+		entityIndex = {};
+		hooks = {
+			[ON_ADD] = {};
+		};
+		nextArchetypeId = 0;
+		nextComponentId = 0;
+		nextEntityId = 0;
+		ROOT_ARCHETYPE = (nil :: any) :: Archetype;
+	}, World)
+	self.ROOT_ARCHETYPE = archetypeOf(self, {}, nil)
+	return self
+end
+
+local function emit(world, eventDescription)
+	local event = eventDescription.event
+
+	table.insert(world.hooks[event], {
+		archetype = eventDescription.archetype;
+		ids = eventDescription.ids;
+		offset = eventDescription.offset;
+		otherArchetype = eventDescription.otherArchetype;
+	})
+end
+
+local function onNotifyAdd(world, archetype, otherArchetype, row: number, added: Ty)
+	if #added > 0 then
+		emit(world, {
+			archetype = archetype;
+			event = ON_ADD;
+			ids = added;
+			offset = row;
+			otherArchetype = otherArchetype;
+		})
+	end
+end
+
+export type World = typeof(World.new())
 
 
 function World.add(world: World, entityId: i53, componentId: i53) 
