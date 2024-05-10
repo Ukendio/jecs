@@ -11,9 +11,6 @@
       },
       "ReplicatedStorage": {
         "$className": "ReplicatedStorage",
-        "DevPackages": {
-            "$path": "DevPackages"
-        },
         "Lib": {
           "$path": "lib"
         },
