@@ -5,8 +5,8 @@ local ECS_GENERATION_INC = jecs.ECS_GENERATION_INC
 local IS_PAIR = jecs.IS_PAIR
 local ECS_PAIR = jecs.ECS_PAIR
 local getAlive = jecs.getAlive
-local ecs_pair_first = jecs.ecs_pair_first
-local ecs_pair_second = jecs.ecs_pair_second
+local ecs_get_source = jecs.ecs_get_source
+local ecs_get_target = jecs.ecs_get_target
 local REST = 256 + 4
 
 local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
@@ -39,12 +39,12 @@ TEST("world", function()
             elseif id == eAB then
                 CHECK(data[A] == true)
                 CHECK(data[B] == true)
-            else
-                error("unknown entity", id)
             end
         end
 
-        CHECK(count == 3)
+        -- components are registered in the entity index as well 
+        -- so this test has to add 2 to account for them
+        CHECK(count == 3 + 2)
     end
 
     do CASE "should query all matching entities"
@@ -199,8 +199,8 @@ TEST("world", function()
 
         local pair = ECS_PAIR(e2, e3)
         CHECK(IS_PAIR(pair) == true)
-        CHECK(ecs_pair_first(world.entityIndex, pair) == e2)
-        CHECK(ecs_pair_second(world.entityIndex, pair) == e3)
+        CHECK(ecs_get_source(world.entityIndex, pair) == e2)
+        CHECK(ecs_get_target(world.entityIndex, pair) == e3)
     end
 
 end)

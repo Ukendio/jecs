@@ -291,6 +291,16 @@ local function ecs_get_target(entityIndex, e)
     return getAlive(entityIndex, ECS_PAIR_SECOND(e))
 end
 
+local function nextEntityId(entityIndex, index: i24) 
+	local id = newId(index, 0)
+	entityIndex.sparse[id] = {
+		dense = index
+	} :: Record	
+	entityIndex.dense[index] = id
+
+	return id
+end
+
 function World.component(world: World)
 	local componentId = world.nextComponentId + 1
 	if componentId > HI_COMPONENT_ID then
@@ -299,21 +309,13 @@ function World.component(world: World)
 		error("Too many components, consider using world:entity() instead to create components.")
 	end
 	world.nextComponentId = componentId
-	return componentId
+	return nextEntityId(world.entityIndex, componentId)
 end
 
 function World.entity(world: World)
-	local nextEntityId = world.nextEntityId + 1
-	world.nextEntityId = nextEntityId
-	local index = nextEntityId + REST
-	local id = newId(index, 0)
-	local entityIndex = world.entityIndex
-	entityIndex.sparse[id] = {
-		dense = index
-	} :: Record
-	entityIndex.dense[index] = id
-
-	return id
+	local entityId = world.nextEntityId + 1
+	world.nextEntityId = entityId
+	return nextEntityId(world.entityIndex, entityId + REST)
 end
 
 -- should reuse this logic in World.set instead of swap removing in transition archetype
