@@ -278,15 +278,15 @@ local function ECS_PAIR(source: number, target: number)
     return id
 end
 
-local function getAlive(entityIndex, id) 
-    return entityIndex.dense[id]
+local function getAlive(entityIndex: EntityIndex, id: i53) 
+    return assert(entityIndex.dense[id], id .. "is not alive")
 end
 
-local function ecs_pair_first(entityIndex, e) 
+local function ecs_get_source(entityIndex, e) 
     assert(isPair(e))
     return getAlive(entityIndex, ECS_PAIR_FIRST(e))
 end
-local function ecs_pair_second(entityIndex, e) 
+local function ecs_get_target(entityIndex, e) 
     assert(isPair(e))
     return getAlive(entityIndex, ECS_PAIR_SECOND(e))
 end
@@ -771,6 +771,6 @@ return table.freeze({
 	ECS_GENERATION = ECS_GENERATION,
 	ECS_GENERATION_INC = ECS_GENERATION_INC,
 	getAlive = getAlive,
-	ecs_pair_first = ecs_pair_first,
-	ecs_pair_second = ecs_pair_second
+	ecs_get_target = ecs_get_target,
+	ecs_get_source = ecs_get_source
 })
