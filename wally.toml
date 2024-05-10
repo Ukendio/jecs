@@ -1,10 +1,9 @@
 [package]
 name = "ukendio/jecs"
-version = "0.1.0-rc.0"
+version = "0.1.0-rc.4"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
+include = ["default.project.json", "lib/**", "lib", "wally.toml", "README.md"]
 exclude = ["**"]
-include = ["default.project.json", "lib", "wally.toml", "README.md"]
 
 [dev-dependencies]
-TestEZ = "roblox/testez@0.4.1"
