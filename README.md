@@ -15,6 +15,7 @@ jecs is a stupidly fast Entity Component System (ECS).
 - Zero-dependency Luau package
 - Optimized for column-major operations
 - Cache friendly archetype/SoA storage
+- Entity Relationships as first class citizens
 
 ### Example
 
