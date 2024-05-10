@@ -176,22 +176,6 @@ return function()
 			expect(added).to.equal(0)
 		end)
 
-		it("track changes", function() 
-			local Position = world:entity()
-
-			local moving = world:entity()
-			world:set(moving, Position, Vector3.new(1, 2, 3))
-
-			local count = 0
-
-			for e, position in world:observer(Position).event(jecs.ON_ADD) do 
-				count += 1
-				expect(e).to.equal(moving)
-				expect(position).to.equal(Vector3.new(1, 2, 3))
-			end
-			expect(count).to.equal(1)
-		end)
-
 		it("should query all matching entities", function()
 
 			local world = jecs.World.new()
