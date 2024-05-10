@@ -441,6 +441,21 @@ local function archetypeTraverseAdd(world: World, componentId: i53, from: Archet
 	return add
 end
 
+function World.add(world: World, entityId: i53, componentId: i53) 
+	local entityIndex = world.entityIndex
+	local record = entityIndex.sparse[entityId]
+	local from = record.archetype
+	local to = archetypeTraverseAdd(world, componentId, from)
+	if from and not (from == world.ROOT_ARCHETYPE) then
+		moveEntity(entityIndex, entityId, record, to)
+	else
+		if #to.types > 0 then
+			newEntity(entityId, record, to)
+		end
+	end
+end
+
+-- Symmetric like `World.add` but idempotent
 function World.set(world: World, entityId: i53, componentId: i53, data: unknown)
 	local record = world.entityIndex.sparse[entityId]
 	local from = record.archetype
