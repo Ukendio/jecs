@@ -1,5 +1,12 @@
 local testkit = require("../testkit")
 local jecs = require("../lib/init")
+local ECS_ID, ECS_GENERATION = jecs.ECS_ID, jecs.ECS_GENERATION
+local ECS_GENERATION_INC = jecs.ECS_GENERATION_INC
+local IS_PAIR = jecs.IS_PAIR
+local ECS_PAIR = jecs.ECS_PAIR
+local getAlive = jecs.getAlive
+local ecs_pair_first = jecs.ecs_pair_first
+local ecs_pair_second = jecs.ecs_pair_second
 
 local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 
@@ -127,7 +134,7 @@ TEST("world", function()
         CHECK(world:get(id, Poison) == 5)
     end
 
-    do CASE "Should allow deleting components" 
+    do CASE "should allow deleting components" 
         local world = jecs.World.new()
 
         local Health = world:entity()
@@ -147,6 +154,35 @@ TEST("world", function()
         CHECK(world:get(id1, Poison) == 500)
         CHECK(world:get(id1, Health) == 50)
 
+    end
+
+    do CASE "should increment generation" 
+        local world = jecs.World.new()
+        local e = world:entity()
+        local REST = 256 + 4
+        CHECK(ECS_ID(e) == 1 + REST)
+        CHECK(ECS_GENERATION(e) == 0) -- 0
+        e = ECS_GENERATION_INC(e) 
+        CHECK(ECS_GENERATION(e) == 1) -- 1
+    end
+
+    do CASE "relations" 
+        local world = jecs.World.new()
+        local _e = world:entity()
+        local e2 = world:entity()
+        local e3 = world:entity()
+        local REST = 256 + 4
+        CHECK(ECS_ID(e2) == 2 + REST)
+        CHECK(ECS_ID(e3) == 3 + REST)
+        CHECK(ECS_GENERATION(e2) == 0) 
+        CHECK(ECS_GENERATION(e3) == 0) 
+
+        CHECK(IS_PAIR(world:entity()) == false)
+
+        local pair = ECS_PAIR(e2, e3)
+        CHECK(IS_PAIR(pair) == true)
+        CHECK(ecs_pair_first(world.entityIndex, pair) == e2)
+        CHECK(ecs_pair_second(world.entityIndex, pair) == e3)
     end
 
 end)
