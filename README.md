@@ -11,11 +11,13 @@ Just an ECS
 
 jecs is a stupidly fast Entity Component System (ECS).
 
+- Entity Relationships as first class citizens
 - Process tens of thousands of entities with ease every frame
-- Zero-dependency Luau package
+- Type-safe [Luau](https://luau-lang.org/) API
+- Zero-dependency package
 - Optimized for column-major operations
 - Cache friendly archetype/SoA storage
-- Entity Relationships as first class citizens
+- Unit tested for stability
 
 ### Example
 
