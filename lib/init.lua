@@ -469,14 +469,17 @@ function World.set(world: World, entityId: i53, componentId: i53, data: unknown)
 	to.columns[archetypeRecord][record.row] = data
 end
 
-local function archetypeTraverseRemove(world: World, componentId: i53, archetype: Archetype?): Archetype
-	local from = (archetype or world.ROOT_ARCHETYPE) :: Archetype
+local function archetypeTraverseRemove(world: World, componentId: i53, from: Archetype): Archetype
 	local edge = ensureEdge(from, componentId)
 
 	local remove = edge.remove
 	if not remove then
 		local to = table.clone(from.types)
-		table.remove(to, table.find(to, componentId))
+		local at = table.find(to, componentId)
+		if not at then 
+			return from
+		end
+		table.remove(to, at)
 		remove = ensureArchetype(world, to, from)
 		edge.remove = remove :: never
 	end

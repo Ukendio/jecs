@@ -160,7 +160,7 @@ TEST("world", function()
 
     end
 
-    do CASE "show allow remove that doesn't exist on entity" 
+    do CASE "should allow remove that doesn't exist on entity" 
         local world = jecs.World.new()
 
         local Health = world:entity()
@@ -171,6 +171,7 @@ TEST("world", function()
         world:remove(id, Poison)
 
         CHECK(world:get(id, Poison) == nil)
+        print(world:get(id, Health))
         CHECK(world:get(id, Health) == 50)
     end
 
