@@ -39,6 +39,29 @@ do
 				for _ in world:query(A, B, C, D, E, F, G, H) do
 				end
 			end)
+
+			local e = world:entity()
+			world:set(e, A, true)
+			world:set(e, B, true)
+			world:set(e, C, true)
+			world:set(e, D, true)
+			world:set(e, E, true)
+			world:set(e, F, true)
+			world:set(e, G, true)
+			world:set(e, H, true)
+
+			BENCH("Update Data", function() 
+				for _ = 1, 100 do 
+					world:set(e, A, false)
+					world:set(e, B, false)
+					world:set(e, C, false)
+					world:set(e, D, false)
+					world:set(e, E, false)
+					world:set(e, F, false)
+					world:set(e, G, false)
+					world:set(e, H, false)
+				end
+			end)
 		end
 
 		local D1 = ecs:component()
@@ -130,6 +153,29 @@ do
 
 			BENCH("8 component", function()
 				for _ in world:query(A, B, C, D, E, F, G, H) do
+				end
+			end)
+
+			local e = world:entity()
+			world:set(e, A, true)
+			world:set(e, B, true)
+			world:set(e, C, true)
+			world:set(e, D, true)
+			world:set(e, E, true)
+			world:set(e, F, true)
+			world:set(e, G, true)
+			world:set(e, H, true)
+
+			BENCH("Update Data", function() 
+				for _ = 1, 100 do 
+					world:set(e, A, false)
+					world:set(e, B, false)
+					world:set(e, C, false)
+					world:set(e, D, false)
+					world:set(e, E, false)
+					world:set(e, F, false)
+					world:set(e, G, false)
+					world:set(e, H, false)
 				end
 			end)
 		end

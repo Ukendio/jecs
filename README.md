@@ -19,14 +19,17 @@ jecs is a stupidly fast Entity Component System (ECS).
 ### Example
 
 ```lua
-local world = Jecs.World.new()
-
-local Health = world:component()
-local Damage = world:component()
-local Position = world:component()
+local world = World.new()
 
 local player = world:entity()
 local opponent = world:entity()
+
+local Health = world:component()
+local Position = world:component()
+-- Notice how components can just be entities as well?
+-- It allows you to model relationships easily!
+local Damage = world:entity()
+local DamagedBy = world:entity()
 
 world:set(player, Health, 100)
 world:set(player, Damage, 8)
@@ -38,17 +41,20 @@ world:set(opponent, Position, Vector3.new(0, 5, 3))
 
 for playerId, playerPosition, health in world:query(Position, Health) do
     local totalDamage = 0
-    for _, opponentPosition, damage in world:query(Position, Damage) do
+    for opponentId, opponentPosition, damage in world:query(Position, Damage) do
         if (playerPosition - opponentPosition).Magnitude < 5 then
             totalDamage += damage
         end
+        world:set(playerId, ECS_PAIR(DamagedBy, opponentId), totalDamage)
     end
+end
 
-    world:set(playerId, Health, health - totalDamage)
+-- Gets the damage inflicted by our specific opponent!
+for playerId, health, inflicted in world:query(Health, ECS_PAIR(DamagedBy, opponent)) do 
+    world:set(playerId, health - inflicted)
 end
 
 assert(world:get(playerId, Health) == 79)
-assert(world:get(opponentId, Health) == 92)
 ```
 
 125 archetypes, 4 random components queried.
