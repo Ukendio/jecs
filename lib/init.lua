@@ -82,23 +82,27 @@ local function transitionArchetype(
 		column[last] = nil
 	end
 
-	local dense, sparse = entityIndex.dense, entityIndex.sparse
-	-- Move the entity from the source to the destination archetype.
-	local atSourceRow = sourceEntities[sourceRow]
-	destinationEntities[destinationRow] = atSourceRow
-	local record = sparse[atSourceRow]
-	record.row = destinationRow
+	local sparse = entityIndex.sparse
+	local movedAway = #sourceEntities
 
+	-- Move the entity from the source to the destination archetype.
 	-- Because we have swapped columns we now have to update the records
 	-- corresponding to the entities' rows that were swapped.
-	local movedAway = #sourceEntities
-	if sourceRow ~= movedAway then
-		local atMovedAway = sourceEntities[movedAway]
-		sourceEntities[sourceRow] = atMovedAway
-		sparse[atMovedAway].row = sourceRow
+	local e1 = sourceEntities[sourceRow]
+	local e2 = sourceEntities[movedAway]
+
+	if sourceRow ~= movedAway then 
+		sourceEntities[sourceRow] = e2
 	end
 
 	sourceEntities[movedAway] = nil
+	destinationEntities[destinationRow] = e1
+
+	local record1 = sparse[e1]
+	local record2 = sparse[e2]
+
+	record1.row = destinationRow
+	record2.row = sourceRow
 end
 
 local function archetypeAppend(entity: number, archetype: Archetype): number
