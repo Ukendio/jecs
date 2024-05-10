@@ -7,6 +7,7 @@ local ECS_PAIR = jecs.ECS_PAIR
 local getAlive = jecs.getAlive
 local ecs_pair_first = jecs.ecs_pair_first
 local ecs_pair_second = jecs.ecs_pair_second
+local REST = 256 + 4
 
 local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 
@@ -159,8 +160,8 @@ TEST("world", function()
     do CASE "should increment generation" 
         local world = jecs.World.new()
         local e = world:entity()
-        local REST = 256 + 4
         CHECK(ECS_ID(e) == 1 + REST)
+        CHECK(getAlive(world.entityIndex, ECS_ID(e)) == e)
         CHECK(ECS_GENERATION(e) == 0) -- 0
         e = ECS_GENERATION_INC(e) 
         CHECK(ECS_GENERATION(e) == 1) -- 1
@@ -171,7 +172,6 @@ TEST("world", function()
         local _e = world:entity()
         local e2 = world:entity()
         local e3 = world:entity()
-        local REST = 256 + 4
         CHECK(ECS_ID(e2) == 2 + REST)
         CHECK(ECS_ID(e3) == 3 + REST)
         CHECK(ECS_GENERATION(e2) == 0) 
