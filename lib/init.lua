@@ -279,7 +279,7 @@ local function ECS_PAIR(source: number, target: number)
 end
 
 local function getAlive(entityIndex: EntityIndex, id: i53) 
-    return assert(entityIndex.dense[id], id .. "is not alive")
+    return entityIndex.dense[id]
 end
 
 local function ecs_get_source(entityIndex, e) 
