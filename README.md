@@ -45,9 +45,14 @@ world:set(opponent, Position, Vector3.new(0, 5, 3))
 for playerId, playerPosition, health in world:query(Position, Health) do
     local totalDamage = 0
     for opponentId, opponentPosition, damage in world:query(Position, Damage) do
+        if playerId == opponentId then 
+            continue
+        end
         if (playerPosition - opponentPosition).Magnitude < 5 then
             totalDamage += damage
         end
+        -- We create a pair between the relation component `DamagedBy` and the entity id of the opponent. 
+        -- This will allow us to specifically query for damage exerted by a specific opponent.
         world:set(playerId, ECS_PAIR(DamagedBy, opponentId), totalDamage)
     end
 end
@@ -57,7 +62,7 @@ for playerId, health, inflicted in world:query(Health, ECS_PAIR(DamagedBy, oppon
     world:set(playerId, health - inflicted)
 end
 
-assert(world:get(playerId, Health) == 79)
+assert(world:get(player, Health) == 79)
 ```
 
 125 archetypes, 4 random components queried.
