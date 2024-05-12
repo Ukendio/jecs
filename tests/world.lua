@@ -201,8 +201,9 @@ TEST("world", function()
         local bob = world:entity()
         
         world:set(bob, ECS_PAIR(Eats, Apples), true)
-        for e in  world:query(ECS_PAIR(Eats, Apples)) do 
+        for e, bool in world:query(ECS_PAIR(Eats, Apples)) do 
             CHECK(e == bob)
+            CHECK(bool)
         end
     end
     
@@ -212,14 +213,16 @@ TEST("world", function()
         local Apples = world:entity()
         local bob = world:entity()
         
-        world:add(bob, ECS_PAIR(Eats, Apples))
+        world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
         
         local w = jecs.Wildcard
-        for e in world:query(ECS_PAIR(Eats, w)) do 
+        for e, data in world:query(ECS_PAIR(Eats, w)) do 
             CHECK(e == bob)
+            CHECK(data == "bob eats apples")
         end
-        for e in world:query(ECS_PAIR(w, Apples)) do 
+        for e, data in world:query(ECS_PAIR(w, Apples)) do 
             CHECK(e == bob)
+            CHECK(data == "bob eats apples")
         end
     end
 
@@ -231,20 +234,26 @@ TEST("world", function()
         local bob = world:entity()
         local alice = world:entity()
         
-        world:add(bob, ECS_PAIR(Eats, Apples))
-        world:add(alice, ECS_PAIR(Eats, Oranges))
+        world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
+        world:set(alice, ECS_PAIR(Eats, Oranges), "alice eats oranges")
         
         local w = jecs.Wildcard
         local count = 0
-        for e in world:query(ECS_PAIR(Eats, w)) do 
+        for e, data in world:query(ECS_PAIR(Eats, w)) do 
             count += 1
+            if e == bob then 
+                CHECK(data == "bob eats apples")
+            else
+                CHECK(data == "alice eats oranges")
+            end
         end
 
         CHECK(count == 2)
         count = 0
 
-        for e in world:query(ECS_PAIR(w, Apples)) do 
+        for e, data in world:query(ECS_PAIR(w, Apples)) do 
             count += 1
+            CHECK(data == "bob eats apples")
         end
         CHECK(count == 1)
     end
