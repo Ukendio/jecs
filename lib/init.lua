@@ -236,22 +236,14 @@ local function hash(arr): string | number
 	return table.concat(arr, "_")
 end
 
-local function createArchetypeRecords(componentIndex: ComponentIndex, to: Archetype, _from: Archetype?)
-	local destinationIds = to.types
-	local records = to.records
-	local id = to.id
+local function createArchetypeRecord(componentIndex, id, componentId, i) 
+	local archetypesMap = componentIndex[componentId]
 
-	for i, destinationId in destinationIds do
-		local archetypesMap = componentIndex[destinationId]
-
-		if not archetypesMap then
-			archetypesMap = {size = 0, sparse = {}}
-			componentIndex[destinationId] = archetypesMap
-		end
-
-		archetypesMap.sparse[id] = i
-		records[destinationId] = i
+	if not archetypesMap then
+		archetypesMap = {size = 0, sparse = {}}
+		componentIndex[componentId] = archetypesMap
 	end
+	archetypesMap.sparse[id] = i
 end
 
 local function archetypeOf(world: World, types: {i24}, prev: Archetype?): Archetype
@@ -261,10 +253,26 @@ local function archetypeOf(world: World, types: {i24}, prev: Archetype?): Archet
 	world.nextArchetypeId = id
 
 	local length = #types
-	local columns = {}
+	local columns = table.create(length)
 
-	for index, componentId in types do
-		table.insert(columns, {})
+	local records = {}
+	local componentIndex = world.componentIndex
+	local entityIndex = world.entityIndex
+	for i, componentId in types do
+		createArchetypeRecord(componentIndex, id, componentId, i)	
+		records[componentId] = i
+		columns[i] = {}
+
+		if ECS_IS_PAIR(componentId) then 
+			local first = ecs_get_source(entityIndex, componentId)
+			local second = ecs_get_target(entityIndex, componentId)
+			local firstPair = ECS_PAIR(first, WILDCARD)
+			local secondPair = ECS_PAIR(WILDCARD, second)
+			createArchetypeRecord(componentIndex, id, firstPair, i)
+			createArchetypeRecord(componentIndex, id, secondPair, i)
+			records[firstPair] = i
+			records[secondPair] = i
+		end
 	end
 
 	local archetype = {
@@ -272,15 +280,12 @@ local function archetypeOf(world: World, types: {i24}, prev: Archetype?): Archet
 		edges = {};
 		entities = {};
 		id = id;
-		records = {};
+		records = records;
 		type = ty;
 		types = types;
 	}
 	world.archetypeIndex[ty] = archetype
 	world.archetypes[id] = archetype
-	if length > 0 then
-		createArchetypeRecords(world.componentIndex, archetype, prev)
-	end
 
 	return archetype
 end
@@ -404,7 +409,6 @@ local function findInsert(types: {i53}, toAdd: i53)
 end
 
 local function findArchetypeWith(world: World, node: Archetype, componentId: i53)
-	local entityIndex = world.entityIndex
 	local types = node.types
 	-- Component IDs are added incrementally, so inserting and sorting
 	-- them each time would be expensive. Instead this insertion sort can find the insertion
@@ -418,22 +422,6 @@ local function findArchetypeWith(world: World, node: Archetype, componentId: i53
 		return node
 	end
 	table.insert(destinationType, at, componentId)
-	if ECS_IS_PAIR(componentId) then 
-		local source = ECS_PAIR(
-			ecs_get_source(entityIndex, componentId), WILDCARD)
-		local sourceAt = findInsert(destinationType, source)
-		if sourceAt ~= -1 then 
-			table.insert(destinationType, sourceAt, source)
-		end
-
-		local target = ECS_PAIR(
-			WILDCARD, ecs_get_target(entityIndex, componentId))
-
-		local targetAt = findInsert(destinationType, target)
-		if targetAt ~= -1 then 
-			table.insert(destinationType, targetAt, target)
-		end
-	end
 
 	return ensureArchetype(world, destinationType, node)
 end
