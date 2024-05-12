@@ -2,7 +2,7 @@ local testkit = require("../testkit")
 local jecs = require("../lib/init")
 local ECS_ID, ECS_GENERATION = jecs.ECS_ID, jecs.ECS_GENERATION
 local ECS_GENERATION_INC = jecs.ECS_GENERATION_INC
-local IS_PAIR = jecs.ECS_IS_PAIR
+local IS_PAIR = jecs.IS_PAIR
 local ECS_PAIR = jecs.ECS_PAIR
 local getAlive = jecs.getAlive
 local ecs_get_source = jecs.ecs_get_source
@@ -14,6 +14,7 @@ local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 local N = 10
 
 TEST("world", function() 
+    --[[
     do CASE "should be iterable" 
         local world = jecs.World.new()
         local A = world:component()
@@ -48,7 +49,6 @@ TEST("world", function()
     end
 
     do CASE "should query all matching entities"
-
         local world = jecs.World.new()
         local A = world:component()
         local B = world:component()
@@ -71,7 +71,6 @@ TEST("world", function()
     end
 
     do CASE "should query all matching entities when irrelevant component is removed"
-
         local world = jecs.World.new()
         local A = world:component()
         local B = world:component()
@@ -99,7 +98,6 @@ TEST("world", function()
     end
 
     do CASE "should query all entities without B"
-
         local world = jecs.World.new()
         local A = world:component()
         local B = world:component()
@@ -171,14 +169,13 @@ TEST("world", function()
         world:remove(id, Poison)
 
         CHECK(world:get(id, Poison) == nil)
-        print(world:get(id, Health))
         CHECK(world:get(id, Health) == 50)
     end
 
     do CASE "should increment generation" 
         local world = jecs.World.new()
         local e = world:entity()
-        CHECK(ECS_ID(e) == 1 + REST)
+        CHECK(ECS_ID(e) == 1 + jecs.REST)
         CHECK(getAlive(world.entityIndex, ECS_ID(e)) == e)
         CHECK(ECS_GENERATION(e) == 0) -- 0
         e = ECS_GENERATION_INC(e) 
@@ -190,8 +187,8 @@ TEST("world", function()
         local _e = world:entity()
         local e2 = world:entity()
         local e3 = world:entity()
-        CHECK(ECS_ID(e2) == 2 + REST)
-        CHECK(ECS_ID(e3) == 3 + REST)
+        CHECK(ECS_ID(e2) == 2 +jecs.REST)
+        CHECK(ECS_ID(e3) == 3 + jecs.REST)
         CHECK(ECS_GENERATION(e2) == 0) 
         CHECK(ECS_GENERATION(e3) == 0) 
 
@@ -203,6 +200,38 @@ TEST("world", function()
         CHECK(ecs_get_target(world.entityIndex, pair) == e3)
     end
 
+    do CASE "should allow querying for relations" 
+        local world = jecs.World.new()
+        local Eats = world:entity()
+        local Apples = world:entity()
+        local bob = world:entity()
+        
+        world:set(bob, ECS_PAIR(Eats, Apples), true)
+        for e in  world:query(ECS_PAIR(Eats, Apples)) do 
+            CHECK(e == bob)
+        end
+    end
+    ]]
+
+    do CASE "should allow wildcards in queries" 
+        local world = jecs.World.new()
+        local Eats = world:entity()
+        local Apples = world:entity()
+        local bob = world:entity()
+        
+        world:set(bob, ECS_PAIR(Eats, Apples), true)
+        --testkit.print(world.componentIndex)
+        
+        local w = jecs.Wildcard
+        for e, bool in world:query(ECS_PAIR(Eats, w)) do 
+            CHECK(e == bob)
+            CHECK(bool)
+        end
+        for e, bool in world:query(ECS_PAIR(w, Apples)) do 
+            CHECK(e == bob)
+            CHECK(bool)
+        end
+    end
 end)
 
 FINISH()

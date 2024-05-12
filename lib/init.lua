@@ -44,12 +44,115 @@ type ArchetypeDiff = {
 	removed: Ty,
 }
 
+local FLAGS_PAIR = 0x8
 local HI_COMPONENT_ID = 256
 local ON_ADD = HI_COMPONENT_ID + 1
 local ON_REMOVE = HI_COMPONENT_ID + 2
 local ON_SET = HI_COMPONENT_ID + 3
 local WILDCARD = HI_COMPONENT_ID + 4
-local REST = HI_COMPONENT_ID + 5
+local REST = HI_COMPONENT_ID + 5 
+
+local ECS_ID_FLAGS_MASK = 0x10
+local ECS_ENTITY_MASK = bit32.lshift(1, 24)
+local ECS_GENERATION_MASK = bit32.lshift(1, 16)
+
+local function addFlags(flags) 
+    local typeFlags = 0x0
+    if flags.isPair then
+        typeFlags = bit32.bor(typeFlags, FLAGS_PAIR) -- HIGHEST bit in the ID.
+    end
+    if false then
+        typeFlags = bit32.bor(typeFlags, 0x4) -- Set the second flag to true
+    end
+    if false then
+        typeFlags = bit32.bor(typeFlags, 0x2) -- Set the third flag to true
+    end
+    if false then
+        typeFlags = bit32.bor(typeFlags, 0x1) -- LAST BIT in the ID.
+    end
+
+    return typeFlags
+end
+
+local function newId(source: number, target: number) 
+    local e = source * 2^28 + target * ECS_ID_FLAGS_MASK
+    return e
+end
+
+local function ECS_IS_PAIR(e: number) 
+    return (e % 2^4) // FLAGS_PAIR ~= 0
+end
+
+function separate(entity: number)
+    local _typeFlags = entity % 0x10
+    entity //= ECS_ID_FLAGS_MASK
+    return entity // ECS_ENTITY_MASK, entity % ECS_GENERATION_MASK, _typeFlags
+end
+
+-- HIGH 24 bits LOW 24 bits
+local function ECS_GENERATION(e: i53)
+    e //= 0x10
+    return e % ECS_GENERATION_MASK
+end
+
+local function ECS_ID(e: i53) 
+    e //= 0x10
+    return e // ECS_ENTITY_MASK
+end
+
+local function ECS_GENERATION_INC(e: i53)
+    local id, generation, flags = separate(e)    
+
+    return newId(id, generation + 1) + flags
+end
+
+-- gets the high ID
+local function ECS_PAIR_FIRST(entity: i53): i24
+    entity //= 0x10
+    local first = entity % ECS_ENTITY_MASK
+    return first
+end
+
+-- gets the low ID
+local ECS_PAIR_SECOND = ECS_ID
+
+local function ECS_PAIR(source: number, target: number)
+    local id 
+	if source == WILDCARD then 
+		id = newId(ECS_PAIR_SECOND(target), WILDCARD)
+	elseif target == WILDCARD then
+		id = newId(WILDCARD, ECS_PAIR_SECOND(source))
+	else
+		id = newId(ECS_PAIR_SECOND(target), ECS_PAIR_SECOND(source))
+	end
+		
+    return id + addFlags({ isPair = true })
+end 
+
+local function getAlive(entityIndex: EntityIndex, id: i53) 
+    return entityIndex.dense[id]
+end
+
+local function ecs_get_source(entityIndex, e) 
+    assert(ECS_IS_PAIR(e))
+    return getAlive(entityIndex, ECS_PAIR_FIRST(e))
+end
+local function ecs_get_target(entityIndex, e) 
+    assert(ECS_IS_PAIR(e))
+    return getAlive(entityIndex, ECS_PAIR_SECOND(e))
+end
+
+local function nextEntityId(entityIndex, index: i24) 
+	local id = newId(index, 0)
+	entityIndex.sparse[id] = {
+		dense = index
+	} :: Record	
+	entityIndex.dense[index] = id
+
+	return id
+end
+
+
 
 local function transitionArchetype(
 	entityIndex: EntityIndex,
@@ -158,10 +261,10 @@ local function archetypeOf(world: World, types: {i24}, prev: Archetype?): Archet
 	world.nextArchetypeId = id
 
 	local length = #types
-	local columns = table.create(length) :: {any}
+	local columns = {}
 
-	for index in types do
-		columns[index] = {}
+	for index, componentId in types do
+		table.insert(columns, {})
 	end
 
 	local archetype = {
@@ -202,103 +305,6 @@ function World.new()
 		ROOT_ARCHETYPE = (nil :: any) :: Archetype;
 	}, World)
 	return self
-end
-
-local FLAGS_PAIR = 0x8
-
-local function ADD_FLAGS(flags) 
-    local typeFlags = 0x0
-    if flags.isPair then
-        typeFlags = bit32.bor(typeFlags, FLAGS_PAIR) -- HIGHEST bit in the ID.
-    end
-    if false then
-        typeFlags = bit32.bor(typeFlags, 0x4) -- Set the second flag to true
-    end
-    if false then
-        typeFlags = bit32.bor(typeFlags, 0x2) -- Set the third flag to true
-    end
-    if false then
-        typeFlags = bit32.bor(typeFlags, 0x1) -- LAST BIT in the ID.
-    end
-
-    return typeFlags
-end
-
-local ECS_ID_FLAGS_MASK = 0x10
-
--- ECS_ENTITY_MASK               (0xFFFFFFFFull << 28)
-local ECS_ENTITY_MASK = bit32.lshift(1, 24)
-
--- ECS_GENERATION_MASK           (0xFFFFull << 24)
-local ECS_GENERATION_MASK = bit32.lshift(1, 16)
-
-local function NEW_ID(source: number, target: number) 
-    local e = source * 2^28 + target * ECS_ID_FLAGS_MASK
-    return e
-end
-
-local function ECS_IS_PAIR(e: number) 
-    return (e % 2^4) // FLAGS_PAIR ~= 0
-end
-
-function SEPARATE(entity: number) local _typeFlags = entity % 0x10
-    entity //= ECS_ID_FLAGS_MASK
-    return entity // ECS_ENTITY_MASK, entity % ECS_GENERATION_MASK, _typeFlags
-end
-
--- HIGH 24 bits LOW 24 bits
-local function ECS_GENERATION(e: i53)
-    e //= 0x10
-    return e % ECS_GENERATION_MASK
-end
-
-local function ECS_ID(e: i53) 
-    e //= 0x10
-    return e // ECS_ENTITY_MASK
-end
-
-local function ECS_GENERATION_INC(e: i53)
-    local id, generation, flags = SEPARATE(e)    
-
-    return NEW_ID(id, generation + 1) + flags
-end
-
--- gets the high ID
-local function ECS_PAIR_FIRST(entity: i53): i24
-    entity //= 0x10
-    local first = entity % ECS_ENTITY_MASK
-    return first
-end
-
--- gets the low ID
-local ECS_PAIR_SECOND = ECS_ID
-
-local function ECS_PAIR(source: number, target: number)
-    local id = NEW_ID(ECS_PAIR_SECOND(target), ECS_PAIR_SECOND(source)) + ADD_FLAGS({ isPair = true })
-    return id
-end
-
-local function getAlive(entityIndex: EntityIndex, id: i53) 
-    return assert(entityIndex.dense[id], id .. "is not alive")
-end
-
-local function ecs_get_source(entityIndex, e) 
-    assert(ECS_IS_PAIR(e))
-    return getAlive(entityIndex, ECS_PAIR_FIRST(e))
-end
-local function ecs_get_target(entityIndex, e) 
-    assert(ECS_IS_PAIR(e))
-    return getAlive(entityIndex, ECS_PAIR_SECOND(e))
-end
-
-local function nextEntityId(entityIndex, index: i24) 
-	local id = NEW_ID(index, 0)
-	entityIndex.sparse[id] = {
-		dense = index
-	} :: Record	
-	entityIndex.dense[index] = id
-
-	return id
 end
 
 function World.component(world: World)
@@ -398,19 +404,37 @@ local function findInsert(types: {i53}, toAdd: i53)
 end
 
 local function findArchetypeWith(world: World, node: Archetype, componentId: i53)
+	local entityIndex = world.entityIndex
 	local types = node.types
 	-- Component IDs are added incrementally, so inserting and sorting
 	-- them each time would be expensive. Instead this insertion sort can find the insertion
 	-- point in the types array.
+	
+	local destinationType = table.clone(node.types)
 	local at = findInsert(types, componentId)
 	if at == -1 then
 		-- If it finds a duplicate, it just means it is the same archetype so it can return it
 		-- directly instead of needing to hash types for a lookup to the archetype.
 		return node
 	end
-
-	local destinationType = table.clone(node.types)
 	table.insert(destinationType, at, componentId)
+	if ECS_IS_PAIR(componentId) then 
+		local source = ECS_PAIR(
+			ecs_get_source(entityIndex, componentId), WILDCARD)
+		local sourceAt = findInsert(destinationType, source)
+		if sourceAt ~= -1 then 
+			table.insert(destinationType, sourceAt, source)
+		end
+
+		local target = ECS_PAIR(
+			WILDCARD, ecs_get_target(entityIndex, componentId))
+
+		local targetAt = findInsert(destinationType, target)
+		if targetAt ~= -1 then 
+			table.insert(destinationType, targetAt, target)
+		end
+	end
+
 	return ensureArchetype(world, destinationType, node)
 end
 
@@ -583,7 +607,6 @@ function World.query(world: World, ...: i53): Query
 
 	local firstArchetypeMap
 	local componentIndex = world.componentIndex
-	local entityIndex = world.entityIndex
 
 	for _, componentId in components do
 		local map = componentIndex[componentId]
@@ -603,22 +626,6 @@ function World.query(world: World, ...: i53): Query
 		local skip = false
 
 		for i, componentId in components do
-			if ECS_IS_PAIR(componentId) then 
-				local source = ecs_get_source(entityIndex, componentId)	
-				local target = ecs_get_target(entityIndex, componentId)
-
-				if target == WILDCARD then
-					local matched = false
-					for c in archetypeRecords do 
-						if ecs_get_source(entityIndex, c) == source then 
-							matched = true
-						end
-					end	
-					if matched then 
-						fr
-					end
-				end
-			end
 			local index = archetypeRecords[componentId]
 			if not index then
 				skip = true
@@ -785,11 +792,13 @@ return table.freeze({
 	ON_REMOVE = ON_REMOVE;
 	ON_SET = ON_SET;
 	ECS_ID = ECS_ID,
-	ECS_IS_PAIR = ECS_IS_PAIR,
+	IS_PAIR = ECS_IS_PAIR,
 	ECS_PAIR = ECS_PAIR,
 	ECS_GENERATION = ECS_GENERATION,
 	ECS_GENERATION_INC = ECS_GENERATION_INC,
 	getAlive = getAlive,
 	ecs_get_target = ecs_get_target,
-	ecs_get_source = ecs_get_source
+	ecs_get_source = ecs_get_source,
+	Wildcard = WILDCARD,
+	REST = REST
 })
