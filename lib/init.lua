@@ -776,19 +776,22 @@ end
 
 return table.freeze({
 	World = World;
-	ON_ADD = ON_ADD;
-	ON_REMOVE = ON_REMOVE;
-	ON_SET = ON_SET;
+
+	OnAdd = ON_ADD;
+	OnRemove = ON_REMOVE;
+	OnSet = ON_SET;
+	Wildcard = WILDCARD,
+	w = WILDCARD,
+	Rest = REST,
+
 	ECS_ID = ECS_ID,
 	IS_PAIR = ECS_IS_PAIR,
 	ECS_PAIR = ECS_PAIR,
-	pair = ECS_PAIR,
-	ECS_GENERATION = ECS_GENERATION,
 	ECS_GENERATION_INC = ECS_GENERATION_INC,
-	getAlive = getAlive,
+	ECS_GENERATION = ECS_GENERATION,
 	ecs_get_target = ecs_get_target,
 	ecs_get_source = ecs_get_source,
-	Wildcard = WILDCARD,
-	w = WILDCARD,
-	REST = REST
+
+	pair = ECS_PAIR,
+	getAlive = getAlive,
 })
