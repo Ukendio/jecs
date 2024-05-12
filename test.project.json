@@ -22,6 +22,9 @@
         },
         "mirror": {
           "$path": "mirror"
+        },
+        "DevPackages": {
+          "$path": "DevPackages"
         }
       },
       "TestService": {

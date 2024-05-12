@@ -7,3 +7,4 @@ include = ["default.project.json", "lib/**", "lib", "wally.toml", "README.md"]
 exclude = ["**"]
 
 [dev-dependencies]
+TestEZ = "roblox/testez@0.4.1"

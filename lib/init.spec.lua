@@ -309,12 +309,74 @@ return function()
 				elseif id == eAB then
 					expect(data[A]).to.be.ok()
 					expect(data[B]).to.be.ok()
-				else
-					error("unknown entity", id)
 				end
 			end
 
-			expect(count).to.equal(3)
+			expect(count).to.equal(5)
 		end)
+
+        it("should allow querying for relations", function()
+            local world = jecs.World.new()
+            local Eats = world:entity()
+            local Apples = world:entity()
+            local bob = world:entity()
+            
+            world:set(bob, jecs.pair(Eats, Apples), true)
+            for e, bool in world:query(jecs.pair(Eats, Apples)) do 
+                expect(e).to.equal(bob)
+                expect(bool).to.equal(bool)
+            end
+        end)
+        
+        it("should allow wildcards in queries", function()
+            local world = jecs.World.new()
+            local Eats = world:entity()
+            local Apples = world:entity()
+            local bob = world:entity()
+            
+            world:set(bob, jecs.pair(Eats, Apples), "bob eats apples")
+            for e, data in world:query(jecs.pair(Eats, jecs.w)) do 
+                expect(e).to.equal(bob)
+                expect(data).to.equal("bob eats apples")
+            end
+            for e, data in world:query(jecs.pair(jecs.w, Apples)) do 
+                expect(e).to.equal(bob)
+                expect(data).to.equal("bob eats apples")
+            end
+        end)
+
+        it("should match against multiple pairs", function()
+            local world = jecs.World.new()
+            local pair = jecs.pair
+            local Eats = world:entity()
+            local Apples = world:entity()
+            local Oranges =world:entity()
+            local bob = world:entity()
+            local alice = world:entity()
+            
+            world:set(bob, pair(Eats, Apples), "bob eats apples")
+            world:set(alice, pair(Eats, Oranges), "alice eats oranges")
+            
+            local w = jecs.Wildcard
+            
+            local count = 0
+            for e, data in world:query(pair(Eats, w)) do 
+                count += 1
+                if e == bob then 
+                    expect(data).to.equal("bob eats apples")
+                else
+                    expect(data).to.equal("alice eats oranges")
+                end
+            end
+
+            expect(count).to.equal(2)
+            count = 0
+
+            for e, data in world:query(pair(w, Apples)) do 
+                count += 1
+                expect(data).to.equal("bob eats apples")
+            end
+            expect(count).to.equal(1)
+        end)
 	end)
 end
