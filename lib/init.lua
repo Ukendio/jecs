@@ -56,9 +56,9 @@ local ECS_ID_FLAGS_MASK = 0x10
 local ECS_ENTITY_MASK = bit32.lshift(1, 24)
 local ECS_GENERATION_MASK = bit32.lshift(1, 16)
 
-local function addFlags(flags) 
+local function addFlags(isPair: boolean) 
     local typeFlags = 0x0
-    if flags.isPair then
+    if isPair then
         typeFlags = bit32.bor(typeFlags, FLAGS_PAIR) -- HIGHEST bit in the ID.
     end
     if false then
@@ -121,12 +121,12 @@ local function ECS_PAIR(source: number, target: number)
 	if source == WILDCARD then 
 		id = newId(ECS_PAIR_SECOND(target), WILDCARD)
 	elseif target == WILDCARD then
-		id = newId(WILDCARD, ECS_PAIR_SECOND(source))
+		id = newId(ECS_PAIR_SECOND(source), WILDCARD)
 	else
 		id = newId(ECS_PAIR_SECOND(target), ECS_PAIR_SECOND(source))
 	end
 		
-    return id + addFlags({ isPair = true })
+    return id + addFlags(--[[isPair]] true)
 end 
 
 local function getAlive(entityIndex: EntityIndex, id: i53) 
@@ -151,8 +151,6 @@ local function nextEntityId(entityIndex, index: i24)
 
 	return id
 end
-
-
 
 local function transitionArchetype(
 	entityIndex: EntityIndex,
