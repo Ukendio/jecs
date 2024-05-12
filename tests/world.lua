@@ -203,6 +203,27 @@ TEST("world", function()
         CHECK(ecs_get_target(world.entityIndex, pair) == e3)
     end
 
+    do CASE "should allow querying for relations" 
+        local world = jecs.World.new()
+        local Eats = world:entity()
+        local Apples = world:entity()
+        local bob = world:entity()
+        
+        world:set(bob, ECS_PAIR(Eats, Apples), true)
+        for e in  world:query(ECS_PAIR(Eats, Apples)) do 
+            CHECK(e == bob)
+        end
+    end
+
+    do CASE "should lookup entity name by id" 
+        local world = jecs.World.new()
+        local Eats = world:entity("Eats")
+        local Apples = world:entity("Apples")
+
+        CHECK(world:lookup("Eats") == Eats)
+        CHECK(world:name(Apples) == "Apples")
+        
+    end
 end)
 
 FINISH()

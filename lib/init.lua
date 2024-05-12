@@ -50,6 +50,90 @@ local ON_REMOVE = HI_COMPONENT_ID + 2
 local ON_SET = HI_COMPONENT_ID + 3
 local REST = HI_COMPONENT_ID + 4
 
+local FLAGS_PAIR = 0x8
+
+local function addFlags(flags) 
+    local typeFlags = 0x0
+    if flags.isPair then
+        typeFlags = bit32.bor(typeFlags, FLAGS_PAIR) -- HIGHEST bit in the ID.
+    end
+    if false then
+        typeFlags = bit32.bor(typeFlags, 0x4) -- Set the second flag to true
+    end
+    if false then
+        typeFlags = bit32.bor(typeFlags, 0x2) -- Set the third flag to true
+    end
+    if false then
+        typeFlags = bit32.bor(typeFlags, 0x1) -- LAST BIT in the ID.
+    end
+
+    return typeFlags
+end
+
+local ECS_ID_FLAGS_MASK = 0x10
+local ECS_ENTITY_MASK = bit32.lshift(1, 24)
+local ECS_GENERATION_MASK = bit32.lshift(1, 16)
+
+local function newId(source: number, target: number) 
+    local e = source * 2^28 + target * ECS_ID_FLAGS_MASK
+    return e
+end
+
+local function isPair(e: number) 
+    return (e % 2^4) // FLAGS_PAIR ~= 0
+end
+
+function separate(entity: number)
+    local _typeFlags = entity % 0x10
+    entity //= ECS_ID_FLAGS_MASK
+    return entity // ECS_ENTITY_MASK, entity % ECS_GENERATION_MASK, _typeFlags
+end
+
+-- HIGH 24 bits LOW 24 bits
+local function ECS_GENERATION(e: i53)
+    e //= 0x10
+    return e % ECS_GENERATION_MASK
+end
+
+local function ECS_ID(e: i53) 
+    e //= 0x10
+    return e // ECS_ENTITY_MASK
+end
+
+local function ECS_GENERATION_INC(e: i53)
+    local id, generation, flags = separate(e)    
+
+    return newId(id, generation + 1) + flags
+end
+
+-- gets the high ID
+local function ECS_PAIR_FIRST(entity: i53): i24
+    entity //= 0x10
+    local first = entity % ECS_ENTITY_MASK
+    return first
+end
+
+-- gets the low ID
+local ECS_PAIR_SECOND = ECS_ID
+
+local function ECS_PAIR(source: number, target: number)
+    local id = newId(ECS_PAIR_SECOND(target), ECS_PAIR_SECOND(source)) + addFlags({ isPair = true })
+    return id
+end
+
+local function getAlive(entityIndex: EntityIndex, id: i53) 
+    return entityIndex.dense[id]
+end
+
+local function ecs_get_source(entityIndex, e) 
+    assert(isPair(e))
+    return getAlive(entityIndex, ECS_PAIR_FIRST(e))
+end
+local function ecs_get_target(entityIndex, e) 
+    assert(isPair(e))
+    return getAlive(entityIndex, ECS_PAIR_SECOND(e))
+end
+
 local function transitionArchetype(
 	entityIndex: EntityIndex,
 	to: Archetype,
@@ -164,13 +248,13 @@ local function archetypeOf(world: World, types: {i24}, prev: Archetype?): Archet
 	end
 
 	local archetype = {
-		columns = columns;
-		edges = {};
-		entities = {};
-		id = id;
-		records = {};
-		type = ty;
-		types = types;
+		columns = columns,
+		edges = {},
+		entities = {},
+		id = id,
+		records = {},
+		type = ty,
+		types = types,
 	}
 	world.archetypeIndex[ty] = archetype
 	world.archetypes[id] = archetype
@@ -185,123 +269,46 @@ local World = {}
 World.__index = World
 function World.new()
 	local self = setmetatable({
-		archetypeIndex = {};
-		archetypes = {};
-		componentIndex = {};
+		archetypeIndex = {},
+		archetypes = {},
+		componentIndex = {},
 		entityIndex = {
 			dense = {},
 			sparse = {}
-		} :: EntityIndex;
+		} :: EntityIndex,
 		hooks = {
-			[ON_ADD] = {};
-		};
-		nextArchetypeId = 0;
-		nextComponentId = 0;
-		nextEntityId = 0;
-		ROOT_ARCHETYPE = (nil :: any) :: Archetype;
+			[ON_ADD] = {},
+		},
+		nextArchetypeId = 0,
+		nextComponentId = 0,
+		nextEntityId = 0,
+		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
+		entityLookup = {
+			id = {},
+			name = {}
+		}
 	}, World)
 	return self
 end
 
-local FLAGS_PAIR = 0x8
+type World = typeof(World.new())
 
-local function addFlags(flags) 
-    local typeFlags = 0x0
-    if flags.isPair then
-        typeFlags = bit32.bor(typeFlags, FLAGS_PAIR) -- HIGHEST bit in the ID.
-    end
-    if false then
-        typeFlags = bit32.bor(typeFlags, 0x4) -- Set the second flag to true
-    end
-    if false then
-        typeFlags = bit32.bor(typeFlags, 0x2) -- Set the third flag to true
-    end
-    if false then
-        typeFlags = bit32.bor(typeFlags, 0x1) -- LAST BIT in the ID.
-    end
-
-    return typeFlags
-end
-
-local ECS_ID_FLAGS_MASK = 0x10
-
--- ECS_ENTITY_MASK               (0xFFFFFFFFull << 28)
-local ECS_ENTITY_MASK = bit32.lshift(1, 24)
-
--- ECS_GENERATION_MASK           (0xFFFFull << 24)
-local ECS_GENERATION_MASK = bit32.lshift(1, 16)
-
-local function newId(source: number, target: number) 
-    local e = source * 2^28 + target * ECS_ID_FLAGS_MASK
-    return e
-end
-
-local function isPair(e: number) 
-    return (e % 2^4) // FLAGS_PAIR ~= 0
-end
-
-function separate(entity: number)
-    local _typeFlags = entity % 0x10
-    entity //= ECS_ID_FLAGS_MASK
-    return entity // ECS_ENTITY_MASK, entity % ECS_GENERATION_MASK, _typeFlags
-end
-
--- HIGH 24 bits LOW 24 bits
-local function ECS_GENERATION(e: i53)
-    e //= 0x10
-    return e % ECS_GENERATION_MASK
-end
-
-local function ECS_ID(e: i53) 
-    e //= 0x10
-    return e // ECS_ENTITY_MASK
-end
-
-local function ECS_GENERATION_INC(e: i53)
-    local id, generation, flags = separate(e)    
-
-    return newId(id, generation + 1) + flags
-end
-
--- gets the high ID
-local function ECS_PAIR_FIRST(entity: i53): i24
-    entity //= 0x10
-    local first = entity % ECS_ENTITY_MASK
-    return first
-end
-
--- gets the low ID
-local ECS_PAIR_SECOND = ECS_ID
-
-local function ECS_PAIR(source: number, target: number)
-    local id = newId(ECS_PAIR_SECOND(target), ECS_PAIR_SECOND(source)) + addFlags({ isPair = true })
-    return id
-end
-
-local function getAlive(entityIndex: EntityIndex, id: i53) 
-    return entityIndex.dense[id]
-end
-
-local function ecs_get_source(entityIndex, e) 
-    assert(isPair(e))
-    return getAlive(entityIndex, ECS_PAIR_FIRST(e))
-end
-local function ecs_get_target(entityIndex, e) 
-    assert(isPair(e))
-    return getAlive(entityIndex, ECS_PAIR_SECOND(e))
-end
-
-local function nextEntityId(entityIndex, index: i24) 
+local function nextEntityId(world: World, index: i24, name: string?) 
+	local entityIndex = world.entityIndex
 	local id = newId(index, 0)
 	entityIndex.sparse[id] = {
 		dense = index
 	} :: Record	
 	entityIndex.dense[index] = id
+	if name then 
+		world.entityLookup.id[id] = name
+		world.entityLookup.name[name] = id
+	end
 
 	return id
 end
 
-function World.component(world: World)
+function World.component(world: World, name: string?)
 	local componentId = world.nextComponentId + 1
 	if componentId > HI_COMPONENT_ID then
 		-- IDs are partitioned into ranges because component IDs are not nominal,
@@ -309,13 +316,21 @@ function World.component(world: World)
 		error("Too many components, consider using world:entity() instead to create components.")
 	end
 	world.nextComponentId = componentId
-	return nextEntityId(world.entityIndex, componentId)
+	return nextEntityId(world, componentId, name)
 end
 
-function World.entity(world: World)
+function World.entity(world: World, name: string?)
 	local entityId = world.nextEntityId + 1
 	world.nextEntityId = entityId
-	return nextEntityId(world.entityIndex, entityId + REST)
+	return nextEntityId(world, entityId + REST, name)
+end
+
+function World.lookup(world: World, name: string): i53
+	return world.entityLookup.name[name]
+end
+
+function World.name(world: World, entity: i53): string
+	return world.entityLookup.id[entity]
 end
 
 -- should reuse this logic in World.set instead of swap removing in transition archetype
@@ -368,8 +383,6 @@ function World.delete(world: World, entityId: i53)
 	end
 	archetypeDelete(entityIndex, record, entityId, true)
 end
-
-export type World = typeof(World.new())
 
 local function ensureArchetype(world: World, types, prev)
 	if #types < 1 then
@@ -560,8 +573,8 @@ local function noop(_self: Query, ...: i53): () -> (number, ...any)
 end
 
 local EmptyQuery = {
-	__iter = noop;
-	without = noop;
+	__iter = noop,
+	without = noop,
 }
 EmptyQuery.__index = EmptyQuery
 setmetatable(EmptyQuery, EmptyQuery)
@@ -763,10 +776,10 @@ function World.__iter(world: World): () -> (number?, unknown?)
 end
 
 return table.freeze({
-	World = World;
-	ON_ADD = ON_ADD;
-	ON_REMOVE = ON_REMOVE;
-	ON_SET = ON_SET;
+	World = World,
+	ON_ADD = ON_ADD,
+	ON_REMOVE = ON_REMOVE,
+	ON_SET = ON_SET,
 	ECS_ID = ECS_ID,
 	IS_PAIR = isPair,
 	ECS_PAIR = ECS_PAIR,
