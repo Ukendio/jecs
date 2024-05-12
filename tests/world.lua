@@ -18,7 +18,6 @@ TEST("world", function()
         local world = jecs.World.new()
         local A = world:component()
         local B = world:component()
-         
         local eA = world:entity()
         world:set(eA, A, true)
         local eB = world:entity()
@@ -206,7 +205,7 @@ TEST("world", function()
             CHECK(e == bob)
         end
     end
-
+    
     do CASE "should allow wildcards in queries" 
         local world = jecs.World.new()
         local Eats = world:entity()
@@ -214,15 +213,40 @@ TEST("world", function()
         local bob = world:entity()
         
         world:add(bob, ECS_PAIR(Eats, Apples))
-        --testkit.print(world.componentIndex)
         
         local w = jecs.Wildcard
-        for e, bool in world:query(ECS_PAIR(Eats, w)) do 
+        for e in world:query(ECS_PAIR(Eats, w)) do 
             CHECK(e == bob)
         end
-        for e, bool in world:query(ECS_PAIR(w, Apples)) do 
+        for e in world:query(ECS_PAIR(w, Apples)) do 
             CHECK(e == bob)
         end
+    end
+
+    do CASE "should match against multiple pairs" 
+        local world = jecs.World.new()
+        local Eats = world:entity()
+        local Apples = world:entity()
+        local Oranges =world:entity()
+        local bob = world:entity()
+        local alice = world:entity()
+        
+        world:add(bob, ECS_PAIR(Eats, Apples))
+        world:add(alice, ECS_PAIR(Eats, Oranges))
+        
+        local w = jecs.Wildcard
+        local count = 0
+        for e in world:query(ECS_PAIR(Eats, w)) do 
+            count += 1
+        end
+
+        CHECK(count == 2)
+        count = 0
+
+        for e in world:query(ECS_PAIR(w, Apples)) do 
+            count += 1
+        end
+        CHECK(count == 1)
     end
 end)
 
