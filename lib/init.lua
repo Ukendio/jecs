@@ -120,7 +120,7 @@ local ECS_PAIR_SECOND = ECS_ID
 local function ECS_PAIR(first: number, second: number)
 	local target = WILDCARD
 	local relation 
-   
+
 	if first == WILDCARD then 
 		relation = second
 	elseif second == WILDCARD then
