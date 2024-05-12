@@ -300,9 +300,16 @@ local function nextEntityId(world: World, index: i24, name: string?)
 		dense = index
 	} :: Record	
 	entityIndex.dense[index] = id
+	local entityLookup = world.entityLookup
 	if name then 
-		world.entityLookup.id[id] = name
-		world.entityLookup.name[name] = id
+		local entityLookupName = entityLookup.name
+		local entity = entityLookupName[name]
+		if entity then 
+			return entity
+		end
+
+		entityLookup.id[id] = name
+		entityLookupName[name] = id
 	end
 
 	return id
