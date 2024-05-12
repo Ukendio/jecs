@@ -782,11 +782,13 @@ return table.freeze({
 	ECS_ID = ECS_ID,
 	IS_PAIR = ECS_IS_PAIR,
 	ECS_PAIR = ECS_PAIR,
+	pair = ECS_PAIR,
 	ECS_GENERATION = ECS_GENERATION,
 	ECS_GENERATION_INC = ECS_GENERATION_INC,
 	getAlive = getAlive,
 	ecs_get_target = ecs_get_target,
 	ecs_get_source = ecs_get_source,
 	Wildcard = WILDCARD,
+	w = WILDCARD,
 	REST = REST
 })
