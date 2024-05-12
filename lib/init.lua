@@ -298,8 +298,8 @@ World.__index = World
 function World.new()
 	local self = setmetatable({
 		archetypeIndex = {};
-		archetypes = {};
-		componentIndex = {};
+		archetypes = {} :: Archetypes;
+		componentIndex = {} :: ComponentIndex;
 		entityIndex = {
 			dense = {},
 			sparse = {}
@@ -312,6 +312,7 @@ function World.new()
 		nextEntityId = 0;
 		ROOT_ARCHETYPE = (nil :: any) :: Archetype;
 	}, World)
+	self.ROOT_ARCHETYPE = archetypeOf(self, {})
 	return self
 end
 
@@ -440,15 +441,7 @@ local function ensureEdge(archetype: Archetype, componentId: i53)
 end
 
 local function archetypeTraverseAdd(world: World, componentId: i53, from: Archetype): Archetype
-	if not from then
-		-- If there was no source archetype then it should return the ROOT_ARCHETYPE
-		local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
-		if not ROOT_ARCHETYPE then
-			ROOT_ARCHETYPE = archetypeOf(world, {}, nil)
-			world.ROOT_ARCHETYPE = ROOT_ARCHETYPE :: never
-		end
-		from = ROOT_ARCHETYPE
-	end
+	from = from or world.ROOT_ARCHETYPE
 
 	local edge = ensureEdge(from, componentId)
 	local add = edge.add
@@ -674,14 +667,14 @@ function World.query(world: World, ...: i53): Query
 	function preparedQuery:__iter()
 		return function()
 			local archetype = compatibleArchetype[1]
-			local row = next(archetype.entities, lastRow)
+			local row: number = next(archetype.entities, lastRow) :: number
 			while row == nil do
 				lastArchetype, compatibleArchetype = next(compatibleArchetypes, lastArchetype)
 				if lastArchetype == nil then
 					return
 				end
 				archetype = compatibleArchetype[1]
-				row = next(archetype.entities, row)
+				row = next(archetype.entities, row) :: number
 			end
 			lastRow = row
 
