@@ -302,20 +302,21 @@ local function nextEntityId(world: World, index: i24, name: string?)
 	entityIndex.dense[index] = id
 	local entityLookup = world.entityLookup
 	if name then 
-		local entityLookupName = entityLookup.name
-		local entity = entityLookupName[name]
-		if entity then 
-			return entity
-		end
-
 		entityLookup.id[id] = name
-		entityLookupName[name] = id
+		entityLookup.name[name] = id
 	end
 
 	return id
 end
 
 function World.component(world: World, name: string?)
+	if name then 
+		local entity = world.entityLookup.name[name]
+		if entity then 
+			return entity
+		end
+	end
+
 	local componentId = world.nextComponentId + 1
 	if componentId > HI_COMPONENT_ID then
 		-- IDs are partitioned into ranges because component IDs are not nominal,
@@ -327,6 +328,13 @@ function World.component(world: World, name: string?)
 end
 
 function World.entity(world: World, name: string?)
+	if name then 
+		local entity = world.entityLookup.name[name]
+		if entity then 
+			return entity
+		end
+	end
+
 	local entityId = world.nextEntityId + 1
 	world.nextEntityId = entityId
 	return nextEntityId(world, entityId + REST, name)

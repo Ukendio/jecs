@@ -222,7 +222,13 @@ TEST("world", function()
 
         CHECK(world:lookup("Eats") == Eats)
         CHECK(world:name(Apples) == "Apples")
-        
+    end
+
+    do CASE "should return existing entity" 
+        local world = jecs.World.new()
+        local Eats = world:entity("Eats")
+
+        CHECK(Eats == world:entity("Eats"))
     end
 end)
 
