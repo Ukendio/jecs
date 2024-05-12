@@ -14,7 +14,6 @@ local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 local N = 10
 
 TEST("world", function() 
-    --[[
     do CASE "should be iterable" 
         local world = jecs.World.new()
         local A = world:component()
@@ -211,7 +210,6 @@ TEST("world", function()
             CHECK(e == bob)
         end
     end
-    ]]
 
     do CASE "should allow wildcards in queries" 
         local world = jecs.World.new()
@@ -219,17 +217,15 @@ TEST("world", function()
         local Apples = world:entity()
         local bob = world:entity()
         
-        world:set(bob, ECS_PAIR(Eats, Apples), true)
+        world:add(bob, ECS_PAIR(Eats, Apples))
         --testkit.print(world.componentIndex)
         
         local w = jecs.Wildcard
         for e, bool in world:query(ECS_PAIR(Eats, w)) do 
             CHECK(e == bob)
-            CHECK(bool)
         end
         for e, bool in world:query(ECS_PAIR(w, Apples)) do 
             CHECK(e == bob)
-            CHECK(bool)
         end
     end
 end)
