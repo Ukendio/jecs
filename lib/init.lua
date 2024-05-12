@@ -30,6 +30,7 @@ type Record = {
 	archetype: Archetype,
 	row: number,
 	dense: i24,
+	name: string?,
 }
 
 type EntityIndex = {dense: {[i24]: i53}, sparse: {[i53]: Record}}
@@ -284,7 +285,6 @@ function World.new()
 		nextEntityId = 0,
 		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
 		aliases = {},
-		ids = {}
 	}, World)
 	return self
 end
@@ -294,13 +294,14 @@ type World = typeof(World.new())
 local function nextEntityId(world: World, index: i24, name: string?) 
 	local entityIndex = world.entityIndex
 	local id = newId(index, 0)
-	entityIndex.sparse[id] = {
+	local record = {
 		dense = index
 	} :: Record	
+	entityIndex.sparse[id] = record
 	entityIndex.dense[index] = id
 	if name then 
 		world.aliases[name] = id
-		world.ids[id] = name
+		record.name = name
 	end
 
 	return id
@@ -308,7 +309,7 @@ end
 
 function World.component(world: World, name: string?)
 	if name then 
-		local entity = world.entityLookup.name[name]
+		local entity = world.aliases[name]
 		if entity then 
 			return entity
 		end
@@ -341,8 +342,12 @@ function World.lookup(world: World, name: string): i53
 	return world.aliases[name]
 end
 
-function World.name(world: World, entity: i53): string
-	return world.ids[entity]
+function World.name(world: World, entity: i53): string?
+	local record = world.entityIndex.sparse[entity]
+	if not record then 
+		return nil
+	end
+	return record.name
 end
 
 -- should reuse this logic in World.set instead of swap removing in transition archetype
