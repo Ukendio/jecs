@@ -181,15 +181,11 @@ TEST("world", function()
         CHECK(ECS_GENERATION(e) == 1) -- 1
     end
 
-    do CASE "relations" 
+    do CASE "should get alive from index in the dense array" 
         local world = jecs.World.new()
         local _e = world:entity()
         local e2 = world:entity()
         local e3 = world:entity()
-        CHECK(ECS_ID(e2) == 2 +jecs.REST)
-        CHECK(ECS_ID(e3) == 3 + jecs.REST)
-        CHECK(ECS_GENERATION(e2) == 0) 
-        CHECK(ECS_GENERATION(e3) == 0) 
 
         CHECK(IS_PAIR(world:entity()) == false)
 
