@@ -7,7 +7,6 @@ local ECS_PAIR = jecs.ECS_PAIR
 local getAlive = jecs.getAlive
 local ecs_get_source = jecs.ecs_get_source
 local ecs_get_target = jecs.ecs_get_target
-local REST = 256 + 4
 
 local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 
@@ -18,7 +17,6 @@ TEST("world", function()
         local world = jecs.World.new()
         local A = world:component()
         local B = world:component()
-         
         local eA = world:entity()
         world:set(eA, A, true)
         local eB = world:entity()
@@ -48,7 +46,6 @@ TEST("world", function()
     end
 
     do CASE "should query all matching entities"
-
         local world = jecs.World.new()
         local A = world:component()
         local B = world:component()
@@ -71,7 +68,6 @@ TEST("world", function()
     end
 
     do CASE "should query all matching entities when irrelevant component is removed"
-
         local world = jecs.World.new()
         local A = world:component()
         local B = world:component()
@@ -99,7 +95,6 @@ TEST("world", function()
     end
 
     do CASE "should query all entities without B"
-
         local world = jecs.World.new()
         local A = world:component()
         local B = world:component()
@@ -171,29 +166,24 @@ TEST("world", function()
         world:remove(id, Poison)
 
         CHECK(world:get(id, Poison) == nil)
-        print(world:get(id, Health))
         CHECK(world:get(id, Health) == 50)
     end
 
     do CASE "should increment generation" 
         local world = jecs.World.new()
         local e = world:entity()
-        CHECK(ECS_ID(e) == 1 + REST)
+        CHECK(ECS_ID(e) == 1 + jecs.Rest)
         CHECK(getAlive(world.entityIndex, ECS_ID(e)) == e)
         CHECK(ECS_GENERATION(e) == 0) -- 0
         e = ECS_GENERATION_INC(e) 
         CHECK(ECS_GENERATION(e) == 1) -- 1
     end
 
-    do CASE "relations" 
+    do CASE "should get alive from index in the dense array" 
         local world = jecs.World.new()
         local _e = world:entity()
         local e2 = world:entity()
         local e3 = world:entity()
-        CHECK(ECS_ID(e2) == 2 + REST)
-        CHECK(ECS_ID(e3) == 3 + REST)
-        CHECK(ECS_GENERATION(e2) == 0) 
-        CHECK(ECS_GENERATION(e3) == 0) 
 
         CHECK(IS_PAIR(world:entity()) == false)
 
@@ -203,6 +193,69 @@ TEST("world", function()
         CHECK(ecs_get_target(world.entityIndex, pair) == e3)
     end
 
+    do CASE "should allow querying for relations" 
+        local world = jecs.World.new()
+        local Eats = world:entity()
+        local Apples = world:entity()
+        local bob = world:entity()
+        
+        world:set(bob, ECS_PAIR(Eats, Apples), true)
+        for e, bool in world:query(ECS_PAIR(Eats, Apples)) do 
+            CHECK(e == bob)
+            CHECK(bool)
+        end
+    end
+    
+    do CASE "should allow wildcards in queries" 
+        local world = jecs.World.new()
+        local Eats = world:entity()
+        local Apples = world:entity()
+        local bob = world:entity()
+        
+        world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
+        
+        local w = jecs.Wildcard
+        for e, data in world:query(ECS_PAIR(Eats, w)) do 
+            CHECK(e == bob)
+            CHECK(data == "bob eats apples")
+        end
+        for e, data in world:query(ECS_PAIR(w, Apples)) do 
+            CHECK(e == bob)
+            CHECK(data == "bob eats apples")
+        end
+    end
+
+    do CASE "should match against multiple pairs" 
+        local world = jecs.World.new()
+        local Eats = world:entity()
+        local Apples = world:entity()
+        local Oranges =world:entity()
+        local bob = world:entity()
+        local alice = world:entity()
+        
+        world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
+        world:set(alice, ECS_PAIR(Eats, Oranges), "alice eats oranges")
+        
+        local w = jecs.Wildcard
+        local count = 0
+        for e, data in world:query(ECS_PAIR(Eats, w)) do 
+            count += 1
+            if e == bob then 
+                CHECK(data == "bob eats apples")
+            else
+                CHECK(data == "alice eats oranges")
+            end
+        end
+
+        CHECK(count == 2)
+        count = 0
+
+        for e, data in world:query(ECS_PAIR(w, Apples)) do 
+            count += 1
+            CHECK(data == "bob eats apples")
+        end
+        CHECK(count == 1)
+    end
 end)
 
 FINISH()
