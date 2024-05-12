@@ -171,7 +171,6 @@ TEST("world", function()
         world:remove(id, Poison)
 
         CHECK(world:get(id, Poison) == nil)
-        print(world:get(id, Health))
         CHECK(world:get(id, Health) == 50)
     end
 
