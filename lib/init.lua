@@ -58,10 +58,11 @@ local ECS_GENERATION_MASK = bit32.lshift(1, 16)
 
 local function addFlags(isPair: boolean) 
     local typeFlags = 0x0
+
     if isPair then
         typeFlags = bit32.bor(typeFlags, FLAGS_PAIR) -- HIGHEST bit in the ID.
     end
-    if false then
+	if false then
         typeFlags = bit32.bor(typeFlags, 0x4) -- Set the second flag to true
     end
     if false then
@@ -116,17 +117,21 @@ end
 -- gets the low ID
 local ECS_PAIR_SECOND = ECS_ID
 
-local function ECS_PAIR(source: number, target: number)
-    local id 
-	if source == WILDCARD then 
-		id = newId(ECS_PAIR_SECOND(target), WILDCARD)
-	elseif target == WILDCARD then
-		id = newId(ECS_PAIR_SECOND(source), WILDCARD)
+local function ECS_PAIR(first: number, second: number)
+	local target = WILDCARD
+	local relation 
+   
+	if first == WILDCARD then 
+		relation = second
+	elseif second == WILDCARD then
+		relation = first
 	else
-		id = newId(ECS_PAIR_SECOND(target), ECS_PAIR_SECOND(source))
+		relation = second 
+		target = ECS_PAIR_SECOND(first)
 	end
-		
-    return id + addFlags(--[[isPair]] true)
+
+	return newId(
+		ECS_PAIR_SECOND(relation), target) + addFlags(--[[isPair]] true)
 end 
 
 local function getAlive(entityIndex: EntityIndex, id: i53) 
