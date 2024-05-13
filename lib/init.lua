@@ -75,30 +75,27 @@ local function addFlags(isPair: boolean)
     return typeFlags
 end
 
-local function newId(source: number, target: number) 
-    local e = source * 2^28 + target * ECS_ID_FLAGS_MASK
-    return e
+local function newId(source: number, target: number): number
+    return ((source * 2^28) + target) * ECS_ID_FLAGS_MASK
 end
 
-local function ECS_IS_PAIR(e: number) 
-    return (e % 2^4) // FLAGS_PAIR ~= 0
+local function ECS_IS_PAIR(e: number): boolean
+    return ( (e % 2^4) // FLAGS_PAIR ) ~= 0
 end
 
-function separate(entity: number)
-    local _typeFlags = entity % 0x10
-    entity //= ECS_ID_FLAGS_MASK
-    return entity // ECS_ENTITY_MASK, entity % ECS_GENERATION_MASK, _typeFlags
+local function separate(entity: number): (number, number, number)
+	local type_flags = entity % 0x10
+	local entity = entity // ECS_ID_FLAGS_MASK
+	return new_entity // ECS_ENTITY_MASK, new_entity % ECS_GENERATION_MASK, type_flags
 end
 
 -- HIGH 24 bits LOW 24 bits
 local function ECS_GENERATION(e: i53)
-    e //= 0x10
-    return e % ECS_GENERATION_MASK
+    return (e // 0x10) % ECS_GENERATION_MASK
 end
 
 local function ECS_ID(e: i53) 
-    e //= 0x10
-    return e // ECS_ENTITY_MASK
+    return (e // 0x10) // ECS_ENTITY_MASK
 end
 
 local function ECS_GENERATION_INC(e: i53)
@@ -109,15 +106,13 @@ end
 
 -- gets the high ID
 local function ECS_PAIR_FIRST(entity: i53): i24
-    entity //= 0x10
-    local first = entity % ECS_ENTITY_MASK
-    return first
+    return (entity // 0x10) % ECS_ENTITY_MASK
 end
 
 -- gets the low ID
 local ECS_PAIR_SECOND = ECS_ID
 
-local function ECS_PAIR(first: number, second: number)
+local function ECS_PAIR(first: number, second: number):
 	local target = WILDCARD
 	local relation 
 
@@ -132,6 +127,7 @@ local function ECS_PAIR(first: number, second: number)
 
 	return newId(
 		ECS_PAIR_SECOND(relation), target) + addFlags(--[[isPair]] true)
+	)
 end 
 
 local function getAlive(entityIndex: EntityIndex, id: i53) 
@@ -147,7 +143,7 @@ local function ecs_get_target(entityIndex, e)
     return getAlive(entityIndex, ECS_PAIR_SECOND(e))
 end
 
-local function nextEntityId(entityIndex, index: i24) 
+local function nextEntityId(entityIndex, index: i24): i53
 	local id = newId(index, 0)
 	entityIndex.sparse[id] = {
 		dense = index
