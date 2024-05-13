@@ -623,7 +623,10 @@ function World.query(world: World, ...: i53): Query
 		end
 
 		length += 1
-		compatibleArchetypes[length] = {archetype, indices}
+		compatibleArchetypes[length] = {
+			archetype = archetype, 
+			indices = indices
+		}
 	end
 
 	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
@@ -637,7 +640,7 @@ function World.query(world: World, ...: i53): Query
 	function preparedQuery:without(...)
 		local withoutComponents = {...}
 		for i = #compatibleArchetypes, 1, -1 do
-			local archetype = compatibleArchetypes[i][1]
+			local archetype = compatibleArchetypes[i].archetype
 			local records = archetype.records
 			local shouldRemove = false
 
@@ -666,21 +669,21 @@ function World.query(world: World, ...: i53): Query
 
 	function preparedQuery:__iter()
 		return function()
-			local archetype = compatibleArchetype[1]
+			local archetype = compatibleArchetype.archetype
 			local row: number = next(archetype.entities, lastRow) :: number
 			while row == nil do
 				lastArchetype, compatibleArchetype = next(compatibleArchetypes, lastArchetype)
 				if lastArchetype == nil then
 					return
 				end
-				archetype = compatibleArchetype[1]
+				archetype = compatibleArchetype.archetype
 				row = next(archetype.entities, row) :: number
 			end
 			lastRow = row
 
 			local entityId = archetype.entities[row :: number]
 			local columns = archetype.columns
-			local tr = compatibleArchetype[2]
+			local tr = compatibleArchetype.indices
 
 			if queryLength == 1 then
 				return entityId, columns[tr[1]][row]
