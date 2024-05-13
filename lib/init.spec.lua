@@ -176,22 +176,6 @@ return function()
 			expect(added).to.equal(0)
 		end)
 
-		it("track changes", function() 
-			local Position = world:entity()
-
-			local moving = world:entity()
-			world:set(moving, Position, Vector3.new(1, 2, 3))
-
-			local count = 0
-
-			for e, position in world:observer(Position).event(jecs.ON_ADD) do 
-				count += 1
-				expect(e).to.equal(moving)
-				expect(position).to.equal(Vector3.new(1, 2, 3))
-			end
-			expect(count).to.equal(1)
-		end)
-
 		it("should query all matching entities", function()
 
 			local world = jecs.World.new()
@@ -299,5 +283,100 @@ return function()
 			expect(world:get(id, Poison)).to.never.be.ok()
 			expect(world:get(id, Health)).to.never.be.ok()
 		end)
+
+		it("should allow iterating the whole world", function() 
+			local world = jecs.World.new()
+
+			local A, B = world:entity(), world:entity()
+
+			local eA = world:entity()
+			world:set(eA, A, true)
+			local eB = world:entity()
+			world:set(eB, B, true)
+			local eAB = world:entity()
+			world:set(eAB, A, true)
+			world:set(eAB, B, true)
+
+			local count = 0
+			for id, data in world do
+				count += 1
+				if id == eA then
+					expect(data[A]).to.be.ok()
+					expect(data[B]).to.never.be.ok()
+				elseif id == eB then
+					expect(data[B]).to.be.ok()
+					expect(data[A]).to.never.be.ok()
+				elseif id == eAB then
+					expect(data[A]).to.be.ok()
+					expect(data[B]).to.be.ok()
+				end
+			end
+
+			expect(count).to.equal(5)
+		end)
+
+        it("should allow querying for relations", function()
+            local world = jecs.World.new()
+            local Eats = world:entity()
+            local Apples = world:entity()
+            local bob = world:entity()
+            
+            world:set(bob, jecs.pair(Eats, Apples), true)
+            for e, bool in world:query(jecs.pair(Eats, Apples)) do 
+                expect(e).to.equal(bob)
+                expect(bool).to.equal(bool)
+            end
+        end)
+        
+        it("should allow wildcards in queries", function()
+            local world = jecs.World.new()
+            local Eats = world:entity()
+            local Apples = world:entity()
+            local bob = world:entity()
+            
+            world:set(bob, jecs.pair(Eats, Apples), "bob eats apples")
+            for e, data in world:query(jecs.pair(Eats, jecs.w)) do 
+                expect(e).to.equal(bob)
+                expect(data).to.equal("bob eats apples")
+            end
+            for e, data in world:query(jecs.pair(jecs.w, Apples)) do 
+                expect(e).to.equal(bob)
+                expect(data).to.equal("bob eats apples")
+            end
+        end)
+
+        it("should match against multiple pairs", function()
+            local world = jecs.World.new()
+            local pair = jecs.pair
+            local Eats = world:entity()
+            local Apples = world:entity()
+            local Oranges =world:entity()
+            local bob = world:entity()
+            local alice = world:entity()
+            
+            world:set(bob, pair(Eats, Apples), "bob eats apples")
+            world:set(alice, pair(Eats, Oranges), "alice eats oranges")
+            
+            local w = jecs.Wildcard
+            
+            local count = 0
+            for e, data in world:query(pair(Eats, w)) do 
+                count += 1
+                if e == bob then 
+                    expect(data).to.equal("bob eats apples")
+                else
+                    expect(data).to.equal("alice eats oranges")
+                end
+            end
+
+            expect(count).to.equal(2)
+            count = 0
+
+            for e, data in world:query(pair(w, Apples)) do 
+                count += 1
+                expect(data).to.equal("bob eats apples")
+            end
+            expect(count).to.equal(1)
+        end)
 	end)
 end

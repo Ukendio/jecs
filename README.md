@@ -1,6 +1,7 @@
 
 <p align="center">
-  <img src="logo.png" />
+  <img src="jecs_darkmode.svg#gh-dark-mode-only" width=50%/>
+  <img src="jecs_lightmode.svg#gh-light-mode-only" width=50%/>
 </p>
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache-blue.svg?style=for-the-badge)](LICENSE-APACHE)
@@ -10,22 +11,28 @@ Just an ECS
 
 jecs is a stupidly fast Entity Component System (ECS).
 
+- Entity Relationships as first class citizens
 - Process tens of thousands of entities with ease every frame
-- Zero-dependency Luau package
+- Type-safe [Luau](https://luau-lang.org/) API
+- Zero-dependency package
 - Optimized for column-major operations
 - Cache friendly archetype/SoA storage
+- Unit tested for stability
 
 ### Example
 
 ```lua
-local world = Jecs.World.new()
-
-local Health = world:component()
-local Damage = world:component()
-local Position = world:component()
+local world = World.new()
 
 local player = world:entity()
 local opponent = world:entity()
+
+local Health = world:component()
+local Position = world:component()
+-- Notice how components can just be entities as well?
+-- It allows you to model relationships easily!
+local Damage = world:entity()
+local DamagedBy = world:entity()
 
 world:set(player, Health, 100)
 world:set(player, Damage, 8)
@@ -37,17 +44,25 @@ world:set(opponent, Position, Vector3.new(0, 5, 3))
 
 for playerId, playerPosition, health in world:query(Position, Health) do
     local totalDamage = 0
-    for _, opponentPosition, damage in world:query(Position, Damage) do
+    for opponentId, opponentPosition, damage in world:query(Position, Damage) do
+        if playerId == opponentId then 
+            continue
+        end
         if (playerPosition - opponentPosition).Magnitude < 5 then
             totalDamage += damage
         end
+        -- We create a pair between the relation component `DamagedBy` and the entity id of the opponent. 
+        -- This will allow us to specifically query for damage exerted by a specific opponent.
+        world:set(playerId, ECS_PAIR(DamagedBy, opponentId), totalDamage)
     end
-
-    world:set(playerId, Health, health - totalDamage)
 end
 
-assert(world:get(playerId, Health) == 79)
-assert(world:get(opponentId, Health) == 92)
+-- Gets the damage inflicted by our specific opponent!
+for playerId, health, inflicted in world:query(Health, ECS_PAIR(DamagedBy, opponent)) do 
+    world:set(playerId, health - inflicted)
+end
+
+assert(world:get(player, Health) == 79)
 ```
 
 125 archetypes, 4 random components queried.

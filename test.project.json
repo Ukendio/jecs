@@ -11,9 +11,6 @@
       },
       "ReplicatedStorage": {
         "$className": "ReplicatedStorage",
-        "DevPackages": {
-            "$path": "DevPackages"
-        },
         "Lib": {
           "$path": "lib"
         },
@@ -25,6 +22,9 @@
         },
         "mirror": {
           "$path": "mirror"
+        },
+        "DevPackages": {
+          "$path": "DevPackages"
         }
       },
       "TestService": {
