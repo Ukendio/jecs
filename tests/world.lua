@@ -5,8 +5,8 @@ local ECS_GENERATION_INC = jecs.ECS_GENERATION_INC
 local IS_PAIR = jecs.IS_PAIR
 local ECS_PAIR = jecs.ECS_PAIR
 local getAlive = jecs.getAlive
-local ecs_get_source = jecs.ecs_get_source
-local ecs_get_target = jecs.ecs_get_target
+local ECS_PAIR_RELATION = jecs.ECS_PAIR_RELATION
+local ECS_PAIR_OBJECT = jecs.ECS_PAIR_OBJECT
 
 local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 
@@ -189,8 +189,8 @@ TEST("world", function()
 
         local pair = ECS_PAIR(e2, e3)
         CHECK(IS_PAIR(pair) == true)
-        CHECK(ecs_get_source(world.entityIndex, pair) == e2)
-        CHECK(ecs_get_target(world.entityIndex, pair) == e3)
+        CHECK(ECS_PAIR_RELATION(world.entityIndex, pair) == e2)
+        CHECK(ECS_PAIR_OBJECT(world.entityIndex, pair) == e3)
     end
 
     do CASE "should allow querying for relations" 

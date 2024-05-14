@@ -75,7 +75,7 @@ local function addFlags(isPair: boolean)
     return typeFlags
 end
 
-local function newId(source: number, target: number) 
+local function ECS_COMBINE(source: number, target: number): i53
     local e = source * 2^28 + target * ECS_ID_FLAGS_MASK
     return e
 end
@@ -96,7 +96,7 @@ local function ECS_GENERATION(e: i53)
     return e % ECS_GENERATION_MASK
 end
 
-local function ECS_ID(e: i53) 
+local function ECS_ENTITY_T_LO(e: i53) 
     e //= 0x10
     return e // ECS_ENTITY_MASK
 end
@@ -104,51 +104,51 @@ end
 local function ECS_GENERATION_INC(e: i53)
     local id, generation, flags = separate(e)    
 
-    return newId(id, generation + 1) + flags
+    return ECS_COMBINE(id, generation + 1) + flags
 end
 
 -- gets the high ID
-local function ECS_PAIR_FIRST(entity: i53): i24
+local function ECS_ENTITY_T_HI(entity: i53): i24
     entity //= 0x10
     local first = entity % ECS_ENTITY_MASK
     return first
 end
 
--- gets the low ID
-local ECS_PAIR_SECOND = ECS_ID
+local function ECS_PAIR(pred: number, obj: number)
+	local first 
+	local second: number = WILDCARD
 
-local function ECS_PAIR(first: number, second: number)
-	local target = WILDCARD
-	local relation 
-
-	if first == WILDCARD then 
-		relation = second
-	elseif second == WILDCARD then
-		relation = first
+	if pred == WILDCARD then 
+		first = obj
+	elseif obj == WILDCARD then
+		first = pred
 	else
-		relation = second 
-		target = ECS_PAIR_SECOND(first)
+		first = obj 
+		second = ECS_ENTITY_T_LO(pred)
 	end
 
-	return newId(
-		ECS_PAIR_SECOND(relation), target) + addFlags(--[[isPair]] true)
+	return ECS_COMBINE(
+		ECS_ENTITY_T_LO(first), second) + addFlags(--[[isPair]] true)
 end 
 
 local function getAlive(entityIndex: EntityIndex, id: i53) 
     return entityIndex.dense[id]
 end
 
-local function ecs_get_source(entityIndex, e) 
+-- ECS_PAIR_FIRST, gets the relationship target / obj / HIGH bits
+local function ECS_PAIR_RELATION(entityIndex, e) 
     assert(ECS_IS_PAIR(e))
-    return getAlive(entityIndex, ECS_PAIR_FIRST(e))
-end
-local function ecs_get_target(entityIndex, e) 
-    assert(ECS_IS_PAIR(e))
-    return getAlive(entityIndex, ECS_PAIR_SECOND(e))
+    return getAlive(entityIndex, ECS_ENTITY_T_HI(e))
 end
 
-local function nextEntityId(entityIndex, index: i24) 
-	local id = newId(index, 0)
+-- ECS_PAIR_SECOND gets the relationship / pred / LOW bits
+local function ECS_PAIR_OBJECT(entityIndex, e) 
+    assert(ECS_IS_PAIR(e))
+    return getAlive(entityIndex, ECS_ENTITY_T_LO(e))
+end
+
+local function nextEntityId(entityIndex, index: i24): i53
+	local id = ECS_COMBINE(index, 0)
 	entityIndex.sparse[id] = {
 		dense = index
 	} :: Record	
@@ -267,14 +267,14 @@ local function archetypeOf(world: World, types: {i24}, prev: Archetype?): Archet
 		columns[i] = {}
 
 		if ECS_IS_PAIR(componentId) then 
-			local first = ecs_get_source(entityIndex, componentId)
-			local second = ecs_get_target(entityIndex, componentId)
-			local firstPair = ECS_PAIR(first, WILDCARD)
-			local secondPair = ECS_PAIR(WILDCARD, second)
-			createArchetypeRecord(componentIndex, id, firstPair, i)
-			createArchetypeRecord(componentIndex, id, secondPair, i)
-			records[firstPair] = i
-			records[secondPair] = i
+			local pred = ECS_PAIR_RELATION(entityIndex, componentId)
+			local obj = ECS_PAIR_OBJECT(entityIndex, componentId)
+			local first = ECS_PAIR(pred, WILDCARD)
+			local second = ECS_PAIR(WILDCARD, obj)
+			createArchetypeRecord(componentIndex, id, first, i)
+			createArchetypeRecord(componentIndex, id, second, i)
+			records[first] = i
+			records[second] = i
 		end
 	end
 
@@ -783,13 +783,13 @@ return table.freeze({
 	w = WILDCARD,
 	Rest = REST,
 
-	ECS_ID = ECS_ID,
 	IS_PAIR = ECS_IS_PAIR,
+	ECS_ID = ECS_ENTITY_T_LO,
 	ECS_PAIR = ECS_PAIR,
 	ECS_GENERATION_INC = ECS_GENERATION_INC,
 	ECS_GENERATION = ECS_GENERATION,
-	ecs_get_target = ecs_get_target,
-	ecs_get_source = ecs_get_source,
+	ECS_PAIR_RELATION = ECS_PAIR_RELATION,
+	ECS_PAIR_OBJECT = ECS_PAIR_OBJECT,
 
 	pair = ECS_PAIR,
 	getAlive = getAlive,
