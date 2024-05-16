@@ -420,7 +420,7 @@ local function archetypeDelete(world: World, id: i53)
 				world:remove(entity, id)
 			end
 		end
-
+		
 		componentIndex[id] = nil
 	end
 end
@@ -436,9 +436,10 @@ function World.delete(world: World, entityId: i53)
 	local row = record.row
 
 	archetypeDelete(world, entityId)
+	-- TODO: should traverse linked )component records to pairs including entityId
 	archetypeDelete(world, ECS_PAIR(entityId, WILDCARD))
 	archetypeDelete(world, ECS_PAIR(WILDCARD, entityId))
-
+	
 	if archetype then 
 		local entities = archetype.entities
 		local last = #entities

@@ -276,6 +276,7 @@ TEST("world", function()
         local bob = world:entity()
         local alice = world:entity()
         
+        world:set(bob, Apples, "apples")
         world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
         world:set(alice, ECS_PAIR(Eats, Oranges), "alice eats oranges")
 
@@ -283,11 +284,14 @@ TEST("world", function()
         local Wildcard = jecs.Wildcard
     
         local count = 0
-        for _, data in world:query(ECS_PAIR(Wildcard, Apples)) do 
+        for _, data in world:query(ECS_PAIR(Wildcard, Apples)) do  
             count += 1
         end
+
+        world:delete(ECS_PAIR(Eats, Apples))
         
         CHECK(count == 0)
+        CHECK(world:get(bob, ECS_PAIR(Eats, Apples)) == nil)
     end
 
     do CASE "should error when setting invalid pair" 
