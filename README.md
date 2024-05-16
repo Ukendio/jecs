@@ -22,47 +22,38 @@ jecs is a stupidly fast Entity Component System (ECS).
 ### Example
 
 ```lua
-local world = World.new()
+local world = jecs.World.new()
+local pair = jecs.pair
 
-local player = world:entity()
-local opponent = world:entity()
+local ChildOf = world:component()
+local Name = world:component()
 
-local Health = world:component()
-local Position = world:component()
--- Notice how components can just be entities as well?
--- It allows you to model relationships easily!
-local Damage = world:entity()
-local DamagedBy = world:entity()
+local function parent(entity) 
+    return world:target(entity, ChildOf)
+end
+local function name()
 
-world:set(player, Health, 100)
-world:set(player, Damage, 8)
-world:set(player, Position, Vector3.new(0, 5, 0))
+local alice = world:entity()
+world:set(alice, Name, "alice")
 
-world:set(opponent, Health, 100)
-world:set(opponent, Damage, 21)
-world:set(opponent, Position, Vector3.new(0, 5, 3))
+local bob = world:entity()
+world:add(bob, pair(ChildOf, alice))
+world:set(bob, Name, "bob")
 
-for playerId, playerPosition, health in world:query(Position, Health) do
-    local totalDamage = 0
-    for opponentId, opponentPosition, damage in world:query(Position, Damage) do
-        if playerId == opponentId then 
-            continue
-        end
-        if (playerPosition - opponentPosition).Magnitude < 5 then
-            totalDamage += damage
-        end
-        -- We create a pair between the relation component `DamagedBy` and the entity id of the opponent. 
-        -- This will allow us to specifically query for damage exerted by a specific opponent.
-        world:set(playerId, ECS_PAIR(DamagedBy, opponentId), totalDamage)
-    end
+local sara = world:entity()
+world:add(sara, pair(ChildOf, alice))
+world:set(sara, Name, "sara")
+
+print(getName(parent(sara)))
+
+for e in world:query(pair(ChildOf, alice)) do 
+    print(getName(e), "is the child of alice")
 end
 
--- Gets the damage inflicted by our specific opponent!
-for playerId, health, inflicted in world:query(Health, ECS_PAIR(DamagedBy, opponent)) do 
-    world:set(playerId, health - inflicted)
-end
-
-assert(world:get(player, Health) == 79)
+-- Output
+-- "alice"
+-- bob is the child of alice
+-- sara is the child of alice
 ```
 
 125 archetypes, 4 random components queried.
