@@ -655,7 +655,7 @@ EmptyQuery.__index = EmptyQuery
 setmetatable(EmptyQuery, EmptyQuery)
 
 export type Query = typeof(EmptyQuery)
-local testkit = require("../testkit")
+
 function World.query(world: World, ...: i53): Query
 	-- breaking?
 	if (...) == nil then
