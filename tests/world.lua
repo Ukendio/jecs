@@ -1,5 +1,6 @@
 local testkit = require("../testkit")
 local jecs = require("../lib/init")
+local __ = jecs.Wildcard
 local ECS_ID, ECS_GENERATION = jecs.ECS_ID, jecs.ECS_GENERATION
 local ECS_GENERATION_INC = jecs.ECS_GENERATION_INC
 local IS_PAIR = jecs.IS_PAIR
@@ -9,7 +10,16 @@ local ECS_PAIR_RELATION = jecs.ECS_PAIR_RELATION
 local ECS_PAIR_OBJECT = jecs.ECS_PAIR_OBJECT
 
 local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
+local function CHECK_NO_ERR<T...>(s: string, fn: (T...) -> (), ...: T...)
+    local ok, err: string? = pcall(fn, ...)
 
+    if not CHECK(not ok, 2) then
+        local i = string.find(err :: string, " ")
+        assert(i)
+        local msg = string.sub(err :: string, i+1)
+        CHECK(msg == s, 2)
+    end
+end
 local N = 10
 
 TEST("world", function() 
@@ -255,6 +265,70 @@ TEST("world", function()
             CHECK(data == "bob eats apples")
         end
         CHECK(count == 1)
+    end
+
+    do CASE "should only relate alive entities" 
+        
+        local world = jecs.World.new()
+        local Eats = world:entity()
+        local Apples = world:entity()
+        local Oranges = world:entity()
+        local bob = world:entity()
+        local alice = world:entity()
+        
+        world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
+        world:set(alice, ECS_PAIR(Eats, Oranges), "alice eats oranges")
+
+        world:delete(Apples)
+        local Wildcard = jecs.Wildcard
+    
+        local count = 0
+        for _, data in world:query(ECS_PAIR(Wildcard, Apples)) do 
+            count += 1
+        end
+        
+        CHECK(count == 0)
+    end
+
+    do CASE "should error when setting invalid pair" 
+        local world = jecs.World.new()
+        local Eats = world:entity()
+        local Apples = world:entity()
+        local bob = world:entity()
+
+        world:delete(Apples)
+
+        CHECK_NO_ERR("Apples should be dead", function() 
+            world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
+        end)
+    end
+
+    do CASE "should find target for ChildOf" 
+        local world = jecs.World.new()
+
+        local ChildOf = world:component()
+        local Name = world:component()
+
+        local function parent(entity) 
+            return world:target(entity, ChildOf)
+        end
+
+        local bob = world:entity()
+        local alice = world:entity()
+        local sara = world:entity()
+        
+        world:add(bob, ECS_PAIR(ChildOf, alice))
+        world:set(bob, Name, "bob")
+        world:add(sara, ECS_PAIR(ChildOf, alice))
+        world:set(sara, Name, "sara")
+        CHECK(parent(bob) == alice) -- O(1)
+
+        local count = 0
+        for _, name in world:query(Name, ECS_PAIR(ChildOf, alice)) do 
+            print(name)
+            count += 1
+        end
+        CHECK(count == 2)
     end
 end)
 
