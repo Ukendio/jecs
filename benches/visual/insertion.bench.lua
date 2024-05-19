@@ -2,7 +2,6 @@
 --!native
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local rgb = require(ReplicatedStorage.rgb)
 local Matter = require(ReplicatedStorage.DevPackages.Matter)
 local jecs = require(ReplicatedStorage.Lib)
 local ecr = require(ReplicatedStorage.DevPackages.ecr)
