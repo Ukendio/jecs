@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v3
+
+      - name: Install Aftman
+        uses: ok-nick/setup-aftman@v0.3.0
+
+      - name: Install Dependencies
+        run: wally install
+
+      - name: Build
+        run: rojo build --output build.rbxm default.project.json
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: build.rbxm
+
+  release:
+    name: Release
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v3
+
+      - name: Download Jecs Build
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: build
+
+      - name: Rename Build
+        run: mv build/build.rbxm jecs.rbxm
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Matter ${{ github.ref_name }}
+          body: |
+            Matter ${{ github.ref_name }} is now available!
+          files: |
+            jecs.rbxm
+
+  publish:
+    name: Publish
+    needs: [release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v3
+
+      - name: Install Aftman
+        uses: ok-nick/setup-aftman@v0.3.0
+
+      - name: Wally Login
+        run: wally login --token ${{ secrets.WALLY_AUTH_TOKEN }}
+
+      - name: Publish
+        run: wally publish
