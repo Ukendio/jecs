@@ -22,18 +22,6 @@
         },
         "mirror": {
           "$path": "mirror"
-        },
-        "DevPackages": {
-          "$path": "DevPackages"
-        }
-      },
-      "TestService": {
-        "$properties": {
-          "ExecuteWithStudioRun": true
-        },
-        "$className": "TestService",
-        "run": {
-          "$path": "tests.server.lua"
         }
       }
     }
