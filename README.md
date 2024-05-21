@@ -31,7 +31,7 @@ local Name = world:component()
 local function parent(entity) 
     return world:target(entity, ChildOf)
 end
-local function name(entity) 
+local function getName(entity) 
     return world:get(entity, Name)
 end
 
