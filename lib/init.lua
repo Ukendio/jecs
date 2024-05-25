@@ -657,7 +657,13 @@ setmetatable(EmptyQuery, EmptyQuery)
 
 export type Query = typeof(EmptyQuery)
 
-function World.query(world: World, ...: i53): Query
+local function replace(row, columns, ...) 
+	for i, column in columns do 
+		column[row] = select(i, ...)
+	end
+end
+
+function World.query(world: World, ...): Query
 	-- breaking?
 	if (...) == nil then
 		error("Missing components")
@@ -749,6 +755,48 @@ function World.query(world: World, ...: i53): Query
 
 	local lastRow
 	local queryOutput = {}
+
+	
+	function preparedQuery:patch(fn: any) 
+		for _, compatibleArchetype in compatibleArchetypes do 
+			local archetype = compatibleArchetype.archetype
+			local tr = compatibleArchetype.indices
+			local columns = archetype.columns
+			
+			for row in archetype.entities do 
+				if queryLength == 1 then
+					local a = columns[tr[1]]
+					local pa = fn(a[row])
+					
+					a[row] = pa
+				elseif queryLength == 2 then
+					local a = columns[tr[1]]
+					local b = columns[tr[2]]
+
+					a[row], b[row] = fn(a[row], b[row])
+				elseif queryLength == 3 then
+					local a = columns[tr[1]]
+					local b = columns[tr[2]]
+					local c = columns[tr[3]]
+
+					a[row], b[row], c[row] = fn(a[row], b[row], c[row])
+				elseif queryLength == 4 then
+					local a = columns[tr[1]]
+					local b = columns[tr[2]]
+					local c = columns[tr[3]]
+					local d = columns[tr[4]]
+
+					a[row], b[row], c[row], d[row] = fn(
+						a[row], b[row], c[row], d[row])
+				else
+					for i = 1, queryLength do 
+						queryOutput[i] = columns[tr[i]][row]
+					end
+					replace(row, columns, fn(unpack(queryOutput)))
+				end
+			end
+		end
+	end
 
 	function preparedQuery:__iter()
 		return function()
