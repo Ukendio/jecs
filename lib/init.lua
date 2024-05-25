@@ -103,14 +103,6 @@ local function ECS_IS_PAIR(e: number)
 	return (e % 2 ^ 4) // FLAGS_PAIR ~= 0
 end
 
-function separate(e: number)
-	local _typeFlags = e % 0x10
-	-- Revert to //= after highligting gets fixed
-	--
-	e = e // ECS_ID_FLAGS_MASK
-	return e // ECS_ENTITY_MASK, e % ECS_GENERATION_MASK, _typeFlags
-end
-
 -- HIGH 24 bits LOW 24 bits
 local function ECS_GENERATION(e: i53)
 	e = e // 0x10
@@ -118,7 +110,9 @@ local function ECS_GENERATION(e: i53)
 end
 
 local function ECS_GENERATION_INC(e: i53)
-	local id, generation, flags = separate(e)
+	local flags = e // 0x10
+	local id = flags // ECS_ENTITY_MASK
+	local generation = flags % ECS_GENERATION_MASK
 
 	return ECS_COMBINE(id, generation + 1) + flags
 end
