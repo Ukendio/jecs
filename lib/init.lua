@@ -798,10 +798,6 @@ function World.query(world: World, ...): Query
 		end
 	end
 
-	function preparedQuery:__tostring() 
-		return "query"
-	end
-
 	local function iter() 
 		local archetype = compatibleArchetype.archetype
 		local row: number = next(archetype.entities, lastRow) :: number
