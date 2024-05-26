@@ -798,74 +798,84 @@ function World.query(world: World, ...): Query
 		end
 	end
 
-	function preparedQuery:__iter()
-		return function()
-			local archetype = compatibleArchetype.archetype
-			local row: number = next(archetype.entities, lastRow) :: number
-			while row == nil do
-				lastArchetype, compatibleArchetype = next(compatibleArchetypes, lastArchetype)
-				if lastArchetype == nil then
-					return
-				end
-				archetype = compatibleArchetype.archetype
-				row = next(archetype.entities, row) :: number
+	function preparedQuery:__tostring() 
+		return "query"
+	end
+
+	local function iter() 
+		local archetype = compatibleArchetype.archetype
+		local row: number = next(archetype.entities, lastRow) :: number
+		while row == nil do
+			lastArchetype, compatibleArchetype = next(compatibleArchetypes, lastArchetype)
+			if lastArchetype == nil then
+				return
 			end
-			lastRow = row
-
-			local entityId = archetype.entities[row :: number]
-			local columns = archetype.columns
-			local tr = compatibleArchetype.indices
-
-			if queryLength == 1 then
-				return entityId, columns[tr[1]][row]
-			elseif queryLength == 2 then
-				return entityId, columns[tr[1]][row], columns[tr[2]][row]
-			elseif queryLength == 3 then
-				return entityId, columns[tr[1]][row], columns[tr[2]][row], columns[tr[3]][row]
-			elseif queryLength == 4 then
-				return entityId, columns[tr[1]][row], columns[tr[2]][row], columns[tr[3]][row], columns[tr[4]][row]
-			elseif queryLength == 5 then
-				return entityId,
-					columns[tr[1]][row],
-					columns[tr[2]][row],
-					columns[tr[3]][row],
-					columns[tr[4]][row],
-					columns[tr[5]][row]
-			elseif queryLength == 6 then
-				return entityId,
-					columns[tr[1]][row],
-					columns[tr[2]][row],
-					columns[tr[3]][row],
-					columns[tr[4]][row],
-					columns[tr[5]][row],
-					columns[tr[6]][row]
-			elseif queryLength == 7 then
-				return entityId,
-					columns[tr[1]][row],
-					columns[tr[2]][row],
-					columns[tr[3]][row],
-					columns[tr[4]][row],
-					columns[tr[5]][row],
-					columns[tr[6]][row],
-					columns[tr[7]][row]
-			elseif queryLength == 8 then
-				return entityId,
-					columns[tr[1]][row],
-					columns[tr[2]][row],
-					columns[tr[3]][row],
-					columns[tr[4]][row],
-					columns[tr[5]][row],
-					columns[tr[6]][row],
-					columns[tr[7]][row],
-					columns[tr[8]][row]
-			end
-
-			for i in components do
-				queryOutput[i] = columns[tr[i]][row]
-			end
-
-			return entityId, unpack(queryOutput, 1, queryLength)
+			archetype = compatibleArchetype.archetype
+			row = next(archetype.entities, row) :: number
 		end
+		lastRow = row
+
+		local entityId = archetype.entities[row :: number]
+		local columns = archetype.columns
+		local tr = compatibleArchetype.indices
+
+		if queryLength == 1 then
+			return entityId, columns[tr[1]][row]
+		elseif queryLength == 2 then
+			return entityId, columns[tr[1]][row], columns[tr[2]][row]
+		elseif queryLength == 3 then
+			return entityId, columns[tr[1]][row], columns[tr[2]][row], columns[tr[3]][row]
+		elseif queryLength == 4 then
+			return entityId, columns[tr[1]][row], columns[tr[2]][row], columns[tr[3]][row], columns[tr[4]][row]
+		elseif queryLength == 5 then
+			return entityId,
+				columns[tr[1]][row],
+				columns[tr[2]][row],
+				columns[tr[3]][row],
+				columns[tr[4]][row],
+				columns[tr[5]][row]
+		elseif queryLength == 6 then
+			return entityId,
+				columns[tr[1]][row],
+				columns[tr[2]][row],
+				columns[tr[3]][row],
+				columns[tr[4]][row],
+				columns[tr[5]][row],
+				columns[tr[6]][row]
+		elseif queryLength == 7 then
+			return entityId,
+				columns[tr[1]][row],
+				columns[tr[2]][row],
+				columns[tr[3]][row],
+				columns[tr[4]][row],
+				columns[tr[5]][row],
+				columns[tr[6]][row],
+				columns[tr[7]][row]
+		elseif queryLength == 8 then
+			return entityId,
+				columns[tr[1]][row],
+				columns[tr[2]][row],
+				columns[tr[3]][row],
+				columns[tr[4]][row],
+				columns[tr[5]][row],
+				columns[tr[6]][row],
+				columns[tr[7]][row],
+				columns[tr[8]][row]
+		end
+
+		for i in components do
+			queryOutput[i] = columns[tr[i]][row]
+		end
+
+		return entityId, unpack(queryOutput, 1, queryLength)
+	end
+
+	function preparedQuery:__iter()
+		return iter
+	end
+
+	function preparedQuery:next() 
+		return iter()
 	end
 
 	return setmetatable({}, preparedQuery) :: any
