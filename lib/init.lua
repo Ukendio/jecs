@@ -642,16 +642,21 @@ function World.get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53
 	end
 end
 
--- the less creation the better
-local function actualNoOperation() end
-local function noop(_self: Query, ...: i53): () -> (number, ...any)
-	return actualNoOperation :: any
+local function noop() end
+local function iterNoop(_self: Query, ...: i53): () -> (number, ...any)
+	return noop :: any
 end
 
-local EmptyQuery = {
-	__iter = noop;
-	without = noop;
+local EmptyQuery 
+EmptyQuery = {
+	__iter = iterNoop,
+	next = noop,
+	patch = noop,
+	without = function() 
+		return EmptyQuery
+	end
 }
+
 EmptyQuery.__index = EmptyQuery
 setmetatable(EmptyQuery, EmptyQuery)
 
