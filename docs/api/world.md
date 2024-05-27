@@ -2,7 +2,7 @@
 
 ### World.new
 
-World.new(): [World](../api-types#World)
+World.new(): [World](../api-typesk.md#World)
 
 Create a new world.
 
@@ -13,7 +13,7 @@ A new world
 
 ### World.entity
 
-World.entity(world: [World](../api-types#World)): [Entity](../api-types#Entity)
+World.entity(world: [World](../api-types.md#World)): [Entity](../api-types.md#Entity)
 
 Creates an entity in the world.
 
@@ -24,9 +24,9 @@ A new entiity id
 
 ### World.target
 
-World.target(world: [World](../api-types#World), 
-             entity: [Entity](../api-types#Entity), 
-             rel: [Entity](../api-types#Entity)): [Entity](../api-types#Entity)
+World.target(world: [World](../api-types.md#World), 
+             entity: [Entity](../api-types.md#Entity), 
+             rel: [Entity](../api-types.md#Entity)): [Entity](../api-types.md#Entity)
 
 Get the target of a relationship.
 
@@ -45,9 +45,9 @@ The first target for the relationship
 
 ### World.add
 
-World.add(world: [World](../api-types#World), 
-          entity: [Entity](../api-types#Entity), 
-          id: [Entity](../api-types#Entity)): [Entity](..#api-types/Entity)
+World.add(world: [World](../api-types.md#World), 
+          entity: [Entity](../api-types.md#Entity), 
+          id: [Entity](../api-types.md#Entity)): [Entity](..#api-types.md#Entity)
 
 Add a (component) id to an entity.
 
@@ -81,9 +81,9 @@ If the entity already has the id, this operation will have no side effects.
 
 ### World.get
 
-World.get(world: [World](../api-types/World), 
-          entity: [Entity](../api-types/Entity), 
-          id: [Entity](../api-types/Entity)): any
+World.get(world: [World](../api-types.md#World), 
+          entity: [Entity](../api-types.md#Entity), 
+          id: [Entity](../api-types.md#Entity)): any
 
 Gets the component data.  
 
@@ -99,9 +99,9 @@ The component data, nil if the entity does not have the componnet.
 
 ### World.set
 
-World.set(world: [World](../api-types/World), 
-          entity: [Entity](../api-types/Entity), 
-          id: [Entity](../api-types/Entity)
+World.set(world: [World](../api-types.md#World), 
+          entity: [Entity](../api-types.md#Entity), 
+          id: [Entity](../api-types.md#Entity)
           data: any)
 
 Set the value of a component.
@@ -116,8 +116,8 @@ Set the value of a component.
 
 ### World.query
 
-World.query(world: [World](../api-types/World), 
-            ...: [Entity](../api-types/Entity)): [QueryIter](../api-types/QueryIter)
+World.query(world: [World](../api-types.md#World), 
+            ...: [Entity](../api-types.mdEntity)): [QueryIter](../api-types.md#QueryIter)
 
 Create a QueryIter from the list of filters.
 
