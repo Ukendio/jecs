@@ -30,7 +30,7 @@ end
 ### QueryIter.without
 
 QueryIter.without(iter: QueryIter
-                  ...: [Entity](../api-types/Entity)): QueryIter
+                  ...: [Entity](#Entity)): QueryIter
 
 
 Create a new Query Iterator from the filter

@@ -1,7 +1,7 @@
-site_name: Fusion
-site_url: https://elttob.uk/Fusion/
-repo_name: dphfox/Fusion
-repo_url: https://github.com/dphfox/Fusion
+site_name: Jecs
+site_url: jecs.github.io/jecs
+repo_name: ukendio/jecs
+repo_url: https://github.com/ukendio/jecs
 
 extra:
   version:
