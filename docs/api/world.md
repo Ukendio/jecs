@@ -2,7 +2,7 @@
 
 ### World.new
 
-World.new(): [World](../api-types/World)
+World.new(): [World](../api-types#World)
 
 Create a new world.
 
@@ -13,7 +13,7 @@ A new world
 
 ### World.entity
 
-World.entity(world: [World](../api-types/World)): [Entity](../api-types/Entity)
+World.entity(world: [World](../api-types#World)): [Entity](../api-types#Entity)
 
 Creates an entity in the world.
 
@@ -24,9 +24,9 @@ A new entiity id
 
 ### World.target
 
-World.target(world: [World](../api-types/World), 
-             entity: [Entity](../api-types/Entity), 
-             rel: [Entity](../api-types/Entity)): [Entity](../api-types/Entity)
+World.target(world: [World](../api-types#World), 
+             entity: [Entity](../api-types#Entity), 
+             rel: [Entity](../api-types#Entity)): [Entity](../api-types#Entity)
 
 Get the target of a relationship.
 
@@ -45,9 +45,9 @@ The first target for the relationship
 
 ### World.add
 
-World.add(world: [World](../api-types/World), 
-          entity: [Entity](../api-types/Entity), 
-          id: [Entity](../api-types/Entity)): [Entity](../api-types/Entity)
+World.add(world: [World](../api-types#World), 
+          entity: [Entity](../api-types#Entity), 
+          id: [Entity](../api-types#Entity)): [Entity](..#api-types/Entity)
 
 Add a (component) id to an entity.
 
@@ -63,9 +63,9 @@ If the entity already has the id, this operation will have no side effects.
 
 ### World.remove
 
-World.remove(world: [World](../api-types/World), 
-             entity: [Entity](../api-types/Entity), 
-             id: [Entity](../api-types/Entity)): [Entity](../api-types/Entity)
+World.remove(world: [World](../api-types#World), 
+             entity: [Entity](../api-types#Entity), 
+             id: [Entity](../api-types#Entity)): [Entity](../api-types#Entity)
 
 Remove a (component) id to an entity.
 
@@ -135,8 +135,8 @@ The query iterator.
 
 ### pair
 
-pair(first: [Entity](../api-types/Entity), 
-          second: [Entity](../api-types/Entity)): [Entity](../api-types/Entity)
+pair(first: [Entity](../api-types#Entity), 
+          second: [Entity](../api-types#Entity)): [Entity](../api-types#Entity)
 
 Creates a composite key.
 
@@ -152,7 +152,7 @@ The pair of the two elements
 
 ### IS_PAIR
 
-jecs.IS_PAIR(id: [Entity](../api-types/Entity)): boolean
+jecs.IS_PAIR(id: [Entity](../api-types#Entity)): boolean
 
 Creates a composite key.
 
