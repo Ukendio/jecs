@@ -2,7 +2,7 @@
 
 ### World.new
 
-World.new(): [World](../api-typesk.md#World)
+World.new(): [World](../api-types.md#World)
 
 Create a new world.
 
