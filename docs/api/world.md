@@ -135,8 +135,7 @@ The query iterator.
 
 ### pair
 
-pair(first: [Entity](../api-types#Entity), 
-          second: [Entity](../api-types#Entity)): [Entity](../api-types#Entity)
+pair(first: [Entity](../api-types#Entity), second: [Entity](../api-types#Entity)): [Entity](../api-types#Entity)
 
 Creates a composite key.
 
