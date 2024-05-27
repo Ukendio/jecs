@@ -1,0 +1,186 @@
+site_name: Fusion
+site_url: https://elttob.uk/Fusion/
+repo_name: dphfox/Fusion
+repo_url: https://github.com/dphfox/Fusion
+
+extra:
+  version:
+    provider: mike
+
+theme:
+  name: material
+  custom_dir: docs/assets/overrides
+  logo: assets/logo
+  favicon: assets/logo-dark.svg
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: fusiondoc-dark
+      toggle:
+        icon: octicons/sun-24
+        title: Switch to light theme
+    - media: "(prefers-color-scheme: light)"
+      scheme: fusiondoc-light
+      toggle:
+        icon: octicons/moon-24
+        title: Switch to dark theme
+  font:
+    text: Plus Jakarta Sans
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.sections
+    - navigation.instant
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+  icon:
+    repo: octicons/mark-github-16
+
+extra_css:
+  - assets/theme/fusiondoc.css
+  - assets/theme/colours.css
+  - assets/theme/code.css
+  - assets/theme/paragraph.css
+  - assets/theme/page.css
+  - assets/theme/admonition.css
+  - assets/theme/404.css
+  - assets/theme/api-reference.css
+  - assets/theme/dev-tools.css
+
+extra_javascript:
+  - assets/scripts/smooth-scroll.js
+
+nav:
+  - Home: index.md
+  - Tutorials:
+    - Get Started: tutorials/index.md
+    - Installing Fusion: tutorials/get-started/installing-fusion.md
+    - Developer Tools: tutorials/get-started/developer-tools.md
+    - Getting Help: tutorials/get-started/getting-help.md
+    - Fundamentals:
+      - Scopes: tutorials/fundamentals/scopes.md
+      - Values: tutorials/fundamentals/values.md
+      - Observers: tutorials/fundamentals/observers.md
+      - Computeds: tutorials/fundamentals/computeds.md
+    - Tables:
+      - ForValues: tutorials/tables/forvalues.md
+      - ForKeys: tutorials/tables/forkeys.md
+      - ForPairs: tutorials/tables/forpairs.md
+    - Animation:
+      - Tweens: tutorials/animation/tweens.md
+      - Springs: tutorials/animation/springs.md
+    - Roblox:
+      - Hydration: tutorials/roblox/hydration.md
+      - New Instances: tutorials/roblox/new-instances.md
+      - Parenting: tutorials/roblox/parenting.md
+      - Events: tutorials/roblox/events.md
+      - Change Events: tutorials/roblox/change-events.md
+      - Outputs: tutorials/roblox/outputs.md
+      - References: tutorials/roblox/references.md
+    - Best Practices:
+      - Components: tutorials/best-practices/components.md
+      - Instance Handling: tutorials/best-practices/instance-handling.md
+      - Callbacks: tutorials/best-practices/callbacks.md
+      - State: tutorials/best-practices/state.md
+      - Sharing Values: tutorials/best-practices/sharing-values.md
+      - Error Safety: tutorials/best-practices/error-safety.md
+      - Optimisation: tutorials/best-practices/optimisation.md
+    
+  - Examples:
+    - Home: examples/index.md
+    - Cookbook:
+      - examples/cookbook/index.md
+      - Player List: examples/cookbook/player-list.md
+      - Animated Computed: examples/cookbook/animated-computed.md
+      - Fetch Data From Server: examples/cookbook/fetch-data-from-server.md
+      - Light & Dark Theme: examples/cookbook/light-and-dark-theme.md
+      - Button Component: examples/cookbook/button-component.md
+      - Loading Spinner: examples/cookbook/loading-spinner.md
+      - Drag & Drop: examples/cookbook/drag-and-drop.md
+  - API Reference:
+    - api-reference/index.md
+    - General:
+      - Errors: api-reference/general/errors.md
+      - Types:
+        - Contextual: api-reference/general/types/contextual.md
+        - Version: api-reference/general/types/version.md
+      - Members:
+        - Contextual: api-reference/general/members/contextual.md
+        - Safe: api-reference/general/members/safe.md
+        - version: api-reference/general/members/version.md
+    - Memory:
+      - Types:
+        - Scope: api-reference/memory/types/scope.md
+        - ScopedObject: api-reference/memory/types/scopedobject.md
+        - Task: api-reference/memory/types/task.md
+      - Members:
+        - deriveScope: api-reference/memory/members/derivescope.md
+        - doCleanup: api-reference/memory/members/docleanup.md
+        - scoped: api-reference/memory/members/scoped.md
+    - State:
+      - Types:
+        - UsedAs: api-reference/state/types/usedas.md 
+        - Computed: api-reference/state/types/computed.md 
+        - Dependency: api-reference/state/types/dependency.md 
+        - Dependent: api-reference/state/types/dependent.md 
+        - For: api-reference/state/types/for.md 
+        - Observer: api-reference/state/types/observer.md 
+        - StateObject: api-reference/state/types/stateobject.md 
+        - Use: api-reference/state/types/use.md 
+        - Value: api-reference/state/types/value.md 
+      - Members:
+        - Computed: api-reference/state/members/computed.md
+        - ForKeys: api-reference/state/members/forkeys.md
+        - ForPairs: api-reference/state/members/forpairs.md
+        - ForValues: api-reference/state/members/forvalues.md
+        - Observer: api-reference/state/members/observer.md
+        - peek: api-reference/state/members/peek.md
+        - Value: api-reference/state/members/value.md
+    - Roblox:
+      - Types:
+        - Child: api-reference/roblox/types/child.md
+        - PropertyTable: api-reference/roblox/types/propertytable.md
+        - SpecialKey: api-reference/roblox/types/specialkey.md
+      - Members:
+        - Attribute: api-reference/roblox/members/attribute.md
+        - AttributeChange: api-reference/roblox/members/attributechange.md
+        - AttributeOut: api-reference/roblox/members/attributeout.md
+        - Children: api-reference/roblox/members/children.md
+        - Hydrate: api-reference/roblox/members/hydrate.md
+        - New: api-reference/roblox/members/new.md
+        - OnChange: api-reference/roblox/members/onchange.md
+        - OnEvent: api-reference/roblox/members/onevent.md
+        - Out: api-reference/roblox/members/out.md
+        - Ref: api-reference/roblox/members/ref.md
+    - Animation:
+      - Types:
+        - Animatable: api-reference/animation/types/animatable.md
+        - Spring: api-reference/animation/types/spring.md
+        - Tween: api-reference/animation/types/tween.md
+      - Members:
+        - Tween: api-reference/animation/members/tween.md
+        - Spring: api-reference/animation/members/spring.md
+  - Extras:
+    - Home: extras/index.md
+    - Backgrounds: extras/backgrounds.md
+    - Brand Guidelines: extras/brand-guidelines.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - meta
+  - md_in_html
+  - pymdownx.superfences
+  - pymdownx.betterem
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.inlinehilite
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      guess_lang: false
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
