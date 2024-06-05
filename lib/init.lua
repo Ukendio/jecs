@@ -901,7 +901,7 @@ export type WorldShim = typeof(setmetatable(
 			& (<A, B, C, D, E, F, G, H>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>) -> QueryShim<A, B, C, D, E, F, G, H>)
 			& (<A, B, C, D, E, F, G, H, I>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>) -> QueryShim<A, B, C, D, E, F, G, H, I>)
 			& (<A, B, C, D, E, F, G, H, I, J>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>) -> QueryShim<A, B, C, D, E, F, G, H, I, J>)
-			& (<A, B, C, D, E, F, G, H, I, J, K>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ...ctype<any>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, ...any>)
+			& (<A, B, C, D, E, F, G, H, I, J, K>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ...ctype<any>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K>)
 		
 	},
 	{} :: {
