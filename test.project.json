@@ -11,9 +11,6 @@
       },
       "ReplicatedStorage": {
         "$className": "ReplicatedStorage",
-        "DevPackages": {
-            "$path": "DevPackages"
-        },
         "Lib": {
           "$path": "lib"
         },
@@ -25,15 +22,6 @@
         },
         "mirror": {
           "$path": "mirror"
-        }
-      },
-      "TestService": {
-        "$properties": {
-          "ExecuteWithStudioRun": true
-        },
-        "$className": "TestService",
-        "run": {
-          "$path": "tests.server.lua"
         }
       }
     }

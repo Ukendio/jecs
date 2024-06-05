@@ -1,6 +1,7 @@
 
 <p align="center">
-  <img src="logo.png" />
+  <img src="jecs_darkmode.svg#gh-dark-mode-only" width=50%/>
+  <img src="jecs_lightmode.svg#gh-light-mode-only" width=50%/>
 </p>
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache-blue.svg?style=for-the-badge)](LICENSE-APACHE)
@@ -10,44 +11,51 @@ Just an ECS
 
 jecs is a stupidly fast Entity Component System (ECS).
 
-- Process tens of thousands of entities with ease every frame
-- Zero-dependency Luau package
+- Entity Relationships as first class citizens
+- Iterate 350,000 entities at 60 frames per second
+- Type-safe [Luau](https://luau-lang.org/) API
+- Zero-dependency package
 - Optimized for column-major operations
 - Cache friendly archetype/SoA storage
+- Unit tested for stability
 
 ### Example
 
 ```lua
-local world = Jecs.World.new()
+local world = jecs.World.new()
+local pair = jecs.pair
 
-local Health = world:component()
-local Damage = world:component()
-local Position = world:component()
+local ChildOf = world:component()
+local Name = world:component()
 
-local player = world:entity()
-local opponent = world:entity()
-
-world:set(player, Health, 100)
-world:set(player, Damage, 8)
-world:set(player, Position, Vector3.new(0, 5, 0))
-
-world:set(opponent, Health, 100)
-world:set(opponent, Damage, 21)
-world:set(opponent, Position, Vector3.new(0, 5, 3))
-
-for playerId, playerPosition, health in world:query(Position, Health) do
-    local totalDamage = 0
-    for _, opponentPosition, damage in world:query(Position, Damage) do
-        if (playerPosition - opponentPosition).Magnitude < 5 then
-            totalDamage += damage
-        end
-    end
-
-    world:set(playerId, Health, health - totalDamage)
+local function parent(entity) 
+    return world:target(entity, ChildOf)
+end
+local function getName(entity) 
+    return world:get(entity, Name)
 end
 
-assert(world:get(playerId, Health) == 79)
-assert(world:get(opponentId, Health) == 92)
+local alice = world:entity()
+world:set(alice, Name, "alice")
+
+local bob = world:entity()
+world:add(bob, pair(ChildOf, alice))
+world:set(bob, Name, "bob")
+
+local sara = world:entity()
+world:add(sara, pair(ChildOf, alice))
+world:set(sara, Name, "sara")
+
+print(getName(parent(sara)))
+
+for e in world:query(pair(ChildOf, alice)) do 
+    print(getName(e), "is the child of alice")
+end
+
+-- Output
+-- "alice"
+-- bob is the child of alice
+-- sara is the child of alice
 ```
 
 125 archetypes, 4 random components queried.
