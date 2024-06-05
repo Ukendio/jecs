@@ -845,8 +845,51 @@ function World.__iter(world: World): () -> (number?, unknown?)
 	end
 end
 
+export type QueryShim<T...> = typeof(setmetatable(
+	{} :: {
+		--- Excludes the given selection from the query
+		without: <U...>(QueryShim<T...>, U...) -> QueryShim<T...>
+	},
+	{} :: {
+		__iter: () -> (number, T...)
+	}
+))
+
+export type WorldShim = typeof(setmetatable(
+	{} :: {
+
+		--- Creates a new entity
+		entity: <T>(WorldShim) -> T,
+		--- Creates a new entity located in the first 256 ids.
+		--- These should be used for static components for fast access.
+		component: <T>(WorldShim) -> T,
+		--- Gets the target of an relationship. For example, when a user calls
+		--- `world:target(id, ChildOf(parent))`, you will obtain the parent entity.
+		target: <T>(WorldShim, id: unknown, relation: unknown) -> T?,
+		--- Deletes an entity and all it's related components and relationships.
+		delete: (WorldShim, id: unknown) -> (),
+	
+		--- Adds a component to the entity with no value
+		add: <T>(WorldShim, id: unknown, component: T) -> (),
+		--- Assigns a value to a component on the given entity
+		set: <T>(WorldShim, id: unknown, component: T, data: T) -> (),
+		--- Removes a component from the given entity
+		remove: (WorldShim, id: unknown, component: unknown) -> (),
+		--- Retrieves the value of up to 4 components. These values may be nil.
+		get: <T...>(WorldShim, id: unknown, T...) -> T...,
+	
+		--- Searches the world for entities that match a given query
+		query: <T...>(WorldShim, T...) -> Query
+
+	},
+	{} :: {
+		__iter: (world: World) -> () -> (number, {[unknown]: unknown?})
+	}
+
+))
+
 return table.freeze({
-	World = World,
+	World = World :: {new: () -> WorldShim},
 
 	OnAdd = ON_ADD,
 	OnRemove = ON_REMOVE,
