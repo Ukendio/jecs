@@ -901,22 +901,7 @@ export type WorldShim = typeof(setmetatable(
 			& (<A, B, C, D, E, F, G, H>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>) -> QueryShim<A, B, C, D, E, F, G, H>)
 			& (<A, B, C, D, E, F, G, H, I>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>) -> QueryShim<A, B, C, D, E, F, G, H, I>)
 			& (<A, B, C, D, E, F, G, H, I, J>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>) -> QueryShim<A, B, C, D, E, F, G, H, I, J>)
-			& (<A, B, C, D, E, F, G, H, I, J, K>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>, ctype<U>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>, ctype<U>, ctype<V>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>, ctype<U>, ctype<V>, ctype<W>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>, ctype<U>, ctype<V>, ctype<W>, ctype<X>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>, ctype<U>, ctype<V>, ctype<W>, ctype<X>, ctype<Y>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y>)
-			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>, ctype<U>, ctype<V>, ctype<W>, ctype<X>, ctype<Y>, ctype<Z>, ...ctype<any>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, ...any>)
+			& (<A, B, C, D, E, F, G, H, I, J, K>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ...ctype<any>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, ...any>)
 		
 	},
 	{} :: {
@@ -925,7 +910,7 @@ export type WorldShim = typeof(setmetatable(
 
 ))
 
-return {
+return table.freeze({
 	World = (World :: any) :: {new: () -> WorldShim},
 
 	OnAdd = (ON_ADD :: any) :: Component,
@@ -945,4 +930,4 @@ return {
 
 	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity<R>, obj: Entity<T>) -> Relationship<R>,
 	getAlive = getAlive
-}
+})
