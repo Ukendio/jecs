@@ -845,14 +845,79 @@ function World.__iter(world: World): () -> (number?, unknown?)
 	end
 end
 
-return table.freeze({
-	World = World,
+-- __nominal_type_dont_use could not be any or T as it causes a type error
+-- or produces a union
+export type Component<T=any> = T & {__nominal_type_dont_use: never}
+export type Entity<T=any> = Component<T>
+export type Relationship<T=any> = Component<T>
+type ctype<T> = Component<T>
 
-	OnAdd = ON_ADD,
-	OnRemove = ON_REMOVE,
-	OnSet = ON_SET,
-	Wildcard = WILDCARD,
-	w = WILDCARD,
+export type QueryShim<T...> = typeof(setmetatable(
+	{} :: {
+		--- Excludes the given selection from the query
+		without: <U...>(QueryShim<T...>, U...) -> QueryShim<T...>
+	},
+	{} :: {
+		__iter: (QueryShim<T...>) -> () -> (Entity, T...)
+	}
+))
+
+export type WorldShim = typeof(setmetatable(
+	{} :: {
+
+		--- Creates a new entity
+		entity: <T>(WorldShim) -> Entity<T>,
+		--- Creates a new entity located in the first 256 ids.
+		--- These should be used for static components for fast access.
+		component: <T>(WorldShim) -> Component<T>,
+		--- Gets the target of an relationship. For example, when a user calls
+		--- `world:target(id, ChildOf(parent))`, you will obtain the parent entity.
+		target: (WorldShim, id: Entity, relation: Relationship) -> Entity?,
+		--- Deletes an entity and all it's related components and relationships.
+		delete: (WorldShim, id: Entity) -> (),
+	
+		--- Adds a component to the entity with no value
+		add: <T>(WorldShim, id: Entity, component: Component<T>) -> (),
+		--- Assigns a value to a component on the given entity
+		set: <T>(WorldShim, id: Entity, component: Component<T>, data: T) -> (),
+		--- Removes a component from the given entity
+		remove: (WorldShim, id: Entity, component: Component) -> (),
+		--- Retrieves the value of up to 4 components. These values may be nil.
+		get:
+			(<A>(WorldShim, id: any, ctype<A>) -> A)
+			& (<A, B>(WorldShim, id: Entity, ctype<A>, ctype<B>) -> (A, B))
+			& (<A, B, C>(WorldShim, id: Entity, ctype<A>, ctype<B>, ctype<C>) -> (A, B, C))
+			& <A, B, C, D>(WorldShim, id: Entity, ctype<A>, ctype<B>, ctype<C>, ctype<D>) -> (A, B, C, D),
+	
+		--- Searches the world for entities that match a given query
+		query:
+			(<A>(WorldShim, ctype<A>) -> QueryShim<A>)
+			& (<A, B>(WorldShim, ctype<A>, ctype<B>) -> QueryShim<A, B>)
+			& (<A, B, C>(WorldShim, ctype<A>, ctype<B>, ctype<C>) -> QueryShim<A, B, C>)
+			& (<A, B, C, D>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>) -> QueryShim<A, B, C, D>)
+			& (<A, B, C, D, E>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>) -> QueryShim<A, B, C, D, E>)
+			& (<A, B, C, D, E, F>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>) -> QueryShim<A, B, C, D, E, F>)
+			& (<A, B, C, D, E, F, G>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>) -> QueryShim<A, B, C, D, E, F, G>)
+			& (<A, B, C, D, E, F, G, H>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>) -> QueryShim<A, B, C, D, E, F, G, H>)
+			& (<A, B, C, D, E, F, G, H, I>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>) -> QueryShim<A, B, C, D, E, F, G, H, I>)
+			& (<A, B, C, D, E, F, G, H, I, J>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>) -> QueryShim<A, B, C, D, E, F, G, H, I, J>)
+			& (<A, B, C, D, E, F, G, H, I, J, K>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ...ctype<any>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K>)
+		
+	},
+	{} :: {
+		__iter: (world: WorldShim) -> () -> (number, {[unknown]: unknown?})
+	}
+
+))
+
+return table.freeze({
+	World = (World :: any) :: {new: () -> WorldShim},
+
+	OnAdd = (ON_ADD :: any) :: Component,
+	OnRemove = (ON_REMOVE :: any) :: Component,
+	OnSet = (ON_SET :: any) :: Component,
+	Wildcard = (WILDCARD :: any) :: Component,
+	w = (WILDCARD :: any) :: Component,
 	Rest = REST,
 
 	IS_PAIR = ECS_IS_PAIR,
@@ -863,6 +928,6 @@ return table.freeze({
 	ECS_PAIR_RELATION = ECS_PAIR_RELATION,
 	ECS_PAIR_OBJECT = ECS_PAIR_OBJECT,
 
-	pair = ECS_PAIR,
-	getAlive = getAlive,
+	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity<R>, obj: Entity<T>) -> Relationship<R>,
+	getAlive = getAlive
 })
