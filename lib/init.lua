@@ -100,49 +100,52 @@ local function ECS_COMBINE(source: number, target: number): i53
 end
 
 local function ECS_IS_PAIR(e: number)
-	return (e % 2 ^ 4) // FLAGS_PAIR ~= 0
+	if e > ECS_ENTITY_MASK then
+		return (e % 2 ^ 4) // FLAGS_PAIR ~= 0
+	end
+	return false
 end
 
 -- HIGH 24 bits LOW 24 bits
 local function ECS_GENERATION(e: i53)
-	e = e // 0x10
-	return e % ECS_GENERATION_MASK
+	if e > ECS_ENTITY_MASK then
+		e = e // 0x10
+		return e % ECS_GENERATION_MASK
+	end
+	return 0
 end
 
 local function ECS_GENERATION_INC(e: i53)
-	local flags = e // 0x10
-	local id = flags // ECS_ENTITY_MASK
-	local generation = flags % ECS_GENERATION_MASK
+	if e > ECS_ENTITY_MASK then
+		local flags = e // 0x10
+		local id = flags // ECS_ENTITY_MASK
+		local generation = flags % ECS_GENERATION_MASK
 
-	return ECS_COMBINE(id, generation + 1) + flags
+		return ECS_COMBINE(id, generation + 1) + flags
+	end
+	return ECS_COMBINE(e, 1)
 end
 
 -- FIRST gets the high ID
 local function ECS_ENTITY_T_HI(e: i53): i24
-	e = e // 0x10
-	return e % ECS_ENTITY_MASK
+	if e > ECS_ENTITY_MASK then
+		e = e // 0x10
+		return e % ECS_ENTITY_MASK
+	end
+	return e
 end
 
 -- SECOND
 local function ECS_ENTITY_T_LO(e: i53)
-	e = e // 0x10
-	return e // ECS_ENTITY_MASK
+	if e > ECS_ENTITY_MASK then
+		e = e // 0x10
+		return e // ECS_ENTITY_MASK
+	end
+	return e
 end
 
 local function ECS_PAIR(pred: i53, obj: i53): i53
-	local first
-	local second: number = WILDCARD
-
-	if pred == WILDCARD then
-		first = obj
-	elseif obj == WILDCARD then
-		first = pred
-	else
-		first = obj
-		second = ECS_ENTITY_T_LO(pred)
-	end
-
-	return ECS_COMBINE(ECS_ENTITY_T_LO(first), second) + addFlags(--[[isPair]] true)
+	return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + addFlags(--[[isPair]] true)
 end
 
 local function getAlive(entityIndex: EntityIndex, id: i24)
@@ -161,7 +164,8 @@ local function ECS_PAIR_OBJECT(entityIndex, e)
 end
 
 local function nextEntityId(entityIndex, index: i24): i53
-	local id = ECS_COMBINE(index, 0)
+	--local id = ECS_COMBINE(index, 0)
+	local id = index
 	entityIndex.sparse[id] = {
 		dense = index,
 	} :: Record
@@ -372,6 +376,7 @@ function World.target(world: World, entity: i53, relation: i24): i24?
 	if not archetype then
 		return nil
 	end
+
 	local componentRecord = world.componentIndex[ECS_PAIR(relation, WILDCARD)]
 	if not componentRecord then
 		return nil
@@ -822,6 +827,7 @@ function World.__iter(world: World): () -> (number?, unknown?)
 		if not lastEntity then
 			return
 		end
+
 		last = lastEntity
 
 		local record = sparse[entityId]

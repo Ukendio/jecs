@@ -208,6 +208,7 @@ TEST("world", function()
 
 		local pair = ECS_PAIR(e2, e3)
 		CHECK(IS_PAIR(pair) == true)
+
 		CHECK(ECS_PAIR_RELATION(world.entityIndex, pair) == e2)
 		CHECK(ECS_PAIR_OBJECT(world.entityIndex, pair) == e3)
 	end
@@ -350,4 +351,3 @@ TEST("world", function()
 end)
 
 FINISH()
-
