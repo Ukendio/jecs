@@ -845,13 +845,20 @@ function World.__iter(world: World): () -> (number?, unknown?)
 	end
 end
 
+-- __nominal_type_dont_use could not be any or T as it causes a type error
+-- or produces a union
+export type Component<T=any> = T & {__nominal_type_dont_use: never}
+export type Entity<T=any> = Component<T>
+export type Relationship<T=any> = Component<T>
+type ctype<T> = Component<T>
+
 export type QueryShim<T...> = typeof(setmetatable(
 	{} :: {
 		--- Excludes the given selection from the query
 		without: <U...>(QueryShim<T...>, U...) -> QueryShim<T...>
 	},
 	{} :: {
-		__iter: () -> (number, T...)
+		__iter: (QueryShim<T...>) -> () -> (Entity, T...)
 	}
 ))
 
@@ -859,43 +866,73 @@ export type WorldShim = typeof(setmetatable(
 	{} :: {
 
 		--- Creates a new entity
-		entity: <T>(WorldShim) -> T,
+		entity: <T>(WorldShim) -> Entity<T>,
 		--- Creates a new entity located in the first 256 ids.
 		--- These should be used for static components for fast access.
-		component: <T>(WorldShim) -> T,
+		component: <T>(WorldShim) -> Component<T>,
 		--- Gets the target of an relationship. For example, when a user calls
 		--- `world:target(id, ChildOf(parent))`, you will obtain the parent entity.
-		target: <T>(WorldShim, id: unknown, relation: unknown) -> T?,
+		target: (WorldShim, id: Entity, relation: Relationship) -> Entity?,
 		--- Deletes an entity and all it's related components and relationships.
-		delete: (WorldShim, id: unknown) -> (),
+		delete: (WorldShim, id: Entity) -> (),
 	
 		--- Adds a component to the entity with no value
-		add: <T>(WorldShim, id: unknown, component: T) -> (),
+		add: <T>(WorldShim, id: Entity, component: Component<T>) -> (),
 		--- Assigns a value to a component on the given entity
-		set: <T>(WorldShim, id: unknown, component: T, data: T) -> (),
+		set: <T>(WorldShim, id: Entity, component: Component<T>, data: T) -> (),
 		--- Removes a component from the given entity
-		remove: (WorldShim, id: unknown, component: unknown) -> (),
+		remove: (WorldShim, id: Entity, component: Component) -> (),
 		--- Retrieves the value of up to 4 components. These values may be nil.
-		get: <T...>(WorldShim, id: unknown, T...) -> T...,
+		get:
+			(<A>(WorldShim, id: any, ctype<A>) -> A)
+			& (<A, B>(WorldShim, id: Entity, ctype<A>, ctype<B>) -> (A, B))
+			& (<A, B, C>(WorldShim, id: Entity, ctype<A>, ctype<B>, ctype<C>) -> (A, B, C))
+			& <A, B, C, D>(WorldShim, id: Entity, ctype<A>, ctype<B>, ctype<C>, ctype<D>) -> (A, B, C, D),
 	
 		--- Searches the world for entities that match a given query
-		query: <T...>(WorldShim, T...) -> Query
-
+		query:
+			(<A>(WorldShim, ctype<A>) -> QueryShim<A>)
+			& (<A, B>(WorldShim, ctype<A>, ctype<B>) -> QueryShim<A, B>)
+			& (<A, B, C>(WorldShim, ctype<A>, ctype<B>, ctype<C>) -> QueryShim<A, B, C>)
+			& (<A, B, C, D>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>) -> QueryShim<A, B, C, D>)
+			& (<A, B, C, D, E>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>) -> QueryShim<A, B, C, D, E>)
+			& (<A, B, C, D, E, F>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>) -> QueryShim<A, B, C, D, E, F>)
+			& (<A, B, C, D, E, F, G>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>) -> QueryShim<A, B, C, D, E, F, G>)
+			& (<A, B, C, D, E, F, G, H>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>) -> QueryShim<A, B, C, D, E, F, G, H>)
+			& (<A, B, C, D, E, F, G, H, I>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>) -> QueryShim<A, B, C, D, E, F, G, H, I>)
+			& (<A, B, C, D, E, F, G, H, I, J>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>) -> QueryShim<A, B, C, D, E, F, G, H, I, J>)
+			& (<A, B, C, D, E, F, G, H, I, J, K>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>, ctype<U>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>, ctype<U>, ctype<V>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>, ctype<U>, ctype<V>, ctype<W>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>, ctype<U>, ctype<V>, ctype<W>, ctype<X>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>, ctype<U>, ctype<V>, ctype<W>, ctype<X>, ctype<Y>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y>)
+			& (<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z>(WorldShim, ctype<A>, ctype<B>, ctype<C>, ctype<D>, ctype<E>, ctype<F>, ctype<G>, ctype<H>, ctype<I>, ctype<J>, ctype<K>, ctype<L>, ctype<M>, ctype<N>, ctype<O>, ctype<P>, ctype<Q>, ctype<R>, ctype<S>, ctype<T>, ctype<U>, ctype<V>, ctype<W>, ctype<X>, ctype<Y>, ctype<Z>, ...ctype<any>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, ...any>)
+		
 	},
 	{} :: {
-		__iter: (world: World) -> () -> (number, {[unknown]: unknown?})
+		__iter: (world: WorldShim) -> () -> (number, {[unknown]: unknown?})
 	}
 
 ))
 
-return table.freeze({
-	World = World :: {new: () -> WorldShim},
+return {
+	World = (World :: any) :: {new: () -> WorldShim},
 
-	OnAdd = ON_ADD,
-	OnRemove = ON_REMOVE,
-	OnSet = ON_SET,
-	Wildcard = WILDCARD,
-	w = WILDCARD,
+	OnAdd = (ON_ADD :: any) :: Component,
+	OnRemove = (ON_REMOVE :: any) :: Component,
+	OnSet = (ON_SET :: any) :: Component,
+	Wildcard = (WILDCARD :: any) :: Component,
+	w = (WILDCARD :: any) :: Component,
 	Rest = REST,
 
 	IS_PAIR = ECS_IS_PAIR,
@@ -906,6 +943,6 @@ return table.freeze({
 	ECS_PAIR_RELATION = ECS_PAIR_RELATION,
 	ECS_PAIR_OBJECT = ECS_PAIR_OBJECT,
 
-	pair = ECS_PAIR,
-	getAlive = getAlive,
-})
+	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity<R>, obj: Entity<T>) -> Relationship<R>,
+	getAlive = getAlive
+}
