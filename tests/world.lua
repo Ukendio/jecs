@@ -350,4 +350,3 @@ TEST("world", function()
 end)
 
 FINISH()
-

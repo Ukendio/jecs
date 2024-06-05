@@ -63,15 +63,17 @@ type ArchetypeDiff = {
 	removed: Ty,
 }
 
-local FLAGS_PAIR = 0x8
+local FLAGS_PAIR = 0b0000_1000
 local HI_COMPONENT_ID = 256
 local ON_ADD = HI_COMPONENT_ID + 1
 local ON_REMOVE = HI_COMPONENT_ID + 2
 local ON_SET = HI_COMPONENT_ID + 3
-local WILDCARD = HI_COMPONENT_ID + 4
-local REST = HI_COMPONENT_ID + 5
+local ECS_WILDCARD = HI_COMPONENT_ID + 4
+local ECS_DELETE = HI_COMPONENT_ID + 5
+local ECS_CHILD_OF = HI_COMPONENT_ID + 6
+local REST = HI_COMPONENT_ID + 7
 
-local ECS_ID_FLAGS_MASK = 0x10
+local ECS_ID_FLAGS_MASK = 0b0001_0000
 local ECS_ENTITY_MASK = bit32.lshift(1, 24)
 local ECS_GENERATION_MASK = bit32.lshift(1, 16)
 
@@ -131,11 +133,11 @@ end
 
 local function ECS_PAIR(pred: i53, obj: i53): i53
 	local first
-	local second: number = WILDCARD
+	local second: number = ECS_WILDCARD
 
-	if pred == WILDCARD then
+	if pred == ECS_WILDCARD then
 		first = obj
-	elseif obj == WILDCARD then
+	elseif obj == ECS_WILDCARD then
 		first = pred
 	else
 		first = obj
@@ -185,8 +187,9 @@ local function transitionArchetype(
 	local types = from.types
 
 	for i, column in columns do
-		-- Retrieves the new column index from the source archetype's record from each component
-		-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
+		-- Retrieves the new column index from the source archetype's record
+		-- from each component. We have to do this because the columns are
+		-- tightly packed and indexes may not correspond to each other.
 		local targetColumn = destinationColumns[tr[types[i]]]
 
 		-- Sometimes target column may not exist, e.g. when you remove a component.
@@ -261,7 +264,7 @@ local function ensureComponentRecord(
 	local archetypesMap = componentIndex[componentId]
 
 	if not archetypesMap then
-		archetypesMap = { size = 0, cache = {}, first = {}, second = {} } :: ArchetypeMap
+		archetypesMap = { size = 0, cache = {} } :: ArchetypeMap
 		componentIndex[componentId] = archetypesMap
 	end
 
@@ -275,7 +278,7 @@ local function ECS_ID_IS_WILDCARD(e)
 	assert(ECS_IS_PAIR(e))
 	local first = ECS_ENTITY_T_HI(e)
 	local second = ECS_ENTITY_T_LO(e)
-	return first == WILDCARD or second == WILDCARD
+	return first == ECS_WILDCARD or second == ECS_WILDCARD
 end
 
 local function archetypeOf(world: any, types: { i24 }, prev: Archetype?): Archetype
@@ -290,17 +293,18 @@ local function archetypeOf(world: any, types: { i24 }, prev: Archetype?): Archet
 
 	local records = {}
 	for i, componentId in types do
-		ensureComponentRecord(componentIndex, id, componentId, i)
+		local map = ensureComponentRecord(componentIndex, id, componentId, i)
 		records[componentId] = i
 		if ECS_IS_PAIR(componentId) then
 			local relation = ECS_PAIR_RELATION(world.entityIndex, componentId)
 			local object = ECS_PAIR_OBJECT(world.entityIndex, componentId)
 
-			local idr_r = ECS_PAIR(relation, WILDCARD)
-			ensureComponentRecord(componentIndex, id, idr_r, i)
+			local idr_r = ECS_PAIR(relation, ECS_WILDCARD)
 			records[idr_r] = i
+			local idr_r_map = ensureComponentRecord(componentIndex, id, idr_r, i)
+			idr_r_map.first = map
 
-			local idr_t = ECS_PAIR(WILDCARD, object)
+			local idr_t = ECS_PAIR(ECS_WILDCARD, object)
 			ensureComponentRecord(componentIndex, id, idr_t, i)
 			records[idr_t] = i
 		end
@@ -362,17 +366,14 @@ function World.entity(world: World)
 	return nextEntityId(world.entityIndex, entityId + REST)
 end
 
--- TODO:
--- should have an additional `index` parameter which selects the nth target
--- this is important when an entity can have multiple relationships with the same target
-function World.target(world: World, entity: i53, relation: i24): i24?
+local function target(world: World, entity: i53, relation: i24): i24?
 	local entityIndex = world.entityIndex
 	local record = entityIndex.sparse[entity]
 	local archetype = record.archetype
 	if not archetype then
 		return nil
 	end
-	local componentRecord = world.componentIndex[ECS_PAIR(relation, WILDCARD)]
+	local componentRecord = world.componentIndex[ECS_PAIR(relation, ECS_WILDCARD)]
 	if not componentRecord then
 		return nil
 	end
@@ -383,6 +384,16 @@ function World.target(world: World, entity: i53, relation: i24): i24?
 	end
 
 	return ECS_PAIR_OBJECT(entityIndex, archetype.types[archetypeRecord])
+end
+
+-- TODO:
+-- should have an additional `index` parameter which selects the nth target
+-- this is important when an entity can have multiple relationships with the same target
+
+World.target = target
+
+function World.parent(world, e)
+	return target(world, e, ECS_CHILD_OF)
 end
 
 -- should reuse this logic in World.set instead of swap removing in transition archetype
@@ -426,8 +437,8 @@ function World.delete(world: World, entityId: i53)
 
 	archetypeDelete(world, entityId)
 	-- TODO: should traverse linked )component records to pairs including entityId
-	archetypeDelete(world, ECS_PAIR(entityId, WILDCARD))
-	archetypeDelete(world, ECS_PAIR(WILDCARD, entityId))
+	archetypeDelete(world, ECS_PAIR(entityId, ECS_WILDCARD))
+	archetypeDelete(world, ECS_PAIR(ECS_WILDCARD, entityId))
 
 	if archetype then
 		local entities = archetype.entities
@@ -813,23 +824,21 @@ function World.query(world: World, ...): Query
 end
 
 function World.__iter(world: World): () -> (number?, unknown?)
-	local dense = world.entityIndex.dense
 	local sparse = world.entityIndex.sparse
 	local last
 
 	return function()
-		local lastEntity, entityId = next(dense, last)
+		local lastEntity, record = next(sparse, last)
 		if not lastEntity then
 			return
 		end
 		last = lastEntity
 
-		local record = sparse[entityId]
 		local archetype = record.archetype
 		if not archetype then
 			-- Returns only the entity id as an entity without data should not return
 			-- data and allow the user to get an error if they don't handle the case.
-			return entityId
+			return last
 		end
 
 		local row = record.row
@@ -841,7 +850,7 @@ function World.__iter(world: World): () -> (number?, unknown?)
 			entityData[types[i]] = column[row]
 		end
 
-		return entityId, entityData
+		return last, entityData
 	end
 end
 
@@ -851,8 +860,8 @@ return table.freeze({
 	OnAdd = ON_ADD,
 	OnRemove = ON_REMOVE,
 	OnSet = ON_SET,
-	Wildcard = WILDCARD,
-	w = WILDCARD,
+	Wildcard = ECS_WILDCARD,
+	w = ECS_WILDCARD,
 	Rest = REST,
 
 	IS_PAIR = ECS_IS_PAIR,
