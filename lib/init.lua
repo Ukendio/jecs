@@ -23,7 +23,7 @@ type Archetype = {
 	type: string | number,
 	entities: { number },
 	columns: { Column },
-	records: {},
+	records: { [number]: number },
 }
 
 type Record = {
@@ -47,7 +47,7 @@ TODO:
 ]]
 
 type ArchetypeMap = {
-	cache: { [number]: ArchetypeRecord },
+	cache: { ArchetypeRecord },
 	first: ArchetypeMap,
 	second: ArchetypeMap,
 	parent: ArchetypeMap,
@@ -136,7 +136,7 @@ local function ECS_ENTITY_T_HI(e: i53): i24
 end
 
 -- SECOND
-local function ECS_ENTITY_T_LO(e: i53)
+local function ECS_ENTITY_T_LO(e: i53): i24
 	if e > ECS_ENTITY_MASK then
 		e = e // 0x10
 		return e // ECS_ENTITY_MASK
@@ -145,7 +145,7 @@ local function ECS_ENTITY_T_LO(e: i53)
 end
 
 local function ECS_PAIR(pred: i53, obj: i53): i53
-	return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + addFlags(--[[isPair]] true)
+	return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + addFlags(--[[isPair]] true) :: i53
 end
 
 local function getAlive(entityIndex: EntityIndex, id: i24)
@@ -163,7 +163,7 @@ local function ECS_PAIR_OBJECT(entityIndex, e)
 	return getAlive(entityIndex, ECS_ENTITY_T_LO(e))
 end
 
-local function nextEntityId(entityIndex, index: i24): i53
+local function nextEntityId(entityIndex: EntityIndex, index: i24): i53
 	--local id = ECS_COMBINE(index, 0)
 	local id = index
 	entityIndex.sparse[id] = {
@@ -219,7 +219,7 @@ local function transitionArchetype(
 		sourceEntities[sourceRow] = e2
 	end
 
-	sourceEntities[movedAway] = nil
+	sourceEntities[movedAway] = nil :: any
 	destinationEntities[destinationRow] = e1
 
 	local record1 = sparse[e1]
@@ -265,7 +265,7 @@ local function ensureComponentRecord(
 	local archetypesMap = componentIndex[componentId]
 
 	if not archetypesMap then
-		archetypesMap = { size = 0, cache = {}, first = {}, second = {} } :: ArchetypeMap
+		archetypesMap = { size = 0, cache = {} }
 		componentIndex[componentId] = archetypesMap
 	end
 
@@ -289,7 +289,7 @@ local function archetypeOf(world: any, types: { i24 }, prev: Archetype?): Archet
 	world.nextArchetypeId = id
 
 	local length = #types
-	local columns = table.create(length)
+	local columns = (table.create(length) :: any) :: { Column }
 	local componentIndex = world.componentIndex
 
 	local records = {}
@@ -311,7 +311,7 @@ local function archetypeOf(world: any, types: { i24 }, prev: Archetype?): Archet
 		columns[i] = {}
 	end
 
-	local archetype = {
+	local archetype: Archetype = {
 		columns = columns,
 		edges = {},
 		entities = {},
@@ -320,6 +320,7 @@ local function archetypeOf(world: any, types: { i24 }, prev: Archetype?): Archet
 		type = ty,
 		types = types,
 	}
+
 	world.archetypeIndex[ty] = archetype
 	world.archetypes[id] = archetype
 
@@ -330,12 +331,12 @@ local World = {}
 World.__index = World
 function World.new()
 	local self = setmetatable({
-		archetypeIndex = {},
+		archetypeIndex = {} :: { [string]: Archetype },
 		archetypes = {} :: Archetypes,
 		componentIndex = {} :: ComponentIndex,
 		entityIndex = {
-			dense = {},
-			sparse = {},
+			dense = {} :: { [i24]: i53 },
+			sparse = {} :: { [i53]: Record },
 		} :: EntityIndex,
 		hooks = {
 			[ON_ADD] = {},
@@ -348,6 +349,8 @@ function World.new()
 	self.ROOT_ARCHETYPE = archetypeOf(self, {})
 	return self
 end
+
+export type World = typeof(World.new())
 
 function World.component(world: World)
 	local componentId = world.nextComponentId + 1
@@ -391,7 +394,7 @@ function World.target(world: World, entity: i53, relation: i24): i24?
 end
 
 -- should reuse this logic in World.set instead of swap removing in transition archetype
-local function destructColumns(columns, count, row)
+local function destructColumns(columns: { Column }, count: number, row: number)
 	if row == count then
 		for _, column in columns do
 			column[count] = nil
@@ -415,7 +418,7 @@ local function archetypeDelete(world: World, id: i53)
 			end
 		end
 
-		componentIndex[id] = nil
+		componentIndex[id] = nil :: any
 	end
 end
 
@@ -444,20 +447,18 @@ function World.delete(world: World, entityId: i53)
 			sparse[entityToMove] = record
 		end
 
-		entities[row], entities[last] = entities[last], nil
+		entities[row], entities[last] = entities[last], nil :: any
 
 		local columns = archetype.columns
 
 		destructColumns(columns, last, row)
 	end
 
-	sparse[entityId] = nil
-	dense[#dense] = nil
+	sparse[entityId] = nil :: any
+	dense[#dense] = nil :: any
 end
 
-export type World = typeof(World.new())
-
-local function ensureArchetype(world: World, types, prev)
+local function ensureArchetype(world: World, types, prev): Archetype
 	if #types < 1 then
 		return world.ROOT_ARCHETYPE
 	end
@@ -853,17 +854,17 @@ end
 
 -- __nominal_type_dont_use could not be any or T as it causes a type error
 -- or produces a union
-export type Entity<T=any> = number & {__nominal_type_dont_use: T}
+export type Entity<T = any> = number & { __nominal_type_dont_use: T }
 export type Pair = number
 
 export type QueryShim<T...> = typeof(setmetatable({
 	without = function(...): QueryShim<T...>
 		return nil :: any
-	end
+	end,
 }, {
 	__iter = function(): () -> (number, T...)
 		return nil :: any
-	end
+	end,
 }))
 export type WorldShim = typeof(setmetatable(
 	{} :: {
@@ -878,7 +879,7 @@ export type WorldShim = typeof(setmetatable(
 		target: (WorldShim, id: Entity, relation: Entity) -> Entity?,
 		--- Deletes an entity and all it's related components and relationships.
 		delete: (WorldShim, id: Entity) -> (),
-	
+
 		--- Adds a component to the entity with no value
 		add: <T>(WorldShim, id: Entity, component: Entity<T>) -> (),
 		--- Assigns a value to a component on the given entity
@@ -886,33 +887,102 @@ export type WorldShim = typeof(setmetatable(
 		--- Removes a component from the given entity
 		remove: (WorldShim, id: Entity, component: Entity) -> (),
 		--- Retrieves the value of up to 4 components. These values may be nil.
-		get:
-			(<A>(WorldShim, id: any, Entity<A>) -> A)
+		get: (<A>(WorldShim, id: any, Entity<A>) -> A)
 			& (<A, B>(WorldShim, id: Entity, Entity<A>, Entity<B>) -> (A, B))
 			& (<A, B, C>(WorldShim, id: Entity, Entity<A>, Entity<B>, Entity<C>) -> (A, B, C))
 			& <A, B, C, D>(WorldShim, id: Entity, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> (A, B, C, D),
-	
+
 		--- Searches the world for entities that match a given query
 		query: (<A>(WorldShim, Entity<A>) -> QueryShim<A>)
 			& (<A, B>(WorldShim, Entity<A>, Entity<B>) -> QueryShim<A, B>)
 			& (<A, B, C>(WorldShim, Entity<A>, Entity<B>, Entity<C>) -> QueryShim<A, B, C>)
 			& (<A, B, C, D>(WorldShim, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> QueryShim<A, B, C, D>)
-			& (<A, B, C, D, E>(WorldShim, Entity<A>, Entity<B>, Entity<C>, Entity<D>, Entity<E>) -> QueryShim<A, B, C, D, E>)
-			& (<A, B, C, D, E, F>(WorldShim, Entity<A>, Entity<B>, Entity<C>, Entity<D>, Entity<E>, Entity<F>) -> QueryShim<A, B, C, D, E, F>)
-			& (<A, B, C, D, E, F, G>(WorldShim, Entity<A>, Entity<B>, Entity<C>, Entity<D>, Entity<E>, Entity<F>, Entity<G>) -> QueryShim<A, B, C, D, E, F, G>)
-			& (<A, B, C, D, E, F, G, H>(WorldShim, Entity<A>, Entity<B>, Entity<C>, Entity<D>, Entity<E>, Entity<F>, Entity<G>, Entity<H>) -> QueryShim<A, B, C, D, E, F, G, H>)
-			& (<A, B, C, D, E, F, G, H, I>(WorldShim, Entity<A>, Entity<B>, Entity<C>, Entity<D>, Entity<E>, Entity<F>, Entity<G>, Entity<H>, Entity<I>) -> QueryShim<A, B, C, D, E, F, G, H, I>)
-			& (<A, B, C, D, E, F, G, H, I, J>(WorldShim, Entity<A>, Entity<B>, Entity<C>, Entity<D>, Entity<E>, Entity<F>, Entity<G>, Entity<H>, Entity<I>, Entity<J>) -> QueryShim<A, B, C, D, E, F, G, H, I, J>)
-			& (<A, B, C, D, E, F, G, H, I, J, K>(WorldShim, Entity<A>, Entity<B>, Entity<C>, Entity<D>, Entity<E>, Entity<F>, Entity<G>, Entity<H>, Entity<I>, Entity<J>, Entity<K>, ...Entity<any>) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K>)
-		
+			& (<A, B, C, D, E>(
+				WorldShim,
+				Entity<A>,
+				Entity<B>,
+				Entity<C>,
+				Entity<D>,
+				Entity<E>
+			) -> QueryShim<A, B, C, D, E>)
+			& (<A, B, C, D, E, F>(
+				WorldShim,
+				Entity<A>,
+				Entity<B>,
+				Entity<C>,
+				Entity<D>,
+				Entity<E>,
+				Entity<F>
+			) -> QueryShim<A, B, C, D, E, F>)
+			& (<A, B, C, D, E, F, G>(
+				WorldShim,
+				Entity<A>,
+				Entity<B>,
+				Entity<C>,
+				Entity<D>,
+				Entity<E>,
+				Entity<F>,
+				Entity<G>
+			) -> QueryShim<A, B, C, D, E, F, G>)
+			& (<A, B, C, D, E, F, G, H>(
+				WorldShim,
+				Entity<A>,
+				Entity<B>,
+				Entity<C>,
+				Entity<D>,
+				Entity<E>,
+				Entity<F>,
+				Entity<G>,
+				Entity<H>
+			) -> QueryShim<A, B, C, D, E, F, G, H>)
+			& (<A, B, C, D, E, F, G, H, I>(
+				WorldShim,
+				Entity<A>,
+				Entity<B>,
+				Entity<C>,
+				Entity<D>,
+				Entity<E>,
+				Entity<F>,
+				Entity<G>,
+				Entity<H>,
+				Entity<I>
+			) -> QueryShim<A, B, C, D, E, F, G, H, I>)
+			& (<A, B, C, D, E, F, G, H, I, J>(
+				WorldShim,
+				Entity<A>,
+				Entity<B>,
+				Entity<C>,
+				Entity<D>,
+				Entity<E>,
+				Entity<F>,
+				Entity<G>,
+				Entity<H>,
+				Entity<I>,
+				Entity<J>
+			) -> QueryShim<A, B, C, D, E, F, G, H, I, J>)
+			& (<A, B, C, D, E, F, G, H, I, J, K>(
+				WorldShim,
+				Entity<A>,
+				Entity<B>,
+				Entity<C>,
+				Entity<D>,
+				Entity<E>,
+				Entity<F>,
+				Entity<G>,
+				Entity<H>,
+				Entity<I>,
+				Entity<J>,
+				Entity<K>,
+				...Entity<any>
+			) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K>),
 	},
 	{} :: {
-		__iter: (world: WorldShim) -> () -> (number, {[unknown]: unknown?})
+		__iter: (world: WorldShim) -> () -> (number, { [unknown]: unknown? }),
 	}
 ))
 
 return table.freeze({
-	World = (World :: any) :: {new: () -> WorldShim},
+	World = (World :: any) :: { new: () -> WorldShim },
 
 	OnAdd = (ON_ADD :: any) :: Entity,
 	OnRemove = (ON_REMOVE :: any) :: Entity,
@@ -930,5 +1000,5 @@ return table.freeze({
 	ECS_PAIR_OBJECT = ECS_PAIR_OBJECT,
 
 	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity, obj: Entity) -> number,
-	getAlive = getAlive
+	getAlive = getAlive,
 })
