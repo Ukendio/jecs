@@ -30,8 +30,6 @@ type ArchetypeMap = {
 
 type ArchetypeRecord = number;
 
-export type Entity<T = unknown> = number & { __nominal_type_dont_use: T }
-
 type EntityIndex = {
     dense: {
         [key: i24]: i53
@@ -48,13 +46,19 @@ type Record = {
 	componentRecord: ArchetypeMap,
 }
 
-type ExtractFromLuaTuple<T> = T extends LuaTuple<infer U> ? U : never;
+type Query<T extends Entity[]> = {
+    without: (...components: Entity[]) => Query<T>;
+} & IterableFunction<LuaTuple<[Entity, ...T]>>
 
-type QueryShim<T extends any[]> = {
-    without: (...args: ExtractFromLuaTuple<T>) => QueryShim<T>;
-} & IterableFunction<T>;
+// Utility Types
+export type Entity<T = unknown> = number & { __nominal_type_dont_use: T }
+export type EntityType<T> = T extends Entity<infer A> ? A : never;
+export type InferComponents<A extends Entity[]> = A & {
+    [K in keyof A]: EntityType<A[K]>
+};
 
-interface World {
+
+export class World {
     entity(): Entity;
     component<T = unknown>(): Entity<T>;
 
@@ -70,14 +74,8 @@ interface World {
     get<A, B, C>(id: number, component: Entity<A>, component2: Entity<B>, component3: Entity<C>): LuaTuple<[A, B, C]>;
     get<A, B, C, D>(id: number, component: Entity<A>, component2: Entity<B>, component3: Entity<C>, component4: Entity<D>): LuaTuple<[A, B, C, D]>;
     
-    query<T extends unknown[]>(...entities: T): QueryShim<LuaTuple<[...T]>>
+    query<T extends Entity[]>(...components: T): Query<InferComponents<T>>
 }
-
-interface WorldConstructor {
-    new(): World
-}
-
-export const World: WorldConstructor;
 
 export const pair: (pred: Entity, obj: Entity) => Entity;
 
