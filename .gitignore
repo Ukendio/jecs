@@ -46,6 +46,10 @@ Packages
 wally.lock
 WallyPatches
 
+# Typescript
+/node_modules
+/include
+
 # Misc
 roblox.toml
 sourcemap.json
