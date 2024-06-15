@@ -1,0 +1,43 @@
+{
+  "name": "@rbxts/jecs",
+  "version": "0.1.0",
+  "description": "Stupidly fast Entity Component System",
+  "main": "lib/init.lua",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ukendio/jecs.git"
+  },
+  "scripts": {
+    "build": "rbxtsc",
+    "watch": "rbxtsc -w",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [],
+  "author": "Ukendio",
+  "contributors": [
+    "Ukendio",
+    "EncodedVenom"
+  ],
+  "homepage": "https://github.com/ukendio/jecs",
+  "license": "MIT",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib/"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@rbxts/compiler-types": "^2.3.0-types.1",
+    "@rbxts/types": "^1.0.781",
+    "@typescript-eslint/eslint-plugin": "^5.8.0",
+    "@typescript-eslint/parser": "^5.8.0",
+    "eslint": "^8.5.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-roblox-ts": "^0.0.32",
+    "prettier": "^2.5.1",
+    "roblox-ts": "^2.3.0",
+    "typescript": "^5.4.2"
+  }
+}
