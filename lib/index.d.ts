@@ -131,8 +131,19 @@ export class World {
   query<T extends Entity[]>(...components: T): Query<InferComponents<T>>;
 }
 
+/**
+ * Creates a composite key.
+ * @param pred The first entity
+ * @param obj The second entity
+ * @returns The composite key
+ */
 export const pair: (pred: Entity, obj: Entity) => Entity;
 
+/**
+ * Checks if the entity is a composite key
+ * @param e The entity to check
+ * @returns If the entity is a pair
+ */
 export const IS_PAIR: (e: Entity) => boolean;
 
 export const OnAdd: Entity;
