@@ -46,14 +46,14 @@ type Record = {
 	componentRecord: ArchetypeMap,
 }
 
-type Query<T extends Entity[]> = {
+type Query<T extends unknown[]> = {
     without: (...components: Entity[]) => Query<T>;
 } & IterableFunction<LuaTuple<[Entity, ...T]>>
 
 // Utility Types
 export type Entity<T = unknown> = number & { __nominal_type_dont_use: T }
 export type EntityType<T> = T extends Entity<infer A> ? A : never;
-export type InferComponents<A extends Entity[]> = A & {
+export type InferComponents<A extends Entity[]> = {
     [K in keyof A]: EntityType<A[K]>
 };
 
