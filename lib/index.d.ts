@@ -21,25 +21,24 @@ type ArchetypeMap = {
 	size: number,
 }
 
-type EntityIndex = {
+type Query<T extends unknown[]> = {
+    without: (...components: Entity[]) => Query<T>;
+} & IterableFunction<LuaTuple<[Entity, ...T]>>
+
+// Exported due to functions below requiring this type.
+export type EntityIndex = {
     dense: {
         [key: number]: number
     };
     sparse: {
-        [key: number]: Record
+        [key: number]: {
+			archetype: Archetype,
+			row: number,
+			dense: number,
+			componentRecord: ArchetypeMap,
+		}
     }
 }
-
-type Record = {
-	archetype: Archetype,
-	row: number,
-	dense: number,
-	componentRecord: ArchetypeMap,
-}
-
-type Query<T extends unknown[]> = {
-    without: (...components: Entity[]) => Query<T>;
-} & IterableFunction<LuaTuple<[Entity, ...T]>>
 
 // Utility Types
 export type Entity<T = unknown> = number & { __nominal_type_dont_use: T }
