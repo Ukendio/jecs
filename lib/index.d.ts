@@ -47,7 +47,7 @@ export type EntityType<T> = T extends Entity<infer A> ? A : never;
 export type InferComponents<A extends Entity[]> = {
     [K in keyof A]: EntityType<A[K]>
 };
-type PossiblyUndefinedPack<T extends unknown[]> = {
+type Nullable<T extends unknown[]> = {
 	[K in keyof T]: T[K] | undefined
 }
 
@@ -125,7 +125,7 @@ export class World {
 	 * @param component2 Target Component 2
 	 * @returns Data associated with the components if it exists
 	 */
-    get<A, B>(id: number, component: Entity<A>, component2: Entity<B>): LuaTuple<PossiblyUndefinedPack<[A, B]>>;
+    get<A, B>(id: number, component: Entity<A>, component2: Entity<B>): LuaTuple<Nullable<[A, B]>>;
 
 	/**
 	 * Retrieves the value of three components. This value may be undefined.
@@ -135,7 +135,7 @@ export class World {
 	 * @param component3 Target Component 3
 	 * @returns Data associated with the components if it exists
 	 */
-    get<A, B, C>(id: number, component: Entity<A>, component2: Entity<B>, component3: Entity<C>): LuaTuple<PossiblyUndefinedPack<[A, B, C]>>;
+    get<A, B, C>(id: number, component: Entity<A>, component2: Entity<B>, component3: Entity<C>): LuaTuple<Nullable<[A, B, C]>>;
 
 	/**
 	 * Retrieves the value of four components. This value may be undefined.
@@ -146,7 +146,7 @@ export class World {
 	 * @param component4 Target Component 4
 	 * @returns Data associated with the components if it exists
 	 */
-    get<A, B, C, D>(id: number, component: Entity<A>, component2: Entity<B>, component3: Entity<C>, component4: Entity<D>): LuaTuple<PossiblyUndefinedPack<[A, B, C, D]>>;
+    get<A, B, C, D>(id: number, component: Entity<A>, component2: Entity<B>, component3: Entity<C>, component4: Entity<D>): LuaTuple<Nullable<[A, B, C, D]>>;
     
 	/**
 	 * Searches the world for entities that match a given query
