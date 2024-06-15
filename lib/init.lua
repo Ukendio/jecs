@@ -252,7 +252,7 @@ local function moveEntity(entityIndex: EntityIndex, entityId: i53, record: Recor
 	record.row = destinationRow
 end
 
-local function hash(arr): string | number
+local function hash(arr): string
 	return table.concat(arr, "_")
 end
 
@@ -262,10 +262,10 @@ local function ensureComponentRecord(
 	componentId: number,
 	i: number
 ): ArchetypeMap
-	local archetypesMap = componentIndex[componentId]
+	local archetypesMap = componentIndex[componentId] 
 
 	if not archetypesMap then
-		archetypesMap = { size = 0, cache = {} }
+		archetypesMap = ({ size = 0, cache = {} }  :: any) :: ArchetypeMap
 		componentIndex[componentId] = archetypesMap
 	end
 
@@ -490,7 +490,7 @@ local function findArchetypeWith(world: World, node: Archetype, componentId: i53
 	-- them each time would be expensive. Instead this insertion sort can find the insertion
 	-- point in the types array.
 
-	local destinationType = table.clone(node.types)
+	local destinationType = table.clone(node.types) :: { i53 }
 	local at = findInsert(types, componentId)
 	if at == -1 then
 		-- If it finds a duplicate, it just means it is the same archetype so it can return it
@@ -575,7 +575,7 @@ local function archetypeTraverseRemove(world: World, componentId: i53, from: Arc
 
 	local remove = edge.remove
 	if not remove then
-		local to = table.clone(from.types)
+		local to = table.clone(from.types) :: { i53 }
 		local at = table.find(to, componentId)
 		if not at then
 			return from
@@ -615,7 +615,7 @@ local function get(record: Record, componentId: i24)
 	return archetype.columns[archetypeRecord][record.row]
 end
 
-function World.get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?)
+function World.get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): any
 	local id = entityId
 	local record = world.entityIndex.sparse[id]
 	if not record then
@@ -658,14 +658,15 @@ function World.query(world: World, ...): Query
 		error("Missing components")
 	end
 
-	local compatibleArchetypes = {}
+	type CompatibleArchetype = { archetype: Archetype, indices: { number } }
+	local compatibleArchetypes = {} :: { CompatibleArchetype }
 	local length = 0
 
 	local components = { ... }
 	local archetypes = world.archetypes
 	local queryLength = #components
 
-	local firstArchetypeMap
+	local firstArchetypeMap: ArchetypeMap
 	local componentIndex = world.componentIndex
 
 	for _, componentId in components do
@@ -707,7 +708,8 @@ function World.query(world: World, ...): Query
 		}
 	end
 
-	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
+	local lastArchetype, compatibleArchetype: CompatibleArchetype = next(compatibleArchetypes :: any)
+
 	if not lastArchetype then
 		return EmptyQuery
 	end
@@ -715,51 +717,24 @@ function World.query(world: World, ...): Query
 	local preparedQuery = {}
 	preparedQuery.__index = preparedQuery
 
-	function preparedQuery:without(...)
-		local withoutComponents = { ... }
-		for i = #compatibleArchetypes, 1, -1 do
-			local archetype = compatibleArchetypes[i].archetype
-			local records = archetype.records
-			local shouldRemove = false
-
-			for _, componentId in withoutComponents do
-				if records[componentId] then
-					shouldRemove = true
-					break
-				end
-			end
-
-			if shouldRemove then
-				table.remove(compatibleArchetypes, i)
-			end
-		end
-
-		lastArchetype, compatibleArchetype = next(compatibleArchetypes)
-		if not lastArchetype then
-			return EmptyQuery
-		end
-
-		return self
-	end
-
 	local lastRow
 	local queryOutput = {}
 
 	function preparedQuery:__iter()
-		return function()
+		return function() 
 			local archetype = compatibleArchetype.archetype
-			local row: number = next(archetype.entities, lastRow) :: number
+			local row: number = next(archetype.entities, lastRow)
 			while row == nil do
 				lastArchetype, compatibleArchetype = next(compatibleArchetypes, lastArchetype)
 				if lastArchetype == nil then
 					return
 				end
 				archetype = compatibleArchetype.archetype
-				row = next(archetype.entities, row) :: number
+				row = next(archetype.entities, row)
 			end
 			lastRow = row
 
-			local entityId = archetype.entities[row :: number]
+			local entityId = archetype.entities[row]
 			local columns = archetype.columns
 			local tr = compatibleArchetype.indices
 
@@ -811,22 +786,49 @@ function World.query(world: World, ...): Query
 				queryOutput[i] = columns[tr[i]][row]
 			end
 
-			return entityId, unpack(queryOutput, 1, queryLength)
+			return entityId, unpack(queryOutput :: any, 1, queryLength)
 		end
+	end
+
+	function preparedQuery:without(...)
+		local withoutComponents = { ... }
+		for i = #compatibleArchetypes, 1, -1 do
+			local archetype = compatibleArchetypes[i].archetype
+			local records = archetype.records
+			local shouldRemove = false
+
+			for _, componentId in withoutComponents do
+				if records[componentId] then
+					shouldRemove = true
+					break
+				end
+			end
+
+			if shouldRemove then
+				table.remove(compatibleArchetypes, i)
+			end
+		end
+
+		lastArchetype, compatibleArchetype = next(compatibleArchetypes :: any)
+		if not lastArchetype then
+			return EmptyQuery
+		end
+
+		return self
 	end
 
 	return setmetatable({}, preparedQuery) :: any
 end
 
-function World.__iter(world: World): () -> (number?, unknown?)
+function World.__iter(world: World): () -> any 
 	local dense = world.entityIndex.dense
 	local sparse = world.entityIndex.sparse
 	local last
 
 	return function()
-		local lastEntity, entityId = next(dense, last)
-		if not lastEntity then
-			return
+		local lastEntity: number?, entityId: number = next(dense, last)
+		if not lastEntity then 
+			return 
 		end
 
 		last = lastEntity
