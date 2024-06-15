@@ -1,44 +1,6 @@
-type Archetype = {
-  id: number;
-  edges: {
-    [key: number]: {
-      add: Archetype;
-      remove: Archetype;
-    };
-  };
-  types: Array<number>;
-  type: string | number;
-  entities: Array<number>;
-  columns: Array<Array<unknown>>;
-  records: { [key: number]: number };
-};
-
-type ArchetypeMap = {
-  cache: Array<number>;
-  first: ArchetypeMap;
-  second: ArchetypeMap;
-  parent: ArchetypeMap;
-  size: number;
-};
-
 type Query<T extends unknown[]> = {
   without: (...components: Entity[]) => Query<T>;
 } & IterableFunction<LuaTuple<[Entity, ...T]>>;
-
-// Exported due to functions below requiring this type.
-export type EntityIndex = {
-  dense: {
-    [key: number]: number;
-  };
-  sparse: {
-    [key: number]: {
-      archetype: Archetype;
-      row: number;
-      dense: number;
-      componentRecord: ArchetypeMap;
-    };
-  };
-};
 
 // Utility Types
 export type Entity<T = unknown> = number & { __nominal_type_dont_use: T };
@@ -177,19 +139,3 @@ export const OnSet: Entity;
 export const Wildcard: Entity;
 export const w: Entity;
 export const REST: Entity;
-
-export const IS_PAIR: (e: Entity) => boolean;
-export const ECS_ID: (e: Entity) => Entity;
-export const ECS_PAIR: (pred: Entity, obj: Entity) => Entity;
-export const ECS_GENERATION_INC: (e: Entity) => Entity;
-export const ECS_GENERATION: (e: Entity) => Entity;
-export const ECS_PAIR_RELATION: <T>(
-  entityIndex: EntityIndex,
-  e: Entity<T>
-) => Entity;
-export const ECS_PAIR_OBJECT: <T>(
-  entityIndex: EntityIndex,
-  e: Entity<T>
-) => Entity;
-
-export const getAlive: (entityIndex: EntityIndex, id: Entity) => Entity;
