@@ -133,9 +133,10 @@ export class World {
 
 export const pair: (pred: Entity, obj: Entity) => Entity;
 
+export const IS_PAIR: (e: Entity) => boolean;
+
 export const OnAdd: Entity;
 export const OnRemove: Entity;
 export const OnSet: Entity;
 export const Wildcard: Entity;
-export const w: Entity;
-export const REST: Entity;
+export const Rest: Entity;
