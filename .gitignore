@@ -54,3 +54,7 @@ WallyPatches
 roblox.toml
 sourcemap.json
 drafts/*.lua
+
+# Vitepress
+docs/.vitepress/dist
+docs/.vitepress/cache

@@ -10,7 +10,10 @@
   "scripts": {
     "build": "rbxtsc",
     "watch": "rbxtsc -w",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "keywords": [],
   "author": "Ukendio",
@@ -38,6 +41,7 @@
     "eslint-plugin-roblox-ts": "^0.0.32",
     "prettier": "^2.5.1",
     "roblox-ts": "^2.3.0",
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.2",
+    "vitepress": "^1.2.3"
   }
 }
