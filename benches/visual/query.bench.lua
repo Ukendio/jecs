@@ -7,7 +7,7 @@ local Matter = require(ReplicatedStorage.DevPackages["_Index"]["matter-ecs_matte
 local ecr = require(ReplicatedStorage.DevPackages["_Index"]["centau_ecr@0.8.0"].ecr)
 local newWorld = Matter.World.new()
 
-local jecs = require(ReplicatedStorage.Shim)
+local jecs = require(ReplicatedStorage.Lib)
 local mirror = require(ReplicatedStorage.mirror)
 local mcs = mirror.World.new()
 local ecs = jecs.World.new()
