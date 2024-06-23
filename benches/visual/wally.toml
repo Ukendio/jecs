@@ -1,7 +1,11 @@
 [package]
-name = "ukendio/jecs"
-version = "0.1.0"
+name = "private/private"
+version = "0.1.0-rc.6"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 include = ["default.project.json", "lib/**", "lib", "wally.toml", "README.md"]
 exclude = ["**"]
+
+[dev-dependencies]
+Matter = "matter-ecs/matter@0.8.0"
+ecr = "centau/ecr@0.8.0"
