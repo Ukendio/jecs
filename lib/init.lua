@@ -11,14 +11,14 @@ type ArchetypeId = number
 
 type Column = { any }
 
+type ArchetypeEdge = {
+	add: Archetype,
+	remove: Archetype,
+}
+
 type Archetype = {
 	id: number,
-	edges: {
-		[i53]: {
-			add: Archetype,
-			remove: Archetype,
-		},
-	},
+	edges: { [i53]: ArchetypeEdge },
 	types: Ty,
 	type: string | number,
 	entities: { number },
@@ -75,7 +75,7 @@ local ECS_ID_FLAGS_MASK = 0x10
 local ECS_ENTITY_MASK = bit32.lshift(1, 24)
 local ECS_GENERATION_MASK = bit32.lshift(1, 16)
 
-local function addFlags(isPair: boolean)
+local function addFlags(isPair: boolean): number
 	local typeFlags = 0x0
 
 	if isPair then
@@ -95,29 +95,21 @@ local function addFlags(isPair: boolean)
 end
 
 local function ECS_COMBINE(source: number, target: number): i53
-	local e = source * 268435456 + target * ECS_ID_FLAGS_MASK
-	return e
+	return (source * 268435456) + (target * ECS_ID_FLAGS_MASK)
 end
 
-local function ECS_IS_PAIR(e: number)
-	if e > ECS_ENTITY_MASK then
-		return (e % 2 ^ 4) // FLAGS_PAIR ~= 0
-	end
-	return false
+local function ECS_IS_PAIR(e: number): boolean
+	return if e > ECS_ENTITY_MASK then (e % ECS_ID_FLAGS_MASK) // FLAGS_PAIR ~= 0 else false
 end
 
 -- HIGH 24 bits LOW 24 bits
-local function ECS_GENERATION(e: i53)
-	if e > ECS_ENTITY_MASK then
-		e = e // 0x10
-		return e % ECS_GENERATION_MASK
-	end
-	return 0
+local function ECS_GENERATION(e: i53): i24
+	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) % ECS_GENERATION_MASK else 0
 end
 
 local function ECS_GENERATION_INC(e: i53)
 	if e > ECS_ENTITY_MASK then
-		local flags = e // 0x10
+		local flags = e // ECS_ID_FLAGS_MASK
 		local id = flags // ECS_ENTITY_MASK
 		local generation = flags % ECS_GENERATION_MASK
 
@@ -128,29 +120,20 @@ end
 
 -- FIRST gets the high ID
 local function ECS_ENTITY_T_HI(e: i53): i24
-	if e > ECS_ENTITY_MASK then
-		e = e // 0x10
-		return e % ECS_ENTITY_MASK
-	end
-	return e
+	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) % ECS_ENTITY_MASK else e
 end
 
 -- SECOND
 local function ECS_ENTITY_T_LO(e: i53): i24
-	if e > ECS_ENTITY_MASK then
-		e = e // 0x10
-		return e // ECS_ENTITY_MASK
-	end
-	return e
+	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) // ECS_ENTITY_MASK else e
 end
 
 local function ECS_PAIR(pred: i53, obj: i53): i53
 	return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + addFlags(--[[isPair]] true) :: i53
 end
 
-local function getAlive(entityIndex: EntityIndex, id: i24)
-	local entityId = entityIndex.dense[id]
-	return entityId
+local function getAlive(entityIndex: EntityIndex, id: i24): i53
+	return entityIndex.dense[id]
 end
 
 -- ECS_PAIR_FIRST, gets the relationship target / obj / HIGH bits
@@ -236,7 +219,7 @@ local function archetypeAppend(entity: number, archetype: Archetype): number
 	return length
 end
 
-local function newEntity(entityId: i53, record: Record, archetype: Archetype)
+local function newEntity(entityId: i53, record: Record, archetype: Archetype): Record
 	local row = archetypeAppend(entityId, archetype)
 	record.archetype = archetype
 	record.row = row
@@ -252,7 +235,7 @@ local function moveEntity(entityIndex: EntityIndex, entityId: i53, record: Recor
 	record.row = destinationRow
 end
 
-local function hash(arr): string
+local function hash(arr: { number }): string
 	return table.concat(arr, "_")
 end
 
@@ -262,10 +245,10 @@ local function ensureComponentRecord(
 	componentId: number,
 	i: number
 ): ArchetypeMap
-	local archetypesMap = componentIndex[componentId] 
+	local archetypesMap = componentIndex[componentId]
 
 	if not archetypesMap then
-		archetypesMap = ({ size = 0, cache = {} }  :: any) :: ArchetypeMap
+		archetypesMap = ({ size = 0, cache = {} } :: any) :: ArchetypeMap
 		componentIndex[componentId] = archetypesMap
 	end
 
@@ -275,7 +258,7 @@ local function ensureComponentRecord(
 	return archetypesMap
 end
 
-local function ECS_ID_IS_WILDCARD(e)
+local function ECS_ID_IS_WILDCARD(e: i53): boolean
 	assert(ECS_IS_PAIR(e))
 	local first = ECS_ENTITY_T_HI(e)
 	local second = ECS_ENTITY_T_LO(e)
@@ -329,7 +312,8 @@ end
 
 local World = {}
 World.__index = World
-function World.new()
+
+function World.new(): World
 	local self = setmetatable({
 		archetypeIndex = {} :: { [string]: Archetype },
 		archetypes = {} :: Archetypes,
@@ -347,12 +331,13 @@ function World.new()
 		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
 	}, World)
 	self.ROOT_ARCHETYPE = archetypeOf(self, {})
+
 	return self
 end
 
 export type World = typeof(World.new())
 
-function World.component(world: World)
+function World.component(world: World): i53
 	local componentId = world.nextComponentId + 1
 	if componentId > HI_COMPONENT_ID then
 		-- IDs are partitioned into ranges because component IDs are not nominal,
@@ -363,7 +348,7 @@ function World.component(world: World)
 	return nextEntityId(world.entityIndex, componentId)
 end
 
-function World.entity(world: World)
+function World.entity(world: World): i53
 	local entityId = world.nextEntityId + 1
 	world.nextEntityId = entityId
 	return nextEntityId(world.entityIndex, entityId + REST)
@@ -411,6 +396,7 @@ local function archetypeDelete(world: World, id: i53)
 	local componentIndex = world.componentIndex
 	local archetypesMap = componentIndex[id]
 	local archetypes = world.archetypes
+
 	if archetypesMap then
 		for archetypeId in archetypesMap.cache do
 			for _, entity in archetypes[archetypeId].entities do
@@ -472,7 +458,7 @@ local function ensureArchetype(world: World, types, prev): Archetype
 	return archetypeOf(world, types, prev)
 end
 
-local function findInsert(types: { i53 }, toAdd: i53)
+local function findInsert(types: { i53 }, toAdd: i53): number
 	for i, id in types do
 		if id == toAdd then
 			return -1
@@ -484,7 +470,7 @@ local function findInsert(types: { i53 }, toAdd: i53)
 	return #types + 1
 end
 
-local function findArchetypeWith(world: World, node: Archetype, componentId: i53)
+local function findArchetypeWith(world: World, node: Archetype, componentId: i53): Archetype
 	local types = node.types
 	-- Component IDs are added incrementally, so inserting and sorting
 	-- them each time would be expensive. Instead this insertion sort can find the insertion
@@ -502,7 +488,7 @@ local function findArchetypeWith(world: World, node: Archetype, componentId: i53
 	return ensureArchetype(world, destinationType, node)
 end
 
-local function ensureEdge(archetype: Archetype, componentId: i53)
+local function ensureEdge(archetype: Archetype, componentId: i53): ArchetypeEdge
 	local edges = archetype.edges
 	local edge = edges[componentId]
 	if not edge then
@@ -600,7 +586,7 @@ function World.remove(world: World, entityId: i53, componentId: i53)
 end
 
 -- Keeping the function as small as possible to enable inlining
-local function get(record: Record, componentId: i24)
+local function get(record: Record, componentId: i24): any
 	local archetype = record.archetype
 	if not archetype then
 		return nil
@@ -615,7 +601,7 @@ local function get(record: Record, componentId: i24)
 	return archetype.columns[archetypeRecord][record.row]
 end
 
-function World.get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): any
+function World.get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
 	local id = entityId
 	local record = world.entityIndex.sparse[id]
 	if not record then
@@ -654,9 +640,7 @@ export type Query = typeof(EmptyQuery)
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
-local function PreparedQuery(
-	compatibleArchetypes: { CompatibleArchetype } , components: { i53 }) 
-
+local function PreparedQuery(compatibleArchetypes: { CompatibleArchetype } , components: { i53 }) 
 	local queryLength = #components
 	
 	local lastArchetype = 1
@@ -673,7 +657,7 @@ local function PreparedQuery(
 
 	local i = 1
 
-	local function queryNext() 
+	local function queryNext(): ...any
 		local archetype = compatibleArchetype.archetype
 		local entityId = archetype.entities[i]
 
@@ -745,15 +729,15 @@ local function PreparedQuery(
 		return entityId, unpack(queryOutput, 1, queryLength)
 	end
 	
-	function preparedQuery:__iter()
+	function preparedQuery:__iter(): () -> ...any
 		return queryNext
 	end
 
-	function preparedQuery:next() 
+	function preparedQuery:next(): ...any
 		return queryNext()	
 	end
 
-	function preparedQuery:without(...)
+	function preparedQuery:without(...: any): Query
 		local withoutComponents = { ... }
 		for i = #compatibleArchetypes, 1, -1 do
 			local archetype = compatibleArchetypes[i].archetype
@@ -783,7 +767,7 @@ local function PreparedQuery(
 	return setmetatable({}, preparedQuery) :: any
 end
 
-function World.query(world: World, ...): Query
+function World.query(world: World, ...: any): Query
 	-- breaking?
 	if (...) == nil then
 		error("Missing components")
@@ -840,15 +824,20 @@ function World.query(world: World, ...): Query
 	return PreparedQuery(compatibleArchetypes, components)
 end
 
-function World.__iter(world: World): () -> any 
+type WorldIterator = (() -> (i53, { [unknown]: unknown? })) & (() -> ()) & (() -> i53)
+
+function World.__iter(world: World): WorldIterator
 	local dense = world.entityIndex.dense
 	local sparse = world.entityIndex.sparse
 	local last
 
-	return function()
+	-- new solver doesnt like the world iterator type even tho its correct
+	-- so any cast here i come
+	local function iterator()
 		local lastEntity: number?, entityId: number = next(dense, last)
-		if not lastEntity then 
-			return 
+		if not lastEntity then
+			-- ignore type error
+			return
 		end
 
 		last = lastEntity
@@ -872,7 +861,13 @@ function World.__iter(world: World): () -> any
 
 		return entityId, entityData
 	end
+
+	return iterator :: any
 end
+
+-- freezing it incase somebody tries doing something stupid and modifying it
+-- (unlikely but its easy to add extra safety so)
+table.freeze(World)
 
 -- __nominal_type_dont_use could not be any or T as it causes a type error
 -- or produces a union
