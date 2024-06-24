@@ -104,12 +104,12 @@ end
 
 -- HIGH 24 bits LOW 24 bits
 local function ECS_GENERATION(e: i53): i24
-	return if e > ECS_ENTITY_MASK then (e // 0x10) % ECS_GENERATION_MASK else 0
+	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) % ECS_GENERATION_MASK else 0
 end
 
 local function ECS_GENERATION_INC(e: i53)
 	if e > ECS_ENTITY_MASK then
-		local flags = e // 0x10
+		local flags = e // ECS_ID_FLAGS_MASK
 		local id = flags // ECS_ENTITY_MASK
 		local generation = flags % ECS_GENERATION_MASK
 
@@ -121,12 +121,12 @@ end
 
 -- FIRST gets the high ID
 local function ECS_ENTITY_T_HI(e: i53): i24
-	return if e > ECS_ENTITY_MASK then (e // 0x10) % ECS_ENTITY_MASK else e
+	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) % ECS_ENTITY_MASK else e
 end
 
 -- SECOND
 local function ECS_ENTITY_T_LO(e: i53): i24
-	return if e > ECS_ENTITY_MASK then (e // 0x10) // ECS_ENTITY_MASK else e
+	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) // ECS_ENTITY_MASK else e
 end
 
 local function ECS_PAIR(pred: i53, obj: i53): i53
