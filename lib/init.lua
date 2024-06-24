@@ -114,9 +114,8 @@ local function ECS_GENERATION_INC(e: i53)
 		local generation = flags % ECS_GENERATION_MASK
 
 		return ECS_COMBINE(id, generation + 1) + flags
-	else
-		return ECS_COMBINE(e, 1)
 	end
+	return ECS_COMBINE(e, 1)
 end
 
 -- FIRST gets the high ID
@@ -834,41 +833,39 @@ function World.__iter(world: World): WorldIterator
 
 	-- new solver doesnt like the world iterator type even tho its correct
 	-- so any cast here i come
-	local iterator: WorldIterator = (
-		function()
-			local lastEntity: number?, entityId: number = next(dense, last)
-			if not lastEntity then
-				-- ignore type error
-				return
-			end
-
-			last = lastEntity
-
-			local record = sparse[entityId]
-			local archetype = record.archetype
-			if not archetype then
-				-- Returns only the entity id as an entity without data should not return
-				-- data and allow the user to get an error if they don't handle the case.
-				return entityId
-			end
-
-			local row = record.row
-			local types = archetype.types
-			local columns = archetype.columns
-			local entityData = {}
-			for i, column in columns do
-				-- We use types because the key should be the component ID not the column index
-				entityData[types[i]] = column[row]
-			end
-
-			return entityId, entityData
+	local function iterator()
+		local lastEntity: number?, entityId: number = next(dense, last)
+		if not lastEntity then
+			-- ignore type error
+			return
 		end
-	) :: any
 
-	return iterator
+		last = lastEntity
+
+		local record = sparse[entityId]
+		local archetype = record.archetype
+		if not archetype then
+			-- Returns only the entity id as an entity without data should not return
+			-- data and allow the user to get an error if they don't handle the case.
+			return entityId
+		end
+
+		local row = record.row
+		local types = archetype.types
+		local columns = archetype.columns
+		local entityData = {}
+		for i, column in columns do
+			-- We use types because the key should be the component ID not the column index
+			entityData[types[i]] = column[row]
+		end
+
+		return entityId, entityData
+	end
+
+	return iterator :: any
 end
 
--- freezing it incase somebody trys doing something stupid and modifying it
+-- freezing it incase somebody tries doing something stupid and modifying it
 -- (unlikely but its easy to add extra safety so)
 table.freeze(World)
 
