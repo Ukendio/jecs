@@ -12,7 +12,7 @@ Just an ECS
 jecs is a stupidly fast Entity Component System (ECS).
 
 - Entity Relationships as first class citizens
-- Iterate 350,000 entities at 60 frames per second
+- Iterate 500,000 entities at 60 frames per second
 - Type-safe [Luau](https://luau-lang.org/) API
 - Zero-dependency package
 - Optimized for column-major operations
@@ -58,7 +58,7 @@ end
 -- sara is the child of alice
 ```
 
-125 archetypes, 4 random components queried.
+21,000 entities 125 archetypes 4 random components queried.
 ![Queries](image-3.png)
 Can be found under /benches/query.lua
 
