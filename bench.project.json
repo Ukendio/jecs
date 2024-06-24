@@ -15,7 +15,7 @@
                 "$path": "lib"
             },
             "rgb": {
-                "$path": "rgb.lua"
+                "$path": "rgb.luau"
             },
             "benches": {
                 "$path": "benches"
