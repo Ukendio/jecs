@@ -865,10 +865,6 @@ function World.__iter(world: World): WorldIterator
 	return iterator :: any
 end
 
--- freezing it incase somebody tries doing something stupid and modifying it
--- (unlikely but its easy to add extra safety so)
-table.freeze(World)
-
 -- __nominal_type_dont_use could not be any or T as it causes a type error
 -- or produces a union
 export type Entity<T = any> = number & { __nominal_type_dont_use: T }
@@ -999,7 +995,7 @@ export type WorldShim = typeof(setmetatable(
 ))
 
 return table.freeze({
-	World = (World :: any) :: { new: () -> WorldShim },
+	World = (table.freeze(World) :: any) :: { new: () -> WorldShim },
 
 	OnAdd = (ON_ADD :: any) :: Entity,
 	OnRemove = (ON_REMOVE :: any) :: Entity,
