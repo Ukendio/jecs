@@ -54,8 +54,9 @@ return {
 
 	Functions = {
 		Matter = function() 
-            for i = 1, 500 do 
-               newWorld:spawn(
+            local e = newWorld:spawn()
+            for i = 1, 5000 do 
+                newWorld:insert(e,
                     A1({ value = true }),
                     A2({ value = true }),
                     A3({ value = true }),
@@ -71,7 +72,7 @@ return {
 
 		ECR = function() 
             local e = registry2.create()
-            for i = 1, 500 do
+            for i = 1, 5000 do
                 registry2:set(e, B1, {value = false}) 
                 registry2:set(e, B2, {value = false}) 
                 registry2:set(e, B3, {value = false}) 
@@ -85,11 +86,8 @@ return {
 
 
 		Jecs = function() 
-
             local e = ecs:entity()
-            
-            for i = 1, 500 do 
-
+            for i = 1, 5000 do 
                 ecs:set(e, C1, {value = false}) 
                 ecs:set(e, C2, {value = false}) 
                 ecs:set(e, C3, {value = false}) 
@@ -101,23 +99,5 @@ return {
 
             end
 		end,
-        Mirror = function() 
-
-            local e = ecs:entity()
-            
-            for i = 1, 500 do 
-
-                mcs:set(e, E1, {value = false}) 
-                mcs:set(e, E2, {value = false}) 
-                mcs:set(e, E3, {value = false}) 
-                mcs:set(e, E4, {value = false}) 
-                mcs:set(e, E5, {value = false}) 
-                mcs:set(e, E6, {value = false}) 
-                mcs:set(e, E7, {value = false}) 
-                mcs:set(e, E8, {value = false}) 
-
-            end
-		end
-
 	},
 }
