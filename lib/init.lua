@@ -95,11 +95,11 @@ local function addFlags(isPair: boolean): number
 end
 
 local function ECS_COMBINE(source: number, target: number): i53
-	return ((source * 268435456) + target) * ECS_ID_FLAGS_MASK
+	return (source * 268435456) + (target * ECS_ID_FLAGS_MASK)
 end
 
 local function ECS_IS_PAIR(e: number): boolean
-	return if e > ECS_ENTITY_MASK then (((e % 2) ^ 4) // FLAGS_PAIR) ~= 0 else false
+	return if e > ECS_ENTITY_MASK then (e % ECS_ID_FLAGS_MASK) // FLAGS_PAIR ~= 0 else false
 end
 
 -- HIGH 24 bits LOW 24 bits
@@ -333,7 +333,7 @@ function World.new(): World
 	}, World)
 	self.ROOT_ARCHETYPE = archetypeOf(self, {})
 
-	return table.freeze(self)
+	return self
 end
 
 export type World = typeof(World.new())
@@ -641,61 +641,9 @@ export type Query = typeof(EmptyQuery)
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
-function World.query(world: World, ...: i53): Query
-	-- breaking?
-	if (...) == nil then
-		error("  Missing components")
-	end
-
-	local compatibleArchetypes: { CompatibleArchetype } = {}
-	local length = 0
-
-	local components = { ... }
-	local archetypes = world.archetypes
+local function PreparedQuery(compatibleArchetypes: { CompatibleArchetype } , components: { i53 }) 
 	local queryLength = #components
-
-	local firstArchetypeMap: ArchetypeMap
-	local componentIndex = world.componentIndex
-
-	for _, componentId in components do
-		local map = componentIndex[componentId]
-		if not map then
-			return EmptyQuery
-		end
-
-		if firstArchetypeMap == nil or map.size < firstArchetypeMap.size then
-			firstArchetypeMap = map
-		end
-	end
-
-	for id in firstArchetypeMap.cache do
-		local archetype = archetypes[id]
-		local archetypeRecords = archetype.records
-
-		local indices = {}
-		local skip = false
-
-		for i, componentId in components do
-			local index = archetypeRecords[componentId]
-			if not index then
-				skip = true
-				break
-			end
-			-- index should be index.offset
-			indices[i] = index
-		end
-
-		if skip then
-			continue
-		end
-
-		length += 1
-		compatibleArchetypes[length] = {
-			archetype = archetype,
-			indices = indices,
-		}
-	end
-
+	
 	local lastArchetype = 1
 	local compatibleArchetype: CompatibleArchetype = compatibleArchetypes[lastArchetype]
 
@@ -705,7 +653,7 @@ function World.query(world: World, ...: i53): Query
 
 	local preparedQuery = {}
 	preparedQuery.__index = preparedQuery
-
+	
 	local queryOutput = {}
 
 	local i = 1
@@ -714,9 +662,9 @@ function World.query(world: World, ...: i53): Query
 		local archetype = compatibleArchetype.archetype
 		local entityId = archetype.entities[i]
 
-		while entityId == nil do
+		while entityId == nil do 
 			lastArchetype += 1
-			if lastArchetype > #compatibleArchetypes then
+			if lastArchetype > #compatibleArchetypes then 
 				return
 			end
 			compatibleArchetype = compatibleArchetypes[lastArchetype]
@@ -726,7 +674,7 @@ function World.query(world: World, ...: i53): Query
 		end
 
 		local row = i
-		i += 1
+		i+=1
 
 		local columns = archetype.columns
 		local tr = compatibleArchetype.indices
@@ -779,18 +727,18 @@ function World.query(world: World, ...: i53): Query
 			queryOutput[i] = columns[tr[i]][row]
 		end
 
-		return entityId, unpack(queryOutput :: any, 1, queryLength)
+		return entityId, unpack(queryOutput, 1, queryLength)
 	end
-
+	
 	function preparedQuery:__iter(): () -> ...any
 		return queryNext
 	end
 
 	function preparedQuery:next(): ...any
-		return queryNext()
+		return queryNext()	
 	end
 
-	function preparedQuery:without(...: i53): Query
+	function preparedQuery:without(...: any): Query
 		local withoutComponents = { ... }
 		for i = #compatibleArchetypes, 1, -1 do
 			local archetype = compatibleArchetypes[i].archetype
@@ -809,7 +757,7 @@ function World.query(world: World, ...: i53): Query
 			end
 		end
 
-		lastArchetype, compatibleArchetype = next(compatibleArchetypes :: any)
+		lastArchetype, compatibleArchetype = next(compatibleArchetypes)
 		if not lastArchetype then
 			return EmptyQuery
 		end
@@ -818,6 +766,63 @@ function World.query(world: World, ...: i53): Query
 	end
 
 	return setmetatable({}, preparedQuery) :: any
+end
+
+function World.query(world: World, ...: any): Query
+	-- breaking?
+	if (...) == nil then
+		error("Missing components")
+	end
+
+	local compatibleArchetypes: { CompatibleArchetype } = {} 
+	local length = 0
+
+	local components = { ... } :: any
+	local archetypes = world.archetypes
+
+	local firstArchetypeMap: ArchetypeMap
+	local componentIndex = world.componentIndex
+
+	for _, componentId in components do
+		local map = componentIndex[componentId]
+		if not map then
+			return EmptyQuery
+		end
+
+		if firstArchetypeMap == nil or map.size < firstArchetypeMap.size then
+			firstArchetypeMap = map
+		end
+	end
+
+	for id in firstArchetypeMap.cache do
+		local archetype = archetypes[id]
+		local archetypeRecords = archetype.records
+
+		local indices = {}
+		local skip = false
+
+		for i, componentId in components do
+			local index = archetypeRecords[componentId]
+			if not index then
+				skip = true
+				break
+			end
+			-- index should be index.offset
+			indices[i] = index
+		end
+
+		if skip then
+			continue
+		end
+
+		length += 1
+		compatibleArchetypes[length] = {
+			archetype = archetype,
+			indices = indices,
+		}
+	end
+
+	return PreparedQuery(compatibleArchetypes, components)
 end
 
 type WorldIterator = (() -> (i53, { [unknown]: unknown? })) & (() -> ()) & (() -> i53)
