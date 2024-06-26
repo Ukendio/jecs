@@ -652,14 +652,10 @@ local function PreparedQuery(
 		return EmptyQuery
 	end
 
-	local preparedQuery = {}
-	preparedQuery.__index = preparedQuery
 	
 	local queryOutput = {}
 
 	local i = 1
-
-	local length = #compatibleArchetypes
 
 	local function queryNext(): ...any
 		local entityId = archetype.entities[i]
@@ -667,7 +663,7 @@ local function PreparedQuery(
 		while entityId == nil do 
 			lastArchetype += 1
 			archetype = compatibleArchetypes[lastArchetype]
-			if lastArchetype > length then 
+			if not archetype then 
 				return
 			end
 			i = 1
@@ -730,16 +726,8 @@ local function PreparedQuery(
 
 		return entityId, unpack(queryOutput, 1, queryLength)
 	end
-	
-	function preparedQuery:__iter(): () -> ...any
-		return queryNext
-	end
 
-	function preparedQuery:next(): ...any
-		return queryNext()	
-	end
-
-	function preparedQuery:without(...: any): Query
+	local function without(self, ...): Query
 		local withoutComponents = { ... }
 		for i = #compatibleArchetypes, 1, -1 do
 			local archetype = compatibleArchetypes[i]
@@ -765,8 +753,16 @@ local function PreparedQuery(
 
 		return self
 	end
+	
+	local preparedQuery = {
+		__iter = function() 
+			return queryNext
+		end,
+		next = queryNext,
+		without = without
+	}
 
-	return setmetatable({}, preparedQuery) :: any
+	return (setmetatable(preparedQuery, preparedQuery) :: any):: Query
 end
 
 function World.query(world: World, ...: any): Query
