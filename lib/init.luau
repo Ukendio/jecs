@@ -640,13 +640,15 @@ export type Query = typeof(EmptyQuery)
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
-local function PreparedQuery(compatibleArchetypes: { CompatibleArchetype } , components: { i53 }) 
+local function PreparedQuery(
+	compatibleArchetypes: { Archetype } , components: { i53 }, indices: { [number]: number }) 
+
 	local queryLength = #components
 	
 	local lastArchetype = 1
-	local compatibleArchetype: CompatibleArchetype = compatibleArchetypes[lastArchetype]
+	local archetype: Archetype = compatibleArchetypes[lastArchetype]
 
-	if not compatibleArchetype then
+	if not archetype then
 		return EmptyQuery
 	end
 
@@ -657,17 +659,17 @@ local function PreparedQuery(compatibleArchetypes: { CompatibleArchetype } , com
 
 	local i = 1
 
+	local length = #compatibleArchetypes
+
 	local function queryNext(): ...any
-		local archetype = compatibleArchetype.archetype
 		local entityId = archetype.entities[i]
 
 		while entityId == nil do 
 			lastArchetype += 1
-			if lastArchetype > #compatibleArchetypes then 
+			archetype = compatibleArchetypes[lastArchetype]
+			if lastArchetype > length then 
 				return
 			end
-			compatibleArchetype = compatibleArchetypes[lastArchetype]
-			archetype = compatibleArchetype.archetype
 			i = 1
 			entityId = archetype.entities[i]
 		end
@@ -676,7 +678,7 @@ local function PreparedQuery(compatibleArchetypes: { CompatibleArchetype } , com
 		i+=1
 
 		local columns = archetype.columns
-		local tr = compatibleArchetype.indices
+		local tr = indices[lastArchetype]
 
 		if queryLength == 1 then
 			return entityId, columns[tr[1]][row]
@@ -740,7 +742,7 @@ local function PreparedQuery(compatibleArchetypes: { CompatibleArchetype } , com
 	function preparedQuery:without(...: any): Query
 		local withoutComponents = { ... }
 		for i = #compatibleArchetypes, 1, -1 do
-			local archetype = compatibleArchetypes[i].archetype
+			local archetype = compatibleArchetypes[i]
 			local records = archetype.records
 			local shouldRemove = false
 
@@ -756,7 +758,7 @@ local function PreparedQuery(compatibleArchetypes: { CompatibleArchetype } , com
 			end
 		end
 
-		lastArchetype, compatibleArchetype = next(compatibleArchetypes)
+		lastArchetype, archetype = next(compatibleArchetypes)
 		if not lastArchetype then
 			return EmptyQuery
 		end
@@ -773,6 +775,7 @@ function World.query(world: World, ...: any): Query
 		error("Missing components")
 	end
 
+	local columns = {}
 	local compatibleArchetypes: { CompatibleArchetype } = {} 
 	local length = 0
 
@@ -797,7 +800,7 @@ function World.query(world: World, ...: any): Query
 		local archetype = archetypes[id]
 		local archetypeRecords = archetype.records
 
-		local indices = {}
+		local records = {}
 		local skip = false
 
 		for i, componentId in components do
@@ -807,7 +810,7 @@ function World.query(world: World, ...: any): Query
 				break
 			end
 			-- index should be index.offset
-			indices[i] = index
+			records[i] = index
 		end
 
 		if skip then
@@ -815,13 +818,11 @@ function World.query(world: World, ...: any): Query
 		end
 
 		length += 1
-		compatibleArchetypes[length] = {
-			archetype = archetype,
-			indices = indices,
-		}
+		compatibleArchetypes[length] = archetype
+		columns[length] = records
 	end
 
-	return PreparedQuery(compatibleArchetypes, components)
+	return PreparedQuery(compatibleArchetypes, components, columns)
 end
 
 type WorldIterator = (() -> (i53, { [unknown]: unknown? })) & (() -> ()) & (() -> i53)
