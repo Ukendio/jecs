@@ -452,10 +452,14 @@ end
 function World.clear(world: World, entityId: i53) 
 	--TODO: use sparse_get (stashed)
 	local record = world.entityIndex.sparse[entityId]
-	
-	local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
+	if not record then 
+		return
+	end
 
-	if record.archetype == nil or record.archetype == ROOT_ARCHETYPE then 
+	local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
+	local archetype = record.archetype
+
+	if archetype == nil or archetype == ROOT_ARCHETYPE then 
 		return
 	end
 
