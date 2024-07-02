@@ -640,8 +640,8 @@ export type Query = typeof(EmptyQuery)
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
-local function PreparedQuery(
-	compatibleArchetypes: { Archetype } , components: { i53 }, indices: { [number]: number }) 
+local function preparedQuery(compatibleArchetypes: { Archetype }, 
+	components: { i53? }, indices: { { number } }) 
 
 	local queryLength = #components
 	
@@ -652,7 +652,6 @@ local function PreparedQuery(
 		return EmptyQuery
 	end
 
-	
 	local queryOutput = {}
 
 	local i = 1
@@ -746,48 +745,47 @@ local function PreparedQuery(
 			end
 		end
 
-		lastArchetype, archetype = next(compatibleArchetypes)
-		if not lastArchetype then
-			return EmptyQuery
-		end
-
 		return self
 	end
 	
-	local preparedQuery = {
+	local query = {
 		__iter = function() 
+			i = 1
+			lastArchetype = 1
+			archetype = compatibleArchetypes[1]
+
 			return queryNext
 		end,
 		next = queryNext,
 		without = without
 	}
 
-	return (setmetatable(preparedQuery, preparedQuery) :: any):: Query
+	return setmetatable(query, query) :: any
 end
 
-function World.query(world: World, ...: any): Query
+function World.query(world: World, ...: number?): Query
 	-- breaking?
 	if (...) == nil then
 		error("Missing components")
 	end
 
-	local columns = {}
-	local compatibleArchetypes: { CompatibleArchetype } = {} 
+	local indices: { { number } } = {}
+	local compatibleArchetypes: { Archetype } = {} 
 	local length = 0
 
-	local components = { ... } :: any
-	local archetypes = world.archetypes
+	local components: { number? } = { ... } 
+	local archetypes: { Archetype } = world.archetypes :: any
 
 	local firstArchetypeMap: ArchetypeMap
 	local componentIndex = world.componentIndex
 
 	for _, componentId in components do
-		local map = componentIndex[componentId]
+		local map: ArchetypeMap = componentIndex[componentId] :: any
 		if not map then
 			return EmptyQuery
 		end
 
-		if firstArchetypeMap == nil or map.size < firstArchetypeMap.size then
+		if (firstArchetypeMap :: any) == nil or firstArchetypeMap.size < map.size then
 			firstArchetypeMap = map
 		end
 	end
@@ -796,7 +794,7 @@ function World.query(world: World, ...: any): Query
 		local archetype = archetypes[id]
 		local archetypeRecords = archetype.records
 
-		local records = {}
+		local records: { number } = {}
 		local skip = false
 
 		for i, componentId in components do
@@ -815,25 +813,27 @@ function World.query(world: World, ...: any): Query
 
 		length += 1
 		compatibleArchetypes[length] = archetype
-		columns[length] = records
+		indices[length] = records
 	end
 
-	return PreparedQuery(compatibleArchetypes, components, columns)
+	return preparedQuery(compatibleArchetypes, components, indices)
 end
 
 type WorldIterator = (() -> (i53, { [unknown]: unknown? })) & (() -> ()) & (() -> i53)
 
 function World.__iter(world: World): WorldIterator
-	local dense = world.entityIndex.dense
-	local sparse = world.entityIndex.sparse
+	local entityIndex = world.entityIndex
+	local dense = entityIndex.dense
+	local sparse = entityIndex.sparse
 	local last
 
 	-- new solver doesnt like the world iterator type even tho its correct
 	-- so any cast here i come
+	local i = 0 
 	local function iterator()
-		local lastEntity: number?, entityId: number = next(dense, last)
-		if not lastEntity then
-			-- ignore type error
+		i+=1
+		local entityId = dense[i] 
+		if not entityId then
 			return
 		end
 
