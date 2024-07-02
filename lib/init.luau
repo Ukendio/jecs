@@ -763,7 +763,7 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 	return setmetatable(query, query) :: any
 end
 
-function World.query(world: World, ...: number?): Query
+function World.query(world: World, ...: number): Query
 	-- breaking?
 	if (...) == nil then
 		error("Missing components")
@@ -773,7 +773,7 @@ function World.query(world: World, ...: number?): Query
 	local compatibleArchetypes: { Archetype } = {} 
 	local length = 0
 
-	local components: { number? } = { ... } 
+	local components: { number } = { ... } 
 	local archetypes: { Archetype } = world.archetypes :: any
 
 	local firstArchetypeMap: ArchetypeMap
