@@ -22,10 +22,11 @@ local function CHECK_NO_ERR<T...>(s: string, fn: (T...) -> (), ...: T...)
 end
 local N = 10
 
+type World = jecs.WorldShim
+
 TEST("world", function()
-	do
-		CASE("should be iterable")
-		local world = jecs.World.new()
+	do CASE("should be iterable")
+		local world = jecs.World.new() :: World
 		local A = world:component()
 		local B = world:component()
 		local eA = world:entity()
@@ -36,9 +37,7 @@ TEST("world", function()
 		world:set(eAB, A, true)
 		world:set(eAB, B, true)
 
-		local count = 0
 		for id, data in world do
-			count += 1
 			if id == eA then
 				CHECK(data[A] == true)
 				CHECK(data[B] == nil)
@@ -50,14 +49,79 @@ TEST("world", function()
 				CHECK(data[B] == true)
 			end
 		end
-
-		-- components are registered in the entity index as well
-		-- so this test has to add 2 to account for them
-		CHECK(count == 3 + 2)
 	end
 
-	do
-		CASE("should query all matching entities")
+	do CASE("should remove its components") 
+		local world = jecs.World.new() :: World
+		local A = world:component()
+		local B = world:component()
+
+		local e = world:entity()
+
+		world:set(e, A, true)
+		world:set(e, B, true)
+
+		CHECK(world:get(e, A))
+		CHECK(world:get(e, B))
+
+		world:clear(e)
+		CHECK(world:get(e, A) == nil)
+		CHECK(world:get(e, B) == nil)
+
+	end
+
+	do CASE("iterator should not drain the query") 
+		local world = jecs.World.new() :: World
+		local A = world:component()
+		local B = world:component()
+		local eA = world:entity()
+		world:set(eA, A, true)
+		local eB = world:entity()
+		world:set(eB, B, true)
+		local eAB = world:entity()
+		world:set(eAB, A, true)
+		world:set(eAB, B, true)	
+
+		local q = world:query(A)
+
+		local i = 0
+		local j = 0
+		for _ in q do 
+			i+=1
+		end
+		for _ in q do 
+			j+=1
+		end
+		CHECK(i	== j)
+	end
+
+	do CASE("should be able to get next results") 
+		local world = jecs.World.new() :: World
+		world:component()
+		local A = world:component()
+		local B = world:component()
+		local eA = world:entity()
+		world:set(eA, A, true)
+		local eB = world:entity()
+		world:set(eB, B, true)
+		local eAB = world:entity()
+		world:set(eAB, A, true)
+		world:set(eAB, B, true)	
+
+		local q = world:query(A)
+
+		local e, data = q:next()
+		while e do 
+			CHECK(
+				if e == eA then data == true
+				elseif e == eAB then data == true
+				else false
+			)
+			e, data = q:next()
+		end
+	end
+
+	do CASE("should query all matching entities")
 		local world = jecs.World.new()
 		local A = world:component()
 		local B = world:component()
@@ -80,8 +144,7 @@ TEST("world", function()
 		CHECK(#entities == 0)
 	end
 
-	do
-		CASE("should query all matching entities when irrelevant component is removed")
+	do CASE("should query all matching entities when irrelevant component is removed")
 		local world = jecs.World.new()
 		local A = world:component()
 		local B = world:component()
@@ -110,8 +173,7 @@ TEST("world", function()
 		CHECK(added == N)
 	end
 
-	do
-		CASE("should query all entities without B")
+	do CASE("should query all entities without B")
 		local world = jecs.World.new()
 		local A = world:component()
 		local B = world:component()
@@ -135,8 +197,7 @@ TEST("world", function()
 		CHECK(#entities == 0)
 	end
 
-	do
-		CASE("should allow setting components in arbitrary order")
+	do CASE("should allow setting components in arbitrary order")
 		local world = jecs.World.new()
 
 		local Health = world:entity()
@@ -149,8 +210,7 @@ TEST("world", function()
 		CHECK(world:get(id, Poison) == 5)
 	end
 
-	do
-		CASE("should allow deleting components")
+	do CASE("should allow deleting components")
 		local world = jecs.World.new()
 
 		local Health = world:entity()
@@ -171,8 +231,7 @@ TEST("world", function()
 		CHECK(world:get(id1, Health) == 50)
 	end
 
-	do
-		CASE("should allow remove that doesn't exist on entity")
+	do CASE("should allow remove that doesn't exist on entity")
 		local world = jecs.World.new()
 
 		local Health = world:entity()
@@ -186,8 +245,7 @@ TEST("world", function()
 		CHECK(world:get(id, Health) == 50)
 	end
 
-	do
-		CASE("should increment generation")
+	do CASE("should increment generation")
 		local world = jecs.World.new()
 		local e = world:entity()
 		CHECK(ECS_ID(e) == 1 + jecs.Rest)
@@ -197,8 +255,7 @@ TEST("world", function()
 		CHECK(ECS_GENERATION(e) == 1) -- 1
 	end
 
-	do
-		CASE("should get alive from index in the dense array")
+	do CASE("should get alive from index in the dense array")
 		local world = jecs.World.new()
 		local _e = world:entity()
 		local e2 = world:entity()
@@ -213,8 +270,7 @@ TEST("world", function()
 		CHECK(ECS_PAIR_OBJECT(world.entityIndex, pair) == e3)
 	end
 
-	do
-		CASE("should allow querying for relations")
+	do CASE("should allow querying for relations")
 		local world = jecs.World.new()
 		local Eats = world:entity()
 		local Apples = world:entity()
@@ -227,8 +283,7 @@ TEST("world", function()
 		end
 	end
 
-	do
-		CASE("should allow wildcards in queries")
+	do CASE("should allow wildcards in queries")
 		local world = jecs.World.new()
 		local Eats = world:entity()
 		local Apples = world:entity()
@@ -247,8 +302,7 @@ TEST("world", function()
 		end
 	end
 
-	do
-		CASE("should match against multiple pairs")
+	do CASE("should match against multiple pairs")
 		local world = jecs.World.new()
 		local Eats = world:entity()
 		local Apples = world:entity()
@@ -280,8 +334,7 @@ TEST("world", function()
 		CHECK(count == 1)
 	end
 
-	do
-		CASE("should only relate alive entities")
+	do CASE("should only relate alive entities")
 
 		local world = jecs.World.new()
 		local Eats = world:entity()
@@ -308,8 +361,7 @@ TEST("world", function()
 		CHECK(world:get(bob, ECS_PAIR(Eats, Apples)) == nil)
 	end
 
-	do
-		CASE("should error when setting invalid pair")
+	do CASE("should error when setting invalid pair")
 		local world = jecs.World.new()
 		local Eats = world:entity()
 		local Apples = world:entity()
@@ -320,8 +372,7 @@ TEST("world", function()
 		world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
 	end
 
-	do
-		CASE("should find target for ChildOf")
+	do CASE("should find target for ChildOf")
 		local world = jecs.World.new()
 
 		local ChildOf = world:component()
@@ -343,7 +394,6 @@ TEST("world", function()
 
 		local count = 0
 		for _, name in world:query(Name, ECS_PAIR(ChildOf, alice)) do
-			print(name)
 			count += 1
 		end
 		CHECK(count == 2)

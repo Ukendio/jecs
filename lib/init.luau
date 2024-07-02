@@ -128,6 +128,10 @@ local function ECS_ENTITY_T_LO(e: i53): i24
 	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) // ECS_ENTITY_MASK else e
 end
 
+local function STRIP_GENERATION(e: i53): i24 
+	return ECS_ENTITY_T_LO(e)
+end
+
 local function ECS_PAIR(pred: i53, obj: i53): i53
 	return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + addFlags(--[[isPair]] true) :: i53
 end
@@ -442,6 +446,24 @@ function World.delete(world: World, entityId: i53)
 
 	sparse[entityId] = nil :: any
 	dense[#dense] = nil :: any
+
+end
+
+function World.clear(world: World, entityId: i53) 
+	--TODO: use sparse_get (stashed)
+	local record = world.entityIndex.sparse[entityId]
+	if not record then 
+		return
+	end
+
+	local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
+	local archetype = record.archetype
+
+	if archetype == nil or archetype == ROOT_ARCHETYPE then 
+		return
+	end
+
+	moveEntity(world.entityIndex, entityId, record, ROOT_ARCHETYPE)
 end
 
 local function ensureArchetype(world: World, types, prev): Archetype
@@ -823,7 +845,6 @@ type WorldIterator = (() -> (i53, { [unknown]: unknown? })) & (() -> ()) & (() -
 
 function World.__iter(world: World): WorldIterator
 	local entityIndex = world.entityIndex
-	local dense = entityIndex.dense
 	local sparse = entityIndex.sparse
 	local last
 
@@ -832,14 +853,13 @@ function World.__iter(world: World): WorldIterator
 	local i = 0 
 	local function iterator()
 		i+=1
-		local entityId = dense[i] 
+		local entityId, record = next(sparse, last) 
 		if not entityId then
 			return
 		end
 
-		last = lastEntity
+		last = entityId
 
-		local record = sparse[entityId]
 		local archetype = record.archetype
 		if not archetype then
 			-- Returns only the entity id as an entity without data should not return
