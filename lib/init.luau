@@ -463,7 +463,7 @@ function World.clear(world: World, entityId: i53)
 		return
 	end
 
-	moveEntity(world, entityId, record, world.ROOT_ARCHETYPE)
+	moveEntity(world.entityIndex, entityId, record, ROOT_ARCHETYPE)
 end
 
 local function ensureArchetype(world: World, types, prev): Archetype
@@ -845,7 +845,6 @@ type WorldIterator = (() -> (i53, { [unknown]: unknown? })) & (() -> ()) & (() -
 
 function World.__iter(world: World): WorldIterator
 	local entityIndex = world.entityIndex
-	local dense = entityIndex.dense
 	local sparse = entityIndex.sparse
 	local last
 
@@ -854,14 +853,13 @@ function World.__iter(world: World): WorldIterator
 	local i = 0 
 	local function iterator()
 		i+=1
-		local entityId = dense[i] 
+		local entityId, record = next(sparse, last) 
 		if not entityId then
 			return
 		end
 
-		last = lastEntity
+		last = entityId
 
-		local record = sparse[entityId]
 		local archetype = record.archetype
 		if not archetype then
 			-- Returns only the entity id as an entity without data should not return
