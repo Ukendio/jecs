@@ -128,6 +128,10 @@ local function ECS_ENTITY_T_LO(e: i53): i24
 	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) // ECS_ENTITY_MASK else e
 end
 
+local function STRIP_GENERATION(e: i53): i24 
+	return ECS_ENTITY_T_LO(e)
+end
+
 local function ECS_PAIR(pred: i53, obj: i53): i53
 	return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + addFlags(--[[isPair]] true) :: i53
 end
@@ -442,6 +446,20 @@ function World.delete(world: World, entityId: i53)
 
 	sparse[entityId] = nil :: any
 	dense[#dense] = nil :: any
+
+end
+
+function World.clear(world: World, entityId: i53) 
+	--TODO: use sparse_get (stashed)
+	local record = world.entityIndex.sparse[entityId]
+	
+	local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
+
+	if record.archetype == nil or record.archetype == ROOT_ARCHETYPE then 
+		return
+	end
+
+	moveEntity(world, entityId, record, world.ROOT_ARCHETYPE)
 end
 
 local function ensureArchetype(world: World, types, prev): Archetype
