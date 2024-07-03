@@ -338,6 +338,9 @@ function World.new(): World
 	}, World)
 	self.ROOT_ARCHETYPE = archetypeOf(self, {})
 
+	-- Initialize built-in components
+	nextEntityId(self.entityIndex, EcsChildOf)
+
 	return self
 end
 
@@ -1026,8 +1029,11 @@ return {
 	OnAdd = (EcsOnAdd :: any) :: Entity,
 	OnRemove = (EcsOnRemove :: any) :: Entity,
 	OnSet = (EcsOnSet :: any) :: Entity,
+
 	Wildcard = (EcsWildcard :: any) :: Entity,
 	w = (EcsWildcard :: any) :: Entity,
+	ChildOf = EcsChildOf,
+
 	Rest = EcsRest,
 
 	IS_PAIR = ECS_IS_PAIR,
