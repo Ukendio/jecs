@@ -361,9 +361,10 @@ function World.entity(world: World): i53
 end
 
 -- TODO:
--- should have an additional `index` parameter which selects the nth target
+-- TODO:
+-- should have an additional `nth` parameter which selects the nth target
 -- this is important when an entity can have multiple relationships with the same target
-function World.target(world: World, entity: i53, relation: i24): i24?
+local function target(world: World, entity: i53, relation: i24--[[, nth: number]]): i24? 
 	local entityIndex = world.entityIndex
 	local record = entityIndex.sparse[entity]
 	local archetype = record.archetype
@@ -383,6 +384,13 @@ function World.target(world: World, entity: i53, relation: i24): i24?
 
 	return ECS_PAIR_OBJECT(entityIndex, archetype.types[archetypeRecord])
 end
+
+local function parent(world: World, entity: i53) 
+	return target(world, entity, EcsChildOf)
+end
+
+World.target = target
+World.parent = parent
 
 -- should reuse this logic in World.set instead of swap removing in transition archetype
 local function destructColumns(columns: { Column }, count: number, row: number)
