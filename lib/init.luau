@@ -361,7 +361,6 @@ function World.entity(world: World): i53
 end
 
 -- TODO:
--- TODO:
 -- should have an additional `nth` parameter which selects the nth target
 -- this is important when an entity can have multiple relationships with the same target
 local function target(world: World, entity: i53, relation: i24--[[, nth: number]]): i24? 
