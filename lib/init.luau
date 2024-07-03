@@ -63,23 +63,25 @@ type ArchetypeDiff = {
 	removed: Ty,
 }
 
-local FLAGS_PAIR = 0x8
-local HI_COMPONENT_ID = 256
-local ON_ADD = HI_COMPONENT_ID + 1
-local ON_REMOVE = HI_COMPONENT_ID + 2
-local ON_SET = HI_COMPONENT_ID + 3
-local WILDCARD = HI_COMPONENT_ID + 4
-local REST = HI_COMPONENT_ID + 5
+local HI_COMPONENT_ID 		= 256
 
-local ECS_ID_FLAGS_MASK = 0x10
-local ECS_ENTITY_MASK = bit32.lshift(1, 24)
-local ECS_GENERATION_MASK = bit32.lshift(1, 16)
+local EcsOnAdd 				= HI_COMPONENT_ID + 1
+local EcsOnRemove 			= HI_COMPONENT_ID + 2
+local EcsOnSet 				= HI_COMPONENT_ID + 3
+local EcsWildcard 			= HI_COMPONENT_ID + 4
+local EcsChildOf 			= HI_COMPONENT_ID + 5
+local EcsRest 				= HI_COMPONENT_ID + 6
+
+local ECS_PAIR_FLAG 		= 0x8
+local ECS_ID_FLAGS_MASK 	= 0x10
+local ECS_ENTITY_MASK 		= bit32.lshift(1, 24)
+local ECS_GENERATION_MASK 	= bit32.lshift(1, 16)
 
 local function addFlags(isPair: boolean): number
 	local typeFlags = 0x0
 
 	if isPair then
-		typeFlags = bit32.bor(typeFlags, FLAGS_PAIR) -- HIGHEST bit in the ID.
+		typeFlags = bit32.bor(typeFlags, ECS_PAIR_FLAG) -- HIGHEST bit in the ID.
 	end
 	if false then
 		typeFlags = bit32.bor(typeFlags, 0x4) -- Set the second flag to true
@@ -99,7 +101,7 @@ local function ECS_COMBINE(source: number, target: number): i53
 end
 
 local function ECS_IS_PAIR(e: number): boolean
-	return if e > ECS_ENTITY_MASK then (e % ECS_ID_FLAGS_MASK) // FLAGS_PAIR ~= 0 else false
+	return if e > ECS_ENTITY_MASK then (e % ECS_ID_FLAGS_MASK) // ECS_PAIR_FLAG ~= 0 else false
 end
 
 -- HIGH 24 bits LOW 24 bits
@@ -266,7 +268,7 @@ local function ECS_ID_IS_WILDCARD(e: i53): boolean
 	assert(ECS_IS_PAIR(e))
 	local first = ECS_ENTITY_T_HI(e)
 	local second = ECS_ENTITY_T_LO(e)
-	return first == WILDCARD or second == WILDCARD
+	return first == EcsWildcard or second == EcsWildcard
 end
 
 local function archetypeOf(world: any, types: { i24 }, prev: Archetype?): Archetype
@@ -287,11 +289,11 @@ local function archetypeOf(world: any, types: { i24 }, prev: Archetype?): Archet
 			local relation = ECS_PAIR_RELATION(world.entityIndex, componentId)
 			local object = ECS_PAIR_OBJECT(world.entityIndex, componentId)
 
-			local idr_r = ECS_PAIR(relation, WILDCARD)
+			local idr_r = ECS_PAIR(relation, EcsWildcard)
 			ensureComponentRecord(componentIndex, id, idr_r, i)
 			records[idr_r] = i
 
-			local idr_t = ECS_PAIR(WILDCARD, object)
+			local idr_t = ECS_PAIR(EcsWildcard, object)
 			ensureComponentRecord(componentIndex, id, idr_t, i)
 			records[idr_t] = i
 		end
@@ -327,7 +329,7 @@ function World.new(): World
 			sparse = {} :: { [i53]: Record },
 		} :: EntityIndex,
 		hooks = {
-			[ON_ADD] = {},
+			[EcsOnAdd] = {},
 		},
 		nextArchetypeId = 0,
 		nextComponentId = 0,
@@ -355,7 +357,7 @@ end
 function World.entity(world: World): i53
 	local entityId = world.nextEntityId + 1
 	world.nextEntityId = entityId
-	return nextEntityId(world.entityIndex, entityId + REST)
+	return nextEntityId(world.entityIndex, entityId + EcsRest)
 end
 
 -- TODO:
@@ -369,7 +371,7 @@ function World.target(world: World, entity: i53, relation: i24): i24?
 		return nil
 	end
 
-	local componentRecord = world.componentIndex[ECS_PAIR(relation, WILDCARD)]
+	local componentRecord = world.componentIndex[ECS_PAIR(relation, EcsWildcard)]
 	if not componentRecord then
 		return nil
 	end
@@ -424,8 +426,8 @@ function World.delete(world: World, entityId: i53)
 
 	archetypeDelete(world, entityId)
 	-- TODO: should traverse linked )component records to pairs including entityId
-	archetypeDelete(world, ECS_PAIR(entityId, WILDCARD))
-	archetypeDelete(world, ECS_PAIR(WILDCARD, entityId))
+	archetypeDelete(world, ECS_PAIR(entityId, EcsWildcard))
+	archetypeDelete(world, ECS_PAIR(EcsWildcard, entityId))
 
 	if archetype then
 		local entities = archetype.entities
@@ -1011,15 +1013,15 @@ export type WorldShim = typeof(setmetatable(
 	}
 ))
 
-return table.freeze({
-	World = (table.freeze(World) :: any) :: { new: () -> WorldShim },
+return {
+	World = (World :: any) :: { new: () -> WorldShim },
 
-	OnAdd = (ON_ADD :: any) :: Entity,
-	OnRemove = (ON_REMOVE :: any) :: Entity,
-	OnSet = (ON_SET :: any) :: Entity,
-	Wildcard = (WILDCARD :: any) :: Entity,
-	w = (WILDCARD :: any) :: Entity,
-	Rest = REST,
+	OnAdd = (EcsOnAdd :: any) :: Entity,
+	OnRemove = (EcsOnRemove :: any) :: Entity,
+	OnSet = (EcsOnSet :: any) :: Entity,
+	Wildcard = (EcsWildcard :: any) :: Entity,
+	w = (EcsWildcard :: any) :: Entity,
+	Rest = EcsRest,
 
 	IS_PAIR = ECS_IS_PAIR,
 	ECS_ID = ECS_ENTITY_T_LO,
@@ -1031,4 +1033,4 @@ return table.freeze({
 
 	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity, obj: Entity) -> number,
 	getAlive = getAlive,
-})
+}
