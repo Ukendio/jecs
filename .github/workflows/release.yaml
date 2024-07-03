@@ -50,8 +50,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           name: Jecs ${{ github.ref_name }}
-          body: |
-            Jecs ${{ github.ref_name }} is now available!
           files: |
             jecs.rbxm
 
