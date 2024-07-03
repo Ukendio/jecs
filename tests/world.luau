@@ -374,23 +374,20 @@ TEST("world", function()
 
 	do CASE("should find target for ChildOf")
 		local world = jecs.World.new()
+		local ChildOf = jecs.ChildOf
+		local pair = ECS_PAIR
 
-		local ChildOf = world:component()
 		local Name = world:component()
-
-		local function parent(entity)
-			return world:target(entity, ChildOf)
-		end
 
 		local bob = world:entity()
 		local alice = world:entity()
 		local sara = world:entity()
 
-		world:add(bob, ECS_PAIR(ChildOf, alice))
+		world:add(bob, pair(ChildOf, alice))
 		world:set(bob, Name, "bob")
-		world:add(sara, ECS_PAIR(ChildOf, alice))
+		world:add(sara, pair(ChildOf, alice))
 		world:set(sara, Name, "sara")
-		CHECK(parent(bob) == alice) -- O(1)
+		CHECK(world:parent(bob) == alice) -- O(1)
 
 		local count = 0
 		for _, name in world:query(Name, ECS_PAIR(ChildOf, alice)) do
