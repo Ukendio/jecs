@@ -389,7 +389,7 @@ TEST("world", function()
 		CHECK(count == 2)
 	end
 
-	do CASE "should be able to add matching entity during iteration" 
+	do CASE "should be able to add/remove matching entity during iteration" 
 		local world = jecs.World.new()
 		local Name = world:component()
 		for i = 1, 5 do 
@@ -406,6 +406,28 @@ TEST("world", function()
 			world:set(e, Name, tostring(e))
 		end
 		CHECK(count == 5)
+	end
+	
+	do CASE "should not overpopulate archetypes from A and AB"
+		local world = jecs.World.new()
+		local A = world:component()
+		local B = world:component()
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+		world:add(e1, A)
+		world:add(e2, A)
+		world:add(e2, B)
+
+		local count = 0
+		for id in world:query(A) do 
+			local e = world:entity()
+			world:add(e, A)
+			world:add(e, B)
+			count += 1
+		end
+
+		CHECK(count == 3)
 	end
 end)
 
