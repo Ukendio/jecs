@@ -25,30 +25,23 @@ local N = 10
 type World = jecs.WorldShim
 
 TEST("world", function()
-	do CASE("should be iterable")
+	do CASE("should find every component id")
 		local world = jecs.World.new() :: World
 		local A = world:component()
 		local B = world:component()
-		local eA = world:entity()
-		world:set(eA, A, true)
-		local eB = world:entity()
-		world:set(eB, B, true)
-		local eAB = world:entity()
-		world:set(eAB, A, true)
-		world:set(eAB, B, true)
+		world:entity()
+		world:entity()
+		world:entity()
 
-		for id, data in world do
-			if id == eA then
-				CHECK(data[A] == true)
-				CHECK(data[B] == nil)
-			elseif id == eB then
-				CHECK(data[A] == nil)
-				CHECK(data[B] == true)
-			elseif id == eAB then
-				CHECK(data[A] == true)
-				CHECK(data[B] == true)
+		local count = 0
+		for componentId in world:query(jecs.Component) do
+			if componentId ~= A and componentId ~= B then 
+				error("found entity")
 			end
+			count += 1
 		end
+
+		CHECK(count == 2)
 	end
 
 	do CASE("should remove its components") 
@@ -394,6 +387,26 @@ TEST("world", function()
 			count += 1
 		end
 		CHECK(count == 2)
+	end
+
+	do CASE "infinite" 
+		local world = jecs.World.new()
+		local Name = world:component()
+		for i = 1, 5 do 
+			local e = world:entity()
+			world:set(e, Name, i)
+		end
+		local count = 0
+		for _ in world:query(Name) do 
+			count += 1
+
+
+			print(count)
+			local e = world:entity()
+			world:set(e, Name, e)
+		end
+		print(count)
+		CHECK(count == 5)
 	end
 end)
 
