@@ -389,23 +389,22 @@ TEST("world", function()
 		CHECK(count == 2)
 	end
 
-	do CASE "infinite" 
+	do CASE "should be able to add matching entity during iteration" 
 		local world = jecs.World.new()
 		local Name = world:component()
 		for i = 1, 5 do 
 			local e = world:entity()
-			world:set(e, Name, i)
+			world:set(e, Name, tostring(e))
 		end
 		local count = 0
-		for _ in world:query(Name) do 
+		for id, name in world:query(Name) do 
 			count += 1
+			CHECK(id == tonumber(name))
 
-
-			print(count)
+			world:remove(id, Name)
 			local e = world:entity()
-			world:set(e, Name, e)
+			world:set(e, Name, tostring(e))
 		end
-		print(count)
 		CHECK(count == 5)
 	end
 end)
