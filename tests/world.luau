@@ -408,7 +408,7 @@ TEST("world", function()
 		CHECK(count == 5)
 	end
 	
-	do CASE "should not overpopulate archetypes from A and AB"
+	do CASE "should allow adding a matching entity during iteration"
 		local world = jecs.World.new()
 		local A = world:component()
 		local B = world:component()
@@ -428,6 +428,29 @@ TEST("world", function()
 		end
 
 		CHECK(count == 3)
+	end
+
+
+	do CASE "should not iterate same entity when adding component"
+		local world = jecs.World.new()
+		local A = world:component()
+		local B = world:component()
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+		world:add(e1, A)
+		world:add(e2, A)
+		world:add(e2, B)
+
+		local count = 0
+		for id in world:query(A) do 
+			world:add(id, B)
+
+			count += 1
+		end
+
+		print(count)
+		CHECK(count == 2)
 	end
 end)
 
