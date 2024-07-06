@@ -25,30 +25,23 @@ local N = 10
 type World = jecs.WorldShim
 
 TEST("world", function()
-	do CASE("should be iterable")
+	do CASE("should find every component id")
 		local world = jecs.World.new() :: World
 		local A = world:component()
 		local B = world:component()
-		local eA = world:entity()
-		world:set(eA, A, true)
-		local eB = world:entity()
-		world:set(eB, B, true)
-		local eAB = world:entity()
-		world:set(eAB, A, true)
-		world:set(eAB, B, true)
+		world:entity()
+		world:entity()
+		world:entity()
 
-		for id, data in world do
-			if id == eA then
-				CHECK(data[A] == true)
-				CHECK(data[B] == nil)
-			elseif id == eB then
-				CHECK(data[A] == nil)
-				CHECK(data[B] == true)
-			elseif id == eAB then
-				CHECK(data[A] == true)
-				CHECK(data[B] == true)
+		local count = 0
+		for componentId in world:query(jecs.Component) do
+			if componentId ~= A and componentId ~= B then 
+				error("found entity")
 			end
+			count += 1
 		end
+
+		CHECK(count == 2)
 	end
 
 	do CASE("should remove its components") 
@@ -393,6 +386,70 @@ TEST("world", function()
 		for _, name in world:query(Name, ECS_PAIR(ChildOf, alice)) do
 			count += 1
 		end
+		CHECK(count == 2)
+	end
+
+	do CASE "should be able to add/remove matching entity during iteration" 
+		local world = jecs.World.new()
+		local Name = world:component()
+		for i = 1, 5 do 
+			local e = world:entity()
+			world:set(e, Name, tostring(e))
+		end
+		local count = 0
+		for id, name in world:query(Name) do 
+			count += 1
+			CHECK(id == tonumber(name))
+
+			world:remove(id, Name)
+			local e = world:entity()
+			world:set(e, Name, tostring(e))
+		end
+		CHECK(count == 5)
+	end
+	
+	do CASE "should allow adding a matching entity during iteration"
+		local world = jecs.World.new()
+		local A = world:component()
+		local B = world:component()
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+		world:add(e1, A)
+		world:add(e2, A)
+		world:add(e2, B)
+
+		local count = 0
+		for id in world:query(A) do 
+			local e = world:entity()
+			world:add(e, A)
+			world:add(e, B)
+			count += 1
+		end
+
+		CHECK(count == 3)
+	end
+
+
+	do CASE "should not iterate same entity when adding component"
+		local world = jecs.World.new()
+		local A = world:component()
+		local B = world:component()
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+		world:add(e1, A)
+		world:add(e2, A)
+		world:add(e2, B)
+
+		local count = 0
+		for id in world:query(A) do 
+			world:add(id, B)
+
+			count += 1
+		end
+
+		print(count)
 		CHECK(count == 2)
 	end
 end)

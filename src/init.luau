@@ -184,13 +184,9 @@ local function nextEntityId(entityIndex: EntityIndex, index: i24): i53
 	return id
 end
 
-local function transitionArchetype(
-	entityIndex: EntityIndex,
-	to: Archetype,
-	destinationRow: i24,
-	from: Archetype,
-	sourceRow: i24
-)
+local function transitionArchetype(entityIndex: EntityIndex, to: Archetype,
+	destinationRow: i24, from: Archetype, sourceRow: i24)
+
 	local columns = from.columns
 	local sourceEntities = from.entities
 	local destinationEntities = to.entities
@@ -690,11 +686,11 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 
 	local queryOutput = {}
 
-	local i = 1
+	local entities = archetype.entities 
+	local i = #entities
 
 	local function queryNext(): ...any
-		local entityId = archetype.entities[i]
-
+		local entityId = entities[i]
 		while entityId == nil do 
 			lastArchetype += 1
 			archetype = compatibleArchetypes[lastArchetype]
@@ -703,12 +699,13 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 				return
 			end
 
-			i = 1
-			entityId = archetype.entities[1]
+			entities = archetype.entities
+			i = #entities
+			entityId = entities[i]
 		end
 
 		local row = i
-		i+=1
+		i-=1
 
 		local columns = archetype.columns
 		local tr = indices[lastArchetype]
@@ -788,9 +785,10 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 	
 	local it = {
 		__iter = function() 
-			i = 1
 			lastArchetype = 1
 			archetype = compatibleArchetypes[1]
+			entities = archetype.entities
+			i = #entities
 
 			return queryNext
 		end,
