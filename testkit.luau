@@ -35,7 +35,7 @@ local color = {
 	end,
 
 	gray = function(s: string): string
-		return if disable_ansi then s else `\27[30;1m{s}\27[0m`
+		return if disable_ansi then s else `\27[38;1m{s}\27[0m`
 	end,
 }
 

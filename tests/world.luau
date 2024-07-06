@@ -1,5 +1,5 @@
-local jecs = require("../lib/init")
-local testkit = require("../testkit")
+local jecs = require("@jecs")
+local testkit = require("@testkit")
 local __ = jecs.Wildcard
 local ECS_ID, ECS_GENERATION = jecs.ECS_ID, jecs.ECS_GENERATION
 local ECS_GENERATION_INC = jecs.ECS_GENERATION_INC
@@ -35,7 +35,7 @@ TEST("world", function()
 
 		local count = 0
 		for componentId in world:query(jecs.Component) do
-			if componentId ~= A and componentId ~= B then 
+			if componentId ~= A and componentId ~= B then
 				error("found entity")
 			end
 			count += 1
@@ -44,7 +44,7 @@ TEST("world", function()
 		CHECK(count == 2)
 	end
 
-	do CASE("should remove its components") 
+	do CASE("should remove its components")
 		local world = jecs.World.new() :: World
 		local A = world:component()
 		local B = world:component()
@@ -63,7 +63,7 @@ TEST("world", function()
 
 	end
 
-	do CASE("iterator should not drain the query") 
+	do CASE("iterator should not drain the query")
 		local world = jecs.World.new() :: World
 		local A = world:component()
 		local B = world:component()
@@ -73,22 +73,22 @@ TEST("world", function()
 		world:set(eB, B, true)
 		local eAB = world:entity()
 		world:set(eAB, A, true)
-		world:set(eAB, B, true)	
+		world:set(eAB, B, true)
 
 		local q = world:query(A)
 
 		local i = 0
 		local j = 0
-		for _ in q do 
+		for _ in q do
 			i+=1
 		end
-		for _ in q do 
+		for _ in q do
 			j+=1
 		end
 		CHECK(i	== j)
 	end
 
-	do CASE("should be able to get next results") 
+	do CASE("should be able to get next results")
 		local world = jecs.World.new() :: World
 		world:component()
 		local A = world:component()
@@ -99,12 +99,12 @@ TEST("world", function()
 		world:set(eB, B, true)
 		local eAB = world:entity()
 		world:set(eAB, A, true)
-		world:set(eAB, B, true)	
+		world:set(eAB, B, true)
 
 		local q = world:query(A)
 
 		local e, data = q:next()
-		while e do 
+		while e do
 			CHECK(
 				if e == eA then data == true
 				elseif e == eAB then data == true
@@ -389,15 +389,15 @@ TEST("world", function()
 		CHECK(count == 2)
 	end
 
-	do CASE "should be able to add/remove matching entity during iteration" 
+	do CASE "should be able to add/remove matching entity during iteration"
 		local world = jecs.World.new()
 		local Name = world:component()
-		for i = 1, 5 do 
+		for i = 1, 5 do
 			local e = world:entity()
 			world:set(e, Name, tostring(e))
 		end
 		local count = 0
-		for id, name in world:query(Name) do 
+		for id, name in world:query(Name) do
 			count += 1
 			CHECK(id == tonumber(name))
 
@@ -407,7 +407,7 @@ TEST("world", function()
 		end
 		CHECK(count == 5)
 	end
-	
+
 	do CASE "should allow adding a matching entity during iteration"
 		local world = jecs.World.new()
 		local A = world:component()
@@ -420,7 +420,7 @@ TEST("world", function()
 		world:add(e2, B)
 
 		local count = 0
-		for id in world:query(A) do 
+		for id in world:query(A) do
 			local e = world:entity()
 			world:add(e, A)
 			world:add(e, B)
@@ -443,7 +443,7 @@ TEST("world", function()
 		world:add(e2, B)
 
 		local count = 0
-		for id in world:query(A) do 
+		for id in world:query(A) do
 			world:add(id, B)
 
 			count += 1
