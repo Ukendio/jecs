@@ -665,8 +665,8 @@ local EmptyQuery = {
 	__iter = iterNoop,
 	next = noop,
 	replace = noop,
-	without = function()
-		return EmptyQuery
+	without = function(self)
+		return self
 	end
 }
 
@@ -835,7 +835,7 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 					for i = 1, queryLength do
 						queryOutput[i] = columns[tr[i]][row]
 					end
-					replace(row, columns, fn(unpack(queryOutput)))
+					replaceColumns(row, columns, fn(unpack(queryOutput)))
 				end
 			end
 		end
