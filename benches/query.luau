@@ -1,13 +1,13 @@
 --!optimize 2
 --!native
 
-local testkit = require("../testkit")
+local testkit = require("@testkit")
 local BENCH, START = testkit.benchmark()
 local function TITLE(title: string)
 	print()
 	print(testkit.color.white(title))
 end
-local jecs = require("../src/init")
+local jecs = require("@jecs")
 local mirror = require("../mirror/init")
 
 type i53 = number
