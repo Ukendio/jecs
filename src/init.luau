@@ -848,7 +848,7 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 		replace = replace
 	}
 
-	return it
+	return setmetatable(it, it) :: any
 end
 
 local function query(world: World, ...: number): Query
