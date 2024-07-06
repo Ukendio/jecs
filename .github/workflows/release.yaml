@@ -49,9 +49,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          name: Matter ${{ github.ref_name }}
-          body: |
-            Matter ${{ github.ref_name }} is now available!
+          name: Jecs ${{ github.ref_name }}
           files: |
             jecs.rbxm
 

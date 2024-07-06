@@ -3,8 +3,8 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local rgb = require(ReplicatedStorage.rgb)
-local Matter = require(ReplicatedStorage.DevPackages.Matter)
-local ecr = require(ReplicatedStorage.DevPackages.ecr)
+local Matter = require(ReplicatedStorage.DevPackages["_Index"]["matter-ecs_matter@0.8.1"].matter)
+local ecr = require(ReplicatedStorage.DevPackages["_Index"]["centau_ecr@0.8.0"].ecr)
 local newWorld = Matter.World.new()
 
 local jecs = require(ReplicatedStorage.Lib)
@@ -173,6 +173,13 @@ return {
 		Mirror = function() 
 			local matched = 0
 			for entityId, firstComponent in mcs:query(E1, E4, E6, E8) do
+				matched += 1
+			end
+		end,
+
+		Matter = function() 
+			local matched = 0
+			for entityId, firstComponent in newWorld:query(A1, A4, A6, A8) do
 				matched += 1
 			end
 		end,
