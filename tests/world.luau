@@ -449,7 +449,6 @@ TEST("world", function()
 			count += 1
 		end
 
-		print(count)
 		CHECK(count == 2)
 	end
 end)

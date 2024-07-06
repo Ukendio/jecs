@@ -800,7 +800,7 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 		return queryNext
 	end
 
-	local function replace()
+	local function replace(fn)
         for _, compatibleArchetype in compatibleArchetypes do
 			local archetype = compatibleArchetype.archetype
 			local tr = compatibleArchetype.indices
