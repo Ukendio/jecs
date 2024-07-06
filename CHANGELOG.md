@@ -10,12 +10,16 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- Iterator now goes backwards instead to prevent common cases of iterator invalidation
+
 ## [0.2.1] - 2024-07-06
 
 ### Added
 
-* Added `jecs.Component` built-in component which will be added to ids created with `world:component()`.
-    * used to find every component id with `query(jecs.Component)
+- Added `jecs.Component` built-in component which will be added to ids created with `world:component()`.
+    - Used to find every component id with `query(jecs.Component)
 
 ## [0.2.0] - 2024-07-03
 
