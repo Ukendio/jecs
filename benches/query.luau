@@ -8,7 +8,7 @@ local function TITLE(title: string)
 	print(testkit.color.white(title))
 end
 
-local jecs = require("../lib/init")
+local jecs = require("@jecs")
 local mirror = require("../mirror/init")
 
 type i53 = number
@@ -50,8 +50,8 @@ do
 			world:set(e, G, true)
 			world:set(e, H, true)
 
-			BENCH("Update Data", function() 
-				for _ = 1, 100 do 
+			BENCH("Update Data", function()
+				for _ = 1, 100 do
 					world:set(e, A, false)
 					world:set(e, B, false)
 					world:set(e, C, false)
@@ -166,8 +166,8 @@ do
 			world:set(e, G, true)
 			world:set(e, H, true)
 
-			BENCH("Update Data", function() 
-				for _ = 1, 100 do 
+			BENCH("Update Data", function()
+				for _ = 1, 100 do
 					world:set(e, A, false)
 					world:set(e, B, false)
 					world:set(e, C, false)
