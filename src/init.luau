@@ -674,7 +674,7 @@ export type Query = typeof(EmptyQuery)
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
-local function replaceColumns(row, columns, ...)
+local function replaceMult(row, columns, ...)
 	for i, column in columns do
 		column[row] = select(i, ...)
 	end
@@ -800,10 +800,9 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 		return queryNext
 	end
 
-	local function replace(fn)
-        for _, compatibleArchetype in compatibleArchetypes do
-			local archetype = compatibleArchetype.archetype
-			local tr = compatibleArchetype.indices
+	local function replace(_, fn)
+        for i, archetype in compatibleArchetypes do
+			local tr = indices[i]
 			local columns = archetype.columns
 
 			for row in archetype.entities do
@@ -835,7 +834,7 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 					for i = 1, queryLength do
 						queryOutput[i] = columns[tr[i]][row]
 					end
-					replaceColumns(row, columns, fn(unpack(queryOutput)))
+					replaceMult(row, columns, fn(unpack(queryOutput)))
 				end
 			end
 		end
