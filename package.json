@@ -1,16 +1,11 @@
 {
   "name": "@rbxts/jecs",
-  "version": "0.1.0",
+  "version": "0.2.2",
   "description": "Stupidly fast Entity Component System",
-  "main": "lib/init.lua",
+  "main": "src/init.luau",
   "repository": {
     "type": "git",
     "url": "https://github.com/ukendio/jecs.git"
-  },
-  "scripts": {
-    "build": "rbxtsc",
-    "watch": "rbxtsc -w",
-    "prepublishOnly": "npm run build"
   },
   "keywords": [],
   "author": "Ukendio",
@@ -22,7 +17,7 @@
   "license": "MIT",
   "types": "lib/index.d.ts",
   "files": [
-    "lib/"
+    "src/"
   ],
   "publishConfig": {
     "access": "public"
