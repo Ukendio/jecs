@@ -1,6 +1,6 @@
 {
   "name": "@rbxts/jecs",
-  "version": "0.1.0",
+  "version": "0.2.3",
   "description": "Stupidly fast Entity Component System",
   "main": "lib/init.lua",
   "repository": {
@@ -20,7 +20,7 @@
   ],
   "homepage": "https://github.com/ukendio/jecs",
   "license": "MIT",
-  "types": "lib/index.d.ts",
+  "types": "src/index.d.ts",
   "files": [
     "lib/"
   ],
