@@ -14,7 +14,7 @@ type Query<T extends unknown[]> = {
    * Modifies component data with a callback function
    * @param fn The function to modify data
    */
-  replace: (this: Query<T>, fn: (...components: T) => T extends [infer U] ? U : LuaTuple<T>) => void
+  replace: (this: Query<T>, fn: (...components: T) => T extends [infer U] ? U : LuaTuple<T>) => void;
 } & IterableFunction<LuaTuple<[Entity, ...T]>>;
 
 // Utility Types
