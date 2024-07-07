@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Added `query:replace(function(...T) return ...U end)` for replacing components in place
+  - Method is fast pathed to replacing the data to the components for each corresponding entity
+
 ### Changed
 
 - Iterator now goes backwards instead to prevent common cases of iterator invalidation
@@ -25,13 +30,13 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 
 ### Added
 
-- Added `world:parent(entity)` and `jecs.ChildOf` respectively as first class citizen for building parent-child relationships. 
+- Added `world:parent(entity)` and `jecs.ChildOf` respectively as first class citizen for building parent-child relationships.
     - Give a parent to an entity with `world:add($source, pair(ChildOf, $target))`
     - Use `world:parent(entity)` to find the target of the relationship
 - Added user-facing Luau types
 
 ### Changed
-- Improved iteration speeds 20-40% by manually indexing rather than using `next()` :scream: 
+- Improved iteration speeds 20-40% by manually indexing rather than using `next()` :scream:
 
 
 ## [0.1.1] - 2024-05-19
@@ -48,19 +53,19 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 
 ## [0.1.0-rc.6] - 2024-05-13
 
-### Added 
+### Added
 
 - Added a `jecs.Wildcard` term
     - it lets you query any partially matched pairs
 
 ## [0.1.0-rc.5] - 2024-05-10
 
-### Added 
+### Added
 
 - Added Entity relationships for creating logical connections between entities
 - Added `world:__iter method` which allows for iteration over the whole world to get every entity
     - used for reconciling whole worlds such as via replication, saving/loading, etc
-- Added `world:add(entity, component)` which adds a component to the entity  
+- Added `world:add(entity, component)` which adds a component to the entity
     - it is an idempotent function, so calling it twice and in any order should be fine
 
 ### Fixed
@@ -89,7 +94,7 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 ## [0.0.0-prototype.rc.2] - 2024-04-26
 
 ### Changed
-- Optimized the creation of the query 
+- Optimized the creation of the query
     - It will now finds the smallest archetype map to iterate over
 - Optimized the query iterator
     - It will now populates iterator with columns for faster indexing
@@ -109,12 +114,3 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 [0.0.0-prototype-rc.3]: https://github.com/ukendio/jecs/releases/tag/v0.0.0-prototype.rc.3
 [0.0.0-prototype.rc.2]: https://github.com/ukendio/jecs/releases/tag/v0.0.0-prototype.rc.2
 [0.0.0-prototype-rc.1]: https://github.com/ukendio/jecs/releases/tag/v0.0.0-prototype.rc.1
-
-
-
-
-
-
-
-
-

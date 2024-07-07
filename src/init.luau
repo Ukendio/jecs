@@ -42,7 +42,7 @@ TODO:
 	index: number,
 	count: number,
 	column: number
-} 
+}
 
 ]]
 
@@ -131,7 +131,7 @@ local function ECS_ENTITY_T_LO(e: i53): i24
 	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) // ECS_ENTITY_MASK else e
 end
 
-local function STRIP_GENERATION(e: i53): i24 
+local function STRIP_GENERATION(e: i53): i24
 	return ECS_ENTITY_T_LO(e)
 end
 
@@ -149,7 +149,7 @@ local function getAlive(index: EntityIndex, e: i24): i53
 	if id then
 		local currentGeneration = ECS_GENERATION(id)
 		local gen = ECS_GENERATION(e)
-		if gen == currentGeneration then 
+		if gen == currentGeneration then
 			return id
 		end
 
@@ -159,7 +159,7 @@ local function getAlive(index: EntityIndex, e: i24): i53
 	error(ERROR_ENTITY_NOT_ALIVE)
 end
 
-local function sparseGet(entityIndex, id) 
+local function sparseGet(entityIndex, id)
 	return entityIndex.sparse[getAlive(entityIndex, id)]
 end
 
@@ -353,7 +353,7 @@ end
 -- TODO:
 -- should have an additional `nth` parameter which selects the nth target
 -- this is important when an entity can have multiple relationships with the same target
-local function target(world: World, entity: i53, relation: i24--[[, nth: number]]): i24? 
+local function target(world: World, entity: i53, relation: i24--[[, nth: number]]): i24?
 	local entityIndex = world.entityIndex
 	local record = entityIndex.sparse[entity]
 	local archetype = record.archetype
@@ -374,7 +374,7 @@ local function target(world: World, entity: i53, relation: i24--[[, nth: number]
 	return ECS_PAIR_OBJECT(entityIndex, archetype.types[archetypeRecord])
 end
 
-local function parent(world: World, entity: i53) 
+local function parent(world: World, entity: i53)
 	return target(world, entity, EcsChildOf)
 end
 
@@ -462,7 +462,7 @@ local function add(world: World, entityId: i53, componentId: i53)
 end
 
 -- Symmetric like `World.add` but idempotent
-local function set(world: World, entityId: i53, componentId: i53, data: unknown) 
+local function set(world: World, entityId: i53, componentId: i53, data: unknown)
 	local record = world.entityIndex.sparse[entityId]
 	local from = record.archetype
 	local to = archetypeTraverseAdd(world, componentId, from)
@@ -600,17 +600,17 @@ local function delete(world: World, entityId: i53)
 
 end
 
-local function clear(world: World, entityId: i53) 
+local function clear(world: World, entityId: i53)
 	--TODO: use sparse_get (stashed)
 	local record = world.entityIndex.sparse[entityId]
-	if not record then 
+	if not record then
 		return
 	end
 
 	local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
 	local archetype = record.archetype
 
-	if archetype == nil or archetype == ROOT_ARCHETYPE then 
+	if archetype == nil or archetype == ROOT_ARCHETYPE then
 		return
 	end
 
@@ -662,21 +662,29 @@ local function noop(_self: Query, ...): () -> ()
 end
 
 local EmptyQuery = {
-	__iter = noop,
-	without = noop,
+	__iter = iterNoop,
+	next = noop,
+	replace = noop,
+	without = function(self)
+		return self
+	end
 }
-EmptyQuery.__index = EmptyQuery
-setmetatable(EmptyQuery, EmptyQuery)
 
 export type Query = typeof(EmptyQuery)
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
-local function preparedQuery(compatibleArchetypes: { Archetype }, 
-	components: { i53? }, indices: { { number } }) 
+local function replaceMult(row, columns, ...)
+	for i, column in columns do
+		column[row] = select(i, ...)
+	end
+end
+
+local function preparedQuery(compatibleArchetypes: { Archetype },
+	components: { i53? }, indices: { { number } })
 
 	local queryLength = #components
-	
+
 	local lastArchetype = 1
 	local archetype: Archetype = compatibleArchetypes[lastArchetype]
 
@@ -686,16 +694,16 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 
 	local queryOutput = {}
 
-	local entities = archetype.entities 
+	local entities = archetype.entities
 	local i = #entities
 
 	local function queryNext(): ...any
 		local entityId = entities[i]
-		while entityId == nil do 
+		while entityId == nil do
 			lastArchetype += 1
 			archetype = compatibleArchetypes[lastArchetype]
-			
-			if not archetype then 
+
+			if not archetype then
 				return
 			end
 
@@ -782,34 +790,77 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 
 		return self
 	end
-	
-	local it = {
-		__iter = function() 
-			lastArchetype = 1
-			archetype = compatibleArchetypes[1]
-			entities = archetype.entities
-			i = #entities
 
-			return queryNext
-		end,
+	local function iter()
+        lastArchetype = 1
+		archetype = compatibleArchetypes[1]
+		entities = archetype.entities
+		i = #entities
+
+		return queryNext
+	end
+
+	local function replace(_, fn)
+        for i, archetype in compatibleArchetypes do
+			local tr = indices[i]
+			local columns = archetype.columns
+
+			for row in archetype.entities do
+				if queryLength == 1 then
+					local a = columns[tr[1]]
+					local pa = fn(a[row])
+
+					a[row] = pa
+				elseif queryLength == 2 then
+					local a = columns[tr[1]]
+					local b = columns[tr[2]]
+
+					a[row], b[row] = fn(a[row], b[row])
+				elseif queryLength == 3 then
+					local a = columns[tr[1]]
+					local b = columns[tr[2]]
+					local c = columns[tr[3]]
+
+					a[row], b[row], c[row] = fn(a[row], b[row], c[row])
+				elseif queryLength == 4 then
+					local a = columns[tr[1]]
+					local b = columns[tr[2]]
+					local c = columns[tr[3]]
+					local d = columns[tr[4]]
+
+					a[row], b[row], c[row], d[row] = fn(
+						a[row], b[row], c[row], d[row])
+				else
+					for i = 1, queryLength do
+						queryOutput[i] = columns[tr[i]][row]
+					end
+					replaceMult(row, columns, fn(unpack(queryOutput)))
+				end
+			end
+		end
+	end
+
+	local it = {
+		__iter = iter,
 		next = queryNext,
-		without = without
+		without = without,
+		replace = replace
 	}
 
 	return setmetatable(it, it) :: any
 end
 
-local function query(world: World, ...: number): Query 
+local function query(world: World, ...: number): Query
 	-- breaking?
 	if (...) == nil then
 		error("Missing components")
 	end
 
 	local indices: { { number } } = {}
-	local compatibleArchetypes: { Archetype } = {} 
+	local compatibleArchetypes: { Archetype } = {}
 	local length = 0
 
-	local components: { number } = { ... } 
+	local components: { number } = { ... }
 	local archetypes: { Archetype } = world.archetypes :: any
 
 	local firstArchetypeMap: ArchetypeMap
@@ -989,7 +1040,7 @@ export type WorldShim = typeof(setmetatable(
 local World = {}
 World.__index = World
 
-function World.new() 
+function World.new()
 	local self = setmetatable({
 		archetypeIndex = {} :: { [string]: Archetype },
 		archetypes = {} :: Archetypes,

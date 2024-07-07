@@ -1,6 +1,6 @@
 {
     "aliases": {
-        "jecs": "C:/Users/Marcus/Documents/packages/jecs/src",
-        "testkit": "C:/Users/Marcus/Documents/packages/jecs/testkit"
+        "jecs": "src",
+        "testkit": "testkit"
     }
 }

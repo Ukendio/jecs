@@ -7,6 +7,7 @@ local function TITLE(title: string)
 	print()
 	print(testkit.color.white(title))
 end
+
 local jecs = require("@jecs")
 local mirror = require("../mirror/init")
 

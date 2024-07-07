@@ -449,8 +449,27 @@ TEST("world", function()
 			count += 1
 		end
 
-		print(count)
 		CHECK(count == 2)
+	end
+
+	do CASE "should replace component data"
+        local world = jecs.World.new()
+		local A = world:component()
+		local B = world:component()
+	    local C = world:component()
+
+		local e = world:entity()
+		world:set(e, A, 1)
+		world:set(e, B, true)
+		world:set(e, C, "hello ")
+
+		world:query(A, B, C):replace(function(a, b, c)
+		    return a * 2, not b, c.."world"
+		end)
+
+		CHECK(world:get(e, A) == 2)
+		CHECK(world:get(e, B) == false)
+		CHECK(world:get(e, C) == "hello world")
 	end
 end)
 
