@@ -1,5 +1,20 @@
 type Query<T extends unknown[]> = {
-  without: (...components: Entity[]) => Query<T>;
+
+  /**
+   * this: Query<T> is necessary to use a colon instead of a period for emits.
+   */
+
+  /**
+   * Modifies the Query to exclude specified components
+   * @param components The components to exclude
+   * @returns Modified Query
+   */
+  without: (this: Query<T>, ...components: Entity[]) => Query<T>;
+  /**
+   * Modifies component data with a callback function
+   * @param fn The function to modify data
+   */
+  replace: (this: Query<T>, fn: (...components: T) => T extends [infer U] ? U : LuaTuple<T>) => void
 } & IterableFunction<LuaTuple<[Entity, ...T]>>;
 
 // Utility Types
@@ -126,7 +141,7 @@ export class World {
   /**
    * Searches the world for entities that match a given query
    * @param components Queried Components
-   * @returns Iterable function
+   * @returns Query
    */
   query<T extends Entity[]>(...components: T): Query<InferComponents<T>>;
 }
@@ -145,6 +160,11 @@ export const pair: (pred: Entity, obj: Entity) => Entity;
  * @returns If the entity is a pair
  */
 export const IS_PAIR: (e: Entity) => boolean;
+
+/**
+ * Built-in Component used to find every component id
+ */
+export const Component: Entity;
 
 export const OnAdd: Entity;
 export const OnRemove: Entity;
