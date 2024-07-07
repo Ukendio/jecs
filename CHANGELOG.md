@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 ### Added
 
 - Added `query:replace(function(...T) return ...U end)` for replacing components in place
-  - Method is fast pathed to replacing the data to the components for each corresponding entity
+  - Method is fast pathed to replace the data to the components for each corresponding entity
 
 ### Changed
 
