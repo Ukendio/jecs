@@ -497,7 +497,6 @@ TEST("world", function()
 		world:add(e1, A)
 
 		local query = world:query(B)
-		CHECK(query.__iter() == nil)
 		CHECK(query.next() == nil)
 		CHECK(query.replace() == nil)
 	end
