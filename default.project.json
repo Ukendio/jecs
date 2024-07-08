@@ -1,6 +1,6 @@
 {
     "name": "jecs",
     "tree": {
-      "$path": "lib"
+      "$path": "src"
     }
   }
