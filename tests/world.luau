@@ -488,7 +488,7 @@ TEST("world", function()
 		CHECK(count == 0)
 	end
 
-	do CASE "should use the same functions for empty iteration where applicable"
+	do CASE "should return nothing for empty iteration"
 		local world = jecs.World.new()
 		local A = world:component()
 		local B = world:component()
@@ -497,8 +497,9 @@ TEST("world", function()
 		world:add(e1, A)
 
 		local query = world:query(B)
-		CHECK(query.__iter == query.next)
-		CHECK(query.next == query.replace)
+		CHECK(query.__iter() == nil)
+		CHECK(query.next() == nil)
+		CHECK(query.replace() == nil)
 	end
 
 	do CASE "should properly handle query:without for empty iteration"
