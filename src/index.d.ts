@@ -56,6 +56,12 @@ export class World {
   target(id: Entity, relation: Entity): Entity | undefined;
 
   /**
+   * Clears an entity from the world.
+   * @praram id Entity to be cleared
+   */
+  clear(id: Entity): void;
+
+  /**
    * Deletes an entity and all its related components and relationships.
    * @param id Entity to be destroyed
    */
