@@ -264,9 +264,7 @@ end
 
 local function ensureComponentRecord(
 	componentIndex: ComponentIndex,
-	archetypeId: number,
-	componentId: number,
-	i: number
+	componentId: number
 ): ArchetypeMap
 	local archetypesMap = componentIndex[componentId]
 
@@ -274,9 +272,6 @@ local function ensureComponentRecord(
 		archetypesMap = ({ size = 0, cache = {} } :: any) :: ArchetypeMap
 		componentIndex[componentId] = archetypesMap
 	end
-
-	archetypesMap.cache[archetypeId] = i
-	archetypesMap.size += 1
 
 	return archetypesMap
 end
@@ -300,19 +295,27 @@ local function archetypeOf(world: any, types: { i24 }, prev: Archetype?): Archet
 
 	local records = {}
 	for i, componentId in types do
-		ensureComponentRecord(componentIndex, id, componentId, i)
+		local idr = ensureComponentRecord(componentIndex, componentId)
+		idr.cache[id] = i
 		records[componentId] = i
 		if ECS_IS_PAIR(componentId) then
 			local relation = ECS_PAIR_RELATION(world.entityIndex, componentId)
 			local object = ECS_PAIR_OBJECT(world.entityIndex, componentId)
 
-			local idr_r = ECS_PAIR(relation, EcsWildcard)
-			ensureComponentRecord(componentIndex, id, idr_r, i)
-			records[idr_r] = i
+			local r = ECS_PAIR(relation, EcsWildcard)
+			local idr_r = ensureComponentRecord(componentIndex, r)
 
-			local idr_t = ECS_PAIR(EcsWildcard, object)
-			ensureComponentRecord(componentIndex, id, idr_t, i)
-			records[idr_t] = i
+			local o = ECS_PAIR(EcsWildcard, object)
+			local idr_o = ensureComponentRecord(componentIndex, o)
+
+			records[r] = i
+			records[o] = i
+
+			idr_r.cache[id] = i
+			idr_o.cache[id] = i
+
+			idr_r.size += 1
+			idr_o.size += 1
 		end
 		columns[i] = {}
 	end
