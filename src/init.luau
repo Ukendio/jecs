@@ -940,6 +940,9 @@ export type WorldShim = typeof(setmetatable(
 		add: <T>(WorldShim, id: Entity, component: Entity<T>) -> (),
 		--- Assigns a value to a component on the given entity
 		set: <T>(WorldShim, id: Entity, component: Entity<T>, data: T) -> (),
+
+		-- Clears an entity from the world
+		clear: (WorldShim, id: Entity) -> (),
 		--- Removes a component from the given entity
 		remove: (WorldShim, id: Entity, component: Entity) -> (),
 		--- Retrieves the value of up to 4 components. These values may be nil.
