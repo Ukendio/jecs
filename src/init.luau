@@ -662,13 +662,15 @@ local function noop(_self: Query, ...): () -> ()
 end
 
 local EmptyQuery = {
-	__iter = iterNoop,
+	__iter = noop,
 	next = noop,
 	replace = noop,
 	without = function(self)
 		return self
 	end
 }
+
+setmetatable(EmptyQuery, EmptyQuery)
 
 export type Query = typeof(EmptyQuery)
 
