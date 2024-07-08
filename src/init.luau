@@ -655,20 +655,22 @@ local function get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53
 	end
 end
 
--- the less creation the better
-local function actualNoOperation() end
-local function noop(_self: Query, ...): () -> ()
-	return actualNoOperation :: any
+local function noop()
+	return nil
 end
 
 local EmptyQuery = {
-	__iter = iterNoop,
+	__iter = function()
+		return noop
+	end,
 	next = noop,
 	replace = noop,
 	without = function(self)
 		return self
 	end
 }
+
+setmetatable(EmptyQuery, EmptyQuery)
 
 export type Query = typeof(EmptyQuery)
 
