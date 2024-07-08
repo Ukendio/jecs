@@ -471,6 +471,22 @@ TEST("world", function()
 		CHECK(world:get(e, B) == false)
 		CHECK(world:get(e, C) == "hello world")
 	end
+
+	do CASE "should not iterate when nothing matches query"
+		local world = jecs.World.new()
+		local A = world:component()
+		local B = world:component()
+
+		local e1 = world:entity()
+		world:add(e1, A)
+
+		local count = 0
+		for id in world:query(B) do
+			count += 1
+		end
+
+		CHECK(count == 0)
+	end
 end)
 
 FINISH()
