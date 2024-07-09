@@ -1,8 +1,14 @@
 [package]
 name = "ukendio/jecs"
-version = "0.2.2"
+version = "0.2.3"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
-include = ["default.project.json", "src/**",
-    "src", "wally.toml", "README.md", "CHANGELOG.md"]
+include = [
+    "default.project.json",
+    "src/**",
+    "src",
+    "wally.toml",
+    "README.md",
+    "CHANGELOG.md",
+]
 exclude = ["**"]
