@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: File a feature request for something you believe should be added to jecs.
+about: File a feature request for something you believe should be added to Jecs
 title: "[FEATURE]"
 labels: feature
 assignees: ''
