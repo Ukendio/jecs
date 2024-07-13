@@ -25,7 +25,7 @@ jobs:
         run: |
           output=$(./luau tests/world.luau)
           echo "$output"
-          if [[ "$COMMAND_OUTPUT" == *"0 fails"* ]]; then
+          if [[ "$output" == *"0 fails"* ]]; then
             echo "Unit Tests Passed"
           else
             echo "Error: One or More Unit Tests Failed."
