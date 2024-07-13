@@ -558,25 +558,25 @@ TEST("changetracker", function()
 
             local changes = {}
             function changes.added()
-                 added = true
-                 local q = world:query(component):without(previous)
-                 return function()
+                added = true
+                local q = world:query(component):without(previous)
+                return function()
                     local id, data = q:next()
                     if not id then
-                       return nil
+                        return nil
                     end
 
                     if isTrivial == nil then
-                       isTrivial = typeof(data) ~= "table"
+                        isTrivial = typeof(data) ~= "table"
                     end
 
                     if not isTrivial then
-                       data = table.clone(data)
+                        data = table.clone(data)
                     end
 
                     addedComponents[id] = data
                     return id, data
-                 end
+                end
             end
 
             function changes.changed()
@@ -662,10 +662,10 @@ TEST("changetracker", function()
                 added+=1
       		end
       		for e, old, new in changes.changed() do
-                    changed+=1
+                changed+=1
       		end
       		for e in changes.removed() do
-                    removed+=1
+                removed+=1
       		end
             CHECK(added == 1)
             CHECK(changed == 0)
