@@ -514,22 +514,22 @@ TEST("world", function()
 	end
 
 	do CASE "should not find any entities"
-      local world = jecs.World.new()
+        local world = jecs.World.new()
 
-      local Hello = world:component()
-      local Bob = world:component()
+        local Hello = world:component()
+        local Bob = world:component()
 
-      local helloBob = world:entity()
-      world:add(helloBob, ECS_PAIR(Hello, Bob))
-      world:add(helloBob, Bob)
+        local helloBob = world:entity()
+        world:add(helloBob, ECS_PAIR(Hello, Bob))
+        world:add(helloBob, Bob)
 
-      local withoutCount = 0
-      for _ in world:query(ECS_PAIR(Hello, Bob)):without(Bob) do
-     	   withoutCount += 1
-      end
+        local withoutCount = 0
+        for _ in world:query(ECS_PAIR(Hello, Bob)):without(Bob) do
+            withoutCount += 1
+        end
 
-      CHECK(withoutCount == 0)
-   end
+        CHECK(withoutCount == 0)
+    end
 end)
 
 
@@ -580,43 +580,43 @@ TEST("changetracker", function()
             end
 
             function changes.changed()
-                    local q = world:query(component, previous)
+                local q = world:query(component, previous)
 
-                    return function()
-                        local id, new, old = q:next()
-                        while true do
-                            if not id then
-                                return nil
-                            end
-
-                            if not isTrivial then
-                                if not shallowEq(new, old) then
-                                    break
-                                end
-                            elseif new ~= old then
-                                break
-                            end
-
-                            id, new, old = q:next()
+                return function()
+                    local id, new, old = q:next()
+                    while true do
+                        if not id then
+                            return nil
                         end
 
-                        addedComponents[id] = new
+                        if not isTrivial then
+                            if not shallowEq(new, old) then
+                                break
+                            end
+                        elseif new ~= old then
+                            break
+                        end
 
-                        return id, old, new
+                        id, new, old = q:next()
                     end
+
+                    addedComponents[id] = new
+
+                    return id, old, new
+                end
             end
 
             function changes.removed()
-                    removed = true
+                removed = true
 
-                    local q = world:query(previous):without(component)
-                    return function()
-                        local id = q:next()
-                        if id then
-                        table.insert(removedComponents, id)
-                        end
-                        return id
+                local q = world:query(previous):without(component)
+                return function()
+                    local id = q:next()
+                    if id then
+                    table.insert(removedComponents, id)
                     end
+                    return id
+                end
             end
 
             fn(changes)
@@ -650,9 +650,6 @@ TEST("changetracker", function()
 
 		local e = world:entity()
 		world:set(e, Test, { foo = 11 })
-    	for e, test in world:query(Test) do
-            test.foo = test.foo + 1
-    	end
 
         TestTracker.track(function(changes)
             local added = 0
@@ -690,6 +687,7 @@ TEST("changetracker", function()
     		for e in changes.removed() do
                 removed+=1
     		end
+
             CHECK(added == 0)
             CHECK(changed == 1)
             CHECK(removed == 0)
