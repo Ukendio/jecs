@@ -25,16 +25,12 @@ jobs:
         run: |
           output=$(./luau tests/world.luau)
           echo "$output"
-          echo "COMMAND_OUTPUT=$output" >> $GITHUB_ENV
-
-      - name: Check Unit Tests
-        run: |
           if [[ "$COMMAND_OUTPUT" == *"0 fails"* ]]; then
             echo "Unit Tests Passed"
           else
             echo "Error: One or More Unit Tests Failed."
             exit 1
-          fi
+          fi     
 
       - name: Cleanup Luau Binaries
         run: rm luau && rm luau-analyze && rm luau-compile && rm luau-ubuntu.zip && rm luau-link.txt
