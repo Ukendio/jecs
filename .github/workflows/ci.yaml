@@ -7,6 +7,9 @@ jobs:
     name: Run Luau Tests
     runs-on: ubuntu-latest
 
+    outputs:
+      output1: ${{ steps.run_tests.outputs.result }}
+
     steps:
       - name: Checkout Project
         uses: actions/checkout@v3
@@ -22,8 +25,6 @@ jobs:
 
       - name: Run Unit Tests
         id: run_tests
-        outputs:
-          output1: ${{ steps.run_tests.outputs.result }}
         run: |
           output=$(./luau tests/world.luau)
           echo "$output"
