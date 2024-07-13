@@ -22,13 +22,18 @@ jobs:
 
       - name: Run Unit Tests
         id: run_tests
+        outputs:
+          output1: ${{ steps.run_tests.outputs.result }}
         run: |
-          ./luau tests/world.luau >> "$GITHUB_OUTPUT"
-          echo "$GITHUB_OUTPUT"
+          output=$(./luau tests/world.luau)
+          echo "$output"
+          echo "result=$output" >> "$GITHUB_OUTPUT"
 
       - name: Check Unit Tests
+        env:
+          OUTPUT1: ${{ needs.run_tests.outputs.result }}
         run: |
-          if [[ "$GITHUB_OUTPUT" == *"0 fails"* ]]; then
+          if [[ "${{ needs.run_tests.outputs.result }}" == *"0 fails"* ]]; then
             echo "Unit Tests Passed"
           else
             echo "Error: One or More Unit Tests Failed."
