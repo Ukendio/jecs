@@ -514,135 +514,119 @@ TEST("world", function()
 	end
 
 	do CASE "should not find any entities"
-		local world = jecs.World.new()
+      local world = jecs.World.new()
 
-		local Hello = world:component()
-		local Bob = world:component()
+      local Hello = world:component()
+      local Bob = world:component()
 
-		local helloBob = world:entity()
-		world:add(helloBob, jecs.pair(Hello, Bob))
-		world:add(helloBob, Bob)
+      local helloBob = world:entity()
+      world:add(helloBob, ECS_PAIR(Hello, Bob))
+      world:add(helloBob, Bob)
 
-		local withoutCount = 0
-		for _ in world
-		    :query(jecs.pair(Hello, Bob))
-			:without(Bob)
-		do
-			withoutCount += 1
-		end
+      local withoutCount = 0
+      for _ in world:query(ECS_PAIR(Hello, Bob)):without(Bob) do
+     	   withoutCount += 1
+      end
 
-		CHECK(withoutCount == 0)
-	end
+      CHECK(withoutCount == 0)
+   end
+end)
 
-	do CASE "should allow change tracking"
-	    local world = jecs.World.new()
-        local Previous = world:component()
 
-        local ChangeTracker = {}
-        ChangeTracker.__index = ChangeTracker
+TEST("changetracker", function()
+    local world = jecs.World.new()
+    local Previous = world:component()
 
-        function ChangeTracker.new(component)
-            return setmetatable({
-                addedComponents = {}, -- Map<Entity, T>
-                removedComponents = {}, -- Vec<Entity>
-                component = component,
-                previous = jecs.pair(Previous, component),
-                isTrivial = nil,
-            }, ChangeTracker)
-        end
-
-        local function shallowEq(a, b)
-            for k, v in a do
-                if b[k] ~= v then
-                    return false
-                end
+    local function shallowEq(a, b)
+        for k, v in a do
+            if b[k] ~= v then
+                return false
             end
-            return true
         end
+        return true
+    end
 
-        function ChangeTracker.track(tracker, world, fn)
+    local function ChangeTracker(world, component)
+        local addedComponents = {}
+        local removedComponents = {}
+        local previous = jecs.pair(Previous, component)
+        local isTrivial = nil
+
+        local function track(fn)
             local added = false
             local removed = false
 
-            local addedComponents = tracker.addedComponents
-            local removedComponents = tracker.removedComponents
-            local component = tracker.component
-            local previous = tracker.previous
-            local isTrivial = tracker.isTrivial
-
             local changes = {}
-            function changes:added()
-                added = true
-                local q = world:query(component):without(previous)
-                return function()
+            function changes.added()
+                 added = true
+                 local q = world:query(component):without(previous)
+                 return function()
                     local id, data = q:next()
                     if not id then
-                        return nil
+                       return nil
                     end
 
                     if isTrivial == nil then
-                        isTrivial = typeof(data) ~= "table"
-                        tracker.isTrivial = isTrivial
+                       isTrivial = typeof(data) ~= "table"
                     end
 
                     if not isTrivial then
-                        data = table.clone(data)
+                       data = table.clone(data)
                     end
 
                     addedComponents[id] = data
                     return id, data
-                end
+                 end
             end
 
-            function changes:changed()
-                local q = world:query(component, previous)
+            function changes.changed()
+                    local q = world:query(component, previous)
 
-                return function()
-                    local id, new, old = q:next()
-                    while true do
-                        if not id then
-                            return nil
-                        end
+                    return function()
+                        local id, new, old = q:next()
+                        while true do
+                            if not id then
+                                return nil
+                            end
 
-                        if not isTrivial then
-                            if not shallowEq(new, old) then
+                            if not isTrivial then
+                                if not shallowEq(new, old) then
+                                    break
+                                end
+                            elseif new ~= old then
                                 break
                             end
-                        elseif new ~= old then
-                            break
+
+                            id, new, old = q:next()
                         end
 
-                        id, new, old = q:next()
+                        addedComponents[id] = new
+
+                        return id, old, new
                     end
-
-                    print("nil?", id)
-                    addedComponents[id] = new
-
-                    return id, old, new
-                end
             end
 
-            function changes:removed()
-                removed = true
+            function changes.removed()
+                    removed = true
 
-                local q = world:query(tracker.previous):without(tracker.component)
-                return function()
-                    local id = q:next()
-                    if id then
+                    local q = world:query(previous):without(component)
+                    return function()
+                        local id = q:next()
+                        if id then
                         table.insert(removedComponents, id)
+                        end
+                        return id
                     end
-                    return id
-                end
             end
 
             fn(changes)
             if not added then
-                for _ in changes:added() do
+                for _ in changes.added() do
                 end
             end
 
             if not removed then
-                for _ in changes:removed() do
+                for _ in changes.removed() do
                 end
             end
 
@@ -655,16 +639,22 @@ TEST("world", function()
             end
         end
 
+        return {
+            track = track
+        }
+    end
+
+	do CASE "should allow change tracking"
         local Test = world:component()
-        local TestTracker = ChangeTracker.new(Test)
+        local TestTracker = ChangeTracker(world, Test)
 
 		local e = world:entity()
 		world:set(e, Test, { foo = 11 })
     	for e, test in world:query(Test) do
-    	    test.foo = test.foo + 1
+            test.foo = test.foo + 1
     	end
 
-        TestTracker:track(world, function(changes)
+        TestTracker.track(function(changes)
             local added = 0
             local changed = 0
             local removed = 0
@@ -672,10 +662,10 @@ TEST("world", function()
                 added+=1
       		end
       		for e, old, new in changes.changed() do
-                changed+=1
+                    changed+=1
       		end
       		for e in changes.removed() do
-                removed+=1
+                    removed+=1
       		end
             CHECK(added == 1)
             CHECK(changed == 0)
@@ -683,22 +673,23 @@ TEST("world", function()
         end)
 
         for e, test in world:query(Test) do
-       	    test.foo = test.foo + 1
-       	end
+    	    test.foo = test.foo + 1
+     	end
 
-        TestTracker:track(world, function(changes)
+        TestTracker.track(function(changes)
             local added = 0
             local changed = 0
             local removed = 0
-      		for e, data in changes.added() do
+
+    		for e, data in changes.added() do
                 added+=1
-      		end
-      		for e, old, new in changes.changed() do
+    		end
+    		for e, old, new in changes.changed() do
                 changed+=1
-      		end
-      		for e in changes.removed() do
+    		end
+    		for e in changes.removed() do
                 removed+=1
-      		end
+    		end
             CHECK(added == 0)
             CHECK(changed == 1)
             CHECK(removed == 0)
@@ -706,19 +697,19 @@ TEST("world", function()
 
         world:remove(e, Test)
 
-        TestTracker:track(world, function(changes)
+        TestTracker.track(function(changes)
             local added = 0
             local changed = 0
             local removed = 0
-      		for e, data in changes.added() do
+       	    for e, data in changes.added() do
                 added+=1
-      		end
-      		for e, old, new in changes.changed() do
+    		end
+    		for e, old, new in changes.changed() do
                 changed+=1
-      		end
-      		for e in changes.removed() do
+    		end
+    		for e in changes.removed() do
                 removed+=1
-      		end
+    		end
             CHECK(added == 0)
             CHECK(changed == 0)
             CHECK(removed == 1)
