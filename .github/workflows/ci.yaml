@@ -23,9 +23,8 @@ jobs:
       - name: Run Unit Tests
         id: run_tests
         run: |
-          output=$(./luau tests/world.luau)
-          echo "$output"
-          echo "$output" > "$GITHUB_OUTPUT"
+          ./luau tests/world.luau >> "$GITHUB_OUTPUT"
+          echo "$GITHUB_OUTPUT"
 
       - name: Check Unit Tests
         run: |
