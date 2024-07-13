@@ -812,7 +812,7 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 		return queryNext
 	end
 
-	local function replace(_, fn)
+	local function replace(_, fn: any)
         for i, archetype in compatibleArchetypes do
 			local tr = indices[i]
 			local columns = archetype.columns
