@@ -455,7 +455,10 @@ local function add(world: World, entityId: i53, componentId: i53)
 	local record = entityIndex.sparse[entityId]
 	local from = record.archetype
 	local to = archetypeTraverseAdd(world, componentId, from)
-	if from and not (from == world.ROOT_ARCHETYPE) then
+	if from == to then
+		return
+	end
+	if from then
 		moveEntity(entityIndex, entityId, record, to)
 	else
 		if #to.types > 0 then
@@ -793,6 +796,10 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 			end
 		end
 
+		if #compatibleArchetypes == 0 then
+		    return EmptyQuery
+		end
+
 		return self
 	end
 
@@ -805,7 +812,7 @@ local function preparedQuery(compatibleArchetypes: { Archetype },
 		return queryNext
 	end
 
-	local function replace(_, fn)
+	local function replace(_, fn: any)
         for i, archetype in compatibleArchetypes do
 			local tr = indices[i]
 			local columns = archetype.columns
