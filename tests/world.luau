@@ -327,32 +327,32 @@ TEST("world", function()
 		CHECK(count == 1)
 	end
 
-	-- do CASE("should only relate alive entities")
+	do CASE("should only relate alive entities")
 
-	-- 	local world = jecs.World.new()
-	-- 	local Eats = world:entity()
-	-- 	local Apples = world:entity()
-	-- 	local Oranges = world:entity()
-	-- 	local bob = world:entity()
-	-- 	local alice = world:entity()
+		local world = jecs.World.new()
+		local Eats = world:entity()
+		local Apples = world:entity()
+		local Oranges = world:entity()
+		local bob = world:entity()
+		local alice = world:entity()
 
-	-- 	world:set(bob, Apples, "apples")
-	-- 	world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
-	-- 	world:set(alice, ECS_PAIR(Eats, Oranges), "alice eats oranges")
+		world:set(bob, Apples, "apples")
+		world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
+		world:set(alice, ECS_PAIR(Eats, Oranges), "alice eats oranges")
 
-	-- 	world:delete(Apples)
-	-- 	local Wildcard = jecs.Wildcard
+		world:delete(Apples)
+		local Wildcard = jecs.Wildcard
 
-	-- 	local count = 0
-	-- 	for _, data in world:query(ECS_PAIR(Wildcard, Apples)) do
-	-- 		count += 1
-	-- 	end
+		local count = 0
+		for _, data in world:query(ECS_PAIR(Wildcard, Apples)) do
+			count += 1
+		end
 
-	-- 	world:delete(ECS_PAIR(Eats, Apples))
+		world:delete(ECS_PAIR(Eats, Apples))
 
-	-- 	CHECK(count == 0)
-	-- 	CHECK(world:get(bob, ECS_PAIR(Eats, Apples)) == nil)
-	-- end
+		CHECK(count == 0)
+		CHECK(world:get(bob, ECS_PAIR(Eats, Apples)) == nil)
+	end
 
 	do CASE("should error when setting invalid pair")
 		local world = jecs.World.new()
@@ -431,26 +431,26 @@ TEST("world", function()
 	end
 
 
-	-- do CASE "should not iterate same entity when adding component"
-	-- 	local world = jecs.World.new()
-	-- 	local A = world:component()
-	-- 	local B = world:component()
+	do CASE "should not iterate same entity when adding component"
+		local world = jecs.World.new()
+		local A = world:component()
+		local B = world:component()
 
-	-- 	local e1 = world:entity()
-	-- 	local e2 = world:entity()
-	-- 	world:add(e1, A)
-	-- 	world:add(e2, A)
-	-- 	world:add(e2, B)
+		local e1 = world:entity()
+		local e2 = world:entity()
+		world:add(e1, A)
+		world:add(e2, A)
+		world:add(e2, B)
 
-	-- 	local count = 0
-	-- 	for id in world:query(A) do
-	-- 		world:add(id, B)
+		local count = 0
+		for id in world:query(A) do
+			world:add(id, B)
 
-	-- 		count += 1
-	-- 	end
+			count += 1
+		end
 
-	-- 	CHECK(count == 2)
-	-- end
+		CHECK(count == 2)
+	end
 
 	do CASE "should replace component data"
         local world = jecs.World.new()
