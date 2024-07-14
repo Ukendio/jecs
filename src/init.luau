@@ -26,7 +26,6 @@ type Archetype = {
 	columns: { Column },
 	records: { [number]: number },
 }
-
 type Record = {
 	archetype: Archetype,
 	row: number,
@@ -79,23 +78,23 @@ local ECS_ID_FLAGS_MASK 	= 0x10
 local ECS_ENTITY_MASK 		= bit32.lshift(1, 24)
 local ECS_GENERATION_MASK 	= bit32.lshift(1, 16)
 
-local function addFlags(isPair: boolean): number
-	local typeFlags = 0x0
+local function FLAGS_ADD(is_pair: boolean): number
+	local flags = 0x0
 
-	if isPair then
-		typeFlags = bit32.bor(typeFlags, ECS_PAIR_FLAG) -- HIGHEST bit in the ID.
+	if is_pair then
+		flags = bit32.bor(flags, ECS_PAIR_FLAG) -- HIGHEST bit in the ID.
 	end
 	if false then
-		typeFlags = bit32.bor(typeFlags, 0x4) -- Set the second flag to true
+		flags = bit32.bor(flags, 0x4) -- Set the second flag to true
 	end
 	if false then
-		typeFlags = bit32.bor(typeFlags, 0x2) -- Set the third flag to true
+		flags = bit32.bor(flags, 0x2) -- Set the third flag to true
 	end
 	if false then
-		typeFlags = bit32.bor(typeFlags, 0x1) -- LAST BIT in the ID.
+		flags = bit32.bor(flags, 0x1) -- LAST BIT in the ID.
 	end
 
-	return typeFlags
+	return flags
 end
 
 local function ECS_COMBINE(source: number, target: number): i53
@@ -137,7 +136,7 @@ local function STRIP_GENERATION(e: i53): i24
 end
 
 local function ECS_PAIR(pred: i53, obj: i53): i53
-	return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + addFlags(--[[isPair]] true) :: i53
+	return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + FLAGS_ADD(--[[isPair]] true) :: i53
 end
 
 local ERROR_ENTITY_NOT_ALIVE = "Entity is not alive"
