@@ -6,6 +6,7 @@ jobs:
   run:
     name: Run Luau Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 2
 
     steps:
       - name: Checkout Project
