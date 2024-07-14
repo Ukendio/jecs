@@ -511,7 +511,7 @@ local function world_component(world: World): i53
 end
 
 
-local function archetypeTraverseRemove(world: World, componentId: i53, from: Archetype): Archetype
+local function archetype_traverse_remove(world: World, componentId: i53, from: Archetype): Archetype
 	local edge = edge_ensure(from, componentId)
 
 	local remove = edge.remove
@@ -533,7 +533,7 @@ local function world_remove(world: World, entityId: i53, componentId: i53)
 	local entityIndex = world.entityIndex
 	local record = entityIndex.sparse[entityId]
 	local sourceArchetype = record.archetype
-	local destinationArchetype = archetypeTraverseRemove(world, componentId, sourceArchetype)
+	local destinationArchetype = archetype_traverse_remove(world, componentId, sourceArchetype)
 
 	if sourceArchetype and not (sourceArchetype == destinationArchetype) then
 		entity_move(entityIndex, entityId, record, destinationArchetype)
@@ -541,7 +541,7 @@ local function world_remove(world: World, entityId: i53, componentId: i53)
 end
 
 -- should reuse this logic in World.set instead of swap removing in transition archetype
-local function destructColumns(columns: { Column }, count: number, row: number)
+local function columns_destruct(columns: { Column }, count: number, row: number)
 	if row == count then
 		for _, column in columns do
 			column[count] = nil
@@ -554,7 +554,7 @@ local function destructColumns(columns: { Column }, count: number, row: number)
 	end
 end
 
-local function archetypeDelete(world: World, id: i53)
+local function archetype_delete(world: World, id: i53)
 	local componentIndex = world.componentIndex
 	local archetypesMap = componentIndex[id]
 	local archetypes = world.archetypes
@@ -580,10 +580,10 @@ local function world_delete(world: World, entityId: i53)
 	local archetype = record.archetype
 	local row = record.row
 
-	archetypeDelete(world, entityId)
+	archetype_delete(world, entityId)
 	-- TODO: should traverse linked )component records to pairs including entityId
-	archetypeDelete(world, ECS_PAIR(entityId, EcsWildcard))
-	archetypeDelete(world, ECS_PAIR(EcsWildcard, entityId))
+	archetype_delete(world, ECS_PAIR(entityId, EcsWildcard))
+	archetype_delete(world, ECS_PAIR(EcsWildcard, entityId))
 
 	if archetype then
 		local entities = archetype.entities
@@ -599,7 +599,7 @@ local function world_delete(world: World, entityId: i53)
 
 		local columns = archetype.columns
 
-		destructColumns(columns, last, row)
+		columns_destruct(columns, last, row)
 	end
 
 	sparse[entityId] = nil :: any
@@ -683,11 +683,7 @@ export type Query = typeof(EmptyQuery)
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
-local function replaceMult(row, columns, ...)
-	for i, column in columns do
-		column[row] = select(i, ...)
-	end
-end
+
 
 local world_query: (World, ...i53) -> Query
 do
@@ -795,6 +791,12 @@ do
         return world_query_next
     end
 
+    local function world_query_replace_values(row, columns, ...)
+    	for i, column in columns do
+    		column[row] = select(i, ...)
+    	end
+    end
+
     local function world_query_replace(_, fn: any)
         for i, archetype in compatibleArchetypes do
       		local tr = indices[i]
@@ -829,7 +831,8 @@ do
          			for i = 1, queryLength do
          			    queryOutput[i] = columns[tr[i]][row]
          			end
-         			replaceMult(row, columns, fn(unpack(queryOutput)))
+         			world_query_replace_values(row, columns,
+                        fn(unpack(queryOutput)))
           		end
             end
         end
