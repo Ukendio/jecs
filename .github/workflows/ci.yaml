@@ -1,0 +1,37 @@
+name: Unit Testing
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  run:
+    name: Run Luau Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v3
+
+      - name: Fetch Luau Latest Release
+        run: curl -s https://api.github.com/repos/luau-lang/luau/releases/latest | grep /luau-ubuntu.zip | cut -d '"' -f 4 > luau-link.txt
+
+      - name: Download Luau Latest Release
+        run: wget -i luau-link.txt
+
+      - name: Unzip binary
+        run: unzip luau-ubuntu.zip
+
+      - name: Run Unit Tests
+        id: run_tests
+        run: |
+          output=$(./luau tests/world.luau)
+          echo "$output"
+          if [[ "$output" == *"0 fails"* ]]; then
+            echo "Unit Tests Passed"
+          else
+            echo "Error: One or More Unit Tests Failed."
+            exit 1
+          fi     
+
+      - name: Cleanup Luau Binaries
+        if: '!cancelled()'
+        run: rm luau && rm luau-analyze && rm luau-compile && rm luau-ubuntu.zip && rm luau-link.txt

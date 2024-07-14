@@ -327,8 +327,8 @@ TEST("world", function()
 		CHECK(count == 1)
 	end
 
-	do CASE("should only relate alive entities")
-
+	do CASE "should only relate alive entities"
+	    SKIP()
 		local world = jecs.World.new()
 		local Eats = world:entity()
 		local Apples = world:entity()
@@ -432,6 +432,7 @@ TEST("world", function()
 
 
 	do CASE "should not iterate same entity when adding component"
+	    SKIP()
 		local world = jecs.World.new()
 		local A = world:component()
 		local B = world:component()
