@@ -33,4 +33,5 @@ jobs:
           fi     
 
       - name: Cleanup Luau Binaries
+        if: '!cancelled()'
         run: rm luau && rm luau-analyze && rm luau-compile && rm luau-ubuntu.zip && rm luau-link.txt
