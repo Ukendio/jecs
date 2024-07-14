@@ -662,31 +662,43 @@ local function world_get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, 
 	end
 end
 
-local function noop()
-	return nil
-end
-
-local EmptyQuery = {
-	__iter = function()
-		return noop
-	end,
-	next = noop,
-	replace = noop,
-	without = function(self)
-		return self
-	end
+type Item = () -> (number, ...any)
+export type Query = typeof({
+    __iter = function():  Item
+        return function()
+            return 1
+        end
+    end,
+}) & {
+    next: Item,
+    replace: (Query, ...any) -> (),
+    without: (Query) -> Query
 }
-
-setmetatable(EmptyQuery, EmptyQuery)
-
-export type Query = typeof(EmptyQuery)
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
-
-
 local world_query: (World, ...i53) -> Query
 do
+
+    local noop: Item = function()
+    	return nil :: any
+    end
+
+    local EmptyQuery: Query = {
+    	__iter = function(): Item
+    		return function()
+                return 1
+            end
+    	end,
+    	next = noop :: Item,
+    	replace = noop :: (Query, ...any) -> (),
+    	without = function(self: Query, ...)
+    		return self
+    	end
+    }
+
+    setmetatable(EmptyQuery, EmptyQuery)
+
     local indices: { { number } }
    	local compatibleArchetypes: { Archetype }
    	local length
