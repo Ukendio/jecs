@@ -5,14 +5,14 @@
         "StarterPlayer": {
             "$className": "StarterPlayer",
             "StarterPlayerScripts": {
-            "$className": "StarterPlayerScripts",
-            "$path": "tests"
+                "$className": "StarterPlayerScripts",
+                "$path": "tests"
             }
         },
         "ReplicatedStorage": {
             "$className": "ReplicatedStorage",
             "Lib": {
-                "$path": "lib"
+                "$path": "src"
             },
             "rgb": {
                 "$path": "rgb.luau"

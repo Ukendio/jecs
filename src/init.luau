@@ -688,234 +688,226 @@ local function replaceMult(row, columns, ...)
 	end
 end
 
-local function preparedQuery(compatibleArchetypes: { Archetype },
-	components: { i53? }, indices: { { number } })
+local query: (World, ...i53) -> Query
+do
+    local indices: { { number } }
+   	local compatibleArchetypes: { Archetype }
+   	local length
+   	local components: { number }
+   	local queryLength: number
+    local lastArchetype: number
+    local archetype: Archetype
 
-	local queryLength = #components
+   	local queryOutput: { any }
 
-	local lastArchetype = 1
-	local archetype: Archetype = compatibleArchetypes[lastArchetype]
+   	local entities: {}
+   	local i: number
 
-	if not archetype then
-		return EmptyQuery
-	end
+    local function query_next()
+        local entityId = entities[i]
+        while entityId == nil do
+ 			lastArchetype += 1
+ 			archetype = compatibleArchetypes[lastArchetype]
 
-	local queryOutput = {}
+ 			if not archetype then
+ 			    return
+ 			end
 
-	local entities = archetype.entities
-	local i = #entities
+ 			entities = archetype.entities
+ 			i = #entities
+            entityId = entities[i]
+        end
 
-	local function queryNext(): ...any
-		local entityId = entities[i]
-		while entityId == nil do
-			lastArchetype += 1
-			archetype = compatibleArchetypes[lastArchetype]
+        local row = i
+        i-=1
 
-			if not archetype then
-				return
-			end
+        local columns = archetype.columns
+        local tr = indices[lastArchetype]
 
-			entities = archetype.entities
-			i = #entities
-			entityId = entities[i]
-		end
+        if queryLength == 1 then
+            return entityId, columns[tr[1]][row]
+        elseif queryLength == 2 then
+            return entityId, columns[tr[1]][row], columns[tr[2]][row]
+        elseif queryLength == 3 then
+            return entityId, columns[tr[1]][row], columns[tr[2]][row], columns[tr[3]][row]
+        elseif queryLength == 4 then
+            return entityId, columns[tr[1]][row], columns[tr[2]][row], columns[tr[3]][row], columns[tr[4]][row]
+        elseif queryLength == 5 then
+            return entityId,columns[tr[1]][row], columns[tr[2]][row], columns[tr[3]][row], columns[tr[4]][row],
+                columns[tr[5]][row]
+        elseif queryLength == 6 then
+     			return entityId, columns[tr[1]][row], columns[tr[2]][row], columns[tr[3]][row], columns[tr[4]][row],
+                    columns[tr[5]][row],
+     			    columns[tr[6]][row]
+        elseif queryLength == 7 then
+     			return entityId, columns[tr[1]][row], columns[tr[2]][row], columns[tr[3]][row], columns[tr[4]][row],
+                    columns[tr[5]][row],
+     			    columns[tr[6]][row],
+         			columns[tr[7]][row]
+        elseif queryLength == 8 then
+     			return entityId, columns[tr[1]][row], columns[tr[2]][row], columns[tr[3]][row], columns[tr[4]][row],
+                    columns[tr[5]][row],
+     			    columns[tr[6]][row],
+         			columns[tr[7]][row],
+                    columns[tr[8]][row]
+        end
 
-		local row = i
-		i-=1
+        for i in components do
+            queryOutput[i] = columns[tr[i]][row]
+        end
 
-		local columns = archetype.columns
-		local tr = indices[lastArchetype]
+        return entityId, unpack(queryOutput, 1, queryLength)
+    end
 
-		if queryLength == 1 then
-			return entityId, columns[tr[1]][row]
-		elseif queryLength == 2 then
-			return entityId, columns[tr[1]][row], columns[tr[2]][row]
-		elseif queryLength == 3 then
-			return entityId, columns[tr[1]][row], columns[tr[2]][row], columns[tr[3]][row]
-		elseif queryLength == 4 then
-			return entityId, columns[tr[1]][row], columns[tr[2]][row], columns[tr[3]][row], columns[tr[4]][row]
-		elseif queryLength == 5 then
-			return entityId,
-				columns[tr[1]][row],
-				columns[tr[2]][row],
-				columns[tr[3]][row],
-				columns[tr[4]][row],
-				columns[tr[5]][row]
-		elseif queryLength == 6 then
-			return entityId,
-				columns[tr[1]][row],
-				columns[tr[2]][row],
-				columns[tr[3]][row],
-				columns[tr[4]][row],
-				columns[tr[5]][row],
-				columns[tr[6]][row]
-		elseif queryLength == 7 then
-			return entityId,
-				columns[tr[1]][row],
-				columns[tr[2]][row],
-				columns[tr[3]][row],
-				columns[tr[4]][row],
-				columns[tr[5]][row],
-				columns[tr[6]][row],
-				columns[tr[7]][row]
-		elseif queryLength == 8 then
-			return entityId,
-				columns[tr[1]][row],
-				columns[tr[2]][row],
-				columns[tr[3]][row],
-				columns[tr[4]][row],
-				columns[tr[5]][row],
-				columns[tr[6]][row],
-				columns[tr[7]][row],
-				columns[tr[8]][row]
-		end
+    local function query_without(self, ...): Query
+        local withoutComponents = { ... }
+        for i = #compatibleArchetypes, 1, -1 do
+ 			local archetype = compatibleArchetypes[i]
+ 			local records = archetype.records
+ 			local shouldRemove = false
 
-		for i in components do
-			queryOutput[i] = columns[tr[i]][row]
-		end
+ 			for _, componentId in withoutComponents do
+ 			    if records[componentId] then
+    				shouldRemove = true
+    				break
+ 			    end
+ 			end
 
-		return entityId, unpack(queryOutput, 1, queryLength)
-	end
+ 			if shouldRemove then
+ 			    table.remove(compatibleArchetypes, i)
+ 			end
+        end
 
-	local function without(self, ...): Query
-		local withoutComponents = { ... }
-		for i = #compatibleArchetypes, 1, -1 do
-			local archetype = compatibleArchetypes[i]
-			local records = archetype.records
-			local shouldRemove = false
+        if #compatibleArchetypes == 0 then
+            return EmptyQuery
+        end
 
-			for _, componentId in withoutComponents do
-				if records[componentId] then
-					shouldRemove = true
-					break
-				end
-			end
+        return self
+    end
 
-			if shouldRemove then
-				table.remove(compatibleArchetypes, i)
-			end
-		end
-
-		if #compatibleArchetypes == 0 then
-		    return EmptyQuery
-		end
-
-		return self
-	end
-
-	local function iter()
+    local function query_iter()
         lastArchetype = 1
-		archetype = compatibleArchetypes[1]
-		entities = archetype.entities
-		i = #entities
+        archetype = compatibleArchetypes[1]
+        entities = archetype.entities
+        i = #entities
 
-		return queryNext
-	end
+        return query_next
+    end
 
-	local function replace(_, fn: any)
+    local function query_replace(_, fn: any)
         for i, archetype in compatibleArchetypes do
-			local tr = indices[i]
-			local columns = archetype.columns
+      		local tr = indices[i]
+      		local columns = archetype.columns
 
-			for row in archetype.entities do
-				if queryLength == 1 then
-					local a = columns[tr[1]]
-					local pa = fn(a[row])
+      		for row in archetype.entities do
+          		if queryLength == 1 then
+         			local a = columns[tr[1]]
+         			local pa = fn(a[row])
 
-					a[row] = pa
-				elseif queryLength == 2 then
-					local a = columns[tr[1]]
-					local b = columns[tr[2]]
+         			a[row] = pa
+          		elseif queryLength == 2 then
+         			local a = columns[tr[1]]
+         			local b = columns[tr[2]]
 
-					a[row], b[row] = fn(a[row], b[row])
-				elseif queryLength == 3 then
-					local a = columns[tr[1]]
-					local b = columns[tr[2]]
-					local c = columns[tr[3]]
+         			a[row], b[row] = fn(a[row], b[row])
+          		elseif queryLength == 3 then
+         			local a = columns[tr[1]]
+         			local b = columns[tr[2]]
+         			local c = columns[tr[3]]
 
-					a[row], b[row], c[row] = fn(a[row], b[row], c[row])
-				elseif queryLength == 4 then
-					local a = columns[tr[1]]
-					local b = columns[tr[2]]
-					local c = columns[tr[3]]
-					local d = columns[tr[4]]
+         			a[row], b[row], c[row] = fn(a[row], b[row], c[row])
+          		elseif queryLength == 4 then
+         			local a = columns[tr[1]]
+         			local b = columns[tr[2]]
+         			local c = columns[tr[3]]
+         			local d = columns[tr[4]]
 
-					a[row], b[row], c[row], d[row] = fn(
-						a[row], b[row], c[row], d[row])
-				else
-					for i = 1, queryLength do
-						queryOutput[i] = columns[tr[i]][row]
-					end
-					replaceMult(row, columns, fn(unpack(queryOutput)))
-				end
-			end
-		end
-	end
+         			a[row], b[row], c[row], d[row] = fn(
+         			    a[row], b[row], c[row], d[row])
+          		else
+         			for i = 1, queryLength do
+         			    queryOutput[i] = columns[tr[i]][row]
+         			end
+         			replaceMult(row, columns, fn(unpack(queryOutput)))
+          		end
+            end
+        end
+    end
 
-	local it = {
-		__iter = iter,
-		next = queryNext,
-		without = without,
-		replace = replace
-	}
+    function query(world: World, ...: number): Query
+    	-- breaking?
+    	if (...) == nil then
+    		error("Missing components")
+    	end
 
-	return setmetatable(it, it) :: any
-end
+        indices = {}
+        compatibleArchetypes = {}
+        length = 0
+        components = { ... }
 
-local function query(world: World, ...: number): Query
-	-- breaking?
-	if (...) == nil then
-		error("Missing components")
-	end
+    	local archetypes: { Archetype } = world.archetypes :: any
+    	local firstArchetypeMap: ArchetypeMap
+    	local componentIndex = world.componentIndex
 
-	local indices: { { number } } = {}
-	local compatibleArchetypes: { Archetype } = {}
-	local length = 0
+    	for _, componentId in components do
+    		local map: ArchetypeMap = componentIndex[componentId] :: any
+    		if not map then
+    			return EmptyQuery
+    		end
 
-	local components: { number } = { ... }
-	local archetypes: { Archetype } = world.archetypes :: any
+    		if (firstArchetypeMap :: any) == nil or firstArchetypeMap.size < map.size then
+    			firstArchetypeMap = map
+    		end
+    	end
 
-	local firstArchetypeMap: ArchetypeMap
-	local componentIndex = world.componentIndex
+    	for id in firstArchetypeMap.cache do
+    		local compatibleArchetype = archetypes[id]
+    		local archetypeRecords = compatibleArchetype.records
 
-	for _, componentId in components do
-		local map: ArchetypeMap = componentIndex[componentId] :: any
-		if not map then
-			return EmptyQuery
-		end
+    		local records: { number } = {}
+    		local skip = false
 
-		if (firstArchetypeMap :: any) == nil or firstArchetypeMap.size < map.size then
-			firstArchetypeMap = map
-		end
-	end
+    		for i, componentId in components do
+    			local index = archetypeRecords[componentId]
+    			if not index then
+    				skip = true
+    				break
+    			end
+    			-- index should be index.offset
+    			records[i] = index
+    		end
 
-	for id in firstArchetypeMap.cache do
-		local archetype = archetypes[id]
-		local archetypeRecords = archetype.records
+    		if skip then
+    			continue
+    		end
 
-		local records: { number } = {}
-		local skip = false
+    		length += 1
+    		compatibleArchetypes[length] = compatibleArchetype
+    		indices[length] = records
+    	end
 
-		for i, componentId in components do
-			local index = archetypeRecords[componentId]
-			if not index then
-				skip = true
-				break
-			end
-			-- index should be index.offset
-			records[i] = index
-		end
+        lastArchetype = 1
+       	archetype = compatibleArchetypes[lastArchetype]
 
-		if skip then
-			continue
-		end
+       	if not archetype then
+      		return EmptyQuery
+       	end
 
-		length += 1
-		compatibleArchetypes[length] = archetype
-		indices[length] = records
-	end
+        queryOutput = {}
+        queryLength = #components
 
-	return preparedQuery(compatibleArchetypes, components, indices)
+        entities =  archetype.entities
+        i = #entities
+
+        local it = {
+    		__iter = query_iter,
+    		next = query_next,
+    		without = query_without,
+    		replace = query_replace
+    	}
+
+    	return setmetatable(it, it) :: any
+    end
 end
 
 type WorldIterator = (() -> (i53, { [unknown]: unknown? })) & (() -> ()) & (() -> i53)
@@ -1055,31 +1047,6 @@ export type WorldShim = typeof(setmetatable(
 local World = {}
 World.__index = World
 
-function World.new()
-	local self = setmetatable({
-		archetypeIndex = {} :: { [string]: Archetype },
-		archetypes = {} :: Archetypes,
-		componentIndex = {} :: ComponentIndex,
-		entityIndex = {
-			dense = {} :: { [i24]: i53 },
-			sparse = {} :: { [i53]: Record },
-		} :: EntityIndex,
-		hooks = {
-			[EcsOnAdd] = {},
-		},
-		nextArchetypeId = 0,
-		nextComponentId = 0,
-		nextEntityId = 0,
-		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
-	}, World)
-	self.ROOT_ARCHETYPE = archetypeOf(self, {})
-
-	-- Initialize built-in components
-	nextEntityId(self.entityIndex, EcsChildOf)
-
-	return self
-end
-
 World.entity = entity
 World.query = query
 World.remove = remove
@@ -1092,8 +1059,34 @@ World.get = get
 World.target = target
 World.parent = parent
 
+function World.new()
+    local self = setmetatable({
+            archetypeIndex = {} :: { [string]: Archetype },
+            archetypes = {} :: Archetypes,
+    		componentIndex = {} :: ComponentIndex,
+    		entityIndex = {
+    			dense = {} :: { [i24]: i53 },
+    			sparse = {} :: { [i53]: Record },
+    		} :: EntityIndex,
+    		hooks = {
+    			[EcsOnAdd] = {},
+    		},
+    		nextArchetypeId = 0,
+    		nextComponentId = 0,
+    		nextEntityId = 0,
+    		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
+		}, World)
+
+	self.ROOT_ARCHETYPE = archetypeOf(self, {})
+
+	-- Initialize built-in components
+	nextEntityId(self.entityIndex, EcsChildOf)
+
+	return self
+end
+
 return {
-	World = World :: { new: () -> WorldShim },
+	World = World :: { new: () -> WorldShim } ,
 
 	OnAdd = EcsOnAdd :: Entity,
 	OnRemove = EcsOnRemove :: Entity,
