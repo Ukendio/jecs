@@ -686,9 +686,7 @@ do
 
     local EmptyQuery: Query = {
     	__iter = function(): Item
-    		return function()
-                return 1
-            end
+    		return noop
     	end,
     	next = noop :: Item,
     	replace = noop :: (Query, ...any) -> (),
