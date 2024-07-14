@@ -18,7 +18,7 @@ jobs:
       - name: Run Unit Tests
         id: run_tests
         run: |
-          output=$(./luau test/tests.luau)
+          output=$(luau test/tests.luau)
           echo "$output"
           if [[ "$output" == *"0 fails"* ]]; then
             echo "Unit Tests Passed"
