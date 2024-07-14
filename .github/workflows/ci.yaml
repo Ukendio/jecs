@@ -23,14 +23,14 @@ jobs:
       - name: Run Unit Tests
         id: run_tests
         run: |
-          output=$(./luau tests/world.luau)
+          output=$(./luau test/tests.luau)
           echo "$output"
           if [[ "$output" == *"0 fails"* ]]; then
             echo "Unit Tests Passed"
           else
             echo "Error: One or More Unit Tests Failed."
             exit 1
-          fi     
+          fi
 
       - name: Cleanup Luau Binaries
         if: '!cancelled()'
