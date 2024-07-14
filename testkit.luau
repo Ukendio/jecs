@@ -37,6 +37,10 @@ local color = {
 	gray = function(s: string): string
 		return if disable_ansi then s else `\27[38;1m{s}\27[0m`
 	end,
+
+	orange = function(s: string): string
+	   return if disable_ansi then s else `\27[38;5;208m{s}\27[0m`
+	end,
 }
 
 local function convert_units(unit: string, value: number): (number, string)
@@ -113,9 +117,9 @@ type Case = {
 	line: number?,
 }
 
-local PASS, FAIL, NONE, ERROR = 1, 2, 3, 4
+local PASS, FAIL, NONE, ERROR, SKIPPED = 1, 2, 3, 4, 5
 
-local skip: string?
+local skip = false
 local test: Test?
 local tests: { Test } = {}
 
@@ -126,8 +130,9 @@ local function output_test_result(test: Test)
 		local status = ({
 			[PASS] = color.green "PASS",
 			[FAIL] = color.red "FAIL",
-			[NONE] = color.yellow "NONE",
+			[NONE] = color.orange "NONE",
 			[ERROR] = color.red "FAIL",
+			[SKIPPED] = color.yellow "SKIP"
 		})[case.result]
 
 		local line = case.result == FAIL and color.red(`{case.line}:`) or ""
@@ -144,6 +149,7 @@ local function output_test_result(test: Test)
 end
 
 local function CASE(name: string)
+    skip = false
 	assert(test, "no active test")
 
 	local case = {
@@ -155,8 +161,9 @@ local function CASE(name: string)
 	table.insert(test.cases, case)
 end
 
-local function CHECK<T>(value: T, stack: number?): T
+local function CHECK<T>(value: T, stack: number?): T?
 	assert(test, "no active test")
+
 	local case = test.case
 
 	if not case then
@@ -168,6 +175,9 @@ local function CHECK<T>(value: T, stack: number?): T
 
 	if case.result ~= FAIL then
 		case.result = value and PASS or FAIL
+		if skip then
+		    case.result = SKIPPED
+		end
 		case.line = debug.info(stack and stack + 1 or 2, "l")
 	end
 
@@ -175,8 +185,6 @@ local function CHECK<T>(value: T, stack: number?): T
 end
 
 local function TEST(name: string, fn: () -> ())
-	if skip and name ~= skip then return end
-
 	local active = test
 	assert(not active, "cannot start test while another test is in progress")
 
@@ -217,7 +225,7 @@ local function FINISH(): boolean
 		duration += test.duration
 		for _, case in test.cases do
 			total_cases += 1
-			if case.result == PASS or case.result == NONE then
+			if case.result == PASS or case.result == NONE or case.result == SKIPPED then
 				passed_cases += 1
 			else
 				success = false
@@ -248,8 +256,7 @@ local function FINISH(): boolean
 end
 
 local function SKIP(name: string)
-	assert(not test, "cannot skip during test")
-	skip = name
+	skip = true
 end
 
 --------------------------------------------------------------------------------
