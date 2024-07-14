@@ -20,23 +20,23 @@ do
 		TITLE("one component in common")
 
 		local function view_bench(world: jecs.World, A: i53, B: i53, C: i53, D: i53, E: i53, F: i53, G: i53, H: i53)
-			BENCH("1 component", function()
+		    BENCH("1 component", function()
 				for _ in world:query(A) do
 				end
 			end)
 
 			BENCH("2 component", function()
-				for _ in world:query(A, B) do
+				for _ in world:query(B, A) do
 				end
 			end)
 
 			BENCH("4 component", function()
-				for _ in world:query(A, B, C, D) do
+				for _ in world:query(D, C, B, A) do
 				end
 			end)
 
 			BENCH("8 component", function()
-				for _ in world:query(A, B, C, D, E, F, G, H) do
+				for _ in world:query(H, G, F, E, D, C, B, A) do
 				end
 			end)
 
@@ -142,17 +142,17 @@ do
 			end)
 
 			BENCH("2 component", function()
-				for _ in world:query(A, B) do
+				for _ in world:query(B, A) do
 				end
 			end)
 
 			BENCH("4 component", function()
-				for _ in world:query(A, B, C, D) do
+				for _ in world:query(D, C, B, A) do
 				end
 			end)
 
 			BENCH("8 component", function()
-				for _ in world:query(A, B, C, D, E, F, G, H) do
+				for _ in world:query(H, G, F, E, D, C, B, A) do
 				end
 			end)
 
