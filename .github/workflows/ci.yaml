@@ -10,7 +10,7 @@ jobs:
 
     steps:
       - name: Checkout Project
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Fetch Luau Latest Release
         run: curl -s https://api.github.com/repos/luau-lang/luau/releases/latest | grep /luau-ubuntu.zip | cut -d '"' -f 4 > luau-link.txt
