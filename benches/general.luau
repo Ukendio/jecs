@@ -108,143 +108,32 @@ end
 --- entities.
 do TITLE(`query {N} entities`)
 
-	local function view_bench(world: jecs.WorldShim, A: jecs.Entity, B: jecs.Entity, C: jecs.Entity, D: jecs.Entity)
+	local function view_bench(n: number)
+		BENCH(`{n} entities per archetype`, function()
+			local world = jecs.World.new()
+			local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
 
-		BENCH("1 component", function()
-			for id in world:query(A) do
-
+			for i = 1, N, n do
+				local ct = world:entity()
+				for j = 1, n do
+					local id = world:entity()
+					world:set(id, A, true)
+					world:set(id, B, true)
+					world:set(id, C, true)
+					world:set(id, D, true)
+					world:set(id, ct, true)
+				end
 			end
-		end)
 
-		BENCH("2 component", function()
-			for id in world:query(A, B) do
-
-			end
-		end)
-
-		BENCH("3 component", function()
-			for id in world:query(A, B, C) do
-
-			end
-		end)
-
-		BENCH("4 component", function()
+			START()
 			for id in world:query(A, B, C, D) do
-
 			end
+
 		end)
-
 	end
 
-	do TITLE "2048 entities per archetype"
-		local world = jecs.World.new()
-		local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
-
-		for i = 1, N, 2048 do
-			local ct = world:entity()
-			for j = 1, 2048 do
-				local id = world:entity()
-				world:set(id, A, true)
-				world:set(id, B, true)
-				world:set(id, C, true)
-				world:set(id, D, true)
-				world:set(id, ct, true)
-			end
-		end
-
-		view_bench(world, A, B, C, D)
-	end
-
-	do TITLE "512 entities per archetype"
-		local world = jecs.World.new()
-		local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
-
-		for i = 1, N, 512 do
-			local ct = world:entity()
-			for j = 1, 512 do
-				local id = world:entity()
-				world:set(id, A, true)
-				world:set(id, B, true)
-				world:set(id, C, true)
-				world:set(id, D, true)
-				world:set(id, ct, true)
-			end
-		end
-
-		view_bench(world, A, B, C, D)
-	end
-
-	do TITLE "32 entities per archetype"
-		local world = jecs.World.new()
-		local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
-
-		for i = 1, N, 32 do
-			local ct = world:entity()
-			for j = 1, 32 do
-				local id = world:entity()
-				world:set(id, A, true)
-				world:set(id, B, true)
-				world:set(id, C, true)
-				world:set(id, D, true)
-				world:set(id, ct, true)
-			end
-		end
-
-		view_bench(world, A, B, C, D)
-	end
-
-	do TITLE "16 entities per archetype"
-		local world = jecs.World.new()
-		local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
-
-		for i = 1, N, 16 do
-			local ct = world:entity()
-			for j = 1, 16 do
-				local id = world:entity()
-				world:set(id, A, true)
-				world:set(id, B, true)
-				world:set(id, C, true)
-				world:set(id, D, true)
-				world:set(id, ct, true)
-			end
-		end
-
-		view_bench(world, A, B, C, D)
-	end
-
-	do TITLE "8 entity per archetype"
-		local world = jecs.World.new()
-		local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
-
-		for i = 1, N, 8 do
-			local ct = world:entity()
-			for j = 1, 8 do
-				local id = world:entity()
-				world:set(id, A, true)
-				world:set(id, B, true)
-				world:set(id, C, true)
-				world:set(id, D, true)
-				world:set(id, ct, true)
-			end
-		end
-
-		view_bench(world, A, B, C, D)
-	end
-
-	do TITLE "archetype per entity"
-		local world = jecs.World.new()
-		local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
-
-		for i = 1, N do
-			local id = world:entity()
-			world:set(id, A, true)
-			world:set(id, B, true)
-			world:set(id, C, true)
-			world:set(id, D, true)
-			world:set(id, pair(A, id))
-		end
-
-		view_bench(world, A, B, C, D)
-	end
+	for i = 13, 0, -1 do
+		view_bench(2^i)
+	end	
 
 end
