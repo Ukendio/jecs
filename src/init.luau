@@ -649,8 +649,8 @@ do
     	   return nil
     	end
 
-    	local records = archetype.records
-    	local columns = archetype.records
+    	local tr = archetype.records
+    	local columns = archetype.columns
     	local row = record.row
 
     	local va = fetch(a, tr, columns, row)
@@ -855,88 +855,80 @@ do
         end
     end
 
-    local cache
-
     function world_query(world: World, ...: number): Query
-    	-- breaking?
-    	if (...) == nil then
-    		error("Missing components")
-    	end
+        	-- breaking?
+        	if (...) == nil then
+        		error("Missing components")
+        	end
 
-
-        indices = {}
-        length = 0
-        components = { ... }
-
-        if cache then
-            compatibleArchetypes = cache
-        else
+            indices = {}
             compatibleArchetypes = {}
-           	local archetypes: { Archetype } = world.archetypes :: any
-           	local firstArchetypeMap: ArchetypeMap
-           	local componentIndex = world.componentIndex
+            length = 0
+            components = { ... }
 
-           	for _, componentId in components do
-          		local map: ArchetypeMap = componentIndex[componentId] :: any
-          		if not map then
-         			return EmptyQuery
-          		end
+        	local archetypes: { Archetype } = world.archetypes :: any
+        	local firstArchetypeMap: ArchetypeMap
+        	local componentIndex = world.componentIndex
 
-          		if (firstArchetypeMap :: any) == nil or firstArchetypeMap.size > map.size then
-         			firstArchetypeMap = map
-          		end
+        	for _, componentId in components do
+        		local map: ArchetypeMap = componentIndex[componentId] :: any
+        		if not map then
+        			return EmptyQuery
+        		end
+
+        		if (firstArchetypeMap :: any) == nil or firstArchetypeMap.size > map.size then
+        			firstArchetypeMap = map
+        		end
+        	end
+
+        	for id in firstArchetypeMap.cache do
+        		local compatibleArchetype = archetypes[id]
+        		local archetypeRecords = compatibleArchetype.records
+
+        		local records: { number } = {}
+        		local skip = false
+
+        		for i, componentId in components do
+        			local index = archetypeRecords[componentId]
+        			if not index then
+        				skip = true
+        				break
+        			end
+        			-- index should be index.offset
+        			records[i] = index
+        		end
+
+        		if skip then
+        			continue
+        		end
+
+        		length += 1
+        		compatibleArchetypes[length] = compatibleArchetype
+        		indices[length] = records
+        	end
+
+            lastArchetype = 1
+           	archetype = compatibleArchetypes[lastArchetype]
+
+           	if not archetype then
+          		return EmptyQuery
            	end
 
-           	for id in firstArchetypeMap.cache do
-          		local compatibleArchetype = archetypes[id]
-          		local archetypeRecords = compatibleArchetype.records
+            queryOutput = {}
+            queryLength = #components
 
-          		local records: { number } = {}
-          		local skip = false
+            entities =  archetype.entities
+            i = #entities
 
-          		for i, componentId in components do
-         			local index = archetypeRecords[componentId]
-         			if not index then
-            				skip = true
-            				break
-         			end
-         			-- index should be index.offset
-         			records[i] = index
-          		end
+            local it = {
+        		__iter = world_query_iter,
+        		next = world_query_next,
+        		without = world_query_without,
+        		replace = world_query_replace
+        	}
 
-          		if skip then
-         			continue
-          		end
-
-          		length += 1
-          		compatibleArchetypes[length] = compatibleArchetype
-          		indices[length] = records
-           	end
-
-            cache = compatibleArchetypes
+        	return setmetatable(it, it) :: any
         end
-        lastArchetype = 1
-       	archetype = compatibleArchetypes[lastArchetype]
-
-       	if not archetype then
-      		return EmptyQuery
-       	end
-
-        queryOutput = {}
-        queryLength = #components
-
-        entities =  archetype.entities
-        i = #entities
-
-        local it = {
-    		__iter = world_query_iter,
-    		next = world_query_next,
-    		without = world_query_without,
-    		replace = world_query_replace
-    	}
-
-    	return setmetatable(it, it) :: any
-    end
 end
 
 type WorldIterator = (() -> (i53, { [unknown]: unknown? })) & (() -> ()) & (() -> i53)
