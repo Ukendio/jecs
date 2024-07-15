@@ -4,10 +4,10 @@ local __ = jecs.Wildcard
 local ECS_ID, ECS_GENERATION = jecs.ECS_ID, jecs.ECS_GENERATION
 local ECS_GENERATION_INC = jecs.ECS_GENERATION_INC
 local IS_PAIR = jecs.IS_PAIR
-local ECS_PAIR = jecs.ECS_PAIR
-local getAlive = jecs.getAlive
-local ECS_PAIR_RELATION = jecs.ECS_PAIR_RELATION
-local ECS_PAIR_OBJECT = jecs.ECS_PAIR_OBJECT
+local pair = jecs.pair
+local getAlive = jecs.entity_index_get_alive
+local ecs_pair_relation = jecs.ecs_pair_relation
+local ecs_pair_object = jecs.ecs_pair_object
 
 local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 local function CHECK_NO_ERR<T...>(s: string, fn: (T...) -> (), ...: T...)
@@ -256,11 +256,11 @@ TEST("world", function()
 
 		CHECK(IS_PAIR(world:entity()) == false)
 
-		local pair = ECS_PAIR(e2, e3)
+		local pair = pair(e2, e3)
 		CHECK(IS_PAIR(pair) == true)
 
-		CHECK(ECS_PAIR_RELATION(world.entityIndex, pair) == e2)
-		CHECK(ECS_PAIR_OBJECT(world.entityIndex, pair) == e3)
+		CHECK(ecs_pair_relation(world.entityIndex, pair) == e2)
+		CHECK(ecs_pair_object(world.entityIndex, pair) == e3)
 	end
 
 	do CASE("should allow querying for relations")
@@ -269,8 +269,8 @@ TEST("world", function()
 		local Apples = world:entity()
 		local bob = world:entity()
 
-		world:set(bob, ECS_PAIR(Eats, Apples), true)
-		for e, bool in world:query(ECS_PAIR(Eats, Apples)) do
+		world:set(bob, pair(Eats, Apples), true)
+		for e, bool in world:query(pair(Eats, Apples)) do
 			CHECK(e == bob)
 			CHECK(bool)
 		end
@@ -282,14 +282,14 @@ TEST("world", function()
 		local Apples = world:entity()
 		local bob = world:entity()
 
-		world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
+		world:set(bob, pair(Eats, Apples), "bob eats apples")
 
 		local w = jecs.Wildcard
-		for e, data in world:query(ECS_PAIR(Eats, w)) do
+		for e, data in world:query(pair(Eats, w)) do
 			CHECK(e == bob)
 			CHECK(data == "bob eats apples")
 		end
-		for e, data in world:query(ECS_PAIR(w, Apples)) do
+		for e, data in world:query(pair(w, Apples)) do
 			CHECK(e == bob)
 			CHECK(data == "bob eats apples")
 		end
@@ -303,12 +303,12 @@ TEST("world", function()
 		local bob = world:entity()
 		local alice = world:entity()
 
-		world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
-		world:set(alice, ECS_PAIR(Eats, Oranges), "alice eats oranges")
+		world:set(bob, pair(Eats, Apples), "bob eats apples")
+		world:set(alice, pair(Eats, Oranges), "alice eats oranges")
 
 		local w = jecs.Wildcard
 		local count = 0
-		for e, data in world:query(ECS_PAIR(Eats, w)) do
+		for e, data in world:query(pair(Eats, w)) do
 			count += 1
 			if e == bob then
 				CHECK(data == "bob eats apples")
@@ -320,7 +320,7 @@ TEST("world", function()
 		CHECK(count == 2)
 		count = 0
 
-		for e, data in world:query(ECS_PAIR(w, Apples)) do
+		for e, data in world:query(pair(w, Apples)) do
 			count += 1
 			CHECK(data == "bob eats apples")
 		end
@@ -337,21 +337,21 @@ TEST("world", function()
 		local alice = world:entity()
 
 		world:set(bob, Apples, "apples")
-		world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
-		world:set(alice, ECS_PAIR(Eats, Oranges), "alice eats oranges")
+		world:set(bob, pair(Eats, Apples), "bob eats apples")
+		world:set(alice, pair(Eats, Oranges), "alice eats oranges")
 
 		world:delete(Apples)
 		local Wildcard = jecs.Wildcard
 
 		local count = 0
-		for _, data in world:query(ECS_PAIR(Wildcard, Apples)) do
+		for _, data in world:query(pair(Wildcard, Apples)) do
 			count += 1
 		end
 
-		world:delete(ECS_PAIR(Eats, Apples))
+		world:delete(pair(Eats, Apples))
 
 		CHECK(count == 0)
-		CHECK(world:get(bob, ECS_PAIR(Eats, Apples)) == nil)
+		CHECK(world:get(bob, pair(Eats, Apples)) == nil)
 	end
 
 	do CASE("should error when setting invalid pair")
@@ -362,13 +362,12 @@ TEST("world", function()
 
 		world:delete(Apples)
 
-		world:set(bob, ECS_PAIR(Eats, Apples), "bob eats apples")
+		world:set(bob, pair(Eats, Apples), "bob eats apples")
 	end
 
 	do CASE("should find target for ChildOf")
 		local world = jecs.World.new()
 		local ChildOf = jecs.ChildOf
-		local pair = ECS_PAIR
 
 		local Name = world:component()
 
@@ -383,7 +382,7 @@ TEST("world", function()
 		CHECK(world:parent(bob) == alice) -- O(1)
 
 		local count = 0
-		for _, name in world:query(Name, ECS_PAIR(ChildOf, alice)) do
+		for _, name in world:query(Name, pair(ChildOf, alice)) do
 			count += 1
 		end
 		CHECK(count == 2)
@@ -521,11 +520,11 @@ TEST("world", function()
         local Bob = world:component()
 
         local helloBob = world:entity()
-        world:add(helloBob, ECS_PAIR(Hello, Bob))
+        world:add(helloBob, pair(Hello, Bob))
         world:add(helloBob, Bob)
 
         local withoutCount = 0
-        for _ in world:query(ECS_PAIR(Hello, Bob)):without(Bob) do
+        for _ in world:query(pair(Hello, Bob)):without(Bob) do
             withoutCount += 1
         end
 

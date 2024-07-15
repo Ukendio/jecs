@@ -2,6 +2,5 @@
     "aliases": {
         "jecs": "src",
         "testkit": "testkit",
-        "mirror": "mirror"
     }
 }

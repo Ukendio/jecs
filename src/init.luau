@@ -142,7 +142,7 @@ end
 local ERROR_ENTITY_NOT_ALIVE = "Entity is not alive"
 local ERROR_GENERATION_INVALID = "INVALID GENERATION"
 
-local function getAlive(index: EntityIndex, e: i24): i53
+local function entity_index_get_alive(index: EntityIndex, e: i24): i53
 	local denseArray = index.dense
     local id = denseArray[ECS_ENTITY_T_LO(e)]
 
@@ -159,18 +159,18 @@ local function getAlive(index: EntityIndex, e: i24): i53
 	error(ERROR_ENTITY_NOT_ALIVE)
 end
 
-local function sparseGet(entityIndex, id)
-	return entityIndex.sparse[getAlive(entityIndex, id)]
+local function entity_index_sparse_get(entityIndex, id)
+	return entityIndex.sparse[entity_index_get_alive(entityIndex, id)]
 end
 
 -- ECS_PAIR_FIRST, gets the relationship target / obj / HIGH bits
-local function ECS_PAIR_RELATION(entityIndex, e)
-	return getAlive(entityIndex, ECS_ENTITY_T_HI(e))
+local function ecs_pair_relation(entityIndex, e)
+	return entity_index_get_alive(entityIndex, ECS_ENTITY_T_HI(e))
 end
 
 -- ECS_PAIR_SECOND gets the relationship / pred / LOW bits
-local function ECS_PAIR_OBJECT(entityIndex, e)
-	return getAlive(entityIndex, ECS_ENTITY_T_LO(e))
+local function ecs_pair_object(entityIndex, e)
+	return entity_index_get_alive(entityIndex, ECS_ENTITY_T_LO(e))
 end
 
 local function entity_index_new_id(entityIndex: EntityIndex, index: i24): i53
@@ -300,8 +300,8 @@ local function archetype_of(world: any, types: { i24 }, prev: Archetype?): Arche
 		idr.size += 1
 		records[componentId] = i
 		if ECS_IS_PAIR(componentId) then
-			local relation = ECS_PAIR_RELATION(world.entityIndex, componentId)
-			local object = ECS_PAIR_OBJECT(world.entityIndex, componentId)
+			local relation = ecs_pair_relation(world.entityIndex, componentId)
+			local object = ecs_pair_object(world.entityIndex, componentId)
 
 			local r = ECS_PAIR(relation, EcsWildcard)
 			local idr_r = id_record_ensure(componentIndex, r)
@@ -375,7 +375,7 @@ local function world_target(world: World, entity: i53, relation: i24--[[, nth: n
 		return nil
 	end
 
-	return ECS_PAIR_OBJECT(entityIndex, archetype.types[archetypeRecord])
+	return ecs_pair_object(entityIndex, archetype.types[archetypeRecord])
 end
 
 local function world_parent(world: World, entity: i53)
@@ -408,22 +408,22 @@ local function find_insert(types: { i53 }, toAdd: i53): number
 	return #types + 1
 end
 
-local function find_archetype_with(world: World, node: Archetype, componentId: i53): Archetype
+local function find_archetype_with(world: World, node: Archetype, id: i53): Archetype
 	local types = node.types
 	-- Component IDs are added incrementally, so inserting and sorting
 	-- them each time would be expensive. Instead this insertion sort can find the insertion
 	-- point in the types array.
 
-	local destinationType = table.clone(node.types) :: { i53 }
-	local at = find_insert(types, componentId)
+	local dst_type = table.clone(node.types) :: { i53 }
+	local at = find_insert(types, id)
 	if at == -1 then
 		-- If it finds a duplicate, it just means it is the same archetype so it can return it
 		-- directly instead of needing to hash types for a lookup to the archetype.
 		return node
 	end
-	table.insert(destinationType, at, componentId)
+	table.insert(dst_type, at, id)
 
-	return archetype_ensure(world, destinationType, node)
+	return archetype_ensure(world, dst_type, node)
 end
 
 local function edge_ensure(archetype: Archetype, componentId: i53): ArchetypeEdge
@@ -624,42 +624,49 @@ local function world_clear(world: World, entityId: i53)
 	entity_move(world.entityIndex, entityId, record, ROOT_ARCHETYPE)
 end
 
--- Keeping the function as small as possible to enable inlining
-local function fetch(record: Record, componentId: i24): any
-	local archetype = record.archetype
-	if not archetype then
-		return nil
-	end
+local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?) -> (...any)
+do
+    -- Keeping the function as small as possible to enable inlining
+    local function fetch(id: i24, records, columns, row): any
+    	local tr = records[id]
 
-	local archetypeRecord = archetype.records[componentId]
+    	if not tr then
+    		return nil
+    	end
 
-	if not archetypeRecord then
-		return nil
-	end
+    	return columns[tr][row]
+    end
 
-	return archetype.columns[archetypeRecord][record.row]
-end
+    function world_get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
+    	local id = entityId
+    	local record = world.entityIndex.sparse[id]
+    	if not record then
+    		return nil
+    	end
 
-local function world_get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
-	local id = entityId
-	local record = world.entityIndex.sparse[id]
-	if not record then
-		return nil
-	end
+    	local archetype = record.archetype
+    	if not archetype then
+    	   return nil
+    	end
 
-	local va = fetch(record, a)
+    	local records = archetype.records
+    	local columns = archetype.records
+    	local row = record.row
 
-	if b == nil then
-		return va
-	elseif c == nil then
-		return va, fetch(record, b)
-	elseif d == nil then
-		return va, fetch(record, b), fetch(record, c)
-	elseif e == nil then
-		return va, fetch(record, b), fetch(record, c), fetch(record, d)
-	else
-		error("args exceeded")
-	end
+    	local va = fetch(a, tr, columns, row)
+
+    	if b == nil then
+    		return va
+    	elseif c == nil then
+    		return va, fetch(b, tr, columns, row)
+    	elseif d == nil then
+    		return va, fetch(b, tr, columns, row), fetch(c, tr, columns, row)
+    	elseif e == nil then
+    		return va, fetch(b, tr, columns, row), fetch(c, tr, columns, row), fetch(d, tr, columns, row)
+    	else
+    		error("args exceeded")
+    	end
+    end
 end
 
 type Item = () -> (number, ...any)
@@ -848,58 +855,66 @@ do
         end
     end
 
+    local cache
+
     function world_query(world: World, ...: number): Query
     	-- breaking?
     	if (...) == nil then
     		error("Missing components")
     	end
 
+
         indices = {}
-        compatibleArchetypes = {}
         length = 0
         components = { ... }
 
-    	local archetypes: { Archetype } = world.archetypes :: any
-    	local firstArchetypeMap: ArchetypeMap
-    	local componentIndex = world.componentIndex
+        if cache then
+            compatibleArchetypes = cache
+        else
+            compatibleArchetypes = {}
+           	local archetypes: { Archetype } = world.archetypes :: any
+           	local firstArchetypeMap: ArchetypeMap
+           	local componentIndex = world.componentIndex
 
-    	for _, componentId in components do
-    		local map: ArchetypeMap = componentIndex[componentId] :: any
-    		if not map then
-    			return EmptyQuery
-    		end
+           	for _, componentId in components do
+          		local map: ArchetypeMap = componentIndex[componentId] :: any
+          		if not map then
+         			return EmptyQuery
+          		end
 
-    		if (firstArchetypeMap :: any) == nil or firstArchetypeMap.size > map.size then
-    			firstArchetypeMap = map
-    		end
-    	end
+          		if (firstArchetypeMap :: any) == nil or firstArchetypeMap.size > map.size then
+         			firstArchetypeMap = map
+          		end
+           	end
 
-    	for id in firstArchetypeMap.cache do
-    		local compatibleArchetype = archetypes[id]
-    		local archetypeRecords = compatibleArchetype.records
+           	for id in firstArchetypeMap.cache do
+          		local compatibleArchetype = archetypes[id]
+          		local archetypeRecords = compatibleArchetype.records
 
-    		local records: { number } = {}
-    		local skip = false
+          		local records: { number } = {}
+          		local skip = false
 
-    		for i, componentId in components do
-    			local index = archetypeRecords[componentId]
-    			if not index then
-    				skip = true
-    				break
-    			end
-    			-- index should be index.offset
-    			records[i] = index
-    		end
+          		for i, componentId in components do
+         			local index = archetypeRecords[componentId]
+         			if not index then
+            				skip = true
+            				break
+         			end
+         			-- index should be index.offset
+         			records[i] = index
+          		end
 
-    		if skip then
-    			continue
-    		end
+          		if skip then
+         			continue
+          		end
 
-    		length += 1
-    		compatibleArchetypes[length] = compatibleArchetype
-    		indices[length] = records
-    	end
+          		length += 1
+          		compatibleArchetypes[length] = compatibleArchetype
+          		indices[length] = records
+           	end
 
+            cache = compatibleArchetypes
+        end
         lastArchetype = 1
        	archetype = compatibleArchetypes[lastArchetype]
 
@@ -1113,14 +1128,15 @@ return {
 
 	Rest = EcsRest,
 
+	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity, obj: Entity) -> number,
+
+	-- Inwards facing API for testing
 	IS_PAIR = ECS_IS_PAIR,
 	ECS_ID = ECS_ENTITY_T_LO,
-	ECS_PAIR = ECS_PAIR,
 	ECS_GENERATION_INC = ECS_GENERATION_INC,
 	ECS_GENERATION = ECS_GENERATION,
-	ECS_PAIR_RELATION = ECS_PAIR_RELATION,
-	ECS_PAIR_OBJECT = ECS_PAIR_OBJECT,
 
-	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity, obj: Entity) -> number,
-	getAlive = getAlive,
+	ecs_pair_relation = ecs_pair_relation,
+	ecs_pair_object = ecs_pair_object,
+	entity_index_get_alive = entity_index_get_alive,
 }

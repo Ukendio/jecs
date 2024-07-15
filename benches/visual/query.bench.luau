@@ -52,7 +52,7 @@ local E8 = mcs:entity()
 
 local registry2 = ecr.registry()
 
-local function flip() 
+local function flip()
 	return math.random() >= 0.15
 end
 
@@ -61,80 +61,80 @@ local N = 2^16-2
 local archetypes = {}
 
 local hm = 0
-for i = 1, N do 
+for i = 1, N do
 	local id = registry2.create()
 	local combination = ""
 	local n = newWorld:spawn()
 	local entity = ecs:entity()
 	local m = mcs:entity()
 
-	if flip() then 
+	if flip() then
 		combination ..= "B"
-		registry2:set(id, B2, {value = true}) 
+		registry2:set(id, B2, {value = true})
 		ecs:set(entity, D2, { value = true})
 		mcs:set(m, E2, { value = 2})
 		newWorld:insert(n, A2({value = true}))
 	end
-	if flip() then 
+	if flip() then
 		combination ..= "C"
-		registry2:set(id, B3, {value = true}) 
+		registry2:set(id, B3, {value = true})
 		ecs:set(entity, D3, { value = true})
 		mcs:set(m, E3, { value = 2})
 		newWorld:insert(n, A3({value = true}))
 	end
-	if flip() then 
+	if flip() then
 		combination ..= "D"
-		registry2:set(id, B4, {value = true}) 
+		registry2:set(id, B4, {value = true})
 		ecs:set(entity, D4, { value = true})
 		mcs:set(m, E4, { value = 2})
 
-		newWorld:insert(n, A4({value = true}))		
+		newWorld:insert(n, A4({value = true}))
 	end
-	if flip() then 
+	if flip() then
 		combination ..= "E"
-		registry2:set(id, B5, {value = true}) 
+		registry2:set(id, B5, {value = true})
 		ecs:set(entity, D5, { value = true})
 		mcs:set(m, E5, { value = 2})
 
-		newWorld:insert(n, A5({value = true}))		
+		newWorld:insert(n, A5({value = true}))
 	end
-	if flip() then 
+	if flip() then
 		combination ..= "F"
-		registry2:set(id, B6, {value = true}) 
+		registry2:set(id, B6, {value = true})
 		ecs:set(entity, D6, { value = true})
 		mcs:set(m, E6, { value = 2})
-		newWorld:insert(n, A6({value = true}))		
+		newWorld:insert(n, A6({value = true}))
 	end
-	if flip() then 
+	if flip() then
 		combination ..= "G"
-		registry2:set(id, B7, {value = true}) 
+		registry2:set(id, B7, {value = true})
 		ecs:set(entity, D7, { value = true})
 		mcs:set(m, E7, { value = 2})
-		newWorld:insert(n, A7({value = true}))		
+		newWorld:insert(n, A7({value = true}))
 	end
-	if flip() then 
+	if flip() then
 		combination ..= "H"
-		registry2:set(id, B8, {value = true}) 
-		newWorld:insert(n, A8({value = true}))	
+		registry2:set(id, B8, {value = true})
+		newWorld:insert(n, A8({value = true}))
 		ecs:set(entity, D8, { value = true})
 		mcs:set(m, E8, { value = 2})
 
 	end
 
-	if #combination == 7 then 
+	if #combination == 7 then
 		combination = "A" .. combination
 		common += 1
-		registry2:set(id, B1, {value = true}) 
+		registry2:set(id, B1, {value = true})
 		ecs:set(entity, D1, { value = true})
-		newWorld:insert(n, A1({value = true}))	
+		newWorld:insert(n, A1({value = true}))
 		mcs:set(m, E1, { value = 2})
 
 	end
 
-	if combination:find("BCDF") then 
-		if not archetypes[combination] then 
+	if combination:find("BCDF") then
+		if not archetypes[combination] then
 			 print(combination)
-		end 
+		end
 		hm += 1
 	end
 	archetypes[combination] = true
@@ -149,7 +149,7 @@ local green = rgb.green
 local WALL = gray(" │ ")
 
 local numberOfArchetypes = 0
-for _  in archetypes do 
+for _  in archetypes do
 	numberOfArchetypes += 1
 end
 print(common)
@@ -167,36 +167,22 @@ print(
 return {
 	ParameterGenerator = function()
 		return
-	end,	
+	end,
 
 	Functions = {
-		Mirror = function() 
+		ECR = function()
 			local matched = 0
-			for entityId, firstComponent in mcs:query(E1, E4, E6, E8) do
+			for entityId, firstComponent in registry2:view(B1, B4) do
 				matched += 1
 			end
 		end,
 
-		Matter = function() 
+		Jecs = function()
 			local matched = 0
-			for entityId, firstComponent in newWorld:query(A1, A4, A6, A8) do
+			for entityId, firstComponent in ecs:query(D1, D4) do
 				matched += 1
 			end
-		end,
 
-		ECR = function() 
-			local matched = 0
-			for entityId, firstComponent in registry2:view(B1, B4, B6, B8) do
-				matched += 1
-			end
-		end,
-
-		Jecs = function() 
-			local matched = 0
-			for entityId, firstComponent in ecs:query(D1, D4, D6, D8) do
-				matched += 1
-			end
-		
 
 		end,
 	},
