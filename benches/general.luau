@@ -102,6 +102,30 @@ do TITLE "get"
 	end)
 end
 
+do TITLE "target"
+
+	BENCH("1st target", function()
+		local world = jecs.World.new()
+		local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
+		local entities = table.create(N)
+
+		for i = 1, N do
+			local ent = world:entity()
+			entities[i] = ent
+
+			world:set(ent, pair(A, A))
+			world:set(ent, pair(A, B))
+			world:set(ent, pair(A, C))
+			world:set(ent, pair(A, D))
+		end	
+
+		for i = 1, START(N) do
+			world:target(entities[i], A)
+		end
+	end)
+
+end
+
 --- this benchmark is used to view how fragmentation affects query performance
 --- we use this by determining how many entities should fit per arcehtype, instead
 --- of creating x amount of archetypes. this would scale better with any amount of
