@@ -669,6 +669,32 @@ do
     end
 end
 
+local world_has: () -> boolean
+do
+    function world_has(world, entity_id, ...)
+       	local id = entity_id
+       	local record = world.entityIndex.sparse[id]
+       	if not record then
+      		return false
+       	end
+
+       	local archetype = record.archetype
+       	if not archetype then
+    	   return false
+       	end
+
+        local tr = archetype.records
+
+        for i = 1, select("#", ...) do
+            if not tr[select(i, ...)] then
+                return false
+            end
+        end
+
+        return true
+    end
+end
+
 type Item = () -> (number, ...any)
 export type Query = typeof({
     __iter = function():  Item
@@ -1077,6 +1103,7 @@ World.component = world_component
 World.add = world_add
 World.set = world_set
 World.get = world_get
+World.has = world_has
 World.target = world_target
 World.parent = world_parent
 
