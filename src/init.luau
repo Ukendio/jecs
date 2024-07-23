@@ -855,6 +855,32 @@ do
         end
     end
 
+    local function world_query_with(query, ...)
+        local ids = { ... }
+        for i = #compatibleArchetypes, 1, -1 do
+ 			local archetype = compatibleArchetypes[i]
+ 			local records = archetype.records
+ 			local shouldRemove = false
+
+ 			for _, id in ids do
+ 			    if not records[id] then
+    				shouldRemove = true
+    				break
+ 			    end
+ 			end
+
+ 			if shouldRemove then
+ 			    table.remove(compatibleArchetypes, i)
+ 			end
+        end
+
+        if #compatibleArchetypes == 0 then
+            return EmptyQuery
+        end
+
+        return query
+    end
+
     function world_query(world: World, ...: number): Query
         	-- breaking?
         	if (...) == nil then
@@ -924,7 +950,8 @@ do
         		__iter = world_query_iter,
         		next = world_query_next,
         		without = world_query_without,
-        		replace = world_query_replace
+                with = world_query_with,
+        		replace = world_query_replace,
         	}
 
         	return setmetatable(it, it) :: any
