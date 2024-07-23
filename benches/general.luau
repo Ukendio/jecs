@@ -1,6 +1,5 @@
-local jecs = require("../src/init")
-
-local testkit = require("../testkit")
+local jecs = require("@jecs")
+local testkit = require("@testkit")
 
 local BENCH, START = testkit.benchmark()
 
