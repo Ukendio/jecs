@@ -61,6 +61,42 @@ do TITLE "set"
 	end)
 end
 
+-- we have a separate benchmark for relationships.
+-- this is due to that relationships have a very high id compared to normal
+-- components, which cause them to get added into the hashmap portion.
+do TITLE "set relationship"
+
+	local world = jecs.World.new()
+	local A = world:entity()
+
+	local entities = table.create(N)
+
+	for i = 1, N do
+		entities[i] = world:entity()
+		world:set(entities[i], A, 1)
+	end
+
+	local pair = jecs.pair(A, world:entity())
+
+	BENCH("add", function()
+		for i = 1, START(N) do
+			world:set(entities[i], pair, 1)
+		end
+	end)
+
+	BENCH("set", function()
+		for i = 1, START(N) do
+			world:set(entities[i], pair, 2)
+		end
+	end)
+
+	BENCH("remove", function()
+		for i = 1, START(N) do
+			world:remove(entities[i], pair)
+		end
+	end)
+end
+
 do TITLE "get"
 
 	local world = jecs.World.new()
