@@ -247,13 +247,21 @@ local function FINISH(): boolean
 	local success = true
 	local total_cases = 0
 	local passed_cases = 0
+	local passed_focus_cases = 0
+	local total_focus_cases = 0
 	local duration = 0
 
 	for _, test in tests do
 		duration += test.duration
 		for _, case in test.cases do
 			total_cases += 1
+			if case.focus or test.focus then
+				total_focus_cases += 1
+			end
 			if case.result == PASS or case.result == NONE or case.result == SKIPPED then
+				if case.focus or test.focus then
+					passed_focus_cases += 1
+				end
 				passed_cases += 1
 			else
 				success = false
@@ -271,6 +279,11 @@ local function FINISH(): boolean
 			)
 		)
 	)
+	if check_for_focused then
+		print(
+			color.gray(`{passed_focus_cases}/{total_focus_cases} focused test cases passed`)
+		)
+	end
 
 	local fails = total_cases - passed_cases
 
