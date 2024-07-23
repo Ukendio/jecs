@@ -1,6 +1,8 @@
 --------------------------------------------------------------------------------
 -- testkit.luau
 -- v0.7.3
+-- MIT License
+-- Copyright (c) 2022 centau
 --------------------------------------------------------------------------------
 
 local disable_ansi = false
@@ -109,21 +111,34 @@ type Test = {
 		message: string,
 		trace: string,
 	}?,
+	focus: boolean,
 }
 
 type Case = {
 	name: string,
 	result: number,
 	line: number?,
+	focus: boolean
 }
 
 local PASS, FAIL, NONE, ERROR, SKIPPED = 1, 2, 3, 4, 5
 
+local check_for_focused = false
 local skip = false
 local test: Test?
 local tests: { Test } = {}
 
 local function output_test_result(test: Test)
+
+	if check_for_focused then
+		local any_focused = test.focus
+		for _, case in test.cases do
+			any_focused = any_focused or case.focus
+		end
+
+		if not any_focused then return end
+	end
+
 	print(color.white(test.name))
 
 	for _, case in test.cases do
@@ -136,7 +151,7 @@ local function output_test_result(test: Test)
 		})[case.result]
 
 		local line = case.result == FAIL and color.red(`{case.line}:`) or ""
-
+		if check_for_focused and case.focus == false and test.focus == false then continue end
 		print(`{status}{WALL} {line}{color.gray(case.name)}`)
 	end
 
@@ -155,6 +170,7 @@ local function CASE(name: string)
 	local case = {
 		name = name,
 		result = NONE,
+		focus = false
 	}
 
 	test.case = case
@@ -192,6 +208,7 @@ local function TEST(name: string, fn: () -> ())
 		name = name,
 		cases = {},
 		duration = 0,
+		focus = false
 	}
 	assert(test)
 
@@ -213,6 +230,17 @@ local function TEST(name: string, fn: () -> ())
 	end
 
 	test = nil
+end
+
+local function FOCUS()
+	assert(test, "no active test")
+
+	check_for_focused = true
+	if test.case then
+		test.case.focus = true
+	else
+		test.focus = true
+	end
 end
 
 local function FINISH(): boolean
@@ -252,6 +280,7 @@ local function FINISH(): boolean
 		)
 	)
 
+	check_for_focused = false
 	return success, table.clear(tests)
 end
 
@@ -467,7 +496,7 @@ end
 
 return {
 	test = function()
-		return TEST, CASE, CHECK, FINISH, SKIP
+		return TEST, CASE, CHECK, FINISH, SKIP, FOCUS
 	end,
 
 	benchmark = function()
