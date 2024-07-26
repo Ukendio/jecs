@@ -25,13 +25,24 @@ local N = 10
 type World = jecs.WorldShim
 
 TEST("world", function()
-    do CASE "should not error when removing a component that entity doesn't have"
-        local world = jecs.World.new() :: World
-		local A = world:component()
-		local e = world:entity()
-		world:remove(e, A)
-		CHECK(true)
-    end
+    do CASE "should allow remove a component that doesn't exist on entity"
+		local world = jecs.World.new()
+
+		local Health = world:entity()
+		local Poison = world:component()
+
+		local id = world:entity()
+		do
+	        world:remove(id, Poison)
+			CHECK(true) -- Didn't error
+		end
+
+		world:set(id, Health, 50)
+		world:remove(id, Poison)
+
+		CHECK(world:get(id, Poison) == nil)
+		CHECK(world:get(id, Health) == 50)
+	end
 	do CASE("should find every component id")
 		local world = jecs.World.new() :: World
 		local A = world:component()
@@ -229,20 +240,6 @@ TEST("world", function()
 		CHECK(world:get(id, Health) == nil)
 		CHECK(world:get(id1, Poison) == 500)
 		CHECK(world:get(id1, Health) == 50)
-	end
-
-	do CASE("should allow remove that doesn't exist on entity")
-		local world = jecs.World.new()
-
-		local Health = world:entity()
-		local Poison = world:component()
-
-		local id = world:entity()
-		world:set(id, Health, 50)
-		world:remove(id, Poison)
-
-		CHECK(world:get(id, Poison) == nil)
-		CHECK(world:get(id, Health) == 50)
 	end
 
 	do CASE("should increment generation")
