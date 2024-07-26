@@ -60,10 +60,9 @@ TEST("world", function()
 		world:clear(e)
 		CHECK(world:get(e, A) == nil)
 		CHECK(world:get(e, B) == nil)
-
 	end
 
-	do CASE("iterator should not drain the query")
+	do CASE("should drain query while iterating")
 		local world = jecs.World.new() :: World
 		local A = world:component()
 		local B = world:component()
@@ -85,7 +84,8 @@ TEST("world", function()
 		for _ in q do
 			j+=1
 		end
-		CHECK(i	== j)
+		CHECK(i == 2)
+		CHECK(j == 0)
 	end
 
 	do CASE("should be able to get next results")
