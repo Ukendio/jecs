@@ -25,6 +25,13 @@ local N = 10
 type World = jecs.WorldShim
 
 TEST("world", function()
+    do CASE "should not error when removing a component that entity doesn't have"
+        local world = jecs.World.new() :: World
+		local A = world:component()
+		local e = world:entity()
+		world:remove(e, A)
+		CHECK(true)
+    end
 	do CASE("should find every component id")
 		local world = jecs.World.new() :: World
 		local A = world:component()

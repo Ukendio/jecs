@@ -512,6 +512,7 @@ end
 
 
 local function archetype_traverse_remove(world: World, componentId: i53, from: Archetype): Archetype
+    from = from or world.ROOT_ARCHETYPE
 	local edge = edge_ensure(from, componentId)
 
 	local remove = edge.remove
