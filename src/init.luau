@@ -512,7 +512,6 @@ end
 
 
 local function archetype_traverse_remove(world: World, componentId: i53, from: Archetype): Archetype
-    from = from or world.ROOT_ARCHETYPE
 	local edge = edge_ensure(from, componentId)
 
 	local remove = edge.remove
@@ -534,6 +533,9 @@ local function world_remove(world: World, entityId: i53, componentId: i53)
 	local entityIndex = world.entityIndex
 	local record = entityIndex.sparse[entityId]
 	local sourceArchetype = record.archetype
+	if not sourceArchetype then
+	   return
+	end
 	local destinationArchetype = archetype_traverse_remove(world, componentId, sourceArchetype)
 
 	if sourceArchetype and not (sourceArchetype == destinationArchetype) then
