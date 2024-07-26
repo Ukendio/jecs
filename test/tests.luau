@@ -530,6 +530,34 @@ TEST("world", function()
 
         CHECK(withoutCount == 0)
     end
+
+    do CASE "should find Tag on entity"
+        local world = jecs.World.new()
+
+        local Tag = world:component()
+
+        local e = world:entity()
+        world:add(e, Tag)
+
+        CHECK(world:has(e, Tag))
+    end
+
+    do CASE "should return false when missing one tag"
+           local world = jecs.World.new()
+
+           local A = world:component()
+           local B = world:component()
+           local C = world:component()
+           local D = world:component()
+
+           local e = world:entity()
+           world:add(e, A)
+           world:add(e, C)
+           world:add(e, D)
+
+           CHECK(world:has(e, A, B, C, D) == false)
+       end
+
 end)
 
 

@@ -670,6 +670,7 @@ do
 end
 
 local world_has: (world: World, entityId: number, ...i53) -> boolean
+
 do
     function world_has(world, entity_id, ...)
        	local id = entity_id
