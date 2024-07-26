@@ -40,6 +40,11 @@ do
 				end
 			end)
 
+			BENCH("1 component, 7 tags", function()
+			    for _ in world:query(H):with(G, F, E, D, C, B, A) do
+				end
+			end)
+
 			local e = world:entity()
 			world:set(e, A, true)
 			world:set(e, B, true)
