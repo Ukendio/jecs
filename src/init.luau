@@ -670,7 +670,6 @@ do
 end
 
 local world_has: (world: World, entityId: number, ...i53) -> boolean
-
 do
     function world_has(world, entity_id, ...)
        	local id = entity_id
@@ -832,6 +831,7 @@ do
 
  			if shouldRemove then
                 table.remove(compatible_archetypes, i)
+                table.remove(column_indices, i)
  			end
   		end
 
