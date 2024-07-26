@@ -669,7 +669,7 @@ do
     end
 end
 
-local world_has: () -> boolean
+local world_has: (world: World, entityId: number, ...i53) -> boolean
 do
     function world_has(world, entity_id, ...)
        	local id = entity_id
@@ -1015,10 +1015,12 @@ export type WorldShim = typeof(setmetatable(
 		--- Removes a component from the given entity
 		remove: (WorldShim, id: Entity, component: Entity) -> (),
 		--- Retrieves the value of up to 4 components. These values may be nil.
-		get: (<A>(WorldShim, id: any, Entity<A>) -> A)
+		get: (<A>(WorldShim, id: Entity, Entity<A>) -> A)
 			& (<A, B>(WorldShim, id: Entity, Entity<A>, Entity<B>) -> (A, B))
 			& (<A, B, C>(WorldShim, id: Entity, Entity<A>, Entity<B>, Entity<C>) -> (A, B, C))
 			& <A, B, C, D>(WorldShim, id: Entity, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> (A, B, C, D),
+
+		has: (WorldShim, Entity, ...Entity) -> boolean,
 
 		--- Searches the world for entities that match a given query
 		query: (<A>(WorldShim, Entity<A>) -> QueryShim<A>)
