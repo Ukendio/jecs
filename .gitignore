@@ -53,7 +53,7 @@ WallyPatches
 # Misc
 roblox.toml
 sourcemap.json
-drafts/*.lua
+drafts/
 
 # Cached Vitepress (docs)
 

@@ -13,8 +13,8 @@ hero:
       text: Get Started
       link: /overview/get-started.md
     - theme: alt
-      text: API Examples
-      link: /api.md
+      text: API References
+      link: /api/
 
 features:
   - title: Stupidly Fast

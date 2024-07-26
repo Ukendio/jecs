@@ -25,6 +25,24 @@ local N = 10
 type World = jecs.WorldShim
 
 TEST("world", function()
+    do CASE "should allow remove a component that doesn't exist on entity"
+		local world = jecs.World.new()
+
+		local Health = world:entity()
+		local Poison = world:component()
+
+		local id = world:entity()
+		do
+	        world:remove(id, Poison)
+			CHECK(true) -- Didn't error
+		end
+
+		world:set(id, Health, 50)
+		world:remove(id, Poison)
+
+		CHECK(world:get(id, Poison) == nil)
+		CHECK(world:get(id, Health) == 50)
+	end
 	do CASE("should find every component id")
 		local world = jecs.World.new() :: World
 		local A = world:component()
@@ -60,10 +78,9 @@ TEST("world", function()
 		world:clear(e)
 		CHECK(world:get(e, A) == nil)
 		CHECK(world:get(e, B) == nil)
-
 	end
 
-	do CASE("iterator should not drain the query")
+	do CASE("should drain query while iterating")
 		local world = jecs.World.new() :: World
 		local A = world:component()
 		local B = world:component()
@@ -85,7 +102,8 @@ TEST("world", function()
 		for _ in q do
 			j+=1
 		end
-		CHECK(i	== j)
+		CHECK(i == 2)
+		CHECK(j == 0)
 	end
 
 	do CASE("should be able to get next results")
@@ -222,20 +240,6 @@ TEST("world", function()
 		CHECK(world:get(id, Health) == nil)
 		CHECK(world:get(id1, Poison) == 500)
 		CHECK(world:get(id1, Health) == 50)
-	end
-
-	do CASE("should allow remove that doesn't exist on entity")
-		local world = jecs.World.new()
-
-		local Health = world:entity()
-		local Poison = world:component()
-
-		local id = world:entity()
-		world:set(id, Health, 50)
-		world:remove(id, Poison)
-
-		CHECK(world:get(id, Poison) == nil)
-		CHECK(world:get(id, Health) == 50)
 	end
 
 	do CASE("should increment generation")
@@ -530,6 +534,34 @@ TEST("world", function()
 
         CHECK(withoutCount == 0)
     end
+
+    do CASE "should find Tag on entity"
+        local world = jecs.World.new()
+
+        local Tag = world:component()
+
+        local e = world:entity()
+        world:add(e, Tag)
+
+        CHECK(world:has(e, Tag))
+    end
+
+    do CASE "should return false when missing one tag"
+           local world = jecs.World.new()
+
+           local A = world:component()
+           local B = world:component()
+           local C = world:component()
+           local D = world:component()
+
+           local e = world:entity()
+           world:add(e, A)
+           world:add(e, C)
+           world:add(e, D)
+
+           CHECK(world:has(e, A, B, C, D) == false)
+       end
+
 end)
 
 
