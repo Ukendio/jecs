@@ -136,7 +136,7 @@ local function STRIP_GENERATION(e: i53): i24
 end
 
 local function ECS_PAIR(pred: i53, obj: i53): i53
-	return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + FLAGS_ADD(--[[isPair]] true) :: i53
+    return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + FLAGS_ADD(--[[isPair]] true) :: i53
 end
 
 local ERROR_ENTITY_NOT_ALIVE = "Entity is not alive"
@@ -897,8 +897,8 @@ do
 
     local function world_query_with(query, ...)
         local ids = { ... }
-        for i = #compatibleArchetypes, 1, -1 do
- 			local archetype = compatibleArchetypes[i]
+        for i = #compatible_archetypes, 1, -1 do
+ 			local archetype = compatible_archetypes[i]
  			local records = archetype.records
  			local shouldRemove = false
 
@@ -910,11 +910,11 @@ do
  			end
 
  			if shouldRemove then
- 			    table.remove(compatibleArchetypes, i)
+ 			    table.remove(compatible_archetypes, i)
  			end
         end
 
-        if #compatibleArchetypes == 0 then
+        if #compatible_archetypes == 0 then
             return EmptyQuery
         end
 
@@ -997,6 +997,9 @@ do
             with = world_query_with,
             without = world_query_without,
             replace = world_query_replace,
+            archetypes = function()
+                return compatible_archetypes
+            end
         } :: any
 
         setmetatable(it, it)
@@ -1189,13 +1192,11 @@ return {
 	OnAdd = EcsOnAdd :: Entity,
 	OnRemove = EcsOnRemove :: Entity,
 	OnSet = EcsOnSet :: Entity,
-
-	Wildcard = EcsWildcard :: Entity,
-	w = EcsWildcard :: Entity,
 	ChildOf = EcsChildOf,
 	Component = EcsComponent,
-
 	Rest = EcsRest,
+	Wildcard = EcsWildcard :: Entity,
+	w = EcsWildcard :: Entity,
 
 	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity, obj: Entity) -> number,
 
