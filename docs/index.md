@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /overview/get-started.md
+      link: learn/overview/get-started.md
     - theme: alt
       text: API References
       link: /api/jecs.md
