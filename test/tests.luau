@@ -594,10 +594,10 @@ do
             end
 
             if is_trivial == nil then
-                isTrivial = typeof(data) ~= "table"
+                is_trivial = typeof(data) ~= "table"
             end
 
-            if not isTrivial then
+            if not is_trivial then
                 data = table.clone(data)
             end
 
@@ -635,7 +635,7 @@ do
                     return nil
                 end
 
-                if isTrivial and new ~= old then
+                if is_trivial and new ~= old then
                 elseif diff(new, old) then
                     break
                 end
@@ -685,7 +685,7 @@ do
         end
 
         for e, data in add do
-            world:set(e, PreviousT, if isTrivial then data else table.clone(data))
+            world:set(e, PreviousT, if is_trivial then data else table.clone(data))
         end
     end
 
