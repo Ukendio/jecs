@@ -57,7 +57,7 @@ local function flip()
 end
 
 local common = 0
-local N = 2^16-2
+local N = 500
 local archetypes = {}
 
 local hm = 0
@@ -170,20 +170,19 @@ return {
 	end,
 
 	Functions = {
-		ECR = function()
-			local matched = 0
-			for entityId, firstComponent in registry2:view(B1, B4) do
-				matched += 1
+		Mirror = function()
+		    for i = 1, 1000 do
+				for entityId, firstComponent in mcs:query(E1, E4) do
+				end
 			end
+
 		end,
 
 		Jecs = function()
-			local matched = 0
-			for entityId, firstComponent in ecs:query(D1, D4) do
-				matched += 1
+		    for i = 1, 1000 do
+    			for entityId, firstComponent in ecs:query(D1, D4) do
+    			end
 			end
-
-
 		end,
 	},
 }

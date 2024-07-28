@@ -921,6 +921,19 @@ do
         return query
     end
 
+    local it = {
+        __iter = world_query_iter,
+        next = world_query_next,
+        with = world_query_with,
+        without = world_query_without,
+        replace = world_query_replace,
+        archetypes = function()
+            return compatible_archetypes
+        end
+    } :: any
+
+    setmetatable(it, it)
+
     function world_query(world: World, ...: any): Query
     	-- breaking?
     	if (...) == nil then
@@ -989,19 +1002,6 @@ do
 
         entities = archetype.entities
        	i = #entities
-
-        local it = {
-            __iter = world_query_iter,
-            next = world_query_next,
-            with = world_query_with,
-            without = world_query_without,
-            replace = world_query_replace,
-            archetypes = function()
-                return compatible_archetypes
-            end
-        } :: any
-
-        setmetatable(it, it)
 
        	return it
     end
