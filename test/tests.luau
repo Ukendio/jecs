@@ -564,10 +564,48 @@ TEST("world", function()
 
 end)
 
+type Tracker<T> = { track: (world: World, fn: (changes: {
+        added: () -> () -> (number, T),
+        removed: () -> () -> number,
+        changed: () -> () -> (number, T, T)
+    }) -> ()) -> ()
+}
 
-TEST("changetracker", function()
-    local world = jecs.World.new()
-    local Previous = world:component()
+type Entity<T = any> = number & { __nominal_type_dont_use: T }
+
+local ChangeTracker: <T>(component: Entity<T>) -> Tracker<T>
+
+do
+    local world: World
+    local T
+    local PreviousT
+    local addedComponents
+    local removedComponents
+    local isTrivial
+    local added
+    local removed
+
+    local function changes_added()
+        added = true
+        local q = world:query(T):without(PreviousT)
+        return function()
+            local id, data = q:next()
+            if not id then
+                return nil
+            end
+
+            if isTrivial == nil then
+                isTrivial = typeof(data) ~= "table"
+            end
+
+            if not isTrivial then
+                data = table.clone(data)
+            end
+
+            addedComponents[id] = data
+            return id, data
+        end
+    end
 
     local function shallowEq(a, b)
         for k, v in a do
@@ -578,112 +616,102 @@ TEST("changetracker", function()
         return true
     end
 
-    local function ChangeTracker(world, component)
-        local addedComponents = {}
-        local removedComponents = {}
-        local previous = jecs.pair(Previous, component)
-        local isTrivial = nil
+    local function changes_changed()
+        local q = world:query(T, PreviousT)
 
-        local function track(fn)
-            local added = false
-            local removed = false
-
-            local changes = {}
-            function changes.added()
-                added = true
-                local q = world:query(component):without(previous)
-                return function()
-                    local id, data = q:next()
-                    if not id then
-                        return nil
-                    end
-
-                    if isTrivial == nil then
-                        isTrivial = typeof(data) ~= "table"
-                    end
-
-                    if not isTrivial then
-                        data = table.clone(data)
-                    end
-
-                    addedComponents[id] = data
-                    return id, data
+        return function()
+            local id, new, old = q:next()
+            while true do
+                if not id then
+                    return nil
                 end
-            end
 
-            function changes.changed()
-                local q = world:query(component, previous)
-
-                return function()
-                    local id, new, old = q:next()
-                    while true do
-                        if not id then
-                            return nil
-                        end
-
-                        if not isTrivial then
-                            if not shallowEq(new, old) then
-                                break
-                            end
-                        elseif new ~= old then
-                            break
-                        end
-
-                        id, new, old = q:next()
+                if not isTrivial then
+                    if not shallowEq(new, old) then
+                        break
                     end
-
-                    addedComponents[id] = new
-
-                    return id, old, new
+                elseif new ~= old then
+                    break
                 end
+
+                id, new, old = q:next()
             end
 
-            function changes.removed()
-                removed = true
+            addedComponents[id] = new
 
-                local q = world:query(previous):without(component)
-                return function()
-                    local id = q:next()
-                    if id then
-                    table.insert(removedComponents, id)
-                    end
-                    return id
-                end
+            return id, old, new
+        end
+    end
+
+    local function changes_removed()
+        removed = true
+
+        local q = world:query(PreviousT):without(T)
+        return function()
+            local id = q:next()
+            if id then
+            table.insert(removedComponents, id)
             end
+            return id
+        end
+    end
 
-            fn(changes)
-            if not added then
-                for _ in changes.added() do
-                end
-            end
+    local changes = {
+        added = changes_added,
+        changed = changes_changed,
+        removed = changes_removed,
+    }
 
-            if not removed then
-                for _ in changes.removed() do
-                end
-            end
+    local function track(worldToTrack, fn)
+        world = worldToTrack
+        added = true
+        removed = true
 
-            for e, data in addedComponents do
-                world:set(e, previous, if isTrivial then data else table.clone(data))
-            end
+        fn(changes)
 
-            for _, e in removedComponents do
-                world:remove(e, previous)
+        if not added then
+            for _ in changes_added() do
             end
         end
 
-        return {
-            track = track
-        }
+        if not removed then
+            for _ in changes_removed() do
+            end
+        end
+
+        for e, data in addedComponents do
+            world:set(e, PreviousT, if isTrivial then data else table.clone(data))
+        end
+
+        for _, e in removedComponents do
+            world:remove(e, PreviousT)
+        end
     end
 
+    local tracker = { track = track }
+
+    function ChangeTracker<T>(component: Entity<T>): Tracker<T>
+        T = component
+        -- We just use jecs.Rest because people will probably not use it anyways
+        PreviousT = jecs.pair(jecs.Rest, T)
+        addedComponents = {}
+        removedComponents = {}
+
+        return tracker
+    end
+end
+
+TEST("changetracker", function()
+    local world = jecs.World.new()
+
 	do CASE "should allow change tracking"
-        local Test = world:component()
-        local TestTracker = ChangeTracker(world, Test)
+        local Test = world:component() :: Entity<{ foo: number }>
+        local TestTracker = ChangeTracker(Test)
 
 		local e = world:entity()
 		world:set(e, Test, { foo = 11 })
 
-        TestTracker.track(function(changes)
+        TestTracker.track(world, function(changes)
             local added = 0
             local changed = 0
             local removed = 0
@@ -705,7 +733,7 @@ TEST("changetracker", function()
     	    test.foo = test.foo + 1
      	end
 
-        TestTracker.track(function(changes)
+        TestTracker.track(world, function(changes)
             local added = 0
             local changed = 0
             local removed = 0
@@ -727,7 +755,7 @@ TEST("changetracker", function()
 
         world:remove(e, Test)
 
-        TestTracker.track(function(changes)
+        TestTracker.track(world, function(changes)
             local added = 0
             local changed = 0
             local removed = 0

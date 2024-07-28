@@ -935,7 +935,7 @@ do
     setmetatable(it, it)
 
     function world_query(world: World, ...: any): Query
-    	-- breaking?
+    	-- breaking
     	if (...) == nil then
     		error("Missing components")
     	end
@@ -1161,26 +1161,28 @@ World.parent = world_parent
 
 function World.new()
     local self = setmetatable({
-            archetypeIndex = {} :: { [string]: Archetype },
-            archetypes = {} :: Archetypes,
-    		componentIndex = {} :: ComponentIndex,
-    		entityIndex = {
-    			dense = {} :: { [i24]: i53 },
-    			sparse = {} :: { [i53]: Record },
-    		} :: EntityIndex,
-    		hooks = {
-    			[EcsOnAdd] = {},
-    		},
-    		nextArchetypeId = 0,
-    		nextComponentId = 0,
-    		nextEntityId = 0,
-    		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
-		}, World)
+        archetypeIndex = {} :: { [string]: Archetype },
+        archetypes = {} :: Archetypes,
+  		componentIndex = {} :: ComponentIndex,
+  		entityIndex = {
+ 			dense = {} :: { [i24]: i53 },
+ 			sparse = {} :: { [i53]: Record },
+  		} :: EntityIndex,
+  		hooks = {
+ 			[EcsOnAdd] = {},
+  		},
+  		nextArchetypeId = 0,
+  		nextComponentId = 0,
+  		nextEntityId = 0,
+  		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
+    }, World)
 
 	self.ROOT_ARCHETYPE = archetype_of(self, {})
 
-	-- Initialize built-in components
-	entity_index_new_id(self.entityIndex, EcsChildOf)
+	for i = HI_COMPONENT_ID + 1, EcsRest do
+	   -- Initialize built-in components
+		entity_index_new_id(self.entityIndex, i)
+	end
 
 	return self
 end
