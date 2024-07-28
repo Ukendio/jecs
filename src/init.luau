@@ -1205,9 +1205,9 @@ return {
 	OnSet = EcsOnSet :: Entity,
 	ChildOf = EcsChildOf,
 	Component = EcsComponent,
-	Rest = EcsRest,
 	Wildcard = EcsWildcard :: Entity,
 	w = EcsWildcard :: Entity,
+	Rest = EcsRest,
 
 	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity, obj: Entity) -> number,
 
