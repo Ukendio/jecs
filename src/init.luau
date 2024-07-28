@@ -833,8 +833,13 @@ do
  			end
 
  			if shouldRemove then
-                table.remove(compatible_archetypes, i)
-                table.remove(column_indices, i)
+                local last = #compatible_archetypes
+                if last ~= i then
+                    compatible_archetypes[i] = compatible_archetypes[last]
+                    column_indices[i] = column_indices[last]
+                end
+                compatible_archetypes[last] = nil
+                column_indices[last] = nil
  			end
   		end
 
