@@ -928,7 +928,7 @@ do
     	end
 
     	local indices = {}
-    	local compatibleArchetypes = {}
+        compatible_archetypes = {}
     	local length = 0
 
         local components = { ... } :: any
@@ -970,11 +970,10 @@ do
     		end
 
     		length += 1
-    		compatibleArchetypes[length] = compatibleArchetype
+    		compatible_archetypes[length] = compatibleArchetype
     		indices[length] = records
     	end
 
-        compatible_archetypes = compatibleArchetypes
         column_indices = indices
         ids = components
 
