@@ -573,10 +573,10 @@ type Tracker<T> = { track: (world: World, fn: (changes: {
 
 type Entity<T = any> = number & { __nominal_type_dont_use: T }
 
-local ChangeTracker: <T>(component: Entity<T>) -> Tracker<T>
+local ChangeTracker: <T>(world: World, component: Entity<T>) -> Tracker<T>
 
 do
-    local world: World
+    local world
     local T
     local PreviousT
     local addedComponents
@@ -689,7 +689,7 @@ do
 
     local tracker = { track = track }
 
-    function ChangeTracker<T>(worldToTrack: World, component: Entity<T>): Tracker<T>
+    function ChangeTracker<T>(worldToTrack, component: Entity<T>): Tracker<T>
         world = worldToTrack
         T = component
         -- We just use jecs.Rest because people will probably not use it anyways
