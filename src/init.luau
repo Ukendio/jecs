@@ -926,15 +926,20 @@ do
         return query
     end
 
+    -- Meant for directly iterating over archetypes to minimize
+    -- function call overhead. Should not be used unless iterating over
+    -- hundreds of thousands of entities in bulk.
+    local function world_query_archetypes()
+        return compatible_archetypes
+    end
+
     local it = {
         __iter = world_query_iter,
         next = world_query_next,
         with = world_query_with,
         without = world_query_without,
         replace = world_query_replace,
-        archetypes = function()
-            return compatible_archetypes
-        end
+        archetypes = world_query_archetypes
     } :: any
 
     setmetatable(it, it)
