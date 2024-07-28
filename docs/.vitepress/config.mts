@@ -9,49 +9,6 @@ export default defineConfig({
         // https://vitepress.dev/reference/default-theme-config
         nav: [
             { text: 'Home', link: '/' },
-<<<<<<< HEAD
-            { text: 'Examples', link: '/markdown-examples' }
-        ],
-
-        sidebar: [
-            {
-                text: 'Overview',
-                items: [
-                    { text: 'Getting Started', link: 'learn/overview/get-started' },
-                    { text: 'First Jecs Project', link: 'learn/overview/first-jecs-project' }
-                ]
-            },
-            {
-                text: 'Concepts',
-                items: [
-                    { text: 'Entities', link: 'learn/concepts/entities' },
-                    { text: 'Static Components', link: 'learn/concepts/static-components' },
-                    { text: 'Queries', link: 'learn/concepts/queries' },
-                ]
-            },
-            {
-                text: 'References',
-                items: [
-                    { text: 'API Reference', link: '/api' },
-                ]
-            },
-            {
-                text: "FAQ",
-                items: [
-                    { text: 'How can I contribute?', link: '/faq/contributing' }
-                ]
-            },
-            {
-                text: 'Contributing',
-                items: [
-                    { text: 'Contribution Guidelines', link: '/contributing/guidelines' },
-                    { text: 'Submitting Issues', link: '/contributing/issues' },
-                    { text: 'Submitting Pull Requests', link: '/contributing/pull-requests' },
-                ]
-            }
-        ],
-
-=======
             { text: 'Examples', link: '/markdown-examples' },
             { text: 'API', link: '/api/jecs.md' }
         ],
@@ -71,22 +28,22 @@ export default defineConfig({
                 {
                     text: "Introduction",
                     items: [
-                        { text: 'Getting Started', link: '/overview/get-started' },
-                        { text: 'First Jecs Project', link: '/overview/first-jecs-project' }
+                        { text: 'Getting Started', link: 'learn/overview/get-started' },
+                        { text: 'First Jecs Project', link: 'learn/overview/first-jecs-project' }
                     ]
                 },
                 {
                     text: 'Concepts',
                     items: [
-                        { text: 'Entities', link: '/concepts/entities' },
-                        { text: 'Static Components', link: '/concepts/static-components' },
-                        { text: 'Queries', link: '/concepts/queries' },
+                        { text: 'Entities', link: 'learn/concepts/entities' },
+                        { text: 'Static Components', link: 'learn/concepts/static-components' },
+                        { text: 'Queries', link: 'learn/concepts/queries' },
                     ]
                 },
                 {
                     text: "FAQ",
                     items: [
-                        { text: 'How can I contribute?', link: '/faq/contributing' }
+                        { text: 'How can I contribute?', link: 'learn/faq/contributing' }
                     ]
                 },
 
@@ -95,15 +52,14 @@ export default defineConfig({
                 {
                     text: 'Contributing',
                     items: [
-                        { text: 'Contribution Guidelines', link: '/contributing/guidelines' },
-                        { text: 'Submitting Issues', link: '/contributing/issues' },
-                        { text: 'Submitting Pull Requests', link: '/contributing/pull-requests' },
+                        { text: 'Contribution Guidelines', link: 'learn/contributing/guidelines' },
+                        { text: 'Submitting Issues', link: 'learn/contributing/issues' },
+                        { text: 'Submitting Pull Requests', link: 'learn/contributing/pull-requests' },
                     ]
                 }
             ]
         },
 
->>>>>>> a3eb2cddc35a58d42ed468f8a5806597f709345e
         socialLinks: [
             { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
         ]
