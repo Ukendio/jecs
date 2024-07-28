@@ -14,7 +14,7 @@ hero:
       link: /overview/get-started.md
     - theme: alt
       text: API References
-      link: /api/
+      link: /api/jecs.md
 
 features:
   - title: Stupidly Fast
