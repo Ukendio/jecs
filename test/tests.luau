@@ -662,8 +662,7 @@ do
         removed = changes_removed,
     }
 
-    local function track(worldToTrack, fn)
-        world = worldToTrack
+    local function track(fn)
         added = true
         removed = true
 
@@ -690,7 +689,8 @@ do
 
     local tracker = { track = track }
 
-    function ChangeTracker<T>(component: Entity<T>): Tracker<T>
+    function ChangeTracker<T>(worldToTrack: World, component: Entity<T>): Tracker<T>
+        world = worldToTrack
         T = component
         -- We just use jecs.Rest because people will probably not use it anyways
         PreviousT = jecs.pair(jecs.Rest, T)
@@ -706,12 +706,12 @@ TEST("changetracker", function()
 
 	do CASE "should allow change tracking"
         local Test = world:component() :: Entity<{ foo: number }>
-        local TestTracker = ChangeTracker(Test)
+        local TestTracker = ChangeTracker(world, Test)
 
 		local e = world:entity()
 		world:set(e, Test, { foo = 11 })
 
-        TestTracker.track(world, function(changes)
+        TestTracker.track(function(changes)
             local added = 0
             local changed = 0
             local removed = 0
@@ -733,7 +733,7 @@ TEST("changetracker", function()
     	    test.foo = test.foo + 1
      	end
 
-        TestTracker.track(world, function(changes)
+        TestTracker.track(function(changes)
             local added = 0
             local changed = 0
             local removed = 0
@@ -755,7 +755,7 @@ TEST("changetracker", function()
 
         world:remove(e, Test)
 
-        TestTracker.track(world, function(changes)
+        TestTracker.track(function(changes)
             local added = 0
             local changed = 0
             local removed = 0
