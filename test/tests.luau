@@ -579,9 +579,8 @@ do
     local world
     local T
     local PreviousT
-    local addedComponents
-    local removedComponents
-    local isTrivial
+    local add
+    local is_trivial
     local added
     local removed
 
@@ -594,7 +593,7 @@ do
                 return nil
             end
 
-            if isTrivial == nil then
+            if is_trivial == nil then
                 isTrivial = typeof(data) ~= "table"
             end
 
@@ -602,18 +601,28 @@ do
                 data = table.clone(data)
             end
 
-            addedComponents[id] = data
+            add[id] = data
             return id, data
         end
     end
 
-    local function shallowEq(a, b)
+    local function diff(a, b)
+        local size = 0
         for k, v in a do
             if b[k] ~= v then
-                return false
+                return true
             end
+            size += 1
         end
-        return true
+        for k, v in b do
+            size -= 1
+        end
+
+        if size ~= 0 then
+            return true
+        end
+
+        return false
     end
 
     local function changes_changed()
@@ -626,18 +635,15 @@ do
                     return nil
                 end
 
-                if not isTrivial then
-                    if not shallowEq(new, old) then
-                        break
-                    end
-                elseif new ~= old then
+                if isTrivial and new ~= old then
+                elseif diff(new, old) then
                     break
                 end
 
                 id, new, old = q:next()
             end
 
-            addedComponents[id] = new
+            add[id] = new
 
             return id, old, new
         end
@@ -650,7 +656,7 @@ do
         return function()
             local id = q:next()
             if id then
-            table.insert(removedComponents, id)
+                world:remove(id, PreviousT)
             end
             return id
         end
@@ -678,12 +684,8 @@ do
             end
         end
 
-        for e, data in addedComponents do
+        for e, data in add do
             world:set(e, PreviousT, if isTrivial then data else table.clone(data))
-        end
-
-        for _, e in removedComponents do
-            world:remove(e, PreviousT)
         end
     end
 
@@ -694,8 +696,7 @@ do
         T = component
         -- We just use jecs.Rest because people will probably not use it anyways
         PreviousT = jecs.pair(jecs.Rest, T)
-        addedComponents = {}
-        removedComponents = {}
+        add = {}
 
         return tracker
     end
