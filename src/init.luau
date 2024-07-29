@@ -283,7 +283,7 @@ local function ECS_ID_IS_WILDCARD(e: i53): boolean
 	return first == EcsWildcard or second == EcsWildcard
 end
 
-local function archetype_of(world: any, types: { i24 }, prev: Archetype?): Archetype
+local function archetype_create(world: any, types: { i24 }, prev: Archetype?): Archetype
 	local ty = hash(types)
 
 	local id = world.nextArchetypeId + 1
@@ -393,7 +393,7 @@ local function archetype_ensure(world: World, types, prev): Archetype
 		return archetype
 	end
 
-	return archetype_of(world, types, prev)
+	return archetype_create(world, types, prev)
 end
 
 local function find_insert(types: { i53 }, toAdd: i53): number
@@ -841,15 +841,18 @@ do
                 end
                 compatible_archetypes[last] = nil
                 column_indices[last] = nil
- 			end
+            end
   		end
 
-        lastArchetype = 1
         archetype = compatible_archetypes[lastArchetype]
+        if not archetype then
+            return EmptyQuery
+        end
 
-  		if not archetype then
- 			return EmptyQuery
-  		end
+        entities = archetype.entities
+        columns = archetype.columns
+        tr = column_indices[lastArchetype]
+        i = #entities
 
   		return self
     end
@@ -916,13 +919,25 @@ do
  			end
 
  			if shouldRemove then
- 			    table.remove(compatible_archetypes, i)
+                local last = #compatible_archetypes
+                if last ~= i then
+                    compatible_archetypes[i] = compatible_archetypes[last]
+                    column_indices[i] = column_indices[last]
+                end
+                compatible_archetypes[last] = nil
+                column_indices[last] = nil
  			end
         end
 
-        if #compatible_archetypes == 0 then
+        archetype = compatible_archetypes[lastArchetype]
+        if not archetype then
             return EmptyQuery
         end
+
+        entities = archetype.entities
+        columns = archetype.columns
+        tr = column_indices[lastArchetype]
+        i = #entities
 
         return query
     end
@@ -1190,7 +1205,7 @@ function World.new()
   		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
     }, World)
 
-	self.ROOT_ARCHETYPE = archetype_of(self, {})
+	self.ROOT_ARCHETYPE = archetype_create(self, {})
 
 	for i = HI_COMPONENT_ID + 1, EcsRest do
 	   -- Initialize built-in components
@@ -1210,7 +1225,7 @@ return {
 	Component = EcsComponent,
 	Wildcard = EcsWildcard :: Entity,
 	w = EcsWildcard :: Entity,
-	Rest = EcsRest,
+	Rest = EcsRest :: Entity,
 
 	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity, obj: Entity) -> number,
 

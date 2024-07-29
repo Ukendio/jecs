@@ -20,11 +20,137 @@ local function CHECK_NO_ERR<T...>(s: string, fn: (T...) -> (), ...: T...)
 		CHECK(msg == s, 2)
 	end
 end
-local N = 10
+local N = 2^8
 
 type World = jecs.WorldShim
 
-TEST("world", function()
+local function debug_world_inspect(world)
+    local function record(e)
+        return world.entityIndex.sparse[e]
+    end
+    local function tbl(e)
+        return record(e).archetype
+    end
+    local function archetype(e)
+        return tbl(e).type
+    end
+    local function records(e)
+        return tbl(e).records
+    end
+    local function columns(e)
+        return tbl(e).columns
+    end
+    local function row(e)
+        return record(e).row
+    end
+
+    -- Important to order them in the order of their columns
+    local function tuple(e, ...)
+        for i, column in columns(e) do
+            if select(i, ...) ~= column[row(e)] then
+                return false
+            end
+        end
+        return true
+    end
+
+    return {
+        record = record,
+        tbl = tbl,
+        archetype = archetype,
+        records = records,
+        row = row,
+        tuple = tuple,
+    }
+end
+
+TEST("world:entity()", function()
+    do CASE "unique IDs"
+        local world = jecs.World.new()
+        local set = {}
+        for i = 1, N do
+            local e = world:entity()
+            CHECK(not set[e])
+            set[e] = true
+        end
+    end
+    do CASE "generations"
+		local world = jecs.World.new()
+		local e = world:entity()
+		CHECK(ECS_ID(e) == 1 + jecs.Rest)
+		CHECK(getAlive(world.entityIndex, ECS_ID(e)) == e)
+		CHECK(ECS_GENERATION(e) == 0) -- 0
+		e = ECS_GENERATION_INC(e)
+		CHECK(ECS_GENERATION(e) == 1) -- 1
+	end
+
+	do CASE "pairs"
+		local world = jecs.World.new()
+		local _e = world:entity()
+		local e2 = world:entity()
+		local e3 = world:entity()
+
+		-- Incomplete pair, must have a bit flag that notes it is a pair
+		CHECK(IS_PAIR(world:entity()) == false)
+
+		local pair = pair(e2, e3)
+		CHECK(IS_PAIR(pair) == true)
+
+		CHECK(ecs_pair_relation(world.entityIndex, pair) == e2)
+		CHECK(ecs_pair_object(world.entityIndex, pair) == e3)
+	end
+end)
+
+TEST("world:set()", function()
+    do CASE "archetype move"
+        do
+            local world = jecs.World.new()
+
+            local d = debug_world_inspect(world)
+
+            local _1 = world:component()
+            local _2 = world:component()
+            local e = world:entity()
+            -- An entity starts without an archetype or row
+            -- should therefore not need to copy over data
+            CHECK(d.tbl(e) == nil)
+            CHECK(d.row(e) == nil)
+
+            local archetypes = #world.archetypes
+            -- This should create a new archetype since it is the first
+            -- entity to have moved there
+            world:set(e, _1, 1)
+            local oldRow = d.row(e)
+            local oldArchetype = d.archetype(e)
+            CHECK(#world.archetypes == archetypes + 1)
+            CHECK(oldArchetype == "1")
+            CHECK(d.tbl(e))
+            CHECK(oldRow == 1)
+
+            world:set(e, _2, 2)
+            CHECK(d.archetype(e) == "1_2")
+            -- Should have tuple of fields to the next archetype and set the component data
+            CHECK(d.tuple(e, 1, 2))
+                -- Should have moved the data from the old archetype
+            CHECK(world.archetypeIndex[oldArchetype].columns[_1][oldRow] == nil)
+        end
+    end
+
+    do CASE "arbitrary order"
+		local world = jecs.World.new()
+
+		local Health = world:entity()
+		local Poison = world:component()
+
+		local id = world:entity()
+		world:set(id, Poison, 5)
+		world:set(id, Health, 50)
+
+		CHECK(world:get(id, Poison) == 5)
+	end
+end)
+
+TEST("world:remove()", function()
     do CASE "should allow remove a component that doesn't exist on entity"
 		local world = jecs.World.new()
 
@@ -43,117 +169,143 @@ TEST("world", function()
 		CHECK(world:get(id, Poison) == nil)
 		CHECK(world:get(id, Health) == 50)
 	end
-	do CASE("should find every component id")
-		local world = jecs.World.new() :: World
-		local A = world:component()
-		local B = world:component()
-		world:entity()
-		world:entity()
-		world:entity()
+end)
 
-		local count = 0
-		for componentId in world:query(jecs.Component) do
-			if componentId ~= A and componentId ~= B then
-				error("found entity")
-			end
-			count += 1
-		end
+TEST("world:add()", function()
+    do CASE "idempotent"
+        local world = jecs.World.new()
+        local d = debug_world_inspect(world)
+        local _1, _2 = world:component(), world:component()
 
-		CHECK(count == 2)
-	end
+        local e = world:entity()
+        world:add(e, _1)
+        world:add(e, _2)
+        world:add(e, _2) -- should have 0 effects
+        CHECK(d.archetype(e) == "1_2")
+    end
 
-	do CASE("should remove its components")
-		local world = jecs.World.new() :: World
-		local A = world:component()
-		local B = world:component()
+    do CASE "archetype move"
+        do
+            local world = jecs.World.new()
 
-		local e = world:entity()
+            local d = debug_world_inspect(world)
 
-		world:set(e, A, true)
-		world:set(e, B, true)
+            local _1 = world:component()
+            local e = world:entity()
+            -- An entity starts without an archetype or row
+            -- should therefore not need to copy over data
+            CHECK(d.tbl(e) == nil)
+            CHECK(d.row(e) == nil)
 
-		CHECK(world:get(e, A))
-		CHECK(world:get(e, B))
+            local archetypes = #world.archetypes
+            -- This should create a new archetype
+            world:add(e, _1)
+            CHECK(#world.archetypes == archetypes + 1)
 
-		world:clear(e)
-		CHECK(world:get(e, A) == nil)
-		CHECK(world:get(e, B) == nil)
-	end
+            CHECK(d.archetype(e) == "1")
+            CHECK(d.tbl(e))
+        end
+    end
+end)
 
-	do CASE("should drain query while iterating")
-		local world = jecs.World.new() :: World
-		local A = world:component()
-		local B = world:component()
-		local eA = world:entity()
-		world:set(eA, A, true)
-		local eB = world:entity()
-		world:set(eB, B, true)
-		local eAB = world:entity()
-		world:set(eAB, A, true)
-		world:set(eAB, B, true)
 
-		local q = world:query(A)
+TEST("world:query()", function()
+    do CASE "query single component"
+        do
+            local world = jecs.World.new()
+      		local A = world:component()
+      		local B = world:component()
 
-		local i = 0
-		local j = 0
-		for _ in q do
-			i+=1
-		end
-		for _ in q do
-			j+=1
-		end
-		CHECK(i == 2)
-		CHECK(j == 0)
-	end
+      		local entities = {}
+      		for i = 1, N do
+     			local id = world:entity()
 
-	do CASE("should be able to get next results")
-		local world = jecs.World.new() :: World
-		world:component()
-		local A = world:component()
-		local B = world:component()
-		local eA = world:entity()
-		world:set(eA, A, true)
-		local eB = world:entity()
-		world:set(eB, B, true)
-		local eAB = world:entity()
-		world:set(eAB, A, true)
-		world:set(eAB, B, true)
+     			world:set(id, A, true)
+     			if i > 5 then
+			        world:set(id, B, true)
+     			end
+     			entities[i] = id
+      		end
 
-		local q = world:query(A)
+      		for id in world:query(A) do
+     			table.remove(entities, CHECK(table.find(entities, id)))
+      		end
 
-		local e, data = q:next()
-		while e do
-			CHECK(
-				if e == eA then data == true
-				elseif e == eAB then data == true
-				else false
-			)
-			e, data = q:next()
-		end
-	end
+      		CHECK(#entities == 0)
+        end
 
-	do CASE("should query all matching entities")
-		local world = jecs.World.new()
-		local A = world:component()
-		local B = world:component()
+        do
+      		local world = jecs.World.new() :: World
+      		local A = world:component()
+      		local B = world:component()
+      		local eA = world:entity()
+      		world:set(eA, A, true)
+      		local eB = world:entity()
+      		world:set(eB, B, true)
+      		local eAB = world:entity()
+      		world:set(eAB, A, true)
+      		world:set(eAB, B, true)
 
-		local entities = {}
-		for i = 1, N do
-			local id = world:entity()
+      		local q = world:query(A)
 
-			world:set(id, A, true)
-			if i > 5 then
-				world:set(id, B, true)
-			end
-			entities[i] = id
-		end
+      		local i = 0
+      		local j = 0
+      		for _ in q do
+     			i+=1
+      		end
+      		for _ in q do
+     			j+=1
+      		end
+      		CHECK(i == 2)
+      		CHECK(j == 0)
+       	end
+    end
 
-		for id in world:query(A) do
-			table.remove(entities, CHECK(table.find(entities, id)))
-		end
+    do CASE "query missing component"
+            local world = jecs.World.new()
+      		local A = world:component()
+      		local B = world:component()
+            local C = world:component()
 
-		CHECK(#entities == 0)
-	end
+            local e1 = world:entity()
+            local e2 = world:entity()
+
+            world:set(e1, A, "abc")
+            world:set(e2, A, "def")
+            world:set(e1, B, 123)
+            world:set(e2, B, 457)
+
+            local counter = 0
+            for _ in world:query(B, C) do
+                counter += 1
+            end
+            CHECK(counter == 0)
+    end
+
+   	do CASE "should be able to get next results"
+  		local world = jecs.World.new() :: World
+  		world:component()
+  		local A = world:component()
+  		local B = world:component()
+  		local eA = world:entity()
+  		world:set(eA, A, true)
+  		local eB = world:entity()
+  		world:set(eB, B, true)
+  		local eAB = world:entity()
+  		world:set(eAB, A, true)
+  		world:set(eAB, B, true)
+
+  		local q = world:query(A)
+
+  		local e, data = q:next()
+  		while e do
+            if e ~= eA and e ~= eAB then
+                CHECK(false)
+            end
+ 			e, data = q:next()
+  		end
+        CHECK(true)
+   	end
 
 	do CASE("should query all matching entities when irrelevant component is removed")
 		local world = jecs.World.new()
@@ -206,65 +358,6 @@ TEST("world", function()
 		end
 
 		CHECK(#entities == 0)
-	end
-
-	do CASE("should allow setting components in arbitrary order")
-		local world = jecs.World.new()
-
-		local Health = world:entity()
-		local Poison = world:component()
-
-		local id = world:entity()
-		world:set(id, Poison, 5)
-		world:set(id, Health, 50)
-
-		CHECK(world:get(id, Poison) == 5)
-	end
-
-	do CASE("should allow deleting components")
-		local world = jecs.World.new()
-
-		local Health = world:entity()
-		local Poison = world:component()
-
-		local id = world:entity()
-		world:set(id, Poison, 5)
-		world:set(id, Health, 50)
-		local id1 = world:entity()
-		world:set(id1, Poison, 500)
-		world:set(id1, Health, 50)
-
-		world:delete(id)
-
-		CHECK(world:get(id, Poison) == nil)
-		CHECK(world:get(id, Health) == nil)
-		CHECK(world:get(id1, Poison) == 500)
-		CHECK(world:get(id1, Health) == 50)
-	end
-
-	do CASE("should increment generation")
-		local world = jecs.World.new()
-		local e = world:entity()
-		CHECK(ECS_ID(e) == 1 + jecs.Rest)
-		CHECK(getAlive(world.entityIndex, ECS_ID(e)) == e)
-		CHECK(ECS_GENERATION(e) == 0) -- 0
-		e = ECS_GENERATION_INC(e)
-		CHECK(ECS_GENERATION(e) == 1) -- 1
-	end
-
-	do CASE("should get alive from index in the dense array")
-		local world = jecs.World.new()
-		local _e = world:entity()
-		local e2 = world:entity()
-		local e3 = world:entity()
-
-		CHECK(IS_PAIR(world:entity()) == false)
-
-		local pair = pair(e2, e3)
-		CHECK(IS_PAIR(pair) == true)
-
-		CHECK(ecs_pair_relation(world.entityIndex, pair) == e2)
-		CHECK(ecs_pair_object(world.entityIndex, pair) == e3)
 	end
 
 	do CASE("should allow querying for relations")
@@ -392,129 +485,50 @@ TEST("world", function()
 		CHECK(count == 2)
 	end
 
-	do CASE "should be able to add/remove matching entity during iteration"
-		local world = jecs.World.new()
-		local Name = world:component()
-		for i = 1, 5 do
-			local e = world:entity()
-			world:set(e, Name, tostring(e))
-		end
-		local count = 0
-		for id, name in world:query(Name) do
-			count += 1
-			CHECK(id == tonumber(name))
+	do CASE "iterator invalidation"
+	    do CASE "adding"
+			SKIP()
+            local world = jecs.World.new()
+			local A = world:component()
+			local B = world:component()
 
-			world:remove(id, Name)
-			local e = world:entity()
-			world:set(e, Name, tostring(e))
-		end
-		CHECK(count == 5)
-	end
+			local e1 = world:entity()
+			local e2 = world:entity()
+			world:add(e1, A)
+			world:add(e2, A)
+			world:add(e2, B)
 
-	do CASE "should allow adding a matching entity during iteration"
-		local world = jecs.World.new()
-		local A = world:component()
-		local B = world:component()
+			local count = 0
+			for id in world:query(A) do
+				world:add(id, B)
 
-		local e1 = world:entity()
-		local e2 = world:entity()
-		world:add(e1, A)
-		world:add(e2, A)
-		world:add(e2, B)
+				count += 1
+			end
 
-		local count = 0
-		for id in world:query(A) do
-			local e = world:entity()
-			world:add(e, A)
-			world:add(e, B)
-			count += 1
+			CHECK(count == 2)
 		end
 
-		CHECK(count == 3)
-	end
+		do CASE "spawning"
+		    local world = jecs.World.new()
+			local A = world:component()
+			local B = world:component()
 
+			local e1 = world:entity()
+			local e2 = world:entity()
+			world:add(e1, A)
+			world:add(e2, A)
+			world:add(e2, B)
 
-	do CASE "should not iterate same entity when adding component"
-	    SKIP()
-		local world = jecs.World.new()
-		local A = world:component()
-		local B = world:component()
+			local count = 0
+			for id in world:query(A) do
+				local e = world:entity()
+				world:add(e, A)
+				world:add(e, B)
+				count += 1
+			end
 
-		local e1 = world:entity()
-		local e2 = world:entity()
-		world:add(e1, A)
-		world:add(e2, A)
-		world:add(e2, B)
-
-		local count = 0
-		for id in world:query(A) do
-			world:add(id, B)
-
-			count += 1
+			CHECK(count == 3)
 		end
-
-		CHECK(count == 2)
-	end
-
-	do CASE "should replace component data"
-        local world = jecs.World.new()
-		local A = world:component()
-		local B = world:component()
-	    local C = world:component()
-
-		local e = world:entity()
-		world:set(e, A, 1)
-		world:set(e, B, true)
-		world:set(e, C, "hello ")
-
-		world:query(A, B, C):replace(function(a, b, c)
-		    return a * 2, not b, c.."world"
-		end)
-
-		CHECK(world:get(e, A) == 2)
-		CHECK(world:get(e, B) == false)
-		CHECK(world:get(e, C) == "hello world")
-	end
-
-	do CASE "should not iterate when nothing matches query"
-		local world = jecs.World.new()
-		local A = world:component()
-		local B = world:component()
-
-		local e1 = world:entity()
-		world:add(e1, A)
-
-		local count = 0
-		for id in world:query(B) do
-			count += 1
-		end
-
-		CHECK(count == 0)
-	end
-
-	do CASE "should return nothing for empty iteration"
-		local world = jecs.World.new()
-		local A = world:component()
-		local B = world:component()
-
-		local e1 = world:entity()
-		world:add(e1, A)
-
-		local query = world:query(B)
-		CHECK(query.next() == nil)
-		CHECK(query.replace() == nil)
-	end
-
-	do CASE "should properly handle query:without for empty iteration"
-		local world = jecs.World.new()
-		local A = world:component()
-		local B = world:component()
-
-		local e1 = world:entity()
-		world:add(e1, A)
-
-		local query = world:query(B)
-		CHECK(query == query:without())
 	end
 
 	do CASE "should not find any entities"
@@ -535,6 +549,94 @@ TEST("world", function()
         CHECK(withoutCount == 0)
     end
 
+    do CASE "Empty Query"
+        do
+            local world = jecs.World.new()
+      		local A = world:component()
+      		local B = world:component()
+
+      		local e1 = world:entity()
+      		world:add(e1, A)
+
+      		local query = world:query(B)
+      		CHECK(query:next() == nil)
+      		CHECK(query:replace() == nil)
+      		CHECK(query:without() == query)
+        end
+
+        do
+           	local world = jecs.World.new()
+    		local A = world:component()
+    		local B = world:component()
+
+    		local e1 = world:entity()
+    		world:add(e1, A)
+
+    		local count = 0
+    		for id in world:query(B) do
+    			count += 1
+    		end
+
+    		CHECK(count == 0)
+        end
+    end
+
+    do CASE "replace"
+        local world = jecs.World.new()
+  		local A = world:component()
+  		local B = world:component()
+   	    local C = world:component()
+
+  		local e = world:entity()
+  		world:set(e, A, 1)
+  		world:set(e, B, true)
+  		world:set(e, C, "hello ")
+
+  		world:query(A, B, C):replace(function(a, b, c)
+  		    return a * 2, not b, c.."world"
+  		end)
+
+  		CHECK(world:get(e, A) == 2)
+  		CHECK(world:get(e, B) == false)
+  		CHECK(world:get(e, C) == "hello world")
+    end
+
+    do CASE "without"
+        do
+            -- REGRESSION TEST
+            local world = jecs.World.new()
+            local _1, _2, _3 = world:component(), world:component(), world:component()
+
+            local counter = 0
+            for e, a, b in world:query(_1, _2):without(_3) do
+                counter += 1
+            end
+            CHECK(counter == 0)
+        end
+    end
+end)
+
+TEST("world:clear()", function()
+    do CASE("should remove its components")
+		local world = jecs.World.new() :: World
+		local A = world:component()
+		local B = world:component()
+
+		local e = world:entity()
+
+		world:set(e, A, true)
+		world:set(e, B, true)
+
+		CHECK(world:get(e, A))
+		CHECK(world:get(e, B))
+
+		world:clear(e)
+		CHECK(world:get(e, A) == nil)
+		CHECK(world:get(e, B) == nil)
+	end
+end)
+
+TEST("world:has()", function()
     do CASE "should find Tag on entity"
         local world = jecs.World.new()
 
@@ -547,21 +649,54 @@ TEST("world", function()
     end
 
     do CASE "should return false when missing one tag"
-           local world = jecs.World.new()
+        local world = jecs.World.new()
 
-           local A = world:component()
-           local B = world:component()
-           local C = world:component()
-           local D = world:component()
+        local A = world:component()
+        local B = world:component()
+        local C = world:component()
+        local D = world:component()
 
-           local e = world:entity()
-           world:add(e, A)
-           world:add(e, C)
-           world:add(e, D)
+        local e = world:entity()
+        world:add(e, A)
+        world:add(e, C)
+        world:add(e, D)
 
-           CHECK(world:has(e, A, B, C, D) == false)
-       end
+        CHECK(world:has(e, A, B, C, D) == false)
+    end
+end)
 
+TEST("world:component()", function()
+    do CASE "only components should have EcsComponent trait"
+        local world = jecs.World.new() :: World
+    	local A = world:component()
+    	local e = world:entity()
+
+        CHECK(world:has(A, jecs.Component))
+        CHECK(not world:has(e, jecs.Component))
+	end
+end)
+
+TEST("world:delete", function()
+    do CASE("should allow deleting components")
+		local world = jecs.World.new()
+
+		local Health = world:entity()
+		local Poison = world:component()
+
+		local id = world:entity()
+		world:set(id, Poison, 5)
+		world:set(id, Health, 50)
+		local id1 = world:entity()
+		world:set(id1, Poison, 500)
+		world:set(id1, Health, 50)
+
+		world:delete(id)
+
+		CHECK(world:get(id, Poison) == nil)
+		CHECK(world:get(id, Health) == nil)
+		CHECK(world:get(id1, Poison) == 500)
+		CHECK(world:get(id1, Health) == 50)
+	end
 end)
 
 type Tracker<T> = { track: (world: World, fn: (changes: {
@@ -572,6 +707,25 @@ type Tracker<T> = { track: (world: World, fn: (changes: {
 }
 
 type Entity<T = any> = number & { __nominal_type_dont_use: T }
+
+local function diff(a, b)
+    local size = 0
+    for k, v in a do
+        if b[k] ~= v then
+            return true
+        end
+        size += 1
+    end
+    for k, v in b do
+        size -= 1
+    end
+
+    if size ~= 0 then
+        return true
+    end
+
+    return false
+end
 
 local ChangeTracker: <T>(world: World, component: Entity<T>) -> Tracker<T>
 
@@ -594,35 +748,13 @@ do
             end
 
             if is_trivial == nil then
-                isTrivial = typeof(data) ~= "table"
-            end
-
-            if not isTrivial then
-                data = table.clone(data)
+                is_trivial = typeof(data) ~= "table"
             end
 
             add[id] = data
+
             return id, data
         end
-    end
-
-    local function diff(a, b)
-        local size = 0
-        for k, v in a do
-            if b[k] ~= v then
-                return true
-            end
-            size += 1
-        end
-        for k, v in b do
-            size -= 1
-        end
-
-        if size ~= 0 then
-            return true
-        end
-
-        return false
     end
 
     local function changes_changed()
@@ -635,7 +767,8 @@ do
                     return nil
                 end
 
-                if isTrivial and new ~= old then
+                if is_trivial and new ~= old then
+                    break
                 elseif diff(new, old) then
                     break
                 end
@@ -669,8 +802,8 @@ do
     }
 
     local function track(fn)
-        added = true
-        removed = true
+        added = false
+        removed = false
 
         fn(changes)
 
@@ -685,7 +818,7 @@ do
         end
 
         for e, data in add do
-            world:set(e, PreviousT, if isTrivial then data else table.clone(data))
+            world:set(e, PreviousT, if is_trivial then data else table.clone(data))
         end
     end
 
@@ -702,78 +835,89 @@ do
     end
 end
 
-TEST("changetracker", function()
+TEST("changetracker:track()", function()
     local world = jecs.World.new()
 
-	do CASE "should allow change tracking"
+    do CASE "added"
         local Test = world:component() :: Entity<{ foo: number }>
         local TestTracker = ChangeTracker(world, Test)
 
-		local e = world:entity()
-		world:set(e, Test, { foo = 11 })
+        local e1 = world:entity()
+        local data = { foo = 11 }
+        world:set(e1, Test, data)
 
         TestTracker.track(function(changes)
             local added = 0
-            local changed = 0
-            local removed = 0
-      		for e, data in changes.added() do
+      		for e, test in changes.added() do
                 added+=1
+                CHECK(test == data)
       		end
       		for e, old, new in changes.changed() do
-                changed+=1
+                CHECK(false)
       		end
       		for e in changes.removed() do
-                removed+=1
+                CHECK(false)
       		end
             CHECK(added == 1)
-            CHECK(changed == 0)
-            CHECK(removed == 0)
         end)
+    end
+    do CASE "changed"
+        local Test = world:component() :: Entity<{ foo: number }>
+        local TestTracker = ChangeTracker(world, Test)
 
-        for e, test in world:query(Test) do
-    	    test.foo = test.foo + 1
-     	end
+        local data = { foo = 11 }
+        local e1 = world:entity()
+        world:set(e1, Test, data)
 
         TestTracker.track(function(changes)
-            local added = 0
+        end)
+
+        data.foo += 1
+
+        TestTracker.track(function(changes)
+            for _ in changes.added() do
+                CHECK(false)
+            end
             local changed = 0
-            local removed = 0
-
-    		for e, data in changes.added() do
-                added+=1
-    		end
-    		for e, old, new in changes.changed() do
-                changed+=1
-    		end
-    		for e in changes.removed() do
-                removed+=1
-    		end
-
-            CHECK(added == 0)
+            for e, old, new in changes.changed() do
+                CHECK(e == e1)
+                CHECK(new == data)
+                CHECK(old ~= new)
+                CHECK(diff(new, old))
+                changed +=1
+            end
             CHECK(changed == 1)
-            CHECK(removed == 0)
         end)
+    end
+    do CASE "removed"
+        local Test = world:component() :: Entity<{ foo: number }>
+        local TestTracker = ChangeTracker(world, Test)
 
-        world:remove(e, Test)
+        local data = { foo = 11 }
+        local e1 = world:entity()
+        world:set(e1, Test, data)
 
         TestTracker.track(function(changes)
-            local added = 0
-            local changed = 0
+        end)
+
+        world:remove(e1, Test)
+
+        TestTracker.track(function(changes)
+            for _ in changes.added() do
+                CHECK(false)
+            end
+            for _ in changes.changed() do
+                CHECK(false)
+            end
             local removed = 0
-       	    for e, data in changes.added() do
-                added+=1
-    		end
-    		for e, old, new in changes.changed() do
-                changed+=1
-    		end
-    		for e in changes.removed() do
-                removed+=1
-    		end
-            CHECK(added == 0)
-            CHECK(changed == 0)
+            for e in changes.removed() do
+                removed += 1
+                CHECK(e == e1)
+            end
             CHECK(removed == 1)
         end)
     end
+
 end)
 
 FINISH()
