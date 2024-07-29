@@ -743,6 +743,8 @@ do
     local compatible_archetypes: { Archetype }
     local column_indices: { { number} }
     local ids: { number }
+    local tr
+    local columns
 
     local function world_query_next(): any
         local entityId = entities[i]
@@ -752,6 +754,8 @@ do
  			if not archetype then
                 return nil
             end
+            tr = column_indices[lastArchetype]
+            columns = archetype.columns
             entities = archetype.entities
  			i = #entities
  			entityId = entities[i]
@@ -759,9 +763,6 @@ do
 
   		local row = i
   		i-=1
-
-  		local columns = archetype.columns
-  		local tr = column_indices[lastArchetype]
 
   		if queryLength == 1 then
  			return entityId, columns[tr[1]][row]
@@ -1012,6 +1013,8 @@ do
 
         entities = archetype.entities
        	i = #entities
+        tr = column_indices[lastArchetype]
+        columns = archetype.columns
 
        	return it
     end
