@@ -18,16 +18,20 @@ do
     local w
     local dt
     local systemsNames
+    local system
 
-    local function run(system)
+    local function profile()
         local name = systemsNames[system]
 
-        return function()
-            debug.profilebegin(name)
-            debug.setmemorycategory(name)
-            system(w, dt)
-            debug.profileend()
-        end
+        debug.profilebegin(name)
+        debug.setmemorycategory(name)
+        system(w, dt)
+        debug.profileend()
+    end
+
+    local function run(sys)
+        system = sys
+        return profile
     end
 
     local function loop(sinceLastFrame)
@@ -55,9 +59,9 @@ do
     				.. debug.info(system, "n")
     				.. " has been ejected"
 				)
-				continue
+			else
+			    LOOP_ERROR(why)
 			end
-			LOOP_ERROR(why)
         end
 
         debug.profileend()
