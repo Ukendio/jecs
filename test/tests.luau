@@ -246,7 +246,8 @@ TEST("world:query()", function()
       		world:set(eAB, A, true)
       		world:set(eAB, B, true)
 
-      		local q = world:query(A)
+            -- Should drain the iterator
+      		local q = world:query(A):drain()
 
       		local i = 0
       		local j = 0
@@ -740,7 +741,7 @@ do
 
     local function changes_added()
         added = true
-        local q = world:query(T):without(PreviousT)
+        local q = world:query(T):without(PreviousT):drain()
         return function()
             local id, data = q:next()
             if not id then
@@ -758,7 +759,7 @@ do
     end
 
     local function changes_changed()
-        local q = world:query(T, PreviousT)
+        local q = world:query(T, PreviousT):drain()
 
         return function()
             local id, new, old = q:next()
@@ -785,7 +786,7 @@ do
     local function changes_removed()
         removed = true
 
-        local q = world:query(PreviousT):without(T)
+        local q = world:query(PreviousT):without(T):drain()
         return function()
             local id = q:next()
             if id then

@@ -57,7 +57,7 @@ local function flip()
 end
 
 local common = 0
-local N = 500
+local N = 2^16-2
 local archetypes = {}
 
 local hm = 0
@@ -171,18 +171,14 @@ return {
 
 	Functions = {
 		Mirror = function()
-		    for i = 1, 1000 do
-				for entityId, firstComponent in mcs:query(E1, E4) do
-				end
+			for entityId, firstComponent in mcs:query(E1, E2, E3, E4) do
 			end
 
 		end,
 
 		Jecs = function()
-		    for i = 1, 1000 do
-    			for entityId, firstComponent in ecs:query(D1, D4) do
-    			end
-			end
+ 			for entityId, firstComponent in ecs:query(D1, D2, D3, D4) do
+ 			end
 		end,
 	},
 }
