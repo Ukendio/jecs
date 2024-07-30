@@ -750,7 +750,15 @@ do
     local A, B, C, D, E, F, G, H
     local a, b, c, d, e, f, g, h
 
+    local init
+    local drain
+
     local function query_init(query)
+        if init and drain then
+            return
+        end
+
+        init = true
         lastArchetype = 1
        	archetype = compatible_archetypes[lastArchetype]
 
@@ -767,53 +775,52 @@ do
 
         local records = archetype.records
         if not B then
-            a = records[A]
+            a = columns[records[A]]
         elseif not C then
-            a = records[A]
-            b = records[B]
+            a = columns[records[A]]
+            b = columns[records[B]]
         elseif not D then
-            a = records[A]
-            b = records[B]
-            c = records[C]
+            a = columns[records[A]]
+            b = columns[records[B]]
+            c = columns[records[C]]
         elseif not E then
-            a = records[A]
-            b = records[B]
-            c = records[C]
-            d = records[D]
+            a = columns[records[A]]
+            b = columns[records[B]]
+            c = columns[records[C]]
+            d = columns[records[D]]
         elseif not F then
-            a = records[A]
-            b = records[B]
-            c = records[C]
-            d = records[D]
-            e = records[E]
+            a = columns[records[A]]
+            b = columns[records[B]]
+            c = columns[records[C]]
+            d = columns[records[D]]
+            e = columns[records[E]]
         elseif not G then
-            a = records[A]
-            b = records[B]
-            c = records[C]
-            d = records[D]
-            e = records[E]
-            f = records[F]
+            a = columns[records[A]]
+            b = columns[records[B]]
+            c = columns[records[C]]
+            d = columns[records[D]]
+            e = columns[records[E]]
+            f = columns[records[F]]
         elseif not H then
-            a = records[A]
-            b = records[B]
-            c = records[C]
-            d = records[D]
-            e = records[E]
-            f = records[F]
-            g = records[G]
+            a = columns[records[A]]
+            b = columns[records[B]]
+            c = columns[records[C]]
+            d = columns[records[D]]
+            e = columns[records[E]]
+            f = columns[records[F]]
+            g = columns[records[G]]
         elseif H then
-            a = records[A]
-            b = records[B]
-            c = records[C]
-            d = records[D]
-            e = records[E]
-            f = records[F]
-            g = records[G]
-            h = records[H]
+            a = columns[records[A]]
+            b = columns[records[B]]
+            c = columns[records[D]]
+            e = columns[records[E]]
+            f = columns[records[F]]
+            g = columns[records[G]]
+            h = columns[records[H]]
         end
     end
 
-    local function world_query_next(): any
+    local function world_query_iter_next(): any
         local entityId = entities[i]
   		while entityId == nil do
  			lastArchetype += 1
@@ -821,103 +828,106 @@ do
  			if not archetype then
                 return nil
             end
-            local records = archetype.records
-            if not B then
-                a = records[A]
-            elseif not C then
-                a = records[A]
-                b = records[B]
-            elseif not D then
-                a = records[A]
-                b = records[B]
-                c = records[C]
-            elseif not E then
-                a = records[A]
-                b = records[B]
-                c = records[C]
-                d = records[D]
-            elseif not F then
-                a = records[A]
-                b = records[B]
-                c = records[C]
-                d = records[D]
-                e = records[E]
-            elseif not G then
-                a = records[A]
-                b = records[B]
-                c = records[C]
-                d = records[D]
-                e = records[E]
-                f = records[F]
-            elseif not H then
-                a = records[A]
-                b = records[B]
-                c = records[C]
-                d = records[D]
-                e = records[E]
-                f = records[F]
-                g = records[G]
-            elseif H then
-                a = records[A]
-                b = records[B]
-                c = records[C]
-                d = records[D]
-                e = records[E]
-                f = records[F]
-                g = records[G]
-                h = records[H]
-            end
-            columns = archetype.columns
+
             entities = archetype.entities
  			i = #entities
+            if i == 0 then
+                continue
+            end
  			entityId = entities[i]
+            columns = archetype.columns
+            local records = archetype.records
+            if not B then
+                a = columns[records[A]]
+            elseif not C then
+                a = columns[records[A]]
+                b = columns[records[B]]
+            elseif not D then
+                a = columns[records[A]]
+                b = columns[records[B]]
+                c = columns[records[C]]
+            elseif not E then
+                a = columns[records[A]]
+                b = columns[records[B]]
+                c = columns[records[C]]
+                d = columns[records[D]]
+            elseif not F then
+                a = columns[records[A]]
+                b = columns[records[B]]
+                c = columns[records[C]]
+                d = columns[records[D]]
+                e = columns[records[E]]
+            elseif not G then
+                a = columns[records[A]]
+                b = columns[records[B]]
+                c = columns[records[C]]
+                d = columns[records[D]]
+                e = columns[records[E]]
+                f = columns[records[F]]
+            elseif not H then
+                a = columns[records[A]]
+                b = columns[records[B]]
+                c = columns[records[C]]
+                d = columns[records[D]]
+                e = columns[records[E]]
+                f = columns[records[F]]
+                g = columns[records[G]]
+            elseif H then
+                a = columns[records[A]]
+                b = columns[records[B]]
+                c = columns[records[D]]
+                e = columns[records[E]]
+                f = columns[records[F]]
+                g = columns[records[G]]
+                h = columns[records[H]]
+            end
   		end
 
   		local row = i
   		i-=1
 
   		if queryLength == 1 then
- 			return entityId, columns[a][row]
+ 			return entityId, a[row]
   		elseif queryLength == 2 then
- 			return entityId, columns[a][row], columns[b][row]
+ 			return entityId, a[row], b[row]
   		elseif queryLength == 3 then
- 			return entityId, columns[a][row], columns[b][row], columns[c][row]
+ 			return entityId, a[row], b[row], c[row]
   		elseif queryLength == 4 then
- 			return entityId, columns[a][row], columns[b][row], columns[c][row], columns[d][row]
+ 			return entityId, a[row], b[row], c[row], d[row]
   		elseif queryLength == 5 then
  			return entityId,
-    				columns[a][row],
-    				columns[b][row],
-    				columns[c][row],
-    				columns[d][row],
-    				columns[e][row]
+    				a[row],
+    				b[row],
+    				c[row],
+    				d[row],
+    				e[row]
   		elseif queryLength == 6 then
  			return entityId,
-    				columns[a][row],
-    				columns[b][row],
-    				columns[c][row],
-    				columns[d][row],
-    				columns[e][row],
-    				columns[f][row]
+ 			        a[row],
+    				b[row],
+    				c[row],
+    				d[row],
+    				e[row],
+                    f[row]
   		elseif queryLength == 7 then
  			return entityId,
-				    columns[a][row],
-    				columns[b][row],
-    				columns[c][row],
-    				columns[d][row],
-    				columns[e][row],
-    				columns[f][row],
-                    columns[g][row]
+                    a[row],
+    				b[row],
+    				c[row],
+    				d[row],
+    				e[row],
+                    f[row],
+                    g[row]
   		elseif queryLength == 8 then
  			return entityId,
-				    columns[a][row],
-    				columns[b][row],
-    				columns[c][row],
-    				columns[d][row],
-    				columns[e][row],
-    				columns[f][row],
-                    columns[g][row],
-    				columns[h][row]
+                    a[row],
+    				b[row],
+    				c[row],
+    				d[row],
+    				e[row],
+                    f[row],
+                    g[row],
+    				h[row]
   		end
 
   	    local field = archetype.records
@@ -968,26 +978,26 @@ do
             local tr = archetype.records
       		for row in archetype.entities do
           		if queryLength == 1 then
-         			local va = columns[tr[a]]
+         			local va = columns[tr[A]]
          			local pa = fn(va[row])
 
          			va[row] = pa
           		elseif queryLength == 2 then
-         			local va = columns[tr[a]]
-         			local vb = columns[tr[b]]
+         			local va = columns[tr[A]]
+         			local vb = columns[tr[B]]
 
          			va[row], vb[row] = fn(va[row], vb[row])
           		elseif queryLength == 3 then
-         			local va = columns[tr[a]]
-         			local vb = columns[tr[b]]
-         			local vc = columns[tr[c]]
+         			local va = columns[tr[A]]
+         			local vb = columns[tr[B]]
+         			local vc = columns[tr[C]]
 
          			va[row], vb[row], vc[row] = fn(va[row], vb[row], vc[row])
           		elseif queryLength == 4 then
-         			local va = columns[tr[a]]
-         			local vb = columns[tr[b]]
-         			local vc = columns[tr[c]]
-         			local vd = columns[tr[d]]
+         			local va = columns[tr[A]]
+         			local vb = columns[tr[B]]
+         			local vc = columns[tr[C]]
+         			local vd = columns[tr[D]]
 
          			va[row], vb[row], vc[row], vd[row] = fn(
          			    va[row], vb[row], vc[row], vd[row])
@@ -1026,6 +1036,8 @@ do
  			end
         end
 
+        query_init(query)
+
         return query
     end
 
@@ -1036,8 +1048,6 @@ do
         return compatible_archetypes
     end
 
-    local drain
-
     local function world_query_drain(query)
         drain = true
         query_init(query)
@@ -1045,10 +1055,15 @@ do
     end
 
     local function world_query_iter(query)
+        query_init(query)
+        return world_query_iter_next
+    end
+
+    local function world_query_next()
         if not drain then
-            query_init(query)
+            error("Did you forget to call query:drain()?")
         end
-        return world_query_next
+        return world_query_iter_next()
     end
 
     local it = {
@@ -1113,6 +1128,7 @@ do
     	end
 
         drain = false
+        init = false
         ids = components
 
        	return it

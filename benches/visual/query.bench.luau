@@ -170,10 +170,14 @@ return {
 	end,
 
 	Functions = {
-		Mirror = function()
-			for entityId, firstComponent in mcs:query(E1, E2, E3, E4) do
+		Matter = function()
+			for entityId, firstComponent in newWorld:query(A1, A2, A3, A4) do
 			end
+		end,
 
+		ECR = function()
+		    for entityId, firstComponent in registry2:view(B1, B2, B3, B3) do
+			end
 		end,
 
 		Jecs = function()
