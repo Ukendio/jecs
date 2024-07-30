@@ -208,7 +208,6 @@ TEST("world:add()", function()
     end
 end)
 
-
 TEST("world:query()", function()
     do CASE "query single component"
         do
@@ -779,7 +778,7 @@ do
                     break
                 end
 
-                id, new, old = q:next()
+                id, new, old = q.next()
             end
 
             add[id] = new
