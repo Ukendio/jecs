@@ -283,6 +283,32 @@ TEST("world:query()", function()
             CHECK(counter == 0)
     end
 
+    do CASE "query more than 8 components"
+        local world = jecs.World.new()
+        local components = {}
+
+        for i = 1, 9 do
+            local id = world:component()
+            components[i] = id
+        end
+        local e = world:entity()
+        for i, id in components do
+            world:set(e, id, 13^i)
+        end
+
+        for entity, a, b, c, d, e, f, g, h, i in world:query(unpack(components)) do
+            CHECK(a == 13^1)
+            CHECK(b == 13^2)
+            CHECK(c == 13^3)
+            CHECK(d == 13^4)
+            CHECK(e == 13^5)
+            CHECK(f == 13^6)
+            CHECK(g == 13^7)
+            CHECK(h == 13^8)
+            CHECK(i == 13^9)
+        end
+    end
+
    	do CASE "should be able to get next results"
   		local world = jecs.World.new() :: World
   		world:component()

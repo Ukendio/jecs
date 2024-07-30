@@ -739,7 +739,7 @@ do
     local lastArchetype: number
     local archetype: Archetype
     local queryOutput: { any }
-    local queryLength: number
+
     local entities: { number }
     local i: number
 
@@ -768,7 +768,6 @@ do
        	end
 
        	queryOutput = {}
-        queryLength = #ids
 
         entities = archetype.entities
        	i = #entities
@@ -810,7 +809,7 @@ do
             e = columns[records[E]]
             f = columns[records[F]]
             g = columns[records[G]]
-        elseif H then
+        elseif not I then
             a = columns[records[A]]
             b = columns[records[B]]
             c = columns[records[D]]
@@ -873,7 +872,7 @@ do
                     e = columns[records[E]]
                     f = columns[records[F]]
                     g = columns[records[G]]
-                elseif H then
+                elseif not I then
                     a = columns[records[A]]
                     b = columns[records[B]]
                     c = columns[records[D]]
@@ -919,7 +918,7 @@ do
         				e[row],
                         f[row],
                         g[row]
-      		elseif H then
+      		elseif not I then
      			return entityId,
                         a[row],
         				b[row],
@@ -1108,12 +1107,12 @@ do
 
     	for id in firstArchetypeMap.cache do
     		local compatibleArchetype = archetypes[id]
-    		local archetypeRecords = compatibleArchetype.records
+    		local tr = compatibleArchetype.records
 
     		local skip = false
 
     		for i, componentId in components do
-    			local index = archetypeRecords[componentId]
+    			local index = tr[componentId]
     			if not index then
     				skip = true
     				break
