@@ -89,7 +89,7 @@ world
 
 ### archetypes()
 ```luau
-function query:archetypes(): { Archetype }
+function query.archetypes(): { Archetype }
 ```
 Returns the matching archetypes of the query.
 
@@ -97,12 +97,16 @@ Example:
 ::: code-group
 
 ```luau [luau]
-for i, archetype in world:query(Position, Velocity):archetypes() do
-    local field = archetype.records
+for i, archetype in world:query(Position, Velocity).archetypes() do
     local columns = archetype.columns
+    local field = archetype.records
+
+    local P = field[Position]
+    local V = field[Velocity]
+
     for row, entity in archetype.entities do
-        local position = columns[field[Position]][row]
-        local velocity = columns[field[Velocity]][row]
+        local position = columns[P][row]
+        local velocity = columns[V][row]
         -- Do something
     end
 end
