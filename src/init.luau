@@ -886,22 +886,22 @@ do
       		local row = i
       		i-=1
 
-      		if queryLength == 1 then
+      		if not B then
      			return entityId, a[row]
-      		elseif queryLength == 2 then
+      		elseif not C then
      			return entityId, a[row], b[row]
-      		elseif queryLength == 3 then
+      		elseif not D then
      			return entityId, a[row], b[row], c[row]
-      		elseif queryLength == 4 then
+      		elseif not E then
      			return entityId, a[row], b[row], c[row], d[row]
-      		elseif queryLength == 5 then
+      		elseif not F then
      			return entityId,
         				a[row],
         				b[row],
         				c[row],
         				d[row],
         				e[row]
-      		elseif queryLength == 6 then
+      		elseif not G then
      			return entityId,
      			        a[row],
         				b[row],
@@ -909,7 +909,7 @@ do
         				d[row],
         				e[row],
                         f[row]
-      		elseif queryLength == 7 then
+      		elseif not H then
      			return entityId,
                         a[row],
         				b[row],
@@ -918,7 +918,7 @@ do
         				e[row],
                         f[row],
                         g[row]
-      		elseif queryLength == 8 then
+      		elseif H then
      			return entityId,
                         a[row],
         				b[row],
@@ -930,7 +930,7 @@ do
         				h[row]
       		end
 
-   	    local field = archetype.records
+   	        local field = archetype.records
             for j, id in ids do
                 queryOutput[j] = columns[field[id]][row]
             end
