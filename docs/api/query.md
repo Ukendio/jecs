@@ -4,6 +4,18 @@ A World contains entities which have components. The World is queryable and can 
 
 ## Functions
 
+### drain()
+```luau
+function query:drain(): Query
+```
+This function will impede it from being reset when the query is being iterated.
+
+### next()
+```luau
+function query:next(): Query
+```
+Get the next result in the query. Drain must have been called beforehand or otherwise it will error.
+
 ### with()
 ```luau
 function query:with(
