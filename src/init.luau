@@ -813,7 +813,7 @@ do
         end
     end
 
-    local function world_query_next(): any
+    local function world_query_iter_next(): any
         local entityId = entities[i]
   		while entityId == nil do
  			lastArchetype += 1
@@ -1048,8 +1048,16 @@ do
         if not drain then
             query_init(query)
         end
-        return world_query_next
+        return world_query_iter_next
     end
+
+    local function world_query_next()
+        if not drain then
+            error("Did you forget to call query:drain()?")
+        end
+        return world_query_iter_next()
+    end
+
 
     local it = {
         __iter = world_query_iter,

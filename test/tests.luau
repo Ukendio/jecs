@@ -296,14 +296,19 @@ TEST("world:query()", function()
   		world:set(eAB, A, true)
   		world:set(eAB, B, true)
 
-  		local q = world:query(A)
+  		local q = world:query(A):drain()
 
-  		local e, data = q:next()
+  		local e, data = q.next()
   		while e do
-            if e ~= eA and e ~= eAB then
+            if e == eA then
+                CHECK(data)
+            elseif e == eAB then
+                CHECK(data)
+            else
                 CHECK(false)
             end
- 			e, data = q:next()
+
+ 			e, data = q.next()
   		end
         CHECK(true)
    	end
@@ -743,7 +748,7 @@ do
         added = true
         local q = world:query(T):without(PreviousT):drain()
         return function()
-            local id, data = q:next()
+            local id, data = q.next()
             if not id then
                 return nil
             end
@@ -762,7 +767,7 @@ do
         local q = world:query(T, PreviousT):drain()
 
         return function()
-            local id, new, old = q:next()
+            local id, new, old = q.next()
             while true do
                 if not id then
                     return nil
@@ -788,7 +793,7 @@ do
 
         local q = world:query(PreviousT):without(T):drain()
         return function()
-            local id = q:next()
+            local id = q.next()
             if id then
                 world:remove(id, PreviousT)
             end
