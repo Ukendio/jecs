@@ -984,13 +984,13 @@ do
 
          			va[row], vb[row], vc[row] = fn(va[row], vb[row], vc[row])
           		elseif queryLength == 4 then
-         			local a = columns[tr[a]]
-         			local b = columns[tr[b]]
-         			local c = columns[tr[c]]
-         			local d = columns[tr[d]]
+         			local va = columns[tr[a]]
+         			local vb = columns[tr[b]]
+         			local vc = columns[tr[c]]
+         			local vd = columns[tr[d]]
 
-         			a[row], b[row], c[row], d[row] = fn(
-         			    a[row], b[row], c[row], d[row])
+         			va[row], vb[row], vc[row], vd[row] = fn(
+         			    va[row], vb[row], vc[row], vd[row])
           		else
                     local field = archetype.records
                     for j, id in ids do
