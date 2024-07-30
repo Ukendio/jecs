@@ -131,7 +131,7 @@ local function ECS_ENTITY_T_LO(e: i53): i24
 	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) // ECS_ENTITY_MASK else e
 end
 
-local function STRIP_GENERATION(e: i53): i24
+local function _STRIP_GENERATION(e: i53): i24
 	return ECS_ENTITY_T_LO(e)
 end
 
@@ -159,7 +159,7 @@ local function entity_index_get_alive(index: EntityIndex, e: i24): i53
 	error(ERROR_ENTITY_NOT_ALIVE)
 end
 
-local function entity_index_sparse_get(entityIndex, id)
+local function _entity_index_sparse_get(entityIndex, id)
 	return entityIndex.sparse[entity_index_get_alive(entityIndex, id)]
 end
 
@@ -276,7 +276,7 @@ local function id_record_ensure(
 	return archetypesMap
 end
 
-local function ECS_ID_IS_WILDCARD(e: i53): boolean
+local function _ECS_ID_IS_WILDCARD(e: i53): boolean
 	assert(ECS_IS_PAIR(e))
 	local first = ECS_ENTITY_T_HI(e)
 	local second = ECS_ENTITY_T_LO(e)
