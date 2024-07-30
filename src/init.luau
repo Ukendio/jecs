@@ -748,6 +748,7 @@ do
     local columns
 
     local A, B, C, D, E, F, G, H
+    local I -- tombstone
     local a, b, c, d, e, f, g, h
 
     local init
@@ -935,7 +936,7 @@ do
                 queryOutput[j] = columns[field[id]][row]
             end
 
-      		return entityId, unpack(queryOutput, 1, queryLength)
+      		return entityId, unpack(queryOutput)
     end
 
     local function world_query_without(self, ...)
@@ -977,23 +978,23 @@ do
           		local columns = archetype.columns
                 local tr = archetype.records
           		for row in archetype.entities do
-              		if queryLength == 1 then
+              		if not B then
              			local va = columns[tr[A]]
              			local pa = fn(va[row])
 
              			va[row] = pa
-              		elseif queryLength == 2 then
+              		elseif not C then
              			local va = columns[tr[A]]
              			local vb = columns[tr[B]]
 
              			va[row], vb[row] = fn(va[row], vb[row])
-              		elseif queryLength == 3 then
+              		elseif not D then
              			local va = columns[tr[A]]
              			local vb = columns[tr[B]]
              			local vc = columns[tr[C]]
 
              			va[row], vb[row], vc[row] = fn(va[row], vb[row], vc[row])
-              		elseif queryLength == 4 then
+              		elseif not E then
              			local va = columns[tr[A]]
              			local vb = columns[tr[B]]
              			local vc = columns[tr[C]]
@@ -1088,7 +1089,7 @@ do
     	local length = 0
 
         local components = { ... } :: any
-        A, B, C, D, E, F, G, H = ...
+        A, B, C, D, E, F, G, H, I = ...
     	local archetypes = world.archetypes
 
     	local firstArchetypeMap: ArchetypeMap
