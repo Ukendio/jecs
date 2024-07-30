@@ -1,4 +1,4 @@
-# Query
+# World
 
 A World contains entities which have components. The World is queryable and can be used to get entities with a specific set of components.
 
@@ -109,10 +109,10 @@ Adds or changes the entity's component.
 ### query()
 ```luau
 function World:query(
-    ...: Entity<T> -- The component IDs to query with. Entities that satifies the conditions will be returned
-): Query<...Entity<T>> -- Returns the Query which gets the entity and their corresponding data when iterated
+    ...: Entity -- The IDs to query with
+): Query -- Returns the Query
 ```
-Creates a [`query`](query) with the given component IDs.
+Creates a [`query`](query) with the given IDs. Entities that satisfies the conditions of the query will be returned and their corresponding data.
 
 Example:
 ::: code-group
@@ -129,4 +129,8 @@ for (const [id, position, velocity] of world.query(Position, Velocity) {
 }
 ```
 
+:::
+
+:::info
+Queries are uncached by default, this is generally very cheap unless you have high fragmentation from e.g. relationships.
 :::

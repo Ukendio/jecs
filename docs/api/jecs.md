@@ -11,8 +11,6 @@ jecs.World: World
 
 ### Wildcard
 
-### z<>
-
 ## Functions
 
 ### pair()
