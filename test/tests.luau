@@ -516,8 +516,27 @@ TEST("world:query()", function()
 		CHECK(count == 2)
 	end
 
+	do CASE "despawning while iterating"
+        local world = jecs.World.new()
+		local A = world:component()
+		local B = world:component()
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+		world:add(e1, A)
+		world:add(e2, A)
+		world:add(e2, B)
+
+		local count = 0
+		for id in world:query(A) do
+		    world:clear(id)
+			count += 1
+		end
+		CHECK(count == 2)
+	end
+
 	do CASE "iterator invalidation"
-	    do CASE "adding"
+		do CASE "adding"
 			SKIP()
             local world = jecs.World.new()
 			local A = world:component()
