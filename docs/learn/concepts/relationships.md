@@ -181,9 +181,9 @@ for (const [id] of world.query(pair(Likes, jecs.Wildcard))) {
 
 Wildcards may used for the relationship or target part of a pair
 
-```c
-"pair(Likes, jecs.Wildcard)" // Matches all Likes relationships
-"pair(jecs.Wildcard, Alice)" // Matches all relationships with Alice as target
+```luau
+pair(Likes, jecs.Wildcard) -- Matches all Likes relationships
+pair(jecs.Wildcard, Alice) -- Matches all relationships with Alice as target
 ```
 
 ## Relationship performance
