@@ -739,7 +739,7 @@ do
     local lastArchetype: number
     local archetype: Archetype
     local queryOutput: { any }
-
+    local queryLength: number
     local entities: { number }
     local i: number
 
@@ -748,7 +748,6 @@ do
     local columns
 
     local A, B, C, D, E, F, G, H
-    local I -- tombstone
     local a, b, c, d, e, f, g, h
 
     local init
@@ -768,6 +767,7 @@ do
        	end
 
        	queryOutput = {}
+        queryLength = #ids
 
         entities = archetype.entities
        	i = #entities
@@ -809,7 +809,7 @@ do
             e = columns[records[E]]
             f = columns[records[F]]
             g = columns[records[G]]
-        elseif not I then
+        elseif H then
             a = columns[records[A]]
             b = columns[records[B]]
             c = columns[records[D]]
@@ -872,7 +872,7 @@ do
                     e = columns[records[E]]
                     f = columns[records[F]]
                     g = columns[records[G]]
-                elseif not I then
+                elseif H then
                     a = columns[records[A]]
                     b = columns[records[B]]
                     c = columns[records[D]]
@@ -886,22 +886,22 @@ do
       		local row = i
       		i-=1
 
-      		if not B then
+      		if queryLength == 1 then
      			return entityId, a[row]
-      		elseif not C then
+      		elseif queryLength == 2 then
      			return entityId, a[row], b[row]
-      		elseif not D then
+      		elseif queryLength == 3 then
      			return entityId, a[row], b[row], c[row]
-      		elseif not E then
+      		elseif queryLength == 4 then
      			return entityId, a[row], b[row], c[row], d[row]
-      		elseif not F then
+      		elseif queryLength == 5 then
      			return entityId,
         				a[row],
         				b[row],
         				c[row],
         				d[row],
         				e[row]
-      		elseif not G then
+      		elseif queryLength == 6 then
      			return entityId,
      			        a[row],
         				b[row],
@@ -909,7 +909,7 @@ do
         				d[row],
         				e[row],
                         f[row]
-      		elseif not H then
+      		elseif queryLength == 7 then
      			return entityId,
                         a[row],
         				b[row],
@@ -918,7 +918,7 @@ do
         				e[row],
                         f[row],
                         g[row]
-      		elseif not I then
+      		elseif queryLength == 8 then
      			return entityId,
                         a[row],
         				b[row],
@@ -930,12 +930,12 @@ do
         				h[row]
       		end
 
-   	        local field = archetype.records
+   	    local field = archetype.records
             for j, id in ids do
                 queryOutput[j] = columns[field[id]][row]
             end
 
-      		return entityId, unpack(queryOutput)
+      		return entityId, unpack(queryOutput, 1, queryLength)
     end
 
     local function world_query_without(self, ...)
@@ -977,23 +977,23 @@ do
           		local columns = archetype.columns
                 local tr = archetype.records
           		for row in archetype.entities do
-              		if not B then
+              		if queryLength == 1 then
              			local va = columns[tr[A]]
              			local pa = fn(va[row])
 
              			va[row] = pa
-              		elseif not C then
+              		elseif queryLength == 2 then
              			local va = columns[tr[A]]
              			local vb = columns[tr[B]]
 
              			va[row], vb[row] = fn(va[row], vb[row])
-              		elseif not D then
+              		elseif queryLength == 3 then
              			local va = columns[tr[A]]
              			local vb = columns[tr[B]]
              			local vc = columns[tr[C]]
 
              			va[row], vb[row], vc[row] = fn(va[row], vb[row], vc[row])
-              		elseif not E then
+              		elseif queryLength == 4 then
              			local va = columns[tr[A]]
              			local vb = columns[tr[B]]
              			local vc = columns[tr[C]]
@@ -1088,7 +1088,7 @@ do
     	local length = 0
 
         local components = { ... } :: any
-        A, B, C, D, E, F, G, H, I = ...
+        A, B, C, D, E, F, G, H = ...
     	local archetypes = world.archetypes
 
     	local firstArchetypeMap: ArchetypeMap
@@ -1107,12 +1107,12 @@ do
 
     	for id in firstArchetypeMap.cache do
     		local compatibleArchetype = archetypes[id]
-    		local tr = compatibleArchetype.records
+    		local archetypeRecords = compatibleArchetype.records
 
     		local skip = false
 
     		for i, componentId in components do
-    			local index = tr[componentId]
+    			local index = archetypeRecords[componentId]
     			if not index then
     				skip = true
     				break
