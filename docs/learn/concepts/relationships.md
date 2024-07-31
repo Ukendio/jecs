@@ -159,25 +159,7 @@ world.add(e, jecs.ChildOf, Position)
 
 ## Relationship wildcards
 
-When querying for relationship pairs, it is often useful to be able to find all instances for a given relationship or target. To accomplish this, an application can use wildcard expressions. Consider the following example, that queries for all entities with a `Likes` relationship:
-
-:::code-group
-```luau [luau]
-for id in world:query(pair(Likes, jecs.Wildcard)) do
-    local rel = get_name(ecs_pair_relation(world.entityIndex, id))
-    local obj = get_name(ecs_pair_object(world.entityIndex, id))
-    print(`entity {id} has relationship {rel} {obj}`)
-end
-
-```
-```typescript [typescript]
-for (const [id] of world.query(pair(Likes, jecs.Wildcard))) {
-    const rel = get_name(ecs_pair_relation(world.entityIndex, id))
-    const obj = get_name(ecs_pair_object(world.entityIndex, id))
-    print(`entity ${id} has relationship ${rel} ${obj}`)
-}
-```
-:::
+When querying for relationship pairs, it is often useful to be able to find all instances for a given relationship or target. To accomplish this, an game can use wildcard expressions.
 
 Wildcards may used for the relationship or target part of a pair
 
@@ -209,7 +191,7 @@ Because of the way pair IDs are encoded, a pair will never be in the low id rang
 Fragmentation is a property of archetype-based ECS implementations where entities are spread out over more archetypes as the number of different component combinations increases. The overhead of fragmentation is visible in two areas:
 - Archetype creation
 - ueries (queries have to match & iterate more archetypes)
-Applications that make extensive use of relationships might observe high levels of fragmentation, as relationships can introduce many different combinations of components. While the Flecs storage is optimized for supporting large amounts (hundreds of thousands) of archetypes, fragmentation is a factor to consider when using relationships.
+Games that make extensive use of relationships might observe high levels of fragmentation, as relationships can introduce many different combinations of components. While the Jecs storage is optimized for supporting large amounts (hundreds of thousands) of archetypes, fragmentation is a factor to consider when using relationships.
 
 Union relationships are planned along with other improvements to decrease the overhead of fragmentation introduced by relationships.
 
@@ -217,7 +199,7 @@ Union relationships are planned along with other improvements to decrease the ov
 
 When an ID added to an entity is deleted, all references to that ID are deleted from the storage. For example, when the component Position is deleted it is removed from all entities, and all archetypes with the Position component are deleted. While not unique to relationships, it is more common for relationships to trigger cleanup actions, as relationship pairs contain regular entities.
 
-The opposite is also true. Because relationship pairs can contain regular entities which can be created on the fly, archetype creation is more common than in applications that do not use relationships. While Jecs is optimized for fast archetypes creation, creating and cleaning up archetypes is inherently more expensive than creating/deleting an entity. Therefore archetypes creation is a factor to consider, especially for games that make extensive use of relationships.
+The opposite is also true. Because relationship pairs can contain regular entities which can be created on the fly, archetype creation is more common than in games that do not use relationships. While Jecs is optimized for fast archetypes creation, creating and cleaning up archetypes is inherently more expensive than creating/deleting an entity. Therefore archetypes creation is a factor to consider, especially for games that make extensive use of relationships.
 
 ### Indexing
 
