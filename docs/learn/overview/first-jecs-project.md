@@ -1,6 +1,6 @@
 # First Jecs project
 
-Now that you have installed Jecs, you can create your [World](world.md).
+Now that you have installed Jecs, you can create your [World](api/world.md).
 
 :::code-group
 ```luau [luau]
