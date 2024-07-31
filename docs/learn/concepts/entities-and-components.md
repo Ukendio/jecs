@@ -23,7 +23,8 @@ Operation | Description
 
 In an ECS, components need to be uniquely identified. In Jecs this is done by making each component is its own unique entity. If a game has a component Position and Velocity, there will be two entities, one for each component. Component entities can be distinguished from "regular" entities as they have a `Component` component. An example:
 
-:::code-group
+::: code-group
+
 ```luau [luau]
 local Position = world:component() :: jecs.Entity<Vector3>
 print(world:has(Position, Jecs.Component))
@@ -34,9 +35,12 @@ const Position = world.component<Vector3>();
 print(world.has(Position, Jecs.Component))
 ```
 
+:::
+
 All of the APIs that apply to regular entities also apply to component entities. This means it is possible to contexualize components with logic by adding traits to components
 
-:::code-group
+::: code-group
+
 ```luau [luau]
 local Networked = world:component()
 local Type = world:component()
@@ -107,3 +111,5 @@ for (const [id, ty, name] of world.query(Type, Name).with(Networked)) {
     updatePositions.FireServer(packet)
 }
 ```
+
+:::
