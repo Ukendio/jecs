@@ -24,6 +24,7 @@ for _ in world:query(Position, Velocity) do end
 ```typescript [typescript]
 for (const [_] of world.query(Position, Velocity)) {}
 ```
+:::
 
 ### Components
 A component is any single ID that can be added to an entity. This includes tags and regular entities, which are IDs that do not have the builtin `Component` component. To match a query, an entity must have all the requested components. An example:
@@ -71,6 +72,7 @@ const Likes = world.entity()
 const bob = world.entity()
 for (const [_] of world.query(pair(Likes, bob))) {}
 ```
+:::
 
 When a query pair contains a wildcard, the `world:target()` function can be used to determine the target of the pair element that matched the query:
 
@@ -87,6 +89,7 @@ for (const [_] of world.query(pair(Likes, jecs.Wildcard))) {
     print(`entity ${getName(id)} likes ${getName(world.target(id, Likes))}`)
 }
 ```
+:::
 
 ### Filters
 Filters are extensions to queries which allow you to select entities from a more complex pattern but you don't actually care about the component values.
