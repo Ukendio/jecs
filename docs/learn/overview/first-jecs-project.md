@@ -1,6 +1,6 @@
 # First Jecs project
 
-Now that you have installed Jecs, you can create your [World](api/world.md).
+Now that you have installed Jecs, you can create your [World](https://ukendio.github.io/jecs/api/world.html).
 
 :::code-group
 ```luau [luau]
