@@ -2,7 +2,10 @@
 \usepackage{mathrsfs,comment}
 \usepackage[usenames,dvipsnames]{color}
 \usepackage[normalem]{ulem}
-\usepackage{url}
+\usepackage[hyphens]{url}
+\usepackage{breakurl}
+\usepackage[utf8]{inputenc} % Ensure proper encoding
+\usepackage{hyperref} % For clickable links
 \usepackage{listings}
 \usepackage[all,arc,2cell]{xy}
 \UseAllTwocells
@@ -259,7 +262,7 @@ The Entity Component System (ECS) architecture provides infrastructure for repre
 \subsection{Cache Locality}
 When a CPU loads data from Random Access Memory it is stored in a cache tier (i.e. L1, L2, L3), 
 where the lower tiers are allowed to operate faster relatively to how closely 
-embedded it is to the CPU.\cite{Flecs} When a program requests some memory, the CPU grabs a whole slab, usually from around 64 to 128 bytes starting from the requested address, and puts it in the CPU cache, i.e. cache line. If the next requested data is in the same slab, the CPU reads it straight from the cache, which is faster than hitting RAM. Inversely, when there is a cache miss, i.e. it is not in the same slab then the CPU cannot process the next instruction because it needs said data and waits a couple of CPU cycles until it successfully fetches it. (Nystrom, 2011). 
+embedded it is to the CPU.\cite{Nystrom} When a program requests some memory, the CPU grabs a whole slab, usually from around 64 to 128 bytes starting from the requested address, and puts it in the CPU cache, i.e. cache line. If the next requested data is in the same slab, the CPU reads it straight from the cache, which is faster than hitting RAM. Inversely, when there is a cache miss, i.e. it is not in the same slab then the CPU cannot process the next instruction because it needs said data and waits a couple of CPU cycles until it successfully fetches it. (Nystrom, 2011). 
 
 \subsection{Data Layouts}
 
@@ -298,7 +301,7 @@ Vectorization is where code meets the requirements to use SIMD instructions. Tho
 
 \subsection{Archetype}
 Storing data in contiguous arrays to maximize vectorization and SIMD is the ideal situation, 
-however it is a very complex problem in implementation. Below the ABC problem\cite{Anderson} 
+however it is a very complex problem in implementation. Below the ABC problem\cite{ABC} 
 is demonstrated where 3 entities all have the component \texttt{A} which can be stored in a single 
 column:
 
@@ -363,7 +366,8 @@ references to the next archetype based on component types (see Figure 1).
 Each edge in the graph corresponds to a component that can be added, akin to an 
 intersection operation on the archetype set. \[A \cap \left( B \cap C \right)\] 
 Removal of a component from the archetype is akin to a subtraction operation from the set. \[A \cap \left( B \cap C \right) - {C}\]`. 
-This archetype graph facilitates $\mathsf{O}(1)$ transitions between adjacent archetypes to mitigate the cost of fragmentation.
+This archetype graph facilitates $\mathsf{O}(1)$ transitions between adjacent archetypes to 
+mitigate the cost of structual changes.
 
 \begin{figure}[htbp]
 \centering
@@ -401,7 +405,7 @@ This method ensures that the dense array remains tightly packed.\cite{Caini}
 The sparse set structure is beneficial for programs that frequently manipulate the component structures of entities. However, querying multiple components can become less efficient due to the need to load and reference each component array individually. In contrast to archetypes, which only needs to iterate over entities matching their query. 
 
 \section{Implementation}
-The decision to use Lua scripting language for the ECS implementation was ultimately chosen because
+The decision to use Luau\cite{Luau} for the ECS implementation was ultimately chosen because
 a pure Lua implementation confers distinct advantages in terms 
 of compatibility and portability. By eschewing reliance on external C or C++ libraries 
 or bindings, we ensure that our ECS framework remains platform-agnostic and 
@@ -422,11 +426,11 @@ The ECS utilize several key data structures to organize and manage entities and 
     
     \item \textbf{EntityIndex:} Maps entity IDs to their corresponding records.
 
-    \item \textbf{ComponentIndex}: Maps IDs to archetype records. 
-
-    \item \textbf{ArchetypeIndex}: Maps type hashes to archetype. 
+    \item \textbf{ComponentIndex}: Maps IDs to archetype maps. 
 
     \item \textbf{ArchetypeMap:} Maps archetype IDs to archetype records which is used to find the column for the corresponding component.
+
+    \item \textbf{ArchetypeIndex}: Maps type hashes to archetype. 
     
     \item \textbf{Archetypes:} Maintains a collection of archetypes indexed by their IDs.
 \end{itemize}
@@ -634,45 +638,53 @@ meticulous evaluations of the minimal ECS implementation iterations.
 My thanks also extend to Eryn L. K. and Lucien Greathouse for their invaluable 
 guidance and contributions to the Matter project.
 
-\begin{thebibliography}{9}
+\sloppy
+\tolerance=2000
+\hbadness=10000
+\begin{thebibliography}{10000}
 
 \bibitem{Martin}
-Adam Martin (2007, September).
-Entity Systems are the future of MMOG development - \\ Part 1.
+Martin, Adam (2007). 
+\textit{Entity Systems are the future of MMOG development - Part 1}. 
 \url{https://t-machine.org/index.php/2007/09/03/entity-systems-are-the-future-of-mmog-development-part-1/}
 
 \bibitem{Muratori}
-Casey Muratori (2014, June). 
-Semantic Compression.
+Muratori, Casey (2014). 
+\textit{Semantic Compression}. 
 \url{https://caseymuratori.com/blog_0015}
 
-\bibitem{Flecs}
-Sanders Mertens (2019). 
-Flecs. 
-\url{https://github.com/SanderMertens/flecs}
+\bibitem{ABC} 
+Mertens, Sanders (2022). \texttt{Building Games in ECS with Entity Relationships. See the ABC problem, component index.}
+\url{https://ajmmertens.medium.com/building-an-ecs-1-where-are-my-entities-and-components-63d07c7da742}
+
+\bibitem{Archetypes} 
+Mertens, Sanders (2022). \texttt{Building an ECS \#2: Archetypes and Vectorization.}
+\url{https://ajmmertens.medium.com/building-an-ecs-2-archetypes-and-vectorization-fe21690805f9}
 
 \bibitem{Anderson}
-Carter Anderson (2022).
-Bevy. 
-\url{https://github.com/bevyengine/bevy}
+Anderson, Carter (2022). 
+\textit{Bevy}. 
+Available at: \url{https://github.com/bevyengine/bevy}
 
 \bibitem{Caini}
-Michele Caini (2020, August). 
-ECS back and forth. 
-\url{https://skypjack.github.io/2020-08-02-ecs-baf-part-9/}
+Caini, Michele (2020). 
+\textit{ECS back and forth}. 
+Available at: \url{https://skypjack.github.io/2020-08-02-ecs-baf-part-9/}
 
 \bibitem{Nystrom}
-Robert Nystrom (2011). 
-Game Programming Patterns.
+Nystrom, Robert (2011). 
+\textit{Game Programming Patterns}.
 
 \bibitem{gdc}
-Scott Bilas (2002). 
-A Data-Driven Object System (GDC 2002 Talk by Scott Bilas). 
-\url{https://www.youtube.com/watch?v=Eb4-0M2a9xE}
+Bilas, Scott (2002). 
+\textit{A Data-Driven Object System} (GDC 2002 Talk by Scott Bilas). 
+Available at: \url{https://www.youtube.com/watch?v=Eb4-0M2a9xE}
 
 \bibitem{matter}
-Matter, an archetypal ECS for Roblox
-https://matter-ecs.github.io/matter/
+\textit{Matter, an archetypal ECS for Roblox}. 
+Available at: \url{https://matter-ecs.github.io/matter/}
+
+\bibitem{luau}
 
 \end{thebibliography}
 
