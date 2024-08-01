@@ -24,7 +24,7 @@ type Archetype = {
 	type: string | number,
 	entities: { number },
 	columns: { Column },
-	records: { [number]: number },
+	records: { ArchetypeRecord },
 }
 type Record = {
 	archetype: Archetype,
@@ -35,16 +35,11 @@ type Record = {
 
 type EntityIndex = { dense: { [i24]: i53 }, sparse: { [i53]: Record } }
 
-type ArchetypeRecord = number
---[[
-TODO:
-{
+type ArchetypeRecord = {
 	index: number,
 	count: number,
 	column: number
 }
-
-]]
 
 type ArchetypeMap = {
 	cache: { ArchetypeRecord },
@@ -191,17 +186,17 @@ local function archetype_move(entityIndex: EntityIndex, to: Archetype,
 	local sourceEntities = from.entities
 	local destinationEntities = to.entities
 	local destinationColumns = to.columns
-	local tr = to.records
+	local records = to.records
 	local types = from.types
 
 	for i, column in columns do
 		-- Retrieves the new column index from the source archetype's record from each component
 		-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
-		local targetColumn = destinationColumns[tr[types[i]]]
+		local tr = records[types[i]]
 
 		-- Sometimes target column may not exist, e.g. when you remove a component.
-		if targetColumn then
-			targetColumn[destinationRow] = column[sourceRow]
+		if tr then
+		    destinationColumns[tr.column][destinationRow] = column[sourceRow]
 		end
 		-- If the entity is the last row in the archetype then swapping it would be meaningless.
 		local last = #column
@@ -293,12 +288,13 @@ local function archetype_create(world: any, types: { i24 }, prev: Archetype?): A
 	local columns = (table.create(length) :: any) :: { Column }
 	local componentIndex = world.componentIndex
 
-	local records = {}
+	local records: { ArchetypeRecord } = {}
 	for i, componentId in types do
+	    local tr = { column = i, count = 1, index = 1 }
 		local idr = id_record_ensure(componentIndex, componentId)
-		idr.cache[id] = i
+		idr.cache[id] = tr
 		idr.size += 1
-		records[componentId] = i
+		records[componentId] = tr
 		if ECS_IS_PAIR(componentId) then
 			local relation = ecs_pair_relation(world.entityIndex, componentId)
 			local object = ecs_pair_object(world.entityIndex, componentId)
@@ -309,11 +305,11 @@ local function archetype_create(world: any, types: { i24 }, prev: Archetype?): A
 			local o = ECS_PAIR(EcsWildcard, object)
 			local idr_o = id_record_ensure(componentIndex, o)
 
-			records[r] = i
-			records[o] = i
+			records[r] = tr
+			records[o] = tr
 
-			idr_r.cache[id] = i
-			idr_o.cache[id] = i
+			idr_r.cache[id] = tr
+			idr_o.cache[id] = tr
 
 			idr_r.size += 1
 			idr_o.size += 1
@@ -375,7 +371,7 @@ local function world_target(world: World, entity: i53, relation: i24--[[, nth: n
 		return nil
 	end
 
-	return ecs_pair_object(entityIndex, archetype.types[archetypeRecord])
+	return ecs_pair_object(entityIndex, archetype.types[archetypeRecord.column])
 end
 
 local function world_parent(world: World, entity: i53)
@@ -478,7 +474,7 @@ local function world_set(world: World, entityId: i53, componentId: i53, data: un
 		-- If the archetypes are the same it can avoid moving the entity
 		-- and just set the data directly.
 		local archetypeRecord = to.records[componentId]
-		from.columns[archetypeRecord][record.row] = data
+		from.columns[archetypeRecord.column][record.row] = data
 		-- Should fire an OnSet event here.
 		return
 	end
@@ -494,7 +490,7 @@ local function world_set(world: World, entityId: i53, componentId: i53, data: un
 	end
 
 	local archetypeRecord = to.records[componentId]
-	to.columns[archetypeRecord][record.row] = data
+	to.columns[archetypeRecord.column][record.row] = data
 end
 
 local function world_component(world: World): i53
@@ -630,14 +626,14 @@ end
 local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?) -> (...any)
 do
     -- Keeping the function as small as possible to enable inlining
-    local function fetch(id: i24, records, columns, row): any
+    local function fetch(id: i24, records: { ArchetypeRecord }, columns, row): any
     	local tr = records[id]
 
     	if not tr then
     		return nil
     	end
 
-    	return columns[tr][row]
+    	return columns[tr.column][row]
     end
 
     function world_get(world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
@@ -766,7 +762,6 @@ do
        	end
 
        	queryOutput = {}
-        queryLength = #ids
 
         entities = archetype.entities
        	i = #entities
@@ -774,48 +769,48 @@ do
 
         local records = archetype.records
         if not B then
-            a = columns[records[A]]
+            a = columns[records[A].column]
         elseif not C then
-            a = columns[records[A]]
-            b = columns[records[B]]
+            a = columns[records[A].column]
+            b = columns[records[B].column]
         elseif not D then
-            a = columns[records[A]]
-            b = columns[records[B]]
-            c = columns[records[C]]
+            a = columns[records[A].column]
+            b = columns[records[B].column]
+            c = columns[records[C].column]
         elseif not E then
-            a = columns[records[A]]
-            b = columns[records[B]]
-            c = columns[records[C]]
-            d = columns[records[D]]
+            a = columns[records[A].column]
+            b = columns[records[B].column]
+            c = columns[records[C].column]
+            d = columns[records[D].column]
         elseif not F then
-            a = columns[records[A]]
-            b = columns[records[B]]
-            c = columns[records[C]]
-            d = columns[records[D]]
-            e = columns[records[E]]
+            a = columns[records[A].column]
+            b = columns[records[B].column]
+            c = columns[records[C].column]
+            d = columns[records[D].column]
+            e = columns[records[E].column]
         elseif not G then
-            a = columns[records[A]]
-            b = columns[records[B]]
-            c = columns[records[C]]
-            d = columns[records[D]]
-            e = columns[records[E]]
-            f = columns[records[F]]
+            a = columns[records[A].column]
+            b = columns[records[B].column]
+            c = columns[records[C].column]
+            d = columns[records[D].column]
+            e = columns[records[E].column]
+            f = columns[records[F].column]
         elseif not H then
-            a = columns[records[A]]
-            b = columns[records[B]]
-            c = columns[records[C]]
-            d = columns[records[D]]
-            e = columns[records[E]]
-            f = columns[records[F]]
-            g = columns[records[G]]
+            a = columns[records[A].column]
+            b = columns[records[B].column]
+            c = columns[records[C].column]
+            d = columns[records[D].column]
+            e = columns[records[E].column]
+            f = columns[records[F].column]
+            g = columns[records[G].column]
         elseif H then
-            a = columns[records[A]]
-            b = columns[records[B]]
-            c = columns[records[D]]
-            e = columns[records[E]]
-            f = columns[records[F]]
-            g = columns[records[G]]
-            h = columns[records[H]]
+            a = columns[records[A].column]
+            b = columns[records[B].column]
+            c = columns[records[D].column]
+            e = columns[records[E].column]
+            f = columns[records[F].column]
+            g = columns[records[G].column]
+            h = columns[records[H].column]
         end
     end
 
@@ -840,7 +835,7 @@ do
 					entityId = entities[i]
 					columns = archetype.columns
 					local records = archetype.records
-					a = columns[records[A]]
+					a = columns[records[A].column]
 				end
 
 				local row = i
@@ -866,8 +861,8 @@ do
 					entityId = entities[i]
 					columns = archetype.columns
 					local records = archetype.records
-					a = columns[records[A]]
-					b = columns[records[B]]
+					a = columns[records[A].column]
+					b = columns[records[B].column]
 				end
 
 				local row = i
@@ -893,9 +888,9 @@ do
 					entityId = entities[i]
 					columns = archetype.columns
 					local records = archetype.records
-					a = columns[records[A]]
-					b = columns[records[B]]
-					c = columns[records[C]]
+					a = columns[records[A].column]
+					b = columns[records[B].column]
+					c = columns[records[C].column]
 				end
 
 				local row = i
@@ -921,15 +916,14 @@ do
 					entityId = entities[i]
 					columns = archetype.columns
 					local records = archetype.records
-					a = columns[records[A]]
-					b = columns[records[B]]
-					c = columns[records[C]]
-					d = columns[records[D]]
+					a = columns[records[A].column]
+					b = columns[records[B].column]
+					c = columns[records[C].column]
+					d = columns[records[D].column]
 				end
 
 				local row = i
 				i-=1
-
 
 				return entityId, a[row], b[row], c[row], d[row]
 			end
@@ -953,34 +947,35 @@ do
 					local records = archetype.records
 
 					if not F then
-						a = columns[records[A]]
-						b = columns[records[B]]
-						c = columns[records[C]]
-						d = columns[records[D]]
-						e = columns[records[E]]
+						a = columns[records[A].column]
+						b = columns[records[B].column]
+						c = columns[records[C].column]
+						d = columns[records[D].column]
+						e = columns[records[E].column]
 					elseif not G then
-						a = columns[records[A]]
-						b = columns[records[B]]
-						c = columns[records[C]]
-						d = columns[records[D]]
-						e = columns[records[E]]
-						f = columns[records[F]]
+						a = columns[records[A].column]
+						b = columns[records[B].column]
+						c = columns[records[C].column]
+						d = columns[records[D].column]
+						e = columns[records[E].column]
+						f = columns[records[F].column]
 					elseif not H then
-						a = columns[records[A]]
-						b = columns[records[B]]
-						c = columns[records[C]]
-						d = columns[records[D]]
-						e = columns[records[E]]
-						f = columns[records[F]]
-						g = columns[records[G]]
-					elseif H then
-						a = columns[records[A]]
-						b = columns[records[B]]
-						c = columns[records[D]]
-						e = columns[records[E]]
-						f = columns[records[F]]
-						g = columns[records[G]]
-						h = columns[records[H]]
+						a = columns[records[A].column]
+						b = columns[records[B].column]
+						c = columns[records[C].column]
+						d = columns[records[D].column]
+						e = columns[records[E].column]
+						f = columns[records[F].column]
+						g = columns[records[G].column]
+					elseif not I then
+						a = columns[records[A].column]
+						b = columns[records[B].column]
+						c = columns[records[C].column]
+						d = columns[records[D].column]
+						e = columns[records[E].column]
+						f = columns[records[F].column]
+						g = columns[records[G].column]
+						h = columns[records[H].column]
 					end
 				end
 
@@ -999,7 +994,7 @@ do
 
 				local field = archetype.records
 				for j, id in ids do
-					queryOutput[j] = columns[field[id]][row]
+					queryOutput[j] = columns[field[id].column][row]
 				end
 
 				return entityId, unpack(queryOutput)
@@ -1047,34 +1042,34 @@ do
                 local tr = archetype.records
           		for row in archetype.entities do
               		if not B then
-             			local va = columns[tr[A]]
+             			local va = columns[tr[A].column]
              			local pa = fn(va[row])
 
              			va[row] = pa
               		elseif not C then
-             			local va = columns[tr[A]]
-             			local vb = columns[tr[B]]
+             			local va = columns[tr[A].column]
+             			local vb = columns[tr[B].column]
 
              			va[row], vb[row] = fn(va[row], vb[row])
               		elseif not D then
-             			local va = columns[tr[A]]
-             			local vb = columns[tr[B]]
-             			local vc = columns[tr[C]]
+             			local va = columns[tr[A].column]
+             			local vb = columns[tr[B].column]
+             			local vc = columns[tr[C].column]
 
              			va[row], vb[row], vc[row] = fn(va[row], vb[row], vc[row])
               		elseif not E then
-             			local va = columns[tr[A]]
-             			local vb = columns[tr[B]]
-             			local vc = columns[tr[C]]
-                        local vd = columns[tr[D]]
+             			local va = columns[tr[A].column]
+             			local vb = columns[tr[B].column]
+             			local vc = columns[tr[C].column]
+                        local vd = columns[tr[D].column]
 
              			va[row], vb[row], vc[row], vd[row] = fn(
              			    va[row], vb[row], vc[row], vd[row])
               		else
                         local field = archetype.records
                         for j, id in ids do
-             			queryOutput[j] = columns[field[id]][row]
-              		end
+                 			queryOutput[j] = columns[field[id].column][row]
+                  		end
              			world_query_replace_values(row, columns,
                             fn(unpack(queryOutput)))
               		end
