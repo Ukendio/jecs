@@ -777,16 +777,12 @@ local function diff(a, b)
     return false
 end
 
-local ChangeTracker: <T>(world: World, component: Entity<T>) -> Tracker<T>
-
-do
-    local world
-    local T
-    local PreviousT
-    local add
-    local is_trivial
+local function ChangeTracker<T>(world, T: Entity<T>): Tracker<T>
+    local PreviousT = jecs.pair(jecs.Rest, T)
+    local add = {}
     local added
     local removed
+    local is_trivial
 
     local function changes_added()
         added = true
@@ -797,9 +793,7 @@ do
                 return nil
             end
 
-            if is_trivial == nil then
-                is_trivial = typeof(data) ~= "table"
-            end
+            is_trivial = typeof(data) ~= "table"
 
             add[id] = data
 
@@ -817,9 +811,11 @@ do
                     return nil
                 end
 
-                if is_trivial and new ~= old then
-                    break
-                elseif diff(new, old) then
+                if not is_trivial then
+                    if diff(new, old) then
+                        break
+                    end
+                elseif new ~= old then
                     break
                 end
 
@@ -874,17 +870,8 @@ do
 
     local tracker = { track = track }
 
-    function ChangeTracker<T>(worldToTrack, component: Entity<T>): Tracker<T>
-        world = worldToTrack
-        T = component
-        -- We just use jecs.Rest because people will probably not use it anyways
-        PreviousT = jecs.pair(jecs.Rest, T)
-        add = {}
-
-        return tracker
-    end
+    return tracker
 end
-
 TEST("changetracker:track()", function()
     local world = jecs.World.new()
 
@@ -966,6 +953,33 @@ TEST("changetracker:track()", function()
             end
             CHECK(removed == 1)
         end)
+    end
+
+    do CASE "multiple change trackers"
+        local A = world:component()
+        local B = world:component()
+        local trackerA = ChangeTracker(world, A)
+        local trackerB = ChangeTracker(world, B)
+
+        local e1 = world:entity()
+        world:set(e1, A, "a1")
+        local e2 = world:entity()
+        world:set(e2, B, "b1")
+
+        trackerA.track(function() end)
+        trackerB.track(function() end)
+
+        world:set(e2, B, "b2")
+        trackerA.track(function(changes)
+            for _, old, new in changes.changed() do
+            end
+        end)
+        trackerB.track(function(changes)
+            for _, old, new in changes.changed() do
+                CHECK(new == "b2")
+            end
+        end)
+
     end
 
 end)
