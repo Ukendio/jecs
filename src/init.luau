@@ -36,7 +36,6 @@ type Record = {
 type EntityIndex = { dense: { [i24]: i53 }, sparse: { [i53]: Record } }
 
 type ArchetypeRecord = {
-	index: number,
 	count: number,
 	column: number
 }
@@ -290,7 +289,7 @@ local function archetype_create(world: any, types: { i24 }, prev: Archetype?): A
 
 	local records: { ArchetypeRecord } = {}
 	for i, componentId in types do
-	    local tr = { column = i, count = 1, index = 1 }
+	    local tr = { column = i, count = 1 }
 		local idr = id_record_ensure(componentIndex, componentId)
 		idr.cache[id] = tr
 		idr.size += 1
