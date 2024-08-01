@@ -4,129 +4,128 @@ A World contains entities which have components. The World is queryable and can 
 
 ## Functions
 
-### new()
+### drain()
 ```luau
-function World.new(): World
+function query:drain(): Query
 ```
-Creates a new world.
+This function will impede it from being reset when the query is being iterated.
+
+### next()
+```luau
+function query:next(): Query
+```
+Get the next result in the query. Drain must have been called beforehand or otherwise it will error.
+
+### with()
+```luau
+function query:with(
+    ...: Entity -- The IDs to query with
+): Query
+```
+Adds IDs to query with, but will not use their data. This is useful for Tags or generally just data you do not care for.
 
 Example:
 ::: code-group
 
 ```luau [luau]
-local world = jecs.World.new()
-```
-
-```ts [typescript]
-import { World } from "@rbxts/jecs";
-
-const world = new World();
-```
-
-:::
-
-## entity()
-```luau
-function World:entity(): Entity -- The new entit.
-```
-Creates a new entity.
-
-Example:
-::: code-group
-
-```luau [luau]
-local entity = world:entity()
-```
-
-```ts [typescript]
-const entity = world.entity();
-```
-
-::
-:
-
-### component()
-```luau
-function World:component<T>(): Entity<T> -- The new componen.
-```
-Creates a new component.
-
-Example:
-::: code-group
-
-```luau [luau]
-local Health = world:component() :: jecs.Entity<number>
-```
-
-```ts [typescript]
-const Health = world.component<number>();
-```
-:::
-
-::: info
-You should use this when creating components.
-
-For example, a Health type should be created using this.
-:::
-
-### get()
-```luau
-function World:get(
-    entity: Entity, -- The entity
-    ...: Entity<T> -- The types to fetch
-): ... -- Returns the component data in the same order they were passed in
-```
-Returns the data for each provided type for the corresponding entity.
-
-:::
-
-### add()
-```luau
-function World:add(
-    entity: Entity, -- The entity
-    id: Entity<T> -- The component ID to add
-): ()
-```
-Adds a component ID to the entity.
-
-This operation adds a single (component) id to an entity.
-
-::: info
-This function is idempotent, meaning if the entity already has the id, this operation will have no side effects.
-:::
-
-
-### set()
-```luau
-function World:set(
-    entity: Entity, -- The entity
-    id: Entity<T>, -- The component ID to set
-    data: T -- The data of the component's type
-): ()
-```
-Adds or changes the entity's component.
-
-### query()
-```luau
-function World:query(
-    ...: Entity<T> -- The component IDs to query with. Entities that satifies the conditions will be returned
-): Query<...Entity<T>> -- Returns the Query which gets the entity and their corresponding data when iterated
-```
-Creates a [`query`](query) with the given component IDs.
-
-Example:
-::: code-group
-
-```luau [luau]
-for id, position, velocity in world:query(Position, Velocity) do
-	-- Do something
+for id, position in world:query(Position):with(Velocity) do
+    -- Do something
 end
 ```
 
 ```ts [typescript]
-for (const [id, position, velocity] of world.query(Position, Velocity) {
+for (const [id, position] of world.query(Position).with(Velocity)) {
     // Do something
 }
 ```
 
+:::
+
+:::info
+Put the IDs inside of `world:query()` instead if you need the data.
+:::
+
+### without()
+
+```luau
+function query:without(
+    ...: Entity -- The IDs to filter against.
+): Query -- Returns the Query
+```
+Removes entities with the provided IDs from the query.
+
+Example:
+::: code-group
+
+```luau [luau]
+for _ in world:query(Position):without(Velocity) do
+    -- Do something
+end
+```
+
+```ts [typescript]
+for (const _ of world.query(Position).without(Velocity)) {
+    // Do something
+}
+```
+
+:::
+
+### replace()
+
+```luau
+function query:replace(
+    fn: (entity: Entity, ...: T...) -> U... -- ): () -- The callback that will transform the entities' data
+```
+This function takes a callback which is given the current queried data of each matching entity. The values returned by the callback will be set as the new data for each given ID on the entity.
+
+Example:
+::: code-group
+
+```luau [luau]
+world:query(Position, Velocity):replace(function(e, position, velocity)
+    return position + velocity, velocity * 0.9
+end
+```
+
+```ts [typescript]
+world
+    .query(Position, Velocity)
+    .replace((e, position, velocity) =>
+        $tuple(position.add(velocity), velocity.mul(0.9)),
+    );
+```
+
+:::
+
+
+### archetypes()
+```luau
+function query.archetypes(): { Archetype }
+```
+Returns the matching archetypes of the query.
+
+Example:
+::: code-group
+
+```luau [luau]
+for i, archetype in world:query(Position, Velocity).archetypes() do
+    local columns = archetype.columns
+    local field = archetype.records
+
+    local P = field[Position]
+    local V = field[Velocity]
+
+    for row, entity in archetype.entities do
+        local position = columns[P][row]
+        local velocity = columns[V][row]
+        -- Do something
+    end
+end
+```
+
+:::
+
+:::info
+This function is meant for internal usage. Use this if you want to maximize performance by inlining the iterator.
 :::

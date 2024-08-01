@@ -35,9 +35,9 @@ export default defineConfig({
                 {
                     text: 'Concepts',
                     items: [
-                        { text: 'Entities', link: 'learn/concepts/entities' },
-                        { text: 'Static Components', link: 'learn/concepts/static-components' },
+                        { text: 'Entities and Components', link: 'learn/concepts/entities-and-components' },
                         { text: 'Queries', link: 'learn/concepts/queries' },
+                        { text: 'Relationships', link: 'learn/concepts/relationships' },
                     ]
                 },
                 {
@@ -61,7 +61,7 @@ export default defineConfig({
         },
 
         socialLinks: [
-            { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
+            { icon: 'github', link: 'https://github.com/ukendio/jecs' }
         ]
     }
 })

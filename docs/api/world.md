@@ -1,4 +1,4 @@
-# Query
+# World
 
 A World contains entities which have components. The World is queryable and can be used to get entities with a specific set of components.
 
@@ -109,10 +109,10 @@ Adds or changes the entity's component.
 ### query()
 ```luau
 function World:query(
-    ...: Entity<T> -- The component IDs to query with. Entities that satifies the conditions will be returned
-): Query<...Entity<T>> -- Returns the Query which gets the entity and their corresponding data when iterated
+    ...: Entity -- The IDs to query with
+): Query -- Returns the Query
 ```
-Creates a [`query`](query) with the given component IDs.
+Creates a [`query`](query) with the given IDs. Entities that satisfies the conditions of the query will be returned and their corresponding data.
 
 Example:
 ::: code-group
@@ -130,3 +130,36 @@ for (const [id, position, velocity] of world.query(Position, Velocity) {
 ```
 
 :::
+
+:::info
+Queries are uncached by default, this is generally very cheap unless you have high fragmentation from e.g. relationships.
+
+:::
+### target()
+```luau
+function World:target(
+    entity: Entity, -- The entity
+    relation: Entity -- The relationship between the entity and the target
+): Entity? -- Returns the parent of the child
+```
+
+Get the target of a relationship.
+
+This will return a target (second element of a pair) of the entity for the specified relationship.
+
+If there is no pair with specified relationship, it will return nil.
+
+### parent()
+```luau
+function World:parent(
+    child: Entity -- The child ID to find the parent of
+): Entity? -- Returns the parent of the child
+```
+
+Get parent (target of ChildOf relationship) for entity. If there is no ChildOf relationship pair, it will return nil.
+
+This operation is the same as calling:
+
+```luau
+world:target(entity, jecs.ChildOf)
+```
