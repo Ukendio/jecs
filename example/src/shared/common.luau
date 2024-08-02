@@ -6,44 +6,44 @@ local jecs = require(game:GetService("ReplicatedStorage").ecs)
 type World = jecs.WorldShim
 type Entity<T = any> = jecs.Entity<T>
 
-local function LOOP_ERROR(str)
+local function panic(str)
     -- We don't want to interrupt the loop when we error
     task.spawn(error, str)
 end
 
-local Scheduler: (World, ...ModuleScript) -> (number) -> ()
-do
-    local systems
-    local N
-    local w
-    local dt
-    local systemsNames
+local function Scheduler(world, ...)
+    local systems = { ... }
+    local systemsNames = {}
+    local N = #systems
     local system
+    local dt
 
-    local function profile()
+    for i, module in systems do
+        local sys = require(module)
+        systems[i] = sys
+        local file, line = debug.info(2, "sl")
+        systemsNames[sys] = `{file}->::{line}::->{debug.info(sys, "n")}`
+    end
+
+    local function run()
         local name = systemsNames[system]
 
         debug.profilebegin(name)
         debug.setmemorycategory(name)
-        system(w, dt)
+        system(world, dt)
         debug.profileend()
-    end
-
-    local function run(sys)
-        system = sys
-        return profile
     end
 
     local function loop(sinceLastFrame)
         debug.profilebegin("loop()")
 
         for i = N, 1, -1 do
-            local system = systems[i]
+            system = systems[i]
 
             dt = sinceLastFrame
 
             local didNotYield, why = xpcall(function()
-                for _ in run(system) do end
+                for _ in run do end
             end, debug.traceback)
 
             if didNotYield then
@@ -52,15 +52,13 @@ do
 
 			if string.find(why, "thread is not yieldable") then
 				N -= 1
-				table.remove(systems, i)
-				LOOP_ERROR("Not allowed to yield in the systems."
+				local name = table.remove(systems, i)
+				panic("Not allowed to yield in the systems."
     				.. "\n"
-    				.. "System: "
-    				.. debug.info(system, "n")
-    				.. " has been ejected"
+    				.. `System: {name} has been ejected`
 				)
 			else
-			    LOOP_ERROR(why)
+			    panic(why)
 			end
         end
 
@@ -68,19 +66,7 @@ do
         debug.resetmemorycategory()
     end
 
-    function Scheduler(world, ...)
-        systems = { ... }
-        systemsNames = {}
-        N = #systems
-        w = world
-
-        for i, system in systems do
-            systems[i] = require(system)
-            systemsNames[system] = debug.info(system, "n")
-        end
-
-        return loop
-    end
+    return loop
 end
 
 type Tracker<T> = { track: (world: World, fn: (changes: {
@@ -89,71 +75,78 @@ type Tracker<T> = { track: (world: World, fn: (changes: {
         changed: () -> () -> (number, T, T)
     }) -> ()) -> ()
 }
-local ChangeTracker: <T>(world: any, component: Entity<T>) -> Tracker<T>
 
-do
-    local world: World
-    local T
-    local PreviousT
-    local addedComponents
-    local removedComponents
-    local isTrivial
+type Entity<T = any> = number & { __nominal_type_dont_use: T }
+
+local function diff(a, b)
+    local size = 0
+    for k, v in a do
+        if b[k] ~= v then
+            return true
+        end
+        size += 1
+    end
+    for k, v in b do
+        size -= 1
+    end
+
+    if size ~= 0 then
+        return true
+    end
+
+    return false
+end
+
+local function ChangeTracker<T>(world, T: Entity<T>): Tracker<T>
+    local PreviousT = jecs.pair(jecs.Rest, T)
+    local add = {}
     local added
     local removed
+    local is_trivial
 
     local function changes_added()
         added = true
-        local q = world:query(T):without(PreviousT)
+        local q = world:query(T):without(PreviousT):drain()
         return function()
-            local id, data = q:next()
+            local id, data = q.next()
             if not id then
                 return nil
             end
 
-            if isTrivial == nil then
-                isTrivial = typeof(data) ~= "table"
-            end
+            is_trivial = typeof(data) ~= "table"
 
-            if not isTrivial then
-                data = table.clone(data)
-            end
+            add[id] = data
 
-            addedComponents[id] = data
             return id, data
         end
     end
 
-    local function shallowEq(a, b)
-        for k, v in a do
-            if b[k] ~= v then
-                return false
-            end
-        end
-        return true
-    end
-
     local function changes_changed()
-        local q = world:query(T, PreviousT)
+        local q = world:query(T, PreviousT):drain()
 
         return function()
-            local id, new, old = q:next()
+            local id, new, old = q.next()
             while true do
                 if not id then
                     return nil
                 end
 
-                if not isTrivial then
-                    if not shallowEq(new, old) then
+                if not is_trivial then
+                    if diff(new, old) then
                         break
                     end
                 elseif new ~= old then
                     break
                 end
 
-                id, new, old = q:next()
+                id, new, old = q.next()
             end
 
-            addedComponents[id] = new
+            local record = world.entityIndex.sparse[id]
+            local archetype = record.archetype
+            local column = archetype.records[PreviousT].column
+            local data = if is_trivial then new else table.clone(new)
+            archetype.columns[column][record.row] = data
 
             return id, old, new
         end
@@ -162,11 +155,11 @@ do
     local function changes_removed()
         removed = true
 
-        local q = world:query(PreviousT):without(T)
+        local q = world:query(PreviousT):without(T):drain()
         return function()
-            local id = q:next()
+            local id = q.next()
             if id then
-            table.insert(removedComponents, id)
+                world:remove(id, PreviousT)
             end
             return id
         end
@@ -179,8 +172,8 @@ do
     }
 
     local function track(fn)
-        added = true
-        removed = true
+        added = false
+        removed = false
 
         fn(changes)
 
@@ -194,88 +187,17 @@ do
             end
         end
 
-        for e, data in addedComponents do
-            world:set(e, PreviousT, if isTrivial then data else table.clone(data))
-        end
-
-        for _, e in removedComponents do
-            world:remove(e, PreviousT)
+        for e, data in add do
+            world:set(e, PreviousT, if is_trivial then data else table.clone(data))
         end
     end
 
     local tracker = { track = track }
 
-    function ChangeTracker<T>(worldToTrack: World, component: Entity<T>): Tracker<T>
-        world = worldToTrack
-        T = component
-        -- We just use jecs.Rest because people will probably not use it anyways
-        PreviousT = jecs.pair(jecs.Rest, T)
-        addedComponents = {}
-        removedComponents = {}
-
-        return tracker
-    end
+    return tracker
 end
-
-local Allocator: <T>(World, Entity<T>, (T) -> ()) -> { alloc: (Entity) -> (), free: (Entity) -> (), deinit: () -> () }
-
-do
-    local arena: {}
-    local world
-    local cleanup
-    local id
-
-    local function alloc(entity: Entity)
-        table.insert(arena, entity)
-    end
-
-    local function deinit()
-        for _, e in arena do
-            cleanup(world:get(e, id), e)
-            world:clear(e)
-        end
-    end
-
-    local function free(entity: Entity)
-        local e = table.remove(arena, table.find(arena, entity))
-        if e then
-            cleanup(world:get(e, id), e)
-            world:clear(e)
-        end
-    end
-
-    local handle = {
-        alloc = alloc,
-        deinit = deinit,
-        free = free,
-    }
-
-    setmetatable(handle, handle)
-
-    function Allocator<T>(w: World, T: Entity<T>, fn: (T) -> ())
-        arena = {}
-        world = w
-        cleanup = fn
-        id = T
-
-        return handle
-    end
-end
-
-local world = jecs.World.new()
-local Model = world:component() :: Entity<Model>
-
-local ModelAllocator = Allocator(world,
-    Model, function(model) model:Destroy() end)
-
-local e = world:entity()
-world:set(e, Model, Instance.new("Model"))
-
-ModelAllocator.alloc(e)
-ModelAllocator.free(e)
 
 return {
     Scheduler = Scheduler,
     ChangeTracker = ChangeTracker,
-    Allocator = Allocator
 }
