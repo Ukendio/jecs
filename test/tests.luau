@@ -96,8 +96,8 @@ TEST("world:entity()", function()
 		local pair = pair(e2, e3)
 		CHECK(IS_PAIR(pair) == true)
 
-		CHECK(ecs_pair_relation(world.entityIndex, pair) == e2)
-		CHECK(ecs_pair_object(world.entityIndex, pair) == e3)
+		CHECK(ecs_pair_relation(world, pair) == e2)
+		CHECK(ecs_pair_object(world, pair) == e3)
 	end
 end)
 
