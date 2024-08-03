@@ -723,7 +723,6 @@ local Arm = function(self: Query, ...)
 end
 local world_query
 do
-
     local EmptyQuery: Query = {
        	__iter = function(): Item
             return noop
@@ -1214,9 +1213,10 @@ export type Entity<T = any> = number & { __DO_NOT_USE_OR_YOU_WILL_BE_FIRED: T }
 export type Pair = number
 
 export type QueryShim<T...> = typeof(setmetatable({
-	without = function(...): QueryShim<T...>
-		return nil :: any
-	end,
+	without = noop :: (QueryShim<T...>, ...i53) -> QueryShim<T...>,
+	with = noop :: (QueryShim<T...>, ...i53) -> QueryShim<T...>,
+	drain = noop :: (QueryShim<T...>) -> QueryShim<T...>,
+	replace = noop :: (QueryShim<T...>, fn: (T...) -> T...) -> (),
 }, {
 	__iter = function(): () -> (number, T...)
 		return nil :: any
