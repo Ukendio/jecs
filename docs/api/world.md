@@ -42,8 +42,7 @@ local entity = world:entity()
 const entity = world.entity();
 ```
 
-::
-:
+:::
 
 ### component()
 ```luau
