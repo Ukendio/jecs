@@ -111,7 +111,7 @@ do
     iterate(sun, Vector3.zero)
 end
 
--- Output
+-- Output:
 --  Child of Earth? true
 --  Sun
 --  {1, 1, 1}

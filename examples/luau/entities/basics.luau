@@ -39,7 +39,7 @@ for entity, p in world:query(Position) do
     print(`{entity}: \{{p.X}, {p.Y}, {p.Z}\}`)
 end
 
--- Output
+-- Output:
 --  {10, 20, 30}
 --  Alice: {10, 20, 30}
 --  Bob: {40, 50, 60}
