@@ -1,7 +1,7 @@
-local ecs = require("@jecs")
-local pair = ecs.pair
-local ChildOf = ecs.ChildOf
-local world = ecs.World.new()
+local jecs = require("@jecs")
+local pair = jecs.pair
+local ChildOf = jecs.ChildOf
+local world = jecs.World.new()
 
 local Name = world:component()
 local Position = world:component()

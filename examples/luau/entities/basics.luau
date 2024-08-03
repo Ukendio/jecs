@@ -1,5 +1,5 @@
-local ecs = require("@jecs")
-local world = ecs.World.new()
+local jecs = require("@jecs")
+local world = jecs.World.new()
 
 local Position = world:component()
 local Walking = world:component()
