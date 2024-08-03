@@ -28,7 +28,6 @@ jecs.ChildOf: Entity
 ```
 Builtin component type. This ID is for creating parent-child hierarchies.
 
-:::
 ### Rest
 ```luau
 jecs.Rest: Entity
