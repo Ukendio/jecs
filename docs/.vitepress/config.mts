@@ -10,7 +10,7 @@ export default defineConfig({
         nav: [
             { text: 'Learn', link: '/' },
             { text: 'API', link: '/api/jecs.md' },
-            { text: 'Examples', link: 'https://github.com/ukendio/jecs/examples' },
+            { text: 'Examples', link: 'https://github.com/Ukendio/jecs/tree/main/examples' },
         ],
 
         sidebar: {
