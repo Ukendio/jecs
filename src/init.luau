@@ -714,16 +714,16 @@ export type Query = typeof({
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
-local world_query: (World, ...i53) -> Query
+local noop: Item = function()
+    return nil :: any
+end
+
+local Arm = function(self: Query, ...)
+    return self
+end
+local world_query
 do
 
-    local noop: Item = function()
-   	    return nil :: any
-    end
-
-    local Arm = function(self: Query, ...)
-        return self
-    end
     local EmptyQuery: Query = {
        	__iter = function(): Item
             return noop
@@ -737,260 +737,245 @@ do
 
     setmetatable(EmptyQuery, EmptyQuery)
 
-    local lastArchetype: number
-    local archetype: Archetype
-    local queryOutput: { any }
-    local entities: { number }
-    local i: number
-
-    local compatible_archetypes: { Archetype }
-    local ids: { number }
-    local columns
-
-    local A, B, C, D, E, F, G, H, I
-    local a, b, c, d, e, f, g, h
-
-    local init
-    local drain
-
-    local function query_init(query)
-        if init and drain then
-            return
-        end
-
-        init = true
-        lastArchetype = 1
-       	archetype = compatible_archetypes[lastArchetype]
-
-       	if not archetype then
-      		return
+    local function world_query_replace_values(row, columns, ...)
+       	for i, column in columns do
+      		column[row] = select(i, ...)
        	end
-
-       	queryOutput = {}
-
-        entities = archetype.entities
-       	i = #entities
-        columns = archetype.columns
-
-        local records = archetype.records
-        if not B then
-            a = columns[records[A].column]
-        elseif not C then
-            a = columns[records[A].column]
-            b = columns[records[B].column]
-        elseif not D then
-            a = columns[records[A].column]
-            b = columns[records[B].column]
-            c = columns[records[C].column]
-        elseif not E then
-            a = columns[records[A].column]
-            b = columns[records[B].column]
-            c = columns[records[C].column]
-            d = columns[records[D].column]
-        elseif not F then
-            a = columns[records[A].column]
-            b = columns[records[B].column]
-            c = columns[records[C].column]
-            d = columns[records[D].column]
-            e = columns[records[E].column]
-        elseif not G then
-            a = columns[records[A].column]
-            b = columns[records[B].column]
-            c = columns[records[C].column]
-            d = columns[records[D].column]
-            e = columns[records[E].column]
-            f = columns[records[F].column]
-        elseif not H then
-            a = columns[records[A].column]
-            b = columns[records[B].column]
-            c = columns[records[C].column]
-            d = columns[records[D].column]
-            e = columns[records[E].column]
-            f = columns[records[F].column]
-            g = columns[records[G].column]
-        elseif H then
-            a = columns[records[A].column]
-            b = columns[records[B].column]
-            c = columns[records[D].column]
-            e = columns[records[E].column]
-            f = columns[records[F].column]
-            g = columns[records[G].column]
-            h = columns[records[H].column]
-        end
     end
 
-	local world_query_iter_next
+    function world_query(world, ...)
+            -- breaking
+       	if (...) == nil then
+      		error("Missing components")
+       	end
 
-	local function world_query_iter_create()
-		if not B then
-			function world_query_iter_next(): any
+        local compatible_archetypes = {}
+       	local length = 0
+
+        local ids = { ... }
+        local A, B, C, D, E, F, G, H, I = ...
+        local a, b, c, d, e, f, g, h
+
+       	local archetypes = world.archetypes
+
+       	local idr: ArchetypeMap
+       	local componentIndex = world.componentIndex
+
+       	for _, id in ids do
+      		local map = componentIndex[id]
+      		if not map then
+     			return EmptyQuery
+      		end
+
+      		if idr == nil or map.size < idr.size then
+     			idr = map
+      		end
+       	end
+
+       	for archetype_id in idr.cache do
+      		local compatibleArchetype = archetypes[archetype_id]
+      		local tr = compatibleArchetype.records
+
+      		local skip = false
+
+      		for i, id in ids do
+     			local index = tr[id]
+     			if not index then
+    				skip = true
+    				break
+     			end
+      		end
+
+      		if skip then
+     			continue
+      		end
+
+      		length += 1
+      		compatible_archetypes[length] = compatibleArchetype
+       	end
+
+        if length == 0 then
+            return EmptyQuery
+        end
+
+        local lastArchetype = 1
+        local archetype
+        local columns
+        local entities
+        local i
+        local queryOutput
+
+        local world_query_iter_next
+
+        if not B then
+ 			function world_query_iter_next(): any
 				local entityId = entities[i]
 				while entityId == nil do
-					lastArchetype += 1
-					archetype = compatible_archetypes[lastArchetype]
-					if not archetype then
-						return nil
-					end
+   					lastArchetype += 1
+   					archetype = compatible_archetypes[lastArchetype]
+   					if not archetype then
+  						return nil
+   					end
 
-					entities = archetype.entities
-					i = #entities
-					if i == 0 then
-						continue
-					end
-					entityId = entities[i]
-					columns = archetype.columns
-					local records = archetype.records
-					a = columns[records[A].column]
-				end
+   					entities = archetype.entities
+   					i = #entities
+   					if i == 0 then
+  						continue
+   					end
+   					entityId = entities[i]
+   					columns = archetype.columns
+   					local records = archetype.records
+   					a = columns[records[A].column]
+                end
 
 				local row = i
 				i-=1
 
 				return entityId, a[row]
-			end
-		elseif not C then
-			function world_query_iter_next(): any
+            end
+  		elseif not C then
+ 			function world_query_iter_next(): any
 				local entityId = entities[i]
 				while entityId == nil do
-					lastArchetype += 1
-					archetype = compatible_archetypes[lastArchetype]
-					if not archetype then
-						return nil
-					end
+   					lastArchetype += 1
+   					archetype = compatible_archetypes[lastArchetype]
+   					if not archetype then
+  						return nil
+   					end
 
-					entities = archetype.entities
-					i = #entities
-					if i == 0 then
-						continue
-					end
-					entityId = entities[i]
-					columns = archetype.columns
-					local records = archetype.records
-					a = columns[records[A].column]
-					b = columns[records[B].column]
-				end
+   					entities = archetype.entities
+   					i = #entities
+   					if i == 0 then
+  						continue
+   					end
+   					entityId = entities[i]
+   					columns = archetype.columns
+   					local records = archetype.records
+   					a = columns[records[A].column]
+   					b = columns[records[B].column]
+                end
 
 				local row = i
 				i-=1
 
-				return entityId, a[row], b[row]
-			end
-		elseif not D then
-			function world_query_iter_next(): any
+                return entityId, a[row], b[row]
+            end
+  		elseif not D then
+ 			function world_query_iter_next(): any
 				local entityId = entities[i]
 				while entityId == nil do
-					lastArchetype += 1
-					archetype = compatible_archetypes[lastArchetype]
-					if not archetype then
-						return nil
-					end
+   					lastArchetype += 1
+   					archetype = compatible_archetypes[lastArchetype]
+   					if not archetype then
+  						return nil
+   					end
 
-					entities = archetype.entities
-					i = #entities
-					if i == 0 then
-						continue
-					end
-					entityId = entities[i]
-					columns = archetype.columns
-					local records = archetype.records
-					a = columns[records[A].column]
-					b = columns[records[B].column]
-					c = columns[records[C].column]
-				end
+   					entities = archetype.entities
+   					i = #entities
+   					if i == 0 then
+  						continue
+   					end
+   					entityId = entities[i]
+   					columns = archetype.columns
+   					local records = archetype.records
+   					a = columns[records[A].column]
+   					b = columns[records[B].column]
+   					c = columns[records[C].column]
+     			end
 
 				local row = i
 				i-=1
 
 				return entityId, a[row], b[row], c[row]
-			end
-		elseif not E then
-			function world_query_iter_next(): any
+ 			end
+  		elseif not E then
+ 			function world_query_iter_next(): any
 				local entityId = entities[i]
 				while entityId == nil do
-					lastArchetype += 1
-					archetype = compatible_archetypes[lastArchetype]
-					if not archetype then
-						return nil
-					end
+   					lastArchetype += 1
+   					archetype = compatible_archetypes[lastArchetype]
+   					if not archetype then
+  						return nil
+   					end
 
-					entities = archetype.entities
-					i = #entities
-					if i == 0 then
-						continue
-					end
-					entityId = entities[i]
-					columns = archetype.columns
-					local records = archetype.records
-					a = columns[records[A].column]
-					b = columns[records[B].column]
-					c = columns[records[C].column]
-					d = columns[records[D].column]
+   					entities = archetype.entities
+   					i = #entities
+   					if i == 0 then
+  						continue
+   					end
+   					entityId = entities[i]
+   					columns = archetype.columns
+   					local records = archetype.records
+   					a = columns[records[A].column]
+   					b = columns[records[B].column]
+   					c = columns[records[C].column]
+   					d = columns[records[D].column]
 				end
 
 				local row = i
 				i-=1
 
 				return entityId, a[row], b[row], c[row], d[row]
-			end
-		else
-			function world_query_iter_next(): any
+            end
+  		else
+ 			function world_query_iter_next(): any
 				local entityId = entities[i]
 				while entityId == nil do
-					lastArchetype += 1
-					archetype = compatible_archetypes[lastArchetype]
-					if not archetype then
-						return nil
-					end
+   					lastArchetype += 1
+   					archetype = compatible_archetypes[lastArchetype]
+   					if not archetype then
+  						return nil
+   					end
 
-					entities = archetype.entities
-					i = #entities
-					if i == 0 then
-						continue
-					end
-					entityId = entities[i]
-					columns = archetype.columns
-					local records = archetype.records
+   					entities = archetype.entities
+   					i = #entities
+   					if i == 0 then
+  						continue
+   					end
+   					entityId = entities[i]
+   					columns = archetype.columns
+   					local records = archetype.records
 
-					if not F then
-						a = columns[records[A].column]
-						b = columns[records[B].column]
-						c = columns[records[C].column]
-						d = columns[records[D].column]
-						e = columns[records[E].column]
-					elseif not G then
-						a = columns[records[A].column]
-						b = columns[records[B].column]
-						c = columns[records[C].column]
-						d = columns[records[D].column]
-						e = columns[records[E].column]
-						f = columns[records[F].column]
-					elseif not H then
-						a = columns[records[A].column]
-						b = columns[records[B].column]
-						c = columns[records[C].column]
-						d = columns[records[D].column]
-						e = columns[records[E].column]
-						f = columns[records[F].column]
-						g = columns[records[G].column]
-					elseif not I then
-						a = columns[records[A].column]
-						b = columns[records[B].column]
-						c = columns[records[C].column]
-						d = columns[records[D].column]
-						e = columns[records[E].column]
-						f = columns[records[F].column]
-						g = columns[records[G].column]
-						h = columns[records[H].column]
-					end
+   					if not F then
+  						a = columns[records[A].column]
+  						b = columns[records[B].column]
+  						c = columns[records[C].column]
+  						d = columns[records[D].column]
+  						e = columns[records[E].column]
+   					elseif not G then
+  						a = columns[records[A].column]
+  						b = columns[records[B].column]
+  						c = columns[records[C].column]
+  						d = columns[records[D].column]
+  						e = columns[records[E].column]
+  						f = columns[records[F].column]
+   					elseif not H then
+  						a = columns[records[A].column]
+  						b = columns[records[B].column]
+  						c = columns[records[C].column]
+  						d = columns[records[D].column]
+  						e = columns[records[E].column]
+  						f = columns[records[F].column]
+  						g = columns[records[G].column]
+   					elseif not I then
+  						a = columns[records[A].column]
+  						b = columns[records[B].column]
+  						c = columns[records[C].column]
+  						d = columns[records[D].column]
+  						e = columns[records[E].column]
+  						f = columns[records[F].column]
+  						g = columns[records[G].column]
+  						h = columns[records[H].column]
+   					end
 				end
 
 				local row = i
 				i-=1
 
 				if not F then
-					return entityId, a[row], b[row], c[row], d[row], e[row]
+       					return entityId, a[row], b[row], c[row], d[row], e[row]
 				elseif not G then
-					return entityId, a[row], b[row], c[row], d[row], e[row], f[row]
+       					return entityId, a[row], b[row], c[row], d[row], e[row], f[row]
 				elseif not H then
 				    return entityId, a[row], b[row], c[row], d[row], e[row], f[row], g[row]
 				elseif not I then
@@ -999,218 +984,233 @@ do
 
 				local field = archetype.records
 				for j, id in ids do
-					queryOutput[j] = columns[field[id].column][row]
+       	            queryOutput[j] = columns[field[id].column][row]
 				end
 
-				return entityId, unpack(queryOutput)
+			    return entityId, unpack(queryOutput)
 			end
-		end
-	end
-
-    local function world_query_without(self, ...)
-            local withoutComponents = { ... }
-      		for i = #compatible_archetypes, 1, -1 do
-     			local archetype = compatible_archetypes[i]
-     			local records = archetype.records
-     			local shouldRemove = false
-
-     			for _, componentId in withoutComponents do
-                    if records[componentId] then
-       					shouldRemove = true
-       					break
-                    end
-     			end
-
-     			if shouldRemove then
-                    local last = #compatible_archetypes
-                    if last ~= i then
-                        compatible_archetypes[i] = compatible_archetypes[last]
-                    end
-                    compatible_archetypes[last] = nil
-                end
-      		end
-
-      		return self
-    end
-
-    local function world_query_replace_values(row, columns, ...)
-       	for i, column in columns do
-      		column[row] = select(i, ...)
-       	end
-    end
-
-    local function world_query_replace(query, fn: (...any) -> (...any))
-            query_init(query)
-
-            for i, archetype in compatible_archetypes do
-          		local columns = archetype.columns
-                local tr = archetype.records
-          		for row in archetype.entities do
-              		if not B then
-             			local va = columns[tr[A].column]
-             			local pa = fn(va[row])
-
-             			va[row] = pa
-              		elseif not C then
-             			local va = columns[tr[A].column]
-             			local vb = columns[tr[B].column]
-
-             			va[row], vb[row] = fn(va[row], vb[row])
-              		elseif not D then
-             			local va = columns[tr[A].column]
-             			local vb = columns[tr[B].column]
-             			local vc = columns[tr[C].column]
-
-             			va[row], vb[row], vc[row] = fn(va[row], vb[row], vc[row])
-              		elseif not E then
-             			local va = columns[tr[A].column]
-             			local vb = columns[tr[B].column]
-             			local vc = columns[tr[C].column]
-                        local vd = columns[tr[D].column]
-
-             			va[row], vb[row], vc[row], vd[row] = fn(
-             			    va[row], vb[row], vc[row], vd[row])
-              		else
-                        local field = archetype.records
-                        for j, id in ids do
-                 			queryOutput[j] = columns[field[id].column][row]
-                  		end
-             			world_query_replace_values(row, columns,
-                            fn(unpack(queryOutput)))
-              		end
-                end
-            end
-    end
-
-    local function world_query_with(query, ...)
-            local ids = { ... }
-            for i = #compatible_archetypes, 1, -1 do
-     			local archetype = compatible_archetypes[i]
-     			local records = archetype.records
-     			local shouldRemove = false
-
-     			for _, id in ids do
-     			    if not records[id] then
-        				shouldRemove = true
-        				break
-     			    end
-     			end
-
-     			if shouldRemove then
-                    local last = #compatible_archetypes
-                    if last ~= i then
-                        compatible_archetypes[i] = compatible_archetypes[last]
-                    end
-                    compatible_archetypes[last] = nil
-     			end
-            end
-
-            query_init(query)
-
-            return query
-    end
-
-    -- Meant for directly iterating over archetypes to minimize
-    -- function call overhead. Should not be used unless iterating over
-    -- hundreds of thousands of entities in bulk.
-    local function world_query_archetypes()
-        return compatible_archetypes
-    end
-
-    local function world_query_drain(query)
-        drain = true
-        query_init(query)
-        return query
-    end
-
-    local function world_query_iter(query)
-        query_init(query)
-        return world_query_iter_next
-    end
-
-    local function world_query_next()
-        if not drain then
-            error("Did you forget to call query:drain()?")
         end
-        return world_query_iter_next()
-    end
 
-    local it = {
-        __iter = world_query_iter,
-        drain = world_query_drain,
-        next = world_query_next,
-        with = world_query_with,
-        without = world_query_without,
-        replace = world_query_replace,
-        archetypes = world_query_archetypes
-    } :: any
+        local init = false
+        local drain = false
 
-    setmetatable(it, it)
+        local function query_init(query)
+            if init and drain then
+                return
+            end
 
-    function world_query(world: World, ...: any): Query
-    	-- breaking
-    	if (...) == nil then
-    		error("Missing components")
-    	end
+            init = true
+            lastArchetype = 1
+           	archetype = compatible_archetypes[lastArchetype]
 
-        compatible_archetypes = {}
-    	local length = 0
+           	if not archetype then
+          		return false
+           	end
 
-        local components = { ... } :: any
-        A, B, C, D, E, F, G, H, I = ...
+           	queryOutput = {}
 
-    	local archetypes = world.archetypes
+            entities = archetype.entities
+           	i = #entities
+            columns = archetype.columns
 
-    	local firstArchetypeMap: ArchetypeMap
-    	local componentIndex = world.componentIndex
+            local records = archetype.records
+            if not B then
+                a = columns[records[A].column]
+            elseif not C then
+                a = columns[records[A].column]
+                b = columns[records[B].column]
+            elseif not D then
+                a = columns[records[A].column]
+                b = columns[records[B].column]
+                c = columns[records[C].column]
+            elseif not E then
+                a = columns[records[A].column]
+                b = columns[records[B].column]
+                c = columns[records[C].column]
+                d = columns[records[D].column]
+            elseif not F then
+                a = columns[records[A].column]
+                b = columns[records[B].column]
+                c = columns[records[C].column]
+                d = columns[records[D].column]
+                e = columns[records[E].column]
+            elseif not G then
+                a = columns[records[A].column]
+                b = columns[records[B].column]
+                c = columns[records[C].column]
+                d = columns[records[D].column]
+                e = columns[records[E].column]
+                f = columns[records[F].column]
+            elseif not H then
+                a = columns[records[A].column]
+                b = columns[records[B].column]
+                c = columns[records[C].column]
+                d = columns[records[D].column]
+                e = columns[records[E].column]
+                f = columns[records[F].column]
+                g = columns[records[G].column]
+            elseif not I then
+                a = columns[records[A].column]
+                b = columns[records[B].column]
+                c = columns[records[C].column]
+                d = columns[records[D].column]
+                e = columns[records[E].column]
+                f = columns[records[F].column]
+                g = columns[records[G].column]
+                h = columns[records[H].column]
+            end
+            return true
+        end
 
-    	for _, componentId in components do
-    		local map = componentIndex[componentId]
-    		if not map then
-    			return EmptyQuery
-    		end
+        local function world_query_without(query, ...)
+                local withoutComponents = { ... }
+          		for i = #compatible_archetypes, 1, -1 do
+         			local archetype = compatible_archetypes[i]
+         			local records = archetype.records
+         			local shouldRemove = false
 
-    		if firstArchetypeMap == nil or map.size < firstArchetypeMap.size then
-    			firstArchetypeMap = map
-    		end
-    	end
+         			for _, componentId in withoutComponents do
+                        if records[componentId] then
+           					shouldRemove = true
+           					break
+                        end
+         			end
 
-    	for id in firstArchetypeMap.cache do
-    		local compatibleArchetype = archetypes[id]
-    		local archetypeRecords = compatibleArchetype.records
+         			if shouldRemove then
+                        local last = #compatible_archetypes
+                        if last ~= i then
+                            compatible_archetypes[i] = compatible_archetypes[last]
+                        end
+                        compatible_archetypes[last] = nil
+                        length -= 1
+                    end
+          		end
 
-    		local skip = false
+                if length == 0 then
+                    return EmptyQuery
+                end
 
-    		for i, componentId in components do
-    			local index = archetypeRecords[componentId]
-    			if not index then
-    				skip = true
-    				break
-    			end
-    		end
+          		return query
+        end
 
-    		if skip then
-    			continue
-    		end
+        local function world_query_replace(query, fn: (...any) -> (...any))
+                query_init(query)
 
-    		length += 1
-    		compatible_archetypes[length] = compatibleArchetype
-    	end
+                for i, archetype in compatible_archetypes do
+              		local columns = archetype.columns
+                    local tr = archetype.records
+              		for row in archetype.entities do
+                  		if not B then
+                 			local va = columns[tr[A].column]
+                 			local pa = fn(va[row])
 
-        drain = false
-        init = false
-        ids = components
+                 			va[row] = pa
+                  		elseif not C then
+                 			local va = columns[tr[A].column]
+                 			local vb = columns[tr[B].column]
 
-		world_query_iter_create()
+                 			va[row], vb[row] = fn(va[row], vb[row])
+                  		elseif not D then
+                 			local va = columns[tr[A].column]
+                 			local vb = columns[tr[B].column]
+                 			local vc = columns[tr[C].column]
 
-       	return it
+                 			va[row], vb[row], vc[row] = fn(va[row], vb[row], vc[row])
+                  		elseif not E then
+                 			local va = columns[tr[A].column]
+                 			local vb = columns[tr[B].column]
+                 			local vc = columns[tr[C].column]
+                            local vd = columns[tr[D].column]
+
+                 			va[row], vb[row], vc[row], vd[row] = fn(
+                 			    va[row], vb[row], vc[row], vd[row])
+                  		else
+                            local field = archetype.records
+                            for j, id in ids do
+                     			queryOutput[j] = columns[field[id].column][row]
+                      		end
+                 			world_query_replace_values(row, columns,
+                                fn(unpack(queryOutput)))
+                  		end
+                    end
+                end
+        end
+
+        local function world_query_with(query, ...)
+                local with = { ... }
+                for i = #compatible_archetypes, 1, -1 do
+         			local archetype = compatible_archetypes[i]
+         			local tr = archetype.records
+         			local shouldRemove = false
+
+         			for _, id in with do
+         			    if not tr[id] then
+            				shouldRemove = true
+            				break
+         			    end
+         			end
+
+         			if shouldRemove then
+                        local last = #compatible_archetypes
+                        if last ~= i then
+                            compatible_archetypes[i] = compatible_archetypes[last]
+                        end
+                        compatible_archetypes[last] = nil
+                        length -= 1
+         			end
+                end
+                if length == 0 then
+                    return EmptyQuery
+                end
+                return query
+        end
+
+        -- Meant for directly iterating over archetypes to minimize
+        -- function call overhead. Should not be used unless iterating over
+        -- hundreds of thousands of entities in bulk.
+        local function world_query_archetypes()
+            return compatible_archetypes
+        end
+
+        local function world_query_drain(query)
+            drain = true
+            if query_init(query) then
+                return query
+            end
+            return EmptyQuery
+        end
+
+        local function world_query_iter(query)
+            query_init(query)
+            return world_query_iter_next
+        end
+
+        local function world_query_next(world)
+            if not drain then
+                error("Did you forget to call query:drain()?")
+            end
+            return world_query_iter_next(world)
+        end
+
+        local it = {
+            __iter = world_query_iter,
+            drain = world_query_drain,
+            next = world_query_next,
+            with = world_query_with,
+            without = world_query_without,
+            replace = world_query_replace,
+            archetypes = world_query_archetypes
+        } :: any
+
+        setmetatable(it, it)
+
+        return it
     end
 end
 
-type WorldIterator = (() -> (i53, { [unknown]: unknown? })) & (() -> ()) & (() -> i53)
 -- __nominal_type_dont_use could not be any or T as it causes a type error
 -- or produces a union
-export type Entity<T = any> = number & { __nominal_type_dont_use: T }
+export type Entity<T = any> = number & { __DO_NOT_USE_OR_YOU_WILL_BE_FIRED: T }
 export type Pair = number
 
 export type QueryShim<T...> = typeof(setmetatable({
