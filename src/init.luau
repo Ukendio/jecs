@@ -36,7 +36,7 @@ type EntityIndex = { dense: { [i24]: i53 }, sparse: { [i53]: Record } }
 
 type ArchetypeRecord = {
 	count: number,
-	column: number
+	column: number,
 }
 
 type ArchetypeMap = {
@@ -722,6 +722,7 @@ local Arm = function(self: Query, ...)
 end
 local world_query
 do
+    local empty_list = {}
     local EmptyQuery: Query = {
        	__iter = function(): Item
             return noop
@@ -731,6 +732,9 @@ do
        	replace = noop :: (Query, ...any) -> (),
         with = Arm,
        	without = Arm,
+        archetypes = function()
+            return empty_list
+        end
     }
 
     setmetatable(EmptyQuery, EmptyQuery)
@@ -994,7 +998,7 @@ do
 
         local function query_init(query)
             if init and drain then
-                return
+                return true
             end
 
             init = true
@@ -1061,18 +1065,19 @@ do
         end
 
         local function world_query_without(query, ...)
-                local withoutComponents = { ... }
+                local N = select("#", ...)
           		for i = #compatible_archetypes, 1, -1 do
          			local archetype = compatible_archetypes[i]
-         			local records = archetype.records
+         			local tr = archetype.records
          			local shouldRemove = false
 
-         			for _, componentId in withoutComponents do
-                        if records[componentId] then
-           					shouldRemove = true
-           					break
-                        end
-         			end
+                    for j = 1, N do
+                        local id = select(i, ...)
+                        if tr[id] then
+            				shouldRemove = true
+            				break
+         			    end
+                    end
 
          			if shouldRemove then
                         local last = #compatible_archetypes
@@ -1135,18 +1140,19 @@ do
         end
 
         local function world_query_with(query, ...)
-                local with = { ... }
+                local N = select("#", ...)
                 for i = #compatible_archetypes, 1, -1 do
          			local archetype = compatible_archetypes[i]
          			local tr = archetype.records
          			local shouldRemove = false
 
-         			for _, id in with do
-         			    if not tr[id] then
+                    for j = 1, N do
+                        local id = select(i, ...)
+                        if not tr[id] then
             				shouldRemove = true
             				break
          			    end
-         			end
+                    end
 
          			if shouldRemove then
                         local last = #compatible_archetypes
