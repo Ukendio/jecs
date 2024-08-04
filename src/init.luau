@@ -732,6 +732,9 @@ do
        	replace = noop :: (Query, ...any) -> (),
         with = Arm,
        	without = Arm,
+        archetypes = function()
+            return {}
+        end
     }
 
     setmetatable(EmptyQuery, EmptyQuery)
