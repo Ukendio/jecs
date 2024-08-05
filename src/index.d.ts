@@ -3,6 +3,10 @@ type Query<T extends unknown[]> = {
     /**
      * this: Query<T> is necessary to use a colon instead of a period for emits.
      */
+
+    /**
+     * Resets the Iterator for a query.
+     */
     drain: (this: Query<T>) => Query<T>
     with: (this: Query<T>, ...components: Entity[]) => Query<T>
     /**
@@ -15,7 +19,7 @@ type Query<T extends unknown[]> = {
      * Modifies component data with a callback function
      * @param fn The function to modify data
      */
-    replace: (this: Query<T>, fn: (...components: T) => T extends [infer U] ? U : LuaTuple<T>) => void;
+    replace: (this: Query<T>, fn: (...components: T) => FlattenTuple<T>) => void;
 } & IterableFunction<LuaTuple<[Entity, ...T]>>;
 
 // Utility Types
@@ -27,6 +31,15 @@ export type InferComponents<A extends Entity[]> = {
 type Nullable<T extends unknown[]> = {
     [K in keyof T]: T[K] | undefined;
 };
+type FlattenTuple<T extends any[]> = T extends [infer U] ? U : LuaTuple<T>;
+
+// Utility type for world:get
+type TupleForWorldGet =
+    | [Entity]
+    | [Entity, Entity]
+    | [Entity, Entity, Entity]
+    | [Entity, Entity, Entity, Entity]
+    | [Entity, Entity, Entity, Entity, Entity]
 
 export class World {
     /**
@@ -64,6 +77,7 @@ export class World {
 
     /**
      * Deletes an entity and all its related components and relationships.
+     * For most situations, you should be using the clear method instead of deletion.
      * @param id Entity to be destroyed
      */
     delete(id: Entity): void;
@@ -93,57 +107,14 @@ export class World {
     // Manually typed out get since there is a hard limit.
 
     /**
-     * Retrieves the value of one component. This value may be undefined.
+     * Retrieves the values of specified components for an entity.
+     * Some values may not exist when called.
+     * A maximum of 5 components are allowed at a time.
      * @param id Target Entity
-     * @param component Target Component
-     * @returns Data associated with the component if it exists
+     * @param components Target Components
+     * @returns Data associated with target components if it exists.
      */
-    get<A>(id: number, component: Entity<A>): A | undefined;
-
-    /**
-     * Retrieves the value of two components. This value may be undefined.
-     * @param id Target Entity
-     * @param component Target Component 1
-     * @param component2 Target Component 2
-     * @returns Data associated with the components if it exists
-     */
-    get<A, B>(
-        id: number,
-        component: Entity<A>,
-        component2: Entity<B>
-    ): LuaTuple<Nullable<[A, B]>>;
-
-    /**
-     * Retrieves the value of three components. This value may be undefined.
-     * @param id Target Entity
-     * @param component Target Component 1
-     * @param component2 Target Component 2
-     * @param component3 Target Component 3
-     * @returns Data associated with the components if it exists
-     */
-    get<A, B, C>(
-        id: number,
-        component: Entity<A>,
-        component2: Entity<B>,
-        component3: Entity<C>
-    ): LuaTuple<Nullable<[A, B, C]>>;
-
-    /**
-     * Retrieves the value of four components. This value may be undefined.
-     * @param id Target Entity
-     * @param component Target Component 1
-     * @param component2 Target Component 2
-     * @param component3 Target Component 3
-     * @param component4 Target Component 4
-     * @returns Data associated with the components if it exists
-     */
-    get<A, B, C, D>(
-        id: number,
-        component: Entity<A>,
-        component2: Entity<B>,
-        component3: Entity<C>,
-        component4: Entity<D>
-    ): LuaTuple<Nullable<[A, B, C, D]>>;
+    get<T extends TupleForWorldGet>(id: Entity, ...components: T): FlattenTuple<Nullable<InferComponents<T>>>
 
     /**
      * Searches the world for entities that match a given query
