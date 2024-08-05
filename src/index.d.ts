@@ -8,6 +8,11 @@ type Query<T extends unknown[]> = {
      * Resets the Iterator for a query.
      */
     drain: (this: Query<T>) => Query<T>
+    /**
+     * Modifies the query to include specified components, but will not include the values.
+     * @param components The components to include
+     * @returns Modified Query
+     */
     with: (this: Query<T>, ...components: Entity[]) => Query<T>
     /**
      * Modifies the Query to exclude specified components
