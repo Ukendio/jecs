@@ -734,7 +734,7 @@ do
        	without = Arm,
         archetypes = function()
             return empty_list
-        end
+        end,
     }
 
     setmetatable(EmptyQuery, EmptyQuery)
@@ -1072,7 +1072,7 @@ do
          			local shouldRemove = false
 
                     for j = 1, N do
-                        local id = select(i, ...)
+                        local id = select(j, ...)
                         if tr[id] then
             				shouldRemove = true
             				break
@@ -1147,7 +1147,7 @@ do
          			local shouldRemove = false
 
                     for j = 1, N do
-                        local id = select(i, ...)
+                        local id = select(j, ...)
                         if not tr[id] then
             				shouldRemove = true
             				break
