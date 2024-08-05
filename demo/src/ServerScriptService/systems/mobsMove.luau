@@ -44,9 +44,6 @@ local function mobsMove(dt: number)
         end
 
         local moving = CFrame.new(p + (target - p).Unit * dt * v)
-        --local record = world.entityIndex.sparse[mob]
-        --local archetype = record.archetype
-        --archetype.columns[archetype.records[Transform].column][record.row] = moving
         world:set(mob, Transform, moving)
     end
 end
