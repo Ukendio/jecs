@@ -16,6 +16,10 @@ local conn = {}
 
 local function players()
     for _, player in playersAdded do
+        std.world:set(
+            std.world:entity(),
+            std.world:entity())
+
         local e = ref(player.UserId):set(Player, player)
         local characterAdd = player.CharacterAdded
         conn[e.id()] = characterAdd:Connect(function(rig)

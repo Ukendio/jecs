@@ -19,7 +19,7 @@ print("client Model", cts.Model)
 local function mobsMove(dt: number)
     local players = world:query(Character):with(Player)
 
-    for mob, cf, v in world:query(Transform, Velocity):with(Mob) do
+    for mob, cf, v in world:query(Transform, Velocity):with(Mob):iter() do
         local p = cf.Position
 
         local target

@@ -7,7 +7,7 @@ local components = {
     Model = world:component() :: jecs.Entity<Model>,
     Player = world:component(),
     Target = world:component(),
-    Transform = world:component(),
+    Transform = world:component() :: jecs.Entity<CFrame>,
     Velocity = world:component(),
 }
 
