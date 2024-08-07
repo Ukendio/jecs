@@ -1,73 +1,8 @@
---!optimize 2
---!native
-
 local jecs = require(game:GetService("ReplicatedStorage").ecs)
 
-type World = jecs.WorldShim
-type Entity<T = any> = jecs.Entity<T>
-
-local function panic(str)
-    -- We don't want to interrupt the loop when we error
-    task.spawn(error, str)
-end
-
-local function Scheduler(world, ...)
-    local systems = { ... }
-    local systemsNames = {}
-    local N = #systems
-    local system
-    local dt
-
-    for i, module in systems do
-        local sys = require(module)
-        systems[i] = sys
-        local file, line = debug.info(2, "sl")
-        systemsNames[sys] = `{file}->::{line}::->{debug.info(sys, "n")}`
-    end
-
-    local function run()
-        local name = systemsNames[system]
-
-        debug.profilebegin(name)
-        debug.setmemorycategory(name)
-        system(world, dt)
-        debug.profileend()
-    end
-
-    local function loop(sinceLastFrame)
-        debug.profilebegin("loop()")
-
-        for i = N, 1, -1 do
-            system = systems[i]
-
-            dt = sinceLastFrame
-
-            local didNotYield, why = xpcall(function()
-                for _ in run do end
-            end, debug.traceback)
-
-            if didNotYield then
-				continue
-			end
-
-			if string.find(why, "thread is not yieldable") then
-				N -= 1
-				local name = table.remove(systems, i)
-				panic("Not allowed to yield in the systems."
-    				.. "\n"
-    				.. `System: {name} has been ejected`
-				)
-			else
-			    panic(why)
-			end
-        end
-
-        debug.profileend()
-        debug.resetmemorycategory()
-    end
-
-    return loop
-end
+local world = require(script.Parent.world)
+local sparse = ((world :: any) :: jecs.World).entityIndex.sparse
+type World = world.World
 
 type Tracker<T> = { track: (world: World, fn: (changes: {
         added: () -> () -> (number, T),
@@ -97,7 +32,7 @@ local function diff(a, b)
     return false
 end
 
-local function ChangeTracker<T>(world, T: Entity<T>): Tracker<T>
+local function ChangeTracker<T>(T: Entity<T>): Tracker<T>
     local PreviousT = jecs.pair(jecs.Rest, T)
     local add = {}
     local added
@@ -142,7 +77,7 @@ local function ChangeTracker<T>(world, T: Entity<T>): Tracker<T>
                 id, new, old = q.next()
             end
 
-            local record = world.entityIndex.sparse[id]
+            local record = sparse[id]
             local archetype = record.archetype
             local column = archetype.records[PreviousT].column
             local data = if is_trivial then new else table.clone(new)
@@ -197,62 +132,4 @@ local function ChangeTracker<T>(world, T: Entity<T>): Tracker<T>
     return tracker
 end
 
-local bt
-do
-    local SUCCESS = 0
-    local FAILURE = 1
-    local RUNNING = 2
-
-    local function SEQUENCE(nodes)
-        return function(...)
-            for _, node in nodes do
-                local status = node(...)
-                if status == FAILURE or status == RUNNING then
-                    return status
-                end
-            end
-            return SUCCESS
-        end
-    end
-    local function FALLBACK(nodes)
-        return function(...)
-            for _, node in nodes do
-                local status = node(...)
-                if status == SUCCESS or status == RUNNING then
-                    return status
-                end
-            end
-            return FAILURE
-        end
-    end
-    bt = {
-        SEQUENCE = SEQUENCE,
-        FALLBACK = FALLBACK,
-        RUNNING = RUNNING
-    }
-end
-
-local function interval(s)
-    local pin
-
-    local function throttle()
-        if not pin then
-            pin = os.clock()
-        end
-
-        local elapsed = os.clock() - pin > s
-        if elapsed then
-            pin = os.clock()
-        end
-
-        return elapsed
-    end
-    return throttle
-end
-
-return {
-    Scheduler = Scheduler,
-    ChangeTracker = ChangeTracker,
-    interval = interval,
-    BehaviorTree = bt
-}
+return ChangeTracker

@@ -3,23 +3,20 @@
     "tree": {
         "$className": "DataModel",
         "ReplicatedStorage": {
-            "Shared": {
-                "$path": "demo/src/shared"
-            },
+            "$className": "ReplicatedStorage",
+            "$path": "demo/src/ReplicatedStorage",
             "ecs": {
                 "$path": "src"
+            },
+            "net": {
+                "$path": "demo/net/client.luau"
             }
         },
         "ServerScriptService": {
-            "Server": {
-                "$path": "demo/src/server"
-            }
-        },
-        "StarterPlayer": {
-            "StarterPlayerScripts": {
-                "Client": {
-                    "$path": "demo/src/client"
-                }
+            "$className": "ServerScriptService",
+            "$path": "demo/src/ServerScriptService",
+            "net": {
+                "$path": "demo/net/server.luau"
             }
         },
         "Workspace": {
@@ -65,6 +62,11 @@
         "SoundService": {
             "$properties": {
                 "RespectFilteringEnabled": true
+            }
+        },
+        "StarterPlayer": {
+            "StarterPlayerScripts": {
+                "$path": "demo/src/StarterPlayer/StarterPlayerScripts"
             }
         }
     }
