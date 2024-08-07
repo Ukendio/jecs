@@ -1198,6 +1198,7 @@ do
 
         local it = {
             __iter = world_query_iter,
+            iter = world_query_iter,
             drain = world_query_drain,
             next = world_query_next,
             with = world_query_with,
@@ -1214,7 +1215,7 @@ end
 
 -- __nominal_type_dont_use could not be any or T as it causes a type error
 -- or produces a union
-export type Entity<T = any> = number & { __DO_NOT_USE_OR_YOU_WILL_BE_FIRED: T }
+export type Entity<T = nil> = number & { __DO_NOT_USE_OR_YOU_WILL_BE_FIRED: T }
 export type Pair = number
 
 export type QueryShim<T...> = typeof(setmetatable({
@@ -1222,6 +1223,9 @@ export type QueryShim<T...> = typeof(setmetatable({
 	with = noop :: (QueryShim<T...>, ...i53) -> QueryShim<T...>,
 	drain = noop :: (QueryShim<T...>) -> QueryShim<T...>,
 	replace = noop :: (QueryShim<T...>, fn: (T...) -> T...) -> (),
+	iter = function(self: QueryShim<T...>): () -> (number, T...)
+	   return noop
+	end
 }, {
 	__iter = function(): () -> (number, T...)
 		return nil :: any
@@ -1398,8 +1402,8 @@ return {
 	OnAdd = EcsOnAdd :: Entity,
 	OnRemove = EcsOnRemove :: Entity,
 	OnSet = EcsOnSet :: Entity,
-	ChildOf = EcsChildOf,
-	Component = EcsComponent,
+	ChildOf = EcsChildOf :: Entity,
+	Component = EcsComponent :: Entity,
 	Wildcard = EcsWildcard :: Entity,
 	w = EcsWildcard :: Entity,
 	Rest = EcsRest :: Entity,
