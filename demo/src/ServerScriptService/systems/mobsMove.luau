@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
+local blink = require(game:GetService("ServerScriptService").net)
 local jecs = require(ReplicatedStorage.ecs)
 local pair = jecs.pair
 local __ = jecs.Wildcard
@@ -10,19 +10,16 @@ local world = std.world
 local cts = std.components
 
 local Mob = cts.Mob
-local Model = cts.Model
 local Transform = cts.Transform
 local Velocity = cts.Velocity
-local Target = cts.Target
 local Player = cts.Player
 local Character = cts.Character
+print("client Model", cts.Model)
 
 local function mobsMove(dt: number)
     local players = world:query(Character):with(Player)
 
-    for mob, cf, v in world:query(Transform, Velocity)
-        :with(Mob, Model)
-    do
+    for mob, cf, v in world:query(Transform, Velocity):with(Mob) do
         local p = cf.Position
 
         local target
@@ -45,6 +42,7 @@ local function mobsMove(dt: number)
 
         local moving = CFrame.new(p + (target - p).Unit * dt * v)
         world:set(mob, Transform, moving)
+        blink.UpdateTransform.FireAll(mob, moving)
     end
 end
 

@@ -5,7 +5,8 @@ type Handle = {
     has: (self: Handle, id: jecs.Entity) -> boolean,
     get: <T>(self: Handle, id: jecs.Entity<T>) -> T?,
     add: <T>(self: Handle, id: jecs.Entity<T>) -> Handle,
-    set: <T>(self: Handle, id: jecs.Entity<T>, value: T) -> Handle
+    set: <T>(self: Handle, id: jecs.Entity<T>, value: T) -> Handle,
+    id: (self: Handle?) -> jecs.Entity
 }
 
 local handle: (e: jecs.Entity) -> Handle

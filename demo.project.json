@@ -7,11 +7,17 @@
             "$path": "demo/src/ReplicatedStorage",
             "ecs": {
                 "$path": "src"
+            },
+            "net": {
+                "$path": "demo/net/client.luau"
             }
         },
         "ServerScriptService": {
             "$className": "ServerScriptService",
-            "$path": "demo/src/ServerScriptService"
+            "$path": "demo/src/ServerScriptService",
+            "net": {
+                "$path": "demo/net/server.luau"
+            }
         },
         "Workspace": {
             "$properties": {
@@ -56,6 +62,11 @@
         "SoundService": {
             "$properties": {
                 "RespectFilteringEnabled": true
+            }
+        },
+        "StarterPlayer": {
+            "StarterPlayerScripts": {
+                "$path": "demo/src/StarterPlayer/StarterPlayerScripts"
             }
         }
     }
