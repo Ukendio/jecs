@@ -1223,7 +1223,7 @@ export type QueryShim<T...> = typeof(setmetatable({
 	with = noop :: (QueryShim<T...>, ...i53) -> QueryShim<T...>,
 	drain = noop :: (QueryShim<T...>) -> QueryShim<T...>,
 	replace = noop :: (QueryShim<T...>, fn: (T...) -> T...) -> (),
-	iter = function(self: QueryShim<T...>): () -> (number, T...)
+	iter = function(self: QueryShim<T...>?): () -> (number, T...)
 	   return noop
 	end
 }, {
