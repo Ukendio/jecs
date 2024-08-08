@@ -727,6 +727,9 @@ do
        	__iter = function(): Item
             return noop
        	end,
+        iter = function(): Item
+            return noop
+        end,
         drain = Arm,
        	next = noop :: Item,
        	replace = noop :: (Query, ...any) -> (),
