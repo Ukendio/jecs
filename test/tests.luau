@@ -9,7 +9,7 @@ local getAlive = jecs.entity_index_get_alive
 local ecs_pair_relation = jecs.ecs_pair_relation
 local ecs_pair_object = jecs.ecs_pair_object
 
-local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
+local TEST, CASE, CHECK, FINISH, SKIP, FOCUS = testkit.test()
 local function CHECK_NO_ERR<T...>(s: string, fn: (T...) -> (), ...: T...)
 	local ok, err: string? = pcall(fn, ...)
 

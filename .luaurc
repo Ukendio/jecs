@@ -1,6 +1,6 @@
 {
     "aliases": {
         "jecs": "src",
-        "testkit": "testkit",
+        "testkit": "test/testkit",
     }
 }
