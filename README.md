@@ -28,10 +28,10 @@ local pair = jecs.pair
 local ChildOf = world:component()
 local Name = world:component()
 
-local function parent(entity) 
+local function parent(entity)
     return world:target(entity, ChildOf)
 end
-local function getName(entity) 
+local function getName(entity)
     return world:get(entity, Name)
 end
 
@@ -48,7 +48,7 @@ world:set(sara, Name, "sara")
 
 print(getName(parent(sara)))
 
-for e in world:query(pair(ChildOf, alice)) do 
+for e in world:query(pair(ChildOf, alice)) do
     print(getName(e), "is the child of alice")
 end
 
@@ -60,8 +60,8 @@ end
 
 21,000 entities 125 archetypes 4 random components queried.
 ![Queries](image-3.png)
-Can be found under /benches/query.lua
+Can be found under /benches/visual/query.luau
 
 Inserting 8 components to an entity and updating them over 50 times.
 ![Insertions](image-4.png)
-Can be found under /benches/insertions.lua
+Can be found under /benches/visual/insertions.luau
