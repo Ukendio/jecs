@@ -492,8 +492,8 @@ local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?
         end
     end
 
-local function notify_hook(world: World, hook_identifier: number, id: i53, entity: i53, data: any)
-    local hook = world_get(world, id, hook_identifier)
+local function notify_hook(world: World, hook_id: number, id: i53, entity: i53, data: any?)
+    local hook = world_get(world, id, hook_id)
     if hook then
         hook(entity, data)
     end
@@ -529,7 +529,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 		-- and just set the data directly.
 		local tr = to.records[id]
 		from.columns[tr.column][record.row] = data
-		-- Should fire an OnSet event here.
+		notify_hook(world, EcsOnSet, id, entity, data)
 		return
 	end
 
@@ -546,7 +546,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 	local tr = to.records[id]
 	to.columns[tr.column][record.row] = data
 
-	notify_hook(world, EcsOnSet, id, entity)
+	notify_hook(world, EcsOnAdd, id, entity, data)
 end
 
 local function world_component(world: World): i53
