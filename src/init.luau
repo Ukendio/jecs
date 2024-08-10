@@ -492,8 +492,8 @@ local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?
         end
     end
 
-local function notify_hook(world: World, hook: number, entity: i53, data: any)
-    local hook = world_get(world, entity, hook)
+local function notify_hook(world: World, hook_identifier: number, id: i53, entity: i53, data: any)
+    local hook = world_get(world, id, hook_identifier)
     if hook then
         hook(entity, data)
     end
@@ -515,7 +515,7 @@ local function world_add(world: World, entity: i53, id: i53)
 		end
 	end
 
-	notify_hook(world, EcsOnAdd, entity)
+	notify_hook(world, EcsOnAdd, id, entity)
 end
 
 -- Symmetric like `World.add` but idempotent
@@ -546,7 +546,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 	local tr = to.records[id]
 	to.columns[tr.column][record.row] = data
 
-	notify_hook(world, EcsOnSet, entity)
+	notify_hook(world, EcsOnSet, id, entity)
 end
 
 local function world_component(world: World): i53
@@ -582,6 +582,8 @@ local function archetype_traverse_remove(world: World, id: i53, from: Archetype)
 end
 
 local function world_remove(world: World, entity: i53, id: i53)
+    notify_hook(world, EcsOnRemove, id, entity)
+
 	local entity_index = world.entityIndex
 	local record = entity_index.sparse[entity]
 	local from = record.archetype
@@ -593,8 +595,6 @@ local function world_remove(world: World, entity: i53, id: i53)
 	if from and not (from == to) then
 		entity_move(entity_index, entity, record, to)
 	end
-
-	notify_hook(world, EcsOnRemove, entity)
 end
 
 -- should reuse this logic in World.set instead of swap removing in transition archetype
