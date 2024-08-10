@@ -6,8 +6,8 @@ local ECS_GENERATION_INC = jecs.ECS_GENERATION_INC
 local IS_PAIR = jecs.IS_PAIR
 local pair = jecs.pair
 local getAlive = jecs.entity_index_get_alive
-local ecs_pair_relation = jecs.ecs_pair_relation
-local ecs_pair_object = jecs.ecs_pair_object
+local ecs_pair_first = jecs.pair_first
+local ecs_pair_second = jecs.pair_second
 
 local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 local function CHECK_NO_ERR<T...>(s: string, fn: (T...) -> (), ...: T...)
@@ -96,8 +96,8 @@ TEST("world:entity()", function()
 		local pair = pair(e2, e3)
 		CHECK(IS_PAIR(pair) == true)
 
-		CHECK(ecs_pair_relation(world, pair) == e2)
-		CHECK(ecs_pair_object(world, pair) == e3)
+		CHECK(ecs_pair_first(world, pair) == e2)
+		CHECK(ecs_pair_second(world, pair) == e3)
 	end
 end)
 
