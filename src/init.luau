@@ -444,6 +444,61 @@ local function archetype_traverse_add(world: World, id: i53, from: Archetype): A
 	return add
 end
 
+local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?) -> (...any)
+    do
+        -- Keeping the function as small as possible to enable inlining
+        local records
+        local columns
+        local row
+
+        local function fetch(id): any
+        	local tr = records[id]
+
+        	if not tr then
+        		return nil
+        	end
+
+        	return columns[tr.column][row]
+        end
+
+        function world_get(world: World, entity: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
+        	local record = world.entityIndex.sparse[entity]
+        	if not record then
+        		return nil
+        	end
+
+        	local archetype = record.archetype
+        	if not archetype then
+        	   return nil
+        	end
+
+        	records = archetype.records
+        	columns = archetype.columns
+        	row = record.row
+
+        	local va = fetch(a)
+
+        	if not b then
+        		return va
+        	elseif not c then
+        		return va, fetch(b)
+        	elseif not d then
+                return va, fetch(b), fetch(c)
+        	elseif not e then
+                return va, fetch(b), fetch(c), fetch(d)
+        	else
+        		error("args exceeded")
+        	end
+        end
+    end
+
+local function notify_hook(world: World, hook: number, entity: i53, data: any)
+    local hook = world_get(world, entity, hook)
+    if hook then
+        hook(entity, data)
+    end
+end
+
 local function world_add(world: World, entity: i53, id: i53)
 	local entityIndex = world.entityIndex
 	local record = entityIndex.sparse[entity]
@@ -459,6 +514,8 @@ local function world_add(world: World, entity: i53, id: i53)
 			new_entity(entity, record, to)
 		end
 	end
+
+	notify_hook(world, EcsOnAdd, entity)
 end
 
 -- Symmetric like `World.add` but idempotent
@@ -488,6 +545,8 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 
 	local tr = to.records[id]
 	to.columns[tr.column][record.row] = data
+
+	notify_hook(world, EcsOnSet, entity)
 end
 
 local function world_component(world: World): i53
@@ -534,6 +593,8 @@ local function world_remove(world: World, entity: i53, id: i53)
 	if from and not (from == to) then
 		entity_move(entity_index, entity, record, to)
 	end
+
+	notify_hook(world, EcsOnRemove, entity)
 end
 
 -- should reuse this logic in World.set instead of swap removing in transition archetype
@@ -620,53 +681,7 @@ local function world_clear(world: World, entity: i53)
 	entity_move(world.entityIndex, entity, record, ROOT_ARCHETYPE)
 end
 
-local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?) -> (...any)
-do
-    -- Keeping the function as small as possible to enable inlining
-    local records
-    local columns
-    local row
 
-    local function fetch(id): any
-    	local tr = records[id]
-
-    	if not tr then
-    		return nil
-    	end
-
-    	return columns[tr.column][row]
-    end
-
-    function world_get(world: World, entity: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
-    	local record = world.entityIndex.sparse[entity]
-    	if not record then
-    		return nil
-    	end
-
-    	local archetype = record.archetype
-    	if not archetype then
-    	   return nil
-    	end
-
-    	records = archetype.records
-    	columns = archetype.columns
-    	row = record.row
-
-    	local va = fetch(a)
-
-    	if not b then
-    		return va
-    	elseif not c then
-    		return va, fetch(b)
-    	elseif not d then
-            return va, fetch(b), fetch(c)
-    	elseif not e then
-            return va, fetch(b), fetch(c), fetch(d)
-    	else
-    		error("args exceeded")
-    	end
-    end
-end
 
 local function world_has(world: World, entity: number, ...: i53): boolean
    	local record = world.entityIndex.sparse[entity]
@@ -1208,6 +1223,8 @@ do
     end
 end
 
+
+
 -- __nominal_type_dont_use could not be any or T as it causes a type error
 -- or produces a union
 export type Entity<T = nil> = number & { __DO_NOT_USE_OR_YOU_WILL_BE_FIRED: T }
@@ -1372,9 +1389,6 @@ function World.new()
  			dense = {} :: { [i24]: i53 },
  			sparse = {} :: { [i53]: Record },
   		} :: EntityIndex,
-  		hooks = {
- 			[EcsOnAdd] = {},
-  		},
   		nextArchetypeId = 0,
   		nextComponentId = 0,
   		nextEntityId = 0,
