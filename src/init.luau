@@ -56,6 +56,17 @@ type ArchetypeDiff = {
 	removed: Ty,
 }
 
+export type World = {
+	archetypeIndex: { [string]: Archetype },
+	archetypes: Archetypes,
+	componentIndex: ComponentIndex,
+	entityIndex: EntityIndex,
+	nextArchetypeId: number,
+	nextComponentId: number,
+	nextEntityId: number,
+	ROOT_ARCHETYPE: Archetype
+}
+
 local HI_COMPONENT_ID 		= 256
 
 local EcsOnAdd 				= HI_COMPONENT_ID + 1
@@ -119,17 +130,9 @@ local function ECS_ENTITY_T_HI(e: i53): i24
 	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) % ECS_ENTITY_MASK else e
 end
 
-local function ECS_PAIR_FIRST(e)
-    return ECS_ENTITY_T_HI(e)
-end
-
 -- SECOND
 local function ECS_ENTITY_T_LO(e: i53): i24
 	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) // ECS_ENTITY_MASK else e
-end
-
-local function ECS_PAIR_SECCOND(e)
-    return ECS_PAIR_SECCOND(e)
 end
 
 local function STRIP_GENERATION(e: i53): i24
@@ -165,12 +168,12 @@ local function entity_index_sparse_get(entityIndex, id)
 end
 
 -- ECS_PAIR_FIRST, gets the relationship target / obj / HIGH bits
-local function ecs_pair_relation(world, e)
+local function ecs_pair_first(world, e)
 	return entity_index_get_alive(world.entityIndex, ECS_ENTITY_T_HI(e))
 end
 
 -- ECS_PAIR_SECOND gets the relationship / pred / LOW bits
-local function ecs_pair_object(world, e)
+local function ecs_pair_second(world, e)
 	return entity_index_get_alive(world.entityIndex, ECS_ENTITY_T_LO(e))
 end
 
@@ -302,8 +305,8 @@ local function archetype_create(world: any, types: { i24 }, prev: Archetype?): A
 		idr.size += 1
 		records[componentId] = tr
 		if ECS_IS_PAIR(componentId) then
-			local relation = ecs_pair_relation(world, componentId)
-			local object = ecs_pair_object(world, componentId)
+			local relation = ecs_pair_first(world, componentId)
+			local object = ecs_pair_second(world, componentId)
 
 			local r = ECS_PAIR(relation, EcsWildcard)
 			local idr_r = id_record_ensure(componentIndex, r)
@@ -339,17 +342,6 @@ local function archetype_create(world: any, types: { i24 }, prev: Archetype?): A
 	return archetype
 end
 
-export type World = {
-	archetypeIndex: { [string]: Archetype },
-	archetypes: Archetypes,
-	componentIndex: ComponentIndex,
-	entityIndex: EntityIndex,
-	nextArchetypeId: number,
-	nextComponentId: number,
-	nextEntityId: number,
-	ROOT_ARCHETYPE: Archetype
-}
-
 local function world_entity(world: World): i53
 	local entityId = world.nextEntityId + 1
 	world.nextEntityId = entityId
@@ -376,7 +368,7 @@ local function world_target(world: World, entity: i53, relation: i24--[[, nth: n
 		return nil
 	end
 
-	return ecs_pair_object(world, archetype.types[tr.column])
+	return ecs_pair_second(world, archetype.types[tr.column])
 end
 
 local function world_parent(world: World, entity: i53)
@@ -1414,12 +1406,12 @@ return {
 	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity, obj: Entity) -> number,
 
 	-- Inwards facing API for testing
-	IS_PAIR = ECS_IS_PAIR,
 	ECS_ID = ECS_ENTITY_T_LO,
 	ECS_GENERATION_INC = ECS_GENERATION_INC,
 	ECS_GENERATION = ECS_GENERATION,
 
-	ecs_pair_relation = ecs_pair_relation,
-	ecs_pair_object = ecs_pair_object,
+	IS_PAIR = ECS_IS_PAIR,
+	pair_first = ecs_pair_first,
+	pair_second = ecs_pair_second,
 	entity_index_get_alive = entity_index_get_alive,
 }
