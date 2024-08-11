@@ -515,7 +515,7 @@ local function world_add(world: World, entity: i53, id: i53)
 		end
 	end
 
-	notify_hook(world, EcsOnAdd, id, entity)
+	invoke_hook(world, EcsOnAdd, id, entity)
 end
 
 -- Symmetric like `World.add` but idempotent
@@ -529,7 +529,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 		-- and just set the data directly.
 		local tr = to.records[id]
 		from.columns[tr.column][record.row] = data
-		notify_hook(world, EcsOnSet, id, entity, data)
+		invoke_hook(world, EcsOnSet, id, entity, data)
 		return
 	end
 
@@ -546,7 +546,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 	local tr = to.records[id]
 	to.columns[tr.column][record.row] = data
 
-	notify_hook(world, EcsOnAdd, id, entity, data)
+	invoke_hook(world, EcsOnAdd, id, entity, data)
 end
 
 local function world_component(world: World): i53
@@ -582,7 +582,7 @@ local function archetype_traverse_remove(world: World, id: i53, from: Archetype)
 end
 
 local function world_remove(world: World, entity: i53, id: i53)
-    notify_hook(world, EcsOnRemove, id, entity)
+    invoke_hook(world, EcsOnRemove, id, entity)
 
 	local entity_index = world.entityIndex
 	local record = entity_index.sparse[entity]
