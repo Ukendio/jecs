@@ -364,6 +364,38 @@ local function world_parent(world: World, entity: i53)
 	return world_target(world, entity, EcsChildOf)
 end
 
+local function world_get(world: World, entity: i53, id: i53)
+   	local record = world.entityIndex.sparse[entity]
+   	if not record then
+  		return nil
+   	end
+
+   	local archetype = record.archetype
+   	if not archetype then
+	   return nil
+   	end
+
+    local tr = archetype.records[id]
+    if not tr then
+        return nil
+    end
+   	return archetype.columns[tr.column][record.row]
+end
+
+local function world_has(world: World, entity: i53, id: i53): boolean
+   	local record = world.entityIndex.sparse[entity]
+   	if not record then
+  		return false
+   	end
+
+   	local archetype = record.archetype
+   	if not archetype then
+	   return false
+   	end
+
+    return archetype.records[id] ~= nil
+end
+
 local function archetype_ensure(world: World, types, prev): Archetype
 	if #types < 1 then
 		return world.ROOT_ARCHETYPE
@@ -609,37 +641,6 @@ local function world_clear(world: World, entity: i53)
 	entity_move(world.entityIndex, entity, record, ROOT_ARCHETYPE)
 end
 
-local function world_get(world: World, entity: i53, id: i53)
-   	local record = world.entityIndex.sparse[entity]
-   	if not record then
-  		return nil
-   	end
-
-   	local archetype = record.archetype
-   	if not archetype then
-	   return nil
-   	end
-
-    local tr = archetype.records[id]
-    if not tr then
-        return nil
-    end
-   	return archetype.columns[tr.column][record.row]
-end
-
-local function world_has(world: World, entity: i53, id: i53): boolean
-   	local record = world.entityIndex.sparse[entity]
-   	if not record then
-  		return false
-   	end
-
-   	local archetype = record.archetype
-   	if not archetype then
-	   return false
-   	end
-
-    return archetype.records[id] ~= nil
-end
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
