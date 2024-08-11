@@ -465,6 +465,61 @@ local function archetype_traverse_add(world: World, id: i53, from: Archetype): A
 	return add
 end
 
+local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?) -> (...any)
+    do
+        -- Keeping the function as small as possible to enable inlining
+        local records
+        local columns
+        local row
+
+        local function fetch(id): any
+        	local tr = records[id]
+
+        	if not tr then
+        		return nil
+        	end
+
+        	return columns[tr.column][row]
+        end
+
+        function world_get(world: World, entity: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
+        	local record = world.entityIndex.sparse[entity]
+        	if not record then
+        		return nil
+        	end
+
+        	local archetype = record.archetype
+        	if not archetype then
+        	   return nil
+        	end
+
+        	records = archetype.records
+        	columns = archetype.columns
+        	row = record.row
+
+        	local va = fetch(a)
+
+        	if not b then
+        		return va
+        	elseif not c then
+        		return va, fetch(b)
+        	elseif not d then
+                return va, fetch(b), fetch(c)
+        	elseif not e then
+                return va, fetch(b), fetch(c), fetch(d)
+        	else
+        		error("args exceeded")
+        	end
+        end
+    end
+
+local function invoke_hook(world: World, hook_id: number, id: i53, entity: i53, data: any?)
+    local hook = world_get(world, id, hook_id)
+    if hook then
+        hook(entity, data)
+    end
+end
+
 local function world_add(world: World, entity: i53, id: i53)
 	local entityIndex = world.entityIndex
 	local record = entityIndex.sparse[entity]
@@ -480,6 +535,8 @@ local function world_add(world: World, entity: i53, id: i53)
 			new_entity(entity, record, to)
 		end
 	end
+
+	invoke_hook(world, EcsOnAdd, id, entity)
 end
 
 -- Symmetric like `World.add` but idempotent
@@ -493,7 +550,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 		-- and just set the data directly.
 		local tr = to.records[id]
 		from.columns[tr.column][record.row] = data
-		-- Should fire an OnSet event here.
+		invoke_hook(world, EcsOnSet, id, entity, data)
 		return
 	end
 
@@ -509,6 +566,8 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 
 	local tr = to.records[id]
 	to.columns[tr.column][record.row] = data
+
+	invoke_hook(world, EcsOnAdd, id, entity, data)
 end
 
 local function world_component(world: World): i53
@@ -544,6 +603,8 @@ local function archetype_traverse_remove(world: World, id: i53, from: Archetype)
 end
 
 local function world_remove(world: World, entity: i53, id: i53)
+    invoke_hook(world, EcsOnRemove, id, entity)
+
 	local entity_index = world.entityIndex
 	local record = entity_index.sparse[entity]
 	local from = record.archetype
@@ -640,7 +701,6 @@ local function world_clear(world: World, entity: i53)
 
 	entity_move(world.entityIndex, entity, record, ROOT_ARCHETYPE)
 end
-
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
@@ -1172,9 +1232,6 @@ function World.new()
  			dense = {} :: { [i24]: i53 },
  			sparse = {} :: { [i53]: Record },
   		} :: EntityIndex,
-  		hooks = {
- 			[EcsOnAdd] = {},
-  		},
   		nextArchetypeId = 0,
   		nextComponentId = 0,
   		nextEntityId = 0,
@@ -1247,6 +1304,7 @@ export type World = {
     & (<A, B, C, D, E, F, G, H>(World, Entity<A>, Entity<B>, Entity<C>,
         Entity<D>, Entity<E>, Entity<F>, Entity<G>, Entity<H>) -> Query<A, B, C, D, E, F, G, H>)
 }
+
 return {
 	World = World ,
 
