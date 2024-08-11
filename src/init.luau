@@ -492,7 +492,7 @@ local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?
         end
     end
 
-local function notify_hook(world: World, hook_id: number, id: i53, entity: i53, data: any?)
+local function invoke_hook(world: World, hook_id: number, id: i53, entity: i53, data: any?)
     local hook = world_get(world, id, hook_id)
     if hook then
         hook(entity, data)
