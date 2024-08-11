@@ -186,6 +186,7 @@ local function archetype_move(entityIndex: EntityIndex, to: Archetype,
 	local destinationColumns = to.columns
 	local records = to.records
 	local types = from.types
+	local last = #sourceEntities
 
 	for i, column in columns do
 		-- Retrieves the new column index from the source archetype's record from each component
@@ -197,7 +198,6 @@ local function archetype_move(entityIndex: EntityIndex, to: Archetype,
 		    destinationColumns[tr.column][destinationRow] = column[sourceRow]
 		end
 		-- If the entity is the last row in the archetype then swapping it would be meaningless.
-		local last = #column
 		if sourceRow ~= last then
 			-- Swap rempves columns to ensure there are no holes in the archetype.
 			column[sourceRow] = column[last]
