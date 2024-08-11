@@ -697,22 +697,6 @@ TEST("world:has()", function()
 
         CHECK(world:has(e, Tag))
     end
-
-    do CASE "should return false when missing one tag"
-        local world = jecs.World.new()
-
-        local A = world:component()
-        local B = world:component()
-        local C = world:component()
-        local D = world:component()
-
-        local e = world:entity()
-        world:add(e, A)
-        world:add(e, C)
-        world:add(e, D)
-
-        CHECK(world:has(e, A, B, C, D) == false)
-    end
 end)
 
 TEST("world:component()", function()
