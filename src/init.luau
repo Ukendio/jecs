@@ -56,17 +56,6 @@ type ArchetypeDiff = {
 	removed: Ty,
 }
 
-export type World = {
-	archetypeIndex: { [string]: Archetype },
-	archetypes: Archetypes,
-	componentIndex: ComponentIndex,
-	entityIndex: EntityIndex,
-	nextArchetypeId: number,
-	nextComponentId: number,
-	nextEntityId: number,
-	ROOT_ARCHETYPE: Archetype
-}
-
 local HI_COMPONENT_ID 		= 256
 
 local EcsOnAdd 				= HI_COMPONENT_ID + 1
@@ -620,55 +609,25 @@ local function world_clear(world: World, entity: i53)
 	entity_move(world.entityIndex, entity, record, ROOT_ARCHETYPE)
 end
 
-local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?) -> (...any)
-do
-    -- Keeping the function as small as possible to enable inlining
-    local records
-    local columns
-    local row
+local function world_get(world: World, entity: i53, id: i53)
+   	local record = world.entityIndex.sparse[entity]
+   	if not record then
+  		return nil
+   	end
 
-    local function fetch(id): any
-    	local tr = records[id]
+   	local archetype = record.archetype
+   	if not archetype then
+	   return nil
+   	end
 
-    	if not tr then
-    		return nil
-    	end
-
-    	return columns[tr.column][row]
+    local tr = archetype.records[id]
+    if not tr then
+        return nil
     end
-
-    function world_get(world: World, entity: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
-    	local record = world.entityIndex.sparse[entity]
-    	if not record then
-    		return nil
-    	end
-
-    	local archetype = record.archetype
-    	if not archetype then
-    	   return nil
-    	end
-
-    	records = archetype.records
-    	columns = archetype.columns
-    	row = record.row
-
-    	local va = fetch(a)
-
-    	if not b then
-    		return va
-    	elseif not c then
-    		return va, fetch(b)
-    	elseif not d then
-            return va, fetch(b), fetch(c)
-    	elseif not e then
-            return va, fetch(b), fetch(c), fetch(d)
-    	else
-    		error("args exceeded")
-    	end
-    end
+   	return archetype.columns[tr.column][record.row]
 end
 
-local function world_has(world: World, entity: number, ...: i53): boolean
+local function world_has(world: World, entity: i53, id: i53): boolean
    	local record = world.entityIndex.sparse[entity]
    	if not record then
   		return false
@@ -679,29 +638,8 @@ local function world_has(world: World, entity: number, ...: i53): boolean
 	   return false
    	end
 
-    local records = archetype.records
-
-    for i = 1, select("#", ...) do
-        if not records[select(i, ...)] then
-            return false
-        end
-    end
-
-    return true
+    return archetype.records[id] ~= nil
 end
-
-type Item = () -> (number, ...any)
-export type Query = typeof({
-    __iter = function():  Item
-        return function()
-            return 1
-        end
-    end,
-}) & {
-    next: Item,
-    without: (Query) -> Query,
-    replace: (Query, (...any) -> (...any)) -> ()
-}
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
@@ -709,22 +647,22 @@ local noop: Item = function()
     return nil :: any
 end
 
-local Arm = function(self: Query, ...)
+local Arm = function(self, ...)
     return self
 end
 local world_query
 do
     local empty_list = {}
-    local EmptyQuery: Query = {
-       	__iter = function(): Item
+    local EmptyQuery = {
+       	__iter = function()
             return noop
        	end,
-        iter = function(): Item
+        iter = function()
             return noop
         end,
         drain = Arm,
-       	next = noop :: Item,
-       	replace = noop :: (Query, ...any) -> (),
+       	next = noop,
+       	replace = noop,
         with = Arm,
        	without = Arm,
         archetypes = function()
@@ -1208,145 +1146,6 @@ do
     end
 end
 
--- __nominal_type_dont_use could not be any or T as it causes a type error
--- or produces a union
-export type Entity<T = nil> = number & { __DO_NOT_USE_OR_YOU_WILL_BE_FIRED: T }
-export type Pair = number
-
-export type QueryShim<T...> = typeof(setmetatable({
-	without = noop :: (QueryShim<T...>, ...i53) -> QueryShim<T...>,
-	with = noop :: (QueryShim<T...>, ...i53) -> QueryShim<T...>,
-	drain = noop :: (QueryShim<T...>) -> QueryShim<T...>,
-	replace = noop :: (QueryShim<T...>, fn: (T...) -> T...) -> (),
-	iter = function(self: QueryShim<T...>?): () -> (number, T...)
-	   return noop
-	end
-}, {
-	__iter = function(): () -> (number, T...)
-		return nil :: any
-	end,
-}))
-
-export type WorldShim = typeof(setmetatable(
-	{} :: {
-
-		--- Creates a new entity
-		entity: (WorldShim) -> Entity,
-		--- Creates a new entity located in the first 256 ids.
-		--- These should be used for static components for fast access.
-		component: <T>(WorldShim) -> Entity<T>,
-		--- Gets the target of an relationship. For example, when a user calls
-		--- `world:target(id, ChildOf(parent))`, you will obtain the parent entity.
-		target: (WorldShim, id: Entity, relation: Entity) -> Entity?,
-		--- Deletes an entity and all it's related components and relationships.
-		delete: (WorldShim, id: Entity) -> (),
-
-		--- Adds a component to the entity with no value
-		add: <T>(WorldShim, id: Entity, component: Entity<T>) -> (),
-		--- Assigns a value to a component on the given entity
-		set: <T>(WorldShim, id: Entity, component: Entity<T>, data: T) -> (),
-
-		-- Clears an entity from the world
-		clear: (WorldShim, id: Entity) -> (),
-		--- Removes a component from the given entity
-		remove: (WorldShim, id: Entity, component: Entity) -> (),
-		--- Retrieves the value of up to 4 components. These values may be nil.
-		get: (<A>(WorldShim, id: Entity, Entity<A>) -> A)
-			& (<A, B>(WorldShim, id: Entity, Entity<A>, Entity<B>) -> (A, B))
-			& (<A, B, C>(WorldShim, id: Entity, Entity<A>, Entity<B>, Entity<C>) -> (A, B, C))
-			& <A, B, C, D>(WorldShim, id: Entity, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> (A, B, C, D),
-
-		has: (WorldShim, Entity, ...Entity) -> boolean,
-
-		--- Searches the world for entities that match a given query
-		query: (<A>(WorldShim, Entity<A>) -> QueryShim<A>)
-			& (<A, B>(WorldShim, Entity<A>, Entity<B>) -> QueryShim<A, B>)
-			& (<A, B, C>(WorldShim, Entity<A>, Entity<B>, Entity<C>) -> QueryShim<A, B, C>)
-			& (<A, B, C, D>(WorldShim, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> QueryShim<A, B, C, D>)
-			& (<A, B, C, D, E>(
-				WorldShim,
-				Entity<A>,
-				Entity<B>,
-				Entity<C>,
-				Entity<D>,
-				Entity<E>
-			) -> QueryShim<A, B, C, D, E>)
-			& (<A, B, C, D, E, F>(
-				WorldShim,
-				Entity<A>,
-				Entity<B>,
-				Entity<C>,
-				Entity<D>,
-				Entity<E>,
-				Entity<F>
-			) -> QueryShim<A, B, C, D, E, F>)
-			& (<A, B, C, D, E, F, G>(
-				WorldShim,
-				Entity<A>,
-				Entity<B>,
-				Entity<C>,
-				Entity<D>,
-				Entity<E>,
-				Entity<F>,
-				Entity<G>
-			) -> QueryShim<A, B, C, D, E, F, G>)
-			& (<A, B, C, D, E, F, G, H>(
-				WorldShim,
-				Entity<A>,
-				Entity<B>,
-				Entity<C>,
-				Entity<D>,
-				Entity<E>,
-				Entity<F>,
-				Entity<G>,
-				Entity<H>
-			) -> QueryShim<A, B, C, D, E, F, G, H>)
-			& (<A, B, C, D, E, F, G, H, I>(
-				WorldShim,
-				Entity<A>,
-				Entity<B>,
-				Entity<C>,
-				Entity<D>,
-				Entity<E>,
-				Entity<F>,
-				Entity<G>,
-				Entity<H>,
-				Entity<I>
-			) -> QueryShim<A, B, C, D, E, F, G, H, I>)
-			& (<A, B, C, D, E, F, G, H, I, J>(
-				WorldShim,
-				Entity<A>,
-				Entity<B>,
-				Entity<C>,
-				Entity<D>,
-				Entity<E>,
-				Entity<F>,
-				Entity<G>,
-				Entity<H>,
-				Entity<I>,
-				Entity<J>
-			) -> QueryShim<A, B, C, D, E, F, G, H, I, J>)
-			& (<A, B, C, D, E, F, G, H, I, J, K>(
-				WorldShim,
-				Entity<A>,
-				Entity<B>,
-				Entity<C>,
-				Entity<D>,
-				Entity<E>,
-				Entity<F>,
-				Entity<G>,
-				Entity<H>,
-				Entity<I>,
-				Entity<J>,
-				Entity<K>,
-				...Entity<any>
-			) -> QueryShim<A, B, C, D, E, F, G, H, I, J, K>),
-	},
-	{} :: {
-		__iter: (world: WorldShim) -> () -> (number, { [unknown]: unknown? }),
-	}
-))
-
 local World = {}
 World.__index = World
 
@@ -1391,8 +1190,64 @@ function World.new()
 	return self
 end
 
+export type Pair = number
+
+type Item = () -> (number, ...any)
+
+export type Entity<T = nil> = number & {__DO_NOT_USE_OR_YOU_WILL_BE_FIRED: T }
+
+type Iter<T...> = () -> () -> (Entity, T...)
+
+type Query<T...> = typeof(setmetatable({}, {
+    __iter = (nil :: any) :: Iter<T...>
+})) & {
+    iter: Iter<T...>,
+    next: Item,
+    with: (Query<T...>) -> Query<T...>,
+    without: (Query<T...>, ...i53) -> Query<T...>,
+    replace: (Query<T...>, <U...>(T...) -> (U...)) -> (),
+    archetypes: () -> { Archetype },
+}
+
+export type World = {
+    archetypeIndex: { [string]: Archetype },
+    archetypes: Archetypes,
+    componentIndex: ComponentIndex,
+    entityIndex: EntityIndex,
+    nextArchetypeId: number,
+    nextComponentId: number,
+    nextEntityId: number,
+    ROOT_ARCHETYPE: Archetype,
+} & {
+    target: (world: World, entity: Entity, relation: Entity) -> Entity,
+    parent: (world: World, entity: Entity) -> Entity,
+    entity: (world: World) -> Entity,
+    clear: (world: World, entity: Entity) -> (),
+    delete: (world: World, entity: Entity) -> (),
+    component: <T>(world: World) -> Entity<T>,
+    get: <T>(world: World, entity: Entity, id: Entity<T>) -> T,
+    has: (world: World, entity: Entity, id: Entity) -> boolean,
+    add: (world: World, entity: Entity, id: Entity) -> (),
+    set: <T>(world: World, entity: Entity,
+        id: Entity<T>, data: T) -> (),
+    remove: (world: World, entity: Entity, id: Entity) -> (),
+    query:
+    (<A>(World, Entity<A>) -> Query<A>)
+    & (<A, B>(World, Entity<A>, Entity<B>) -> Query<A, B>)
+    & (<A, B, C>(World, Entity<A>, Entity<B>, Entity<C>) -> Query<A, B, C>)
+    & (<A, B, C, D>(World, Entity<A>, Entity<B>, Entity<C>,
+        Entity<D>) -> Query<A, B, C, D>)
+    & (<A, B, C, D, E>(World, Entity<A>, Entity<B>, Entity<C>,
+        Entity<D>, Entity<E>) -> Query<A, B, C, D, E>)
+    & (<A, B, C, D, E, F>(World, Entity<A>, Entity<B>, Entity<C>,
+        Entity<D>, Entity<E>, Entity<F>) -> Query<A, B, C, D, E, F>)
+    & (<A, B, C, D, E, F, G>(World, Entity<A>, Entity<B>, Entity<C>,
+        Entity<D>, Entity<E>, Entity<F>, Entity<G>) -> Query<A, B, C, D, E, F, G>)
+    & (<A, B, C, D, E, F, G, H>(World, Entity<A>, Entity<B>, Entity<C>,
+        Entity<D>, Entity<E>, Entity<F>, Entity<G>, Entity<H>) -> Query<A, B, C, D, E, F, G, H>)
+}
 return {
-	World = World :: { new: () -> WorldShim } ,
+	World = World ,
 
 	OnAdd = EcsOnAdd :: Entity,
 	OnRemove = EcsOnRemove :: Entity,
