@@ -520,7 +520,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 	local tr = to.records[id]
 	to.columns[tr.column][record.row] = data
 
-	invoke_hook(world, EcsOnAdd, id, entity, data)
+	invoke_hook(world, EcsOnSet, id, entity, data)
 end
 
 local function world_component(world: World): i53
@@ -556,8 +556,6 @@ local function archetype_traverse_remove(world: World, id: i53, from: Archetype)
 end
 
 local function world_remove(world: World, entity: i53, id: i53)
-    invoke_hook(world, EcsOnRemove, id, entity)
-
 	local entity_index = world.entityIndex
 	local record = entity_index.sparse[entity]
 	local from = record.archetype
@@ -567,6 +565,7 @@ local function world_remove(world: World, entity: i53, id: i53)
 	local to = archetype_traverse_remove(world, id, from)
 
 	if from and not (from == to) then
+	    invoke_hook(world, EcsOnRemove, id, entity)
 		entity_move(entity_index, entity, record, to)
 	end
 end

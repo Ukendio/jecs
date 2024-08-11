@@ -172,6 +172,7 @@ TEST("world:remove()", function()
 end)
 
 TEST("world:add()", function()
+
     do CASE "idempotent"
         local world = jecs.World.new()
         local d = debug_world_inspect(world)
@@ -968,4 +969,39 @@ TEST("changetracker:track()", function()
 
 end)
 
+TEST("Hooks", function()
+    do CASE "OnAdd"
+        local world = jecs.World.new()
+        local Transform = world:component()
+        local e1 = world:entity()
+        world:set(Transform, jecs.OnAdd, function(entity)
+            CHECK(e1 == entity)
+        end)
+        world:add(e1, Transform)
+    end
+
+    do CASE "OnSet"
+        local world = jecs.World.new()
+        local Number = world:component()
+        local e1 = world:entity()
+        world:set(Number, jecs.OnSet, function(entity, data)
+            CHECK(e1 == entity)
+            CHECK(data == 1)
+        end)
+        world:set(e1, Number, 1)
+    end
+
+    do CASE "OnRemove"
+        local world = jecs.World.new()
+        local A = world:component()
+        local e1 = world:entity()
+        world:add(e1, A)
+        world:set(A, jecs.OnRemove, function(entity)
+            CHECK(e1 == entity)
+            CHECK(world:has(e1, A))
+        end)
+        world:remove(e1, A)
+    end
+
+end)
 FINISH()
