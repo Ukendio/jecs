@@ -70,12 +70,21 @@ For example, a Health type should be created using this.
 
 ### get()
 ```luau
-function World:get(
+function World:get<T>(
     entity: Entity, -- The entity
-    ...: Entity<T> -- The types to fetch
-): ... -- Returns the component data in the same order they were passed in
+    id: Entity<T> -- The component ID to fetch
+): T
 ```
-Returns the data for each provided type for the corresponding entity.
+Returns the data for the component data the corresponding entity, nil if entity does not have the ID or was a tag.
+
+### has()
+```luau
+function World:has(
+    entity: Entity, -- The entity
+    id: Entity<T> -- The component ID to check
+): boolean
+```
+Returns whether the entity has the ID.
 
 :::
 
@@ -109,7 +118,7 @@ Adds or changes the entity's component.
 ```luau
 function World:query(
     ...: Entity -- The IDs to query with
-): Query -- Returns the Query
+): Query
 ```
 Creates a [`query`](query) with the given IDs. Entities that satisfies the conditions of the query will be returned and their corresponding data.
 
