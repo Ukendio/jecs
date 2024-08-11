@@ -1001,6 +1001,7 @@ TEST("Hooks", function()
             CHECK(world:has(e1, A))
         end)
         world:remove(e1, A)
+        CHECK(not world:has(e1, A))
     end
 
 end)
