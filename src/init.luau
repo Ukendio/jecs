@@ -379,6 +379,7 @@ local function world_get(world: World, entity: i53, id: i53)
     if not tr then
         return nil
     end
+
    	return archetype.columns[tr.column][record.row]
 end
 
@@ -464,54 +465,6 @@ local function archetype_traverse_add(world: World, id: i53, from: Archetype): A
 
 	return add
 end
-
-local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?) -> (...any)
-    do
-        -- Keeping the function as small as possible to enable inlining
-        local records
-        local columns
-        local row
-
-        local function fetch(id): any
-        	local tr = records[id]
-
-        	if not tr then
-        		return nil
-        	end
-
-        	return columns[tr.column][row]
-        end
-
-        function world_get(world: World, entity: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
-        	local record = world.entityIndex.sparse[entity]
-        	if not record then
-        		return nil
-        	end
-
-        	local archetype = record.archetype
-        	if not archetype then
-        	   return nil
-        	end
-
-        	records = archetype.records
-        	columns = archetype.columns
-        	row = record.row
-
-        	local va = fetch(a)
-
-        	if not b then
-        		return va
-        	elseif not c then
-        		return va, fetch(b)
-        	elseif not d then
-                return va, fetch(b), fetch(c)
-        	elseif not e then
-                return va, fetch(b), fetch(c), fetch(d)
-        	else
-        		error("args exceeded")
-        	end
-        end
-    end
 
 local function invoke_hook(world: World, hook_id: number, id: i53, entity: i53, data: any?)
     local hook = world_get(world, id, hook_id)
