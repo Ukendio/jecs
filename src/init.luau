@@ -177,55 +177,56 @@ local function entity_index_new_id(entityIndex: EntityIndex, index: i24): i53
 	return id
 end
 
-local function archetype_move(entityIndex: EntityIndex, to: Archetype,
-	destinationRow: i24, from: Archetype, sourceRow: i24)
+local function archetype_move(entity_index: EntityIndex, to: Archetype,
+	dst_row: i24, from: Archetype, src_row: i24)
 
-	local columns = from.columns
-	local sourceEntities = from.entities
-	local destinationEntities = to.entities
-	local destinationColumns = to.columns
-	local records = to.records
+	local src_columns = from.columns
+	local dst_columns = to.columns
+	local dst_entities = to.entities
+	local src_entities = from.entities
+
+	local last = #src_entities
 	local types = from.types
-	local last = #sourceEntities
+	local records = to.records
 
-	for i, column in columns do
+	for i, column in src_columns do
 		-- Retrieves the new column index from the source archetype's record from each component
 		-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
 		local tr = records[types[i]]
 
 		-- Sometimes target column may not exist, e.g. when you remove a component.
 		if tr then
-		    destinationColumns[tr.column][destinationRow] = column[sourceRow]
+		    dst_columns[tr.column][dst_row] = column[src_row]
 		end
 		-- If the entity is the last row in the archetype then swapping it would be meaningless.
-		if sourceRow ~= last then
+		if src_row ~= last then
 			-- Swap rempves columns to ensure there are no holes in the archetype.
-			column[sourceRow] = column[last]
+			column[src_row] = column[last]
 		end
 		column[last] = nil
 	end
 
-	local sparse = entityIndex.sparse
-	local movedAway = #sourceEntities
+	local sparse = entity_index.sparse
+	local moved = #src_entities
 
 	-- Move the entity from the source to the destination archetype.
 	-- Because we have swapped columns we now have to update the records
 	-- corresponding to the entities' rows that were swapped.
-	local e1 = sourceEntities[sourceRow]
-	local e2 = sourceEntities[movedAway]
+	local e1 = src_entities[src_row]
+	local e2 = src_entities[moved]
 
-	if sourceRow ~= movedAway then
-		sourceEntities[sourceRow] = e2
+	if src_row ~= moved then
+		src_entities[src_row] = e2
 	end
 
-	sourceEntities[movedAway] = nil :: any
-	destinationEntities[destinationRow] = e1
+	src_entities[moved] = nil :: any
+	dst_entities[dst_row] = e1
 
 	local record1 = sparse[e1]
 	local record2 = sparse[e2]
 
-	record1.row = destinationRow
-	record2.row = sourceRow
+	record1.row = dst_row
+	record2.row = src_row
 end
 
 local function archetype_append(entity: number, archetype: Archetype): number
@@ -259,14 +260,14 @@ local function id_record_ensure(
 	componentIndex: ComponentIndex,
 	componentId: number
 ): ArchetypeMap
-	local archetypesMap = componentIndex[componentId]
+	local idr = componentIndex[componentId]
 
-	if not archetypesMap then
-		archetypesMap = ({ size = 0, cache = {} } :: any) :: ArchetypeMap
-		componentIndex[componentId] = archetypesMap
+	if not idr then
+		idr = ({ size = 0, cache = {} } :: any) :: ArchetypeMap
+		componentIndex[componentId] = idr
 	end
 
-	return archetypesMap
+	return idr
 end
 
 local function ECS_ID_IS_WILDCARD(e: i53): boolean
@@ -725,13 +726,13 @@ end
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
 
-local noop: Item = function()
-    return nil :: any
+local function noop()
 end
 
-local Arm = function(self, ...)
-    return self
+local function Arm(query, ...)
+    return query
 end
+
 local world_query
 do
     local empty_list = {}
@@ -1275,7 +1276,7 @@ type Item = () -> (number, ...any)
 
 export type Entity<T = nil> = number & {__DO_NOT_USE_OR_YOU_WILL_BE_FIRED: T }
 
-type Iter<T...> = () -> () -> (Entity, T...)
+type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 
 type Query<T...> = typeof(setmetatable({}, {
     __iter = (nil :: any) :: Iter<T...>
@@ -1298,18 +1299,21 @@ export type World = {
     nextEntityId: number,
     ROOT_ARCHETYPE: Archetype,
 } & {
-    target: (world: World, entity: Entity, relation: Entity) -> Entity,
-    parent: (world: World, entity: Entity) -> Entity,
-    entity: (world: World) -> Entity,
-    clear: (world: World, entity: Entity) -> (),
-    delete: (world: World, entity: Entity) -> (),
-    component: <T>(world: World) -> Entity<T>,
-    get: <T>(world: World, entity: Entity, id: Entity<T>) -> T,
-    has: (world: World, entity: Entity, id: Entity) -> boolean,
-    add: (world: World, entity: Entity, id: Entity) -> (),
-    set: <T>(world: World, entity: Entity,
+    target: (World, entity: Entity, relation: Entity) -> Entity,
+    parent: (World, entity: Entity) -> Entity,
+    entity: (World) -> Entity,
+    clear: (World, entity: Entity) -> (),
+    delete: (World, entity: Entity) -> (),
+    component: <T>(World) -> Entity<T>,
+    get: (<T>(World, entity: Entity, id: Entity<T>) -> T)
+        & (<A, B>(World, id: Entity, Entity<A>, Entity<B>) -> (A, B))
+		& (<A, B, C>(World, id: Entity, Entity<A>, Entity<B>, Entity<C>) -> (A, B, C))
+		&  <A, B, C, D>(World, id: Entity, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> (A, B, C, D),
+    has: (World, entity: Entity, ...Entity) -> boolean,
+    add: (World, entity: Entity, id: Entity) -> (),
+    set: <T>(World, entity: Entity,
         id: Entity<T>, data: T) -> (),
-    remove: (world: World, entity: Entity, id: Entity) -> (),
+    remove: (World, entity: Entity, id: Entity) -> (),
     query:
     (<A>(World, Entity<A>) -> Query<A>)
     & (<A, B>(World, Entity<A>, Entity<B>) -> Query<A, B>)
@@ -1327,7 +1331,7 @@ export type World = {
 }
 
 return {
-	World = World ,
+	World = World :: { new: () -> World },
 
 	OnAdd = EcsOnAdd :: Entity,
 	OnRemove = EcsOnRemove :: Entity,
@@ -1344,6 +1348,7 @@ return {
 	ECS_ID = ECS_ENTITY_T_LO,
 	ECS_GENERATION_INC = ECS_GENERATION_INC,
 	ECS_GENERATION = ECS_GENERATION,
+	ECS_ID_IS_WILDCARD = ECS_ID_IS_WILDCARD,
 
 	IS_PAIR = ECS_IS_PAIR,
 	pair_first = ecs_pair_first,
