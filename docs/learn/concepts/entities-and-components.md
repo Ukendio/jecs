@@ -47,7 +47,7 @@ local Type = world:component()
 local Name = world:component()
 local Position = world:component() :: jecs.Entity<Vector3>
 world:add(Position, Networked)
-world:set(Posiition, Name, "Position")
+world:set(Position, Name, "Position")
 world:set(Position, Type, { size = 12, type = "Vector3" } ) -- 12 bytes to represent a Vector3
 
 for id, ty, name in world:query(Type, Name):with(Networked) do
@@ -82,7 +82,7 @@ const Type = world.component()
 const Name = world.component()
 const Position = world.component<Vector3>();
 world.add(Position, Networked)
-world.set(Posiition, Name, "Position")
+world.set(Position, Name, "Position")
 world.set(Position, Type, { size: 12, type: "Vector3" } ) // 12 bytes to represent a Vector3
 
 for (const [id, ty, name] of world.query(Type, Name).with(Networked)) {
