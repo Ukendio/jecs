@@ -4,6 +4,11 @@ type Query<T extends unknown[]> = {
      * this: Query<T> is necessary to use a colon instead of a period for emits.
      */
 
+
+    /**
+     * Get the next result in the query. Drain must have been called beforehand or otherwise it will error.
+     */
+    next: (this: Query<T>) => Query<T>;
     /**
      * Resets the Iterator for a query.
      */
@@ -28,7 +33,7 @@ type Query<T extends unknown[]> = {
 } & IterableFunction<LuaTuple<[Entity, ...T]>>;
 
 // Utility Types
-export type Entity<T = unknown> = number & { __nominal_type_dont_use: T };
+export type Entity<T = unknown> = number & { __DO_NOT_USE_OR_YOU_WILL_BE_FIRED: T };
 export type EntityType<T> = T extends Entity<infer A> ? A : never;
 export type InferComponents<A extends Entity[]> = {
     [K in keyof A]: EntityType<A[K]>;
@@ -44,7 +49,6 @@ type TupleForWorldGet =
     | [Entity, Entity]
     | [Entity, Entity, Entity]
     | [Entity, Entity, Entity, Entity]
-    | [Entity, Entity, Entity, Entity, Entity]
 
 export class World {
     /**
@@ -67,59 +71,65 @@ export class World {
 
     /**
      * Gets the target of a relationship. For example, when a user calls
-     * `world.target(id, ChildOf(parent))`, you will obtain the parent entity.
-     * @param id Entity
+     * `world.target(entity, ChildOf(parent))`, you will obtain the parent entity.
+     * @param entity Entity
      * @param relation The Relationship
      * @returns The Parent Entity if it exists
      */
-    target(id: Entity, relation: Entity): Entity | undefined;
+    target(entity: Entity, relation: Entity): Entity | undefined;
 
     /**
      * Clears an entity from the world.
-     * @praram id Entity to be cleared
+     * @praram entity Entity to be cleared
      */
-    clear(id: Entity): void;
+    clear(entity: Entity): void;
 
     /**
      * Deletes an entity and all its related components and relationships.
-     * For most situations, you should be using the clear method instead of deletion.
-     * @param id Entity to be destroyed
+     * @param entity Entity to be destroyed
      */
-    delete(id: Entity): void;
+    delete(entity: Entity): void;
 
     /**
      * Adds a component to the entity with no value
-     * @param id Target Entity
+     * @param entity Target Entity
      * @param component Component
      */
-    add<T>(id: Entity, component: Entity<T>): void;
+    add<T>(entity: Entity, component: Entity<T>): void;
 
     /**
      * Assigns a value to a component on the given entity
-     * @param id Target Entity
+     * @param entity Target Entity
      * @param component Target Component
      * @param data Component Data
      */
-    set<T>(id: Entity, component: Entity<T>, data: T): void;
+    set<T>(entity: Entity, component: Entity<T>, data: T): void;
 
     /**
      * Removes a component from the given entity
-     * @param id Target Entity
+     * @param entity Target Entity
      * @param component Target Component
      */
-    remove(id: Entity, component: Entity): void;
-
-    // Manually typed out get since there is a hard limit.
+    remove(entity: Entity, component: Entity): void;
 
     /**
      * Retrieves the values of specified components for an entity.
      * Some values may not exist when called.
-     * A maximum of 5 components are allowed at a time.
+     * A maximum of 4 components are allowed at a time.
      * @param id Target Entity
      * @param components Target Components
      * @returns Data associated with target components if it exists.
      */
     get<T extends TupleForWorldGet>(id: Entity, ...components: T): FlattenTuple<Nullable<InferComponents<T>>>
+
+    /**
+     * Returns whether the entity has the specified components.
+     * A maximum of 4 components are allowed at a time.
+     * @param entity Target Entity
+     * @param components Target Components
+     * @returns If the entity contains the components
+     */
+    has<T extends TupleForWorldGet>(entity: Entity, ...components: T): boolean;
 
     /**
      * Searches the world for entities that match a given query
