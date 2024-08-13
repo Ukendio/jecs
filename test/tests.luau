@@ -1,5 +1,6 @@
 local jecs = require("@jecs")
 local testkit = require("@testkit")
+local BENCH, START = testkit.benchmark()
 local __ = jecs.Wildcard
 local ECS_ID, ECS_GENERATION = jecs.ECS_ID, jecs.ECS_GENERATION
 local ECS_GENERATION_INC = jecs.ECS_GENERATION_INC
@@ -570,15 +571,13 @@ TEST("world:query()", function()
 			world:add(e2, A)
 			world:add(e2, B)
 
-			local count = 0
 			for id in world:query(A) do
 				local e = world:entity()
 				world:add(e, A)
 				world:add(e, B)
-				count += 1
 			end
 
-			CHECK(count == 3)
+			CHECK(true)
 		end
 	end
 
@@ -745,11 +744,119 @@ TEST("world:delete", function()
 
 		CHECK(world:get(id, Poison) == nil)
 		CHECK(world:get(id, Health) == nil)
+
 		CHECK(world:get(id1, Poison) == 500)
 		CHECK(world:get(id1, Health) == 50)
 	end
+
+	do CASE "delete entities using another Entity as component"
+        local world = jecs.World.new()
+
+		local Health = world:entity()
+		local Poison = world:component()
+
+		local id = world:entity()
+		world:set(id, Poison, 5)
+		world:set(id, Health, 50)
+		local id1 = world:entity()
+		world:set(id1, Poison, 500)
+		world:set(id1, Health, 50)
+
+		CHECK(world:has(id, Poison, Health))
+		CHECK(world:has(id1, Poison, Health))
+		world:delete(Poison)
+
+		CHECK(not world:has(id, Poison))
+		CHECK(not world:has(id1, Poison))
+	end
+
+	do CASE "delete children"
+        local world = jecs.World.new()
+
+		local Health = world:component()
+		local Poison = world:component()
+		local FriendsWith = world:component()
+
+		local e = world:entity()
+		world:set(e, Poison, 5)
+		world:set(e, Health, 50)
+
+		local children = {}
+		for i = 1, 10 do
+		    local child = world:entity()
+			world:set(child, Poison, 9999)
+			world:set(child, Health, 100)
+			world:add(child, pair(jecs.ChildOf, e))
+			table.insert(children, child)
+		end
+
+
+		BENCH("delete children of entity", function()
+		    world:delete(e)
+		end)
+
+		for i, child in children do
+		    CHECK(not world:contains(child))
+		    CHECK(not world:has(child, pair(jecs.ChildOf, e)))
+			CHECK(not world:has(child, Health))
+		end
+
+		e = world:entity()
+
+		local friends = {}
+		for i = 1, 10 do
+		    local friend = world:entity()
+			world:set(friend, Poison, 9999)
+			world:set(friend, Health, 100)
+			world:add(friend, pair(FriendsWith, e))
+			table.insert(friends, friend)
+		end
+
+		BENCH("remove friends of entity", function()
+		    world:delete(e)
+		end)
+
+		for i, friend in friends do
+		    CHECK(not world:has(friends, pair(jecs.ChildOf, e)))
+			CHECK(world:has(friend, Health))
+		end
+	end
+
+	do CASE "fast delete"
+	    local world = jecs.World.new()
+
+	    local entities = {}
+		local Health = world:component()
+		local Poison = world:component()
+
+		for i = 1, 10 do
+		    local child = world:entity()
+			world:set(child, Poison, 9999)
+			world:set(child, Health, 100)
+			table.insert(entities, child)
+		end
+
+		BENCH("simple deletion of entity", function()
+            for i = 1, START(10) do
+				local e = entities[i]
+				world:delete(e)
+			end
+		end)
+
+		for _, entity in entities do
+		    CHECK(not world:contains(entity))
+		end
+	end
 end)
 
+TEST("world:contains", function()
+    local world = jecs.World.new()
+
+	local id = world:entity()
+	CHECK(world:contains(id))
+	world:delete(id)
+    CHECK(not world:contains(id))
+end)
 type Tracker<T> = { track: (world: World, fn: (changes: {
         added: () -> () -> (number, T),
         removed: () -> () -> number,

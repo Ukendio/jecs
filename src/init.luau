@@ -64,7 +64,8 @@ local EcsOnSet 				= HI_COMPONENT_ID + 3
 local EcsWildcard 			= HI_COMPONENT_ID + 4
 local EcsChildOf 			= HI_COMPONENT_ID + 5
 local EcsComponent  		= HI_COMPONENT_ID + 6
-local EcsRest 				= HI_COMPONENT_ID + 7
+local EcsDelete             = HI_COMPONENT_ID + 7
+local EcsRest 				= HI_COMPONENT_ID + 8
 
 local ECS_PAIR_FLAG 		= 0x8
 local ECS_ID_FLAGS_MASK 	= 0x10
@@ -640,73 +641,6 @@ local function world_remove(world: World, entity: i53, id: i53)
 	end
 end
 
--- should reuse this logic in World.set instead of swap removing in transition archetype
-local function columns_destruct(columns: { Column }, count: number, row: number)
-	if row == count then
-		for _, column in columns do
-			column[count] = nil
-		end
-	else
-		for _, column in columns do
-			column[row] = column[count]
-			column[count] = nil
-		end
-	end
-end
-
-local function archetype_delete(world: World, id: i53)
-	local componentIndex = world.componentIndex
-	local idr = componentIndex[id]
-	local archetypes = world.archetypes
-
-	if idr then
-		for archetypeId in idr.cache do
-			for _, entity in archetypes[archetypeId].entities do
-				world_remove(world, entity, id)
-			end
-		end
-
-		componentIndex[id] = nil :: any
-	end
-end
-
-local function world_delete(world: World, entityId: i53)
-	local record = world.entityIndex.sparse[entityId]
-	if not record then
-		return
-	end
-	local entityIndex = world.entityIndex
-	local sparse, dense = entityIndex.sparse, entityIndex.dense
-	local archetype = record.archetype
-	local row = record.row
-
-	archetype_delete(world, entityId)
-	-- TODO: should traverse linked )component records to pairs including entityId
-	archetype_delete(world, ECS_PAIR(entityId, EcsWildcard))
-	archetype_delete(world, ECS_PAIR(EcsWildcard, entityId))
-
-	if archetype then
-		local entities = archetype.entities
-		local last = #entities
-
-		if row ~= last then
-			local entityToMove = entities[last]
-			dense[record.dense] = entityToMove
-			sparse[entityToMove] = record
-		end
-
-		entities[row], entities[last] = entities[last], nil :: any
-
-		local columns = archetype.columns
-
-		columns_destruct(columns, last, row)
-	end
-
-	sparse[entityId] = nil :: any
-	dense[#dense] = nil :: any
-
-end
-
 local function world_clear(world: World, entity: i53)
 	--TODO: use sparse_get (stashed)
 	local record = world.entityIndex.sparse[entity]
@@ -722,6 +656,183 @@ local function world_clear(world: World, entity: i53)
 	end
 
 	entity_move(world.entityIndex, entity, record, ROOT_ARCHETYPE)
+end
+
+-- should reuse this logic in World.set instead of swap removing in transition archetype
+local function columns_destruct(columns: { Column }, count: number, row: number)
+	if row == count then
+		for _, column in columns do
+			column[count] = nil
+		end
+	else
+		for _, column in columns do
+			column[row] = column[count]
+			column[count] = nil
+		end
+	end
+end
+
+local function archetype_fast_delete_last(world, columns,
+    column_count, types, entity)
+
+    for i, column in columns do
+        invoke_hook(world, EcsOnRemove, types[i], entity)
+
+        column[column_count] = nil
+    end
+end
+
+local function archetype_fast_delete(world, columns,
+    column_count, row, types, entity)
+    for i, column in columns do
+        invoke_hook(world, EcsOnRemove, types[i], entity)
+
+        column[row] = column[column_count]
+        column[column_count] = nil
+    end
+end
+
+
+local function archetype_delete(world: World, archetype, row)
+    local entityIndex = world.entityIndex
+    local columns = archetype.columns
+    local types = archetype.types
+    local entities = archetype.entities
+    local column_count = #entities
+    local last = #entities
+    local move = entities[last]
+    local delete = entities[row]
+    entities[row] = move
+    entities[last] = nil
+
+    if row ~= last then
+        -- TODO: should be "entity_index_sparse_get(entityIndex, move)"
+        local record_to_move = entityIndex.sparse[move]
+        if record_to_move then
+            record_to_move.row = row
+        end
+    end
+
+    -- TODO: if last == 0 then deactivate table
+
+    if row == last then
+        archetype_fast_delete_last(world, columns,
+            column_count, types, delete)
+    else
+        archetype_fast_delete(world, columns, column_count,
+            row, types, delete)
+    end
+
+
+
+	local component_index = world.componentIndex
+	local archetypes = world.archetypes
+
+    local idr = component_index[delete]
+    if idr then
+        component_index[delete] = nil
+        -- TODO: remove direct descendamt because
+        for archetype_id in idr.cache do
+            local idr_archetype = archetypes[archetype_id]
+
+            local children = {}
+
+            for i, child in idr_archetype.entities do
+                table.insert(children, child)
+            end
+
+            for _, child in children do
+                if world_has_one_inline(world, child, EcsDelete) then
+                    world_delete(world, child)
+                else
+                    world_remove(world, child, delete)
+                end
+            end
+        end
+    end
+
+    -- TODO: iterate each linked record.
+    -- local r = ECS_PAIR(delete, EcsWildcard)
+    -- local idr_r = component_index[r]
+    -- if idr_r then
+    --     -- Doesn't work for relations atm
+    --     for archetype_id in idr_o.cache do
+    --         local children = {}
+    --         local idr_r_archetype = archetypes[archetype_id]
+    --         local idr_r_types = idr_r_archetype.types
+
+    --         for _, child in idr_r_archetype.entities do
+    --             table.insert(children, child)
+    --         end
+
+    --         for _, id in idr_r_types do
+    --             local relation = ECS_ENTITY_T_HI(id)
+    --             if world_target(world, child, relation) == delete then
+    --                 world_remove(world, child, ECS_PAIR(relation, delete))
+    --             end
+    --         end
+    --     end
+    -- end
+
+    local o = ECS_PAIR(EcsWildcard, delete)
+    local idr_o = component_index[o]
+    if idr_o then
+        for archetype_id in idr_o.cache do
+            local children = {}
+            local idr_o_archetype = archetypes[archetype_id]
+            local idr_o_types = idr_o_archetype.types
+
+            for _, child in idr_o_archetype.entities do
+                table.insert(children, child)
+            end
+
+            for _, child in children do
+                -- In the future, this needs to be optimized to only
+                -- look for linked records instead of doing this linearly
+                for _, id in idr_o_types do
+                    if not ECS_IS_PAIR(id) then
+                        continue
+                    end
+                    local relation = ECS_ENTITY_T_HI(id)
+                    if world_target(world, child, relation) == delete then
+                        if world_has_one_inline(world, relation, EcsDelete) then
+                            -- Cascade deletions of it has Delete as component trait
+                            world_delete(world, child)
+                        else
+                            local p = ECS_PAIR(relation, delete)
+                            world_remove(world, child,  p)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+function world_delete(world: World, entity: i53)
+	local entityIndex = world.entityIndex
+
+	local record = entityIndex.sparse[entity]
+	if not record then
+		return
+	end
+
+	local archetype = record.archetype
+	local row = record.row
+
+	if archetype then
+	    -- In the future should have a destruct mode for
+	    -- deleting archetypes themselves. Maybe requires recycling
+	    archetype_delete(world, archetype, row)
+	end
+
+    record.archetype = nil :: any
+	entityIndex.sparse[entity] = nil
+end
+
+local function world_contains(world, entity)
+
+    return world.entityIndex.sparse[entity]
 end
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
@@ -1244,6 +1355,7 @@ World.get = world_get
 World.has = world_has
 World.target = world_target
 World.parent = world_parent
+World.contains = world_contains
 
 function World.new()
     local self = setmetatable({
@@ -1266,6 +1378,8 @@ function World.new()
 	   -- Initialize built-in components
 		entity_index_new_id(self.entityIndex, i)
 	end
+
+	world_add(self :: any, EcsChildOf, EcsDelete)
 
 	return self
 end
