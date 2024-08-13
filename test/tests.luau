@@ -813,14 +813,14 @@ TEST("world:delete", function()
 		end
 
 		BENCH("remove friends of entity", function()
-		    world:delete(e)
-		end)
+            world:delete(e)
+        end)
 
-		for i, friend in friends do
-		    CHECK(not world:has(friends, pair(jecs.ChildOf, e)))
-			CHECK(world:has(friend, Health))
-		end
-	end
+        for i, friend in friends do
+  		    CHECK(not world:has(friends, pair(jecs.ChildOf, e)))
+ 			CHECK(world:has(friend, Health))
+  		end
+    end
 
 	do CASE "fast delete"
 	    local world = jecs.World.new()
@@ -829,7 +829,7 @@ TEST("world:delete", function()
 		local Health = world:component()
 		local Poison = world:component()
 
-		for i = 1, 10 do
+		for i = 1, 100 do
 		    local child = world:entity()
 			world:set(child, Poison, 9999)
 			world:set(child, Health, 100)
@@ -837,7 +837,7 @@ TEST("world:delete", function()
 		end
 
 		BENCH("simple deletion of entity", function()
-            for i = 1, START(10) do
+            for i = 1, START(100) do
 				local e = entities[i]
 				world:delete(e)
 			end

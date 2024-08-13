@@ -676,8 +676,6 @@ local function archetype_fast_delete_last(world, columns,
     column_count, types, entity)
 
     for i, column in columns do
-        invoke_hook(world, EcsOnRemove, types[i], entity)
-
         column[column_count] = nil
     end
 end
@@ -685,15 +683,15 @@ end
 local function archetype_fast_delete(world, columns,
     column_count, row, types, entity)
     for i, column in columns do
-        invoke_hook(world, EcsOnRemove, types[i], entity)
-
         column[row] = column[column_count]
         column[column_count] = nil
     end
 end
 
 
-local function archetype_delete(world: World, archetype, row)
+local function archetype_delete(world: World, archetype,
+    row, track)
+
     local entityIndex = world.entityIndex
     local columns = archetype.columns
     local types = archetype.types
@@ -715,6 +713,10 @@ local function archetype_delete(world: World, archetype, row)
 
     -- TODO: if last == 0 then deactivate table
 
+	for _, id in types do
+		invoke_hook(world, EcsOnRemove, id, delete)
+	end
+
     if row == last then
         archetype_fast_delete_last(world, columns,
             column_count, types, delete)
@@ -724,29 +726,25 @@ local function archetype_delete(world: World, archetype, row)
     end
 
 
-
 	local component_index = world.componentIndex
 	local archetypes = world.archetypes
 
     local idr = component_index[delete]
     if idr then
         component_index[delete] = nil
-        -- TODO: remove direct descendamt because
+        local children = {}
         for archetype_id in idr.cache do
             local idr_archetype = archetypes[archetype_id]
-
-            local children = {}
 
             for i, child in idr_archetype.entities do
                 table.insert(children, child)
             end
-
-            for _, child in children do
-                if world_has_one_inline(world, child, EcsDelete) then
-                    world_delete(world, child)
-                else
-                    world_remove(world, child, delete)
-                end
+        end
+        for _, child in children do
+            if world_has_one_inline(world, child, EcsDelete) then
+                world_delete(world, child)
+            else
+                world_remove(world, child, delete)
             end
         end
     end
@@ -776,30 +774,37 @@ local function archetype_delete(world: World, archetype, row)
 
     local o = ECS_PAIR(EcsWildcard, delete)
     local idr_o = component_index[o]
+
     if idr_o then
         for archetype_id in idr_o.cache do
             local children = {}
             local idr_o_archetype = archetypes[archetype_id]
+            -- In the future, this needs to be optimized to only
+            -- look for linked records instead of doing this linearly
+
             local idr_o_types = idr_o_archetype.types
 
             for _, child in idr_o_archetype.entities do
                 table.insert(children, child)
             end
 
-            for _, child in children do
-                -- In the future, this needs to be optimized to only
-                -- look for linked records instead of doing this linearly
-                for _, id in idr_o_types do
-                    if not ECS_IS_PAIR(id) then
-                        continue
+            for _, id in idr_o_types do
+                if not ECS_IS_PAIR(id) then
+                    continue
+                end
+
+                local relation = ECS_ENTITY_T_HI(id)
+
+                if world_has_one_inline(world, relation, EcsDelete) then
+                    for _, child in children do
+                        -- Cascade deletions of it has Delete as component trait
+                        world_delete(world, child)
                     end
-                    local relation = ECS_ENTITY_T_HI(id)
-                    if world_target(world, child, relation) == delete then
-                        if world_has_one_inline(world, relation, EcsDelete) then
-                            -- Cascade deletions of it has Delete as component trait
-                            world_delete(world, child)
-                        else
-                            local p = ECS_PAIR(relation, delete)
+                else
+                    local p = ECS_PAIR(relation, delete)
+
+                    for _, child in children do
+                        if world_target(world, child, relation) == delete then
                             world_remove(world, child,  p)
                         end
                     end
@@ -809,7 +814,7 @@ local function archetype_delete(world: World, archetype, row)
     end
 end
 
-function world_delete(world: World, entity: i53)
+function world_delete(world: World, entity: i53, track)
 	local entityIndex = world.entityIndex
 
 	local record = entityIndex.sparse[entity]
@@ -823,7 +828,7 @@ function world_delete(world: World, entity: i53)
 	if archetype then
 	    -- In the future should have a destruct mode for
 	    -- deleting archetypes themselves. Maybe requires recycling
-	    archetype_delete(world, archetype, row)
+	    archetype_delete(world, archetype, row, track)
 	end
 
     record.archetype = nil :: any
