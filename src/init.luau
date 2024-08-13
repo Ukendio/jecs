@@ -801,10 +801,10 @@ local function archetype_delete(world: World, archetype,
                         world_delete(world, child)
                     end
                 else
-                    local p = ECS_PAIR(relation, delete)
-
-                    for _, child in children do
-                        if world_target(world, child, relation) == delete then
+                    local object = ECS_ENTITY_T_LO(id)
+                    if object == delete then
+                        local p = ECS_PAIR(relation, object)
+                        for _, child in children do
                             world_remove(world, child,  p)
                         end
                     end
