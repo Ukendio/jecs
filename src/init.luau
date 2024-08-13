@@ -1459,6 +1459,7 @@ return {
 	Component = EcsComponent :: Entity,
 	Wildcard = EcsWildcard :: Entity,
 	w = EcsWildcard :: Entity,
+	Delete = EcsDelete :: Entity,
 	Rest = EcsRest :: Entity,
 
 	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity, obj: Entity) -> number,
