@@ -908,6 +908,9 @@ do
 
        	for archetype_id in idr.cache do
       		local compatibleArchetype = archetypes[archetype_id]
+            if #compatibleArchetype.entities == 0 then
+                continue
+            end
       		local records = compatibleArchetype.records
 
       		local skip = false

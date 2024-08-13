@@ -847,6 +847,21 @@ TEST("world:delete", function()
 		    CHECK(not world:contains(entity))
 		end
 	end
+
+	do CASE "cycle"
+        local world = jecs.World.new()
+        local Likes = world:component()
+        world:add(Likes, jecs.Delete)
+        local bob = world:entity()
+        local alice = world:entity()
+
+        world:add(bob, pair(Likes, alice))
+        world:add(alice, pair(Likes, bob))
+
+        world:delete(bob)
+        CHECK(not world:contains(bob))
+        CHECK(not world:contains(alice))
+	end
 end)
 
 TEST("world:contains", function()
