@@ -59,10 +59,6 @@ type ArchetypeDiff = {
 
 local HI_COMPONENT_ID 		= 256
 
---------------------------------------------------
--------- ID_RECORD -------------------------------
---------------------------------------------------
-
 local EcsOnAdd 				= HI_COMPONENT_ID + 1
 local EcsOnRemove 			= HI_COMPONENT_ID + 2
 local EcsOnSet 				= HI_COMPONENT_ID + 3
