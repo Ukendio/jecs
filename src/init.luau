@@ -41,6 +41,7 @@ type ArchetypeRecord = {
 
 type ArchetypeMap = {
 	cache: { ArchetypeRecord },
+	flags: number,
 	first: ArchetypeMap,
 	second: ArchetypeMap,
 	parent: ArchetypeMap,
@@ -257,115 +258,6 @@ local function hash(arr: { number }): string
 	return table.concat(arr, "_")
 end
 
-local function id_record_ensure(
-	componentIndex: ComponentIndex,
-	componentId: number
-): ArchetypeMap
-	local idr = componentIndex[componentId]
-
-	if not idr then
-		idr = ({ size = 0, cache = {} } :: any) :: ArchetypeMap
-		componentIndex[componentId] = idr
-	end
-
-	return idr
-end
-
-local function ECS_ID_IS_WILDCARD(e: i53): boolean
-	assert(ECS_IS_PAIR(e))
-	local first = ECS_ENTITY_T_HI(e)
-	local second = ECS_ENTITY_T_LO(e)
-	return first == EcsWildcard or second == EcsWildcard
-end
-
-local function archetype_create(world: any, types: { i24 }, prev: Archetype?): Archetype
-	local ty = hash(types)
-
-	local id = world.nextArchetypeId + 1
-	world.nextArchetypeId = id
-
-	local length = #types
-	local columns = (table.create(length) :: any) :: { Column }
-	local componentIndex = world.componentIndex
-
-	local records: { ArchetypeRecord } = {}
-	for i, componentId in types do
-	    local tr = { column = i, count = 1 }
-		local idr = id_record_ensure(componentIndex, componentId)
-		idr.cache[id] = tr
-		idr.size += 1
-		records[componentId] = tr
-		if ECS_IS_PAIR(componentId) then
-			local relation = ecs_pair_first(world, componentId)
-			local object = ecs_pair_second(world, componentId)
-
-			local r = ECS_PAIR(relation, EcsWildcard)
-			local idr_r = id_record_ensure(componentIndex, r)
-
-			local o = ECS_PAIR(EcsWildcard, object)
-			local idr_o = id_record_ensure(componentIndex, o)
-
-			records[r] = tr
-			records[o] = tr
-
-			idr_r.cache[id] = tr
-			idr_o.cache[id] = tr
-
-			idr_r.size += 1
-			idr_o.size += 1
-		end
-		columns[i] = {}
-	end
-
-	local archetype: Archetype = {
-		columns = columns,
-		edges = {},
-		entities = {},
-		id = id,
-		records = records,
-		type = ty,
-		types = types,
-	}
-
-	world.archetypeIndex[ty] = archetype
-	world.archetypes[id] = archetype
-
-	return archetype
-end
-
-local function world_entity(world: World): i53
-	local entityId = world.nextEntityId + 1
-	world.nextEntityId = entityId
-	return entity_index_new_id(world.entityIndex, entityId + EcsRest)
-end
-
--- TODO:
--- should have an additional `nth` parameter which selects the nth target
--- this is important when an entity can have multiple relationships with the same target
-local function world_target(world: World, entity: i53, relation: i24--[[, nth: number]]): i24?
-	local record = world.entityIndex.sparse[entity]
-	local archetype = record.archetype
-	if not archetype then
-		return nil
-	end
-
-	local idr = world.componentIndex[ECS_PAIR(relation, EcsWildcard)]
-	if not idr then
-		return nil
-	end
-
-	local tr = idr.cache[archetype.id]
-	if not tr then
-		return nil
-	end
-
-	return ecs_pair_second(world, archetype.types[tr.column])
-end
-
-local function world_parent(world: World, entity: i53)
-	return world_target(world, entity, EcsChildOf)
-end
-
 local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?) -> (...any)
 do
     -- Keeping the function as small as possible to enable inlining
@@ -468,6 +360,139 @@ local function world_has(world: World, entity: number, ...: i53): boolean
     return true
 end
 
+local EcsIdHasDelete   = 0b0001
+local EcsIdHasHooks    = 0b0010
+--local EcsIdExclusive   = 0b0100
+
+local function id_record_ensure(
+    world,
+	id: number
+): ArchetypeMap
+    local componentIndex = world.componentIndex
+	local idr = componentIndex[id]
+
+	if not idr then
+	    local flags = 0b0000
+		local relation = ECS_ENTITY_T_HI(id)
+		if world_has_one_inline(world, relation, EcsDelete) then
+		    flags = bit32.bor(flags, EcsIdHasDelete)
+		end
+
+		if world_has(world, relation,
+		    EcsOnAdd, EcsOnSet, EcsOnRemove)
+		then
+		    flags = bit32.bor(flags, EcsIdHasHooks)
+		end
+
+		-- local FLAG2 = 0b0010
+		-- local FLAG3 = 0b0100
+		-- local FLAG4 = 0b1000
+
+		idr = {
+		    size = 0,
+			cache = {},
+			flags = flags
+		} :: ArchetypeMap
+		componentIndex[id] = idr
+	end
+
+	return idr
+end
+
+local function ECS_ID_IS_WILDCARD(e: i53): boolean
+	assert(ECS_IS_PAIR(e))
+	local first = ECS_ENTITY_T_HI(e)
+	local second = ECS_ENTITY_T_LO(e)
+	return first == EcsWildcard or second == EcsWildcard
+end
+
+local function archetype_create(world: any, types: { i24 }, prev: Archetype?): Archetype
+	local ty = hash(types)
+
+	local id = world.nextArchetypeId + 1
+	world.nextArchetypeId = id
+
+	local length = #types
+	local columns = (table.create(length) :: any) :: { Column }
+
+	local records: { ArchetypeRecord } = {}
+	for i, componentId in types do
+	    local tr = { column = i, count = 1 }
+		local idr = id_record_ensure(world, componentId)
+		idr.cache[id] = tr
+		idr.size += 1
+		records[componentId] = tr
+		if ECS_IS_PAIR(componentId) then
+			local relation = ecs_pair_first(world, componentId)
+			local object = ecs_pair_second(world, componentId)
+
+			local r = ECS_PAIR(relation, EcsWildcard)
+			local idr_r = id_record_ensure(world, r)
+
+			local o = ECS_PAIR(EcsWildcard, object)
+			local idr_o = id_record_ensure(world, o)
+
+			records[r] = tr
+			records[o] = tr
+
+			idr_r.cache[id] = tr
+			idr_o.cache[id] = tr
+
+			idr_r.size += 1
+			idr_o.size += 1
+		end
+		columns[i] = {}
+	end
+
+	local archetype: Archetype = {
+		columns = columns,
+		edges = {},
+		entities = {},
+		id = id,
+		records = records,
+		type = ty,
+		types = types,
+	}
+
+	world.archetypeIndex[ty] = archetype
+	world.archetypes[id] = archetype
+
+	return archetype
+end
+
+local function world_entity(world: World): i53
+	local entityId = world.nextEntityId + 1
+	world.nextEntityId = entityId
+	return entity_index_new_id(world.entityIndex, entityId + EcsRest)
+end
+
+-- TODO:
+-- should have an additional `nth` parameter which selects the nth target
+-- this is important when an entity can have multiple relationships with the same target
+local function world_target(world: World, entity: i53, relation: i24--[[, nth: number]]): i24?
+	local record = world.entityIndex.sparse[entity]
+	local archetype = record.archetype
+	if not archetype then
+		return nil
+	end
+
+	local idr = world.componentIndex[ECS_PAIR(relation, EcsWildcard)]
+	if not idr then
+		return nil
+	end
+
+	local tr = idr.cache[archetype.id]
+	if not tr then
+		return nil
+	end
+
+	return ecs_pair_second(world, archetype.types[tr.column])
+end
+
+local function world_parent(world: World, entity: i53)
+	return world_target(world, entity, EcsChildOf)
+end
+
 local function archetype_ensure(world: World, types, prev): Archetype
 	if #types < 1 then
 		return world.ROOT_ARCHETYPE
@@ -560,7 +585,12 @@ local function world_add(world: World, entity: i53, id: i53)
 		end
 	end
 
-	invoke_hook(world, EcsOnAdd, id, entity)
+	local idr = world.componentIndex[id]
+	local has_hooks = bit32.band(idr.flags, EcsIdHasHooks)
+
+	if has_hooks then
+	    invoke_hook(world, EcsOnAdd, id, entity)
+	end
 end
 
 -- Symmetric like `World.add` but idempotent
@@ -568,13 +598,18 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 	local record = world.entityIndex.sparse[entity]
 	local from = record.archetype
 	local to = archetype_traverse_add(world, id, from)
+	local idr = world.componentIndex[id]
+	local has_hooks = bit32.band(idr.flags, EcsIdHasHooks)
 
-	if from == to then
+    if from == to then
 		-- If the archetypes are the same it can avoid moving the entity
 		-- and just set the data directly.
 		local tr = to.records[id]
 		from.columns[tr.column][record.row] = data
-		invoke_hook(world, EcsOnSet, id, entity, data)
+		if has_hooks then
+		    invoke_hook(world, EcsOnSet, id, entity, data)
+		end
+
 		return
 	end
 
@@ -588,10 +623,15 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 		end
 	end
 
-	local tr = to.records[id]
-	to.columns[tr.column][record.row] = data
-
-	invoke_hook(world, EcsOnSet, id, entity, data)
+	if not has_hooks then
+	    local tr = to.records[id]
+		from.columns[tr.column][record.row] = data
+	else
+	    invoke_hook(world, EcsOnAdd, id, entity)
+		local tr = to.records[id]
+		to.columns[tr.column][record.row] = data
+		invoke_hook(world, EcsOnSet, id, entity, data)
+	end
 end
 
 local function world_component(world: World): i53
@@ -606,7 +646,6 @@ local function world_component(world: World): i53
 	world_add(world, id, EcsComponent)
 	return id
 end
-
 
 local function archetype_traverse_remove(world: World, id: i53, from: Archetype): Archetype
 	local edge = edge_ensure(from, id)
@@ -656,20 +695,6 @@ local function world_clear(world: World, entity: i53)
 	end
 
 	entity_move(world.entityIndex, entity, record, ROOT_ARCHETYPE)
-end
-
--- should reuse this logic in World.set instead of swap removing in transition archetype
-local function columns_destruct(columns: { Column }, count: number, row: number)
-	if row == count then
-		for _, column in columns do
-			column[count] = nil
-		end
-	else
-		for _, column in columns do
-			column[row] = column[count]
-			column[count] = nil
-		end
-	end
 end
 
 local function archetype_fast_delete_last(world, columns,
@@ -731,7 +756,6 @@ local function archetype_delete(world: World, archetype,
 
     local idr = component_index[delete]
     if idr then
-        component_index[delete] = nil
         local children = {}
         for archetype_id in idr.cache do
             local idr_archetype = archetypes[archetype_id]
@@ -747,6 +771,7 @@ local function archetype_delete(world: World, archetype,
                 world_remove(world, child, delete)
             end
         end
+        component_index[delete] = nil
     end
 
     -- TODO: iterate each linked record.
@@ -793,24 +818,27 @@ local function archetype_delete(world: World, archetype,
                     continue
                 end
 
-                local relation = ECS_ENTITY_T_HI(id)
+                local id_record = component_index[id]
 
-                if world_has_one_inline(world, relation, EcsDelete) then
-                    for _, child in children do
-                        -- Cascade deletions of it has Delete as component trait
-                        world_delete(world, child)
+                if id_record then
+                    local flags = id_record.flags
+                    if bit32.band(flags, EcsIdHasDelete) ~= 0 then
+                        for _, child in children do
+                            -- Cascade deletions of it has Delete as component trait
+                            world_delete(world, child)
+                        end
                     end
                 else
                     local object = ECS_ENTITY_T_LO(id)
                     if object == delete then
-                        local p = ECS_PAIR(relation, object)
                         for _, child in children do
-                            world_remove(world, child,  p)
+                            world_remove(world, child, id)
                         end
                     end
                 end
             end
         end
+        component_index[o] = nil
     end
 end
 
