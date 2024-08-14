@@ -59,6 +59,10 @@ type ArchetypeDiff = {
 
 local HI_COMPONENT_ID 		= 256
 
+--------------------------------------------------
+-------- ID_RECORD -------------------------------
+--------------------------------------------------
+
 local EcsOnAdd 				= HI_COMPONENT_ID + 1
 local EcsOnRemove 			= HI_COMPONENT_ID + 2
 local EcsOnSet 				= HI_COMPONENT_ID + 3
@@ -72,6 +76,10 @@ local ECS_PAIR_FLAG 		= 0x8
 local ECS_ID_FLAGS_MASK 	= 0x10
 local ECS_ENTITY_MASK 		= bit32.lshift(1, 24)
 local ECS_GENERATION_MASK 	= bit32.lshift(1, 16)
+
+local ECS_ID_HAS_DELETE     = 0b0001
+local ECS_ID_HAS_HOOKS      = 0b0010
+--local EcsIdExclusive   = 0b0100
 
 local function FLAGS_ADD(is_pair: boolean): number
 	local flags = 0x0
@@ -360,9 +368,28 @@ local function world_has(world: World, entity: number, ...: i53): boolean
     return true
 end
 
-local EcsIdHasDelete   = 0b0001
-local EcsIdHasHooks    = 0b0010
---local EcsIdExclusive   = 0b0100
+local function world_has_any(world: World, entity: number, ...: i53): boolean
+   	local record = world.entityIndex.sparse[entity]
+   	if not record then
+  		return false
+   	end
+
+   	local archetype = record.archetype
+   	if not archetype then
+	   return false
+   	end
+
+    local records = archetype.records
+
+    for i = 1, select("#", ...) do
+        if not records[select(i, ...)] then
+            return true
+        end
+    end
+
+    return false
+end
+
 
 local function id_record_ensure(
     world,
@@ -375,13 +402,13 @@ local function id_record_ensure(
 	    local flags = 0b0000
 		local relation = ECS_ENTITY_T_HI(id)
 		if world_has_one_inline(world, relation, EcsDelete) then
-		    flags = bit32.bor(flags, EcsIdHasDelete)
+		    flags = bit32.bor(flags, ECS_ID_HAS_DELETE)
 		end
 
-		if world_has(world, relation,
+		if world_has_any(world, relation,
 		    EcsOnAdd, EcsOnSet, EcsOnRemove)
 		then
-		    flags = bit32.bor(flags, EcsIdHasHooks)
+		    flags = bit32.bor(flags, ECS_ID_HAS_HOOKS)
 		end
 
 		-- local FLAG2 = 0b0010
@@ -586,7 +613,7 @@ local function world_add(world: World, entity: i53, id: i53)
 	end
 
 	local idr = world.componentIndex[id]
-	local has_hooks = bit32.band(idr.flags, EcsIdHasHooks)
+	local has_hooks = bit32.band(idr.flags, ECS_ID_HAS_HOOKS) ~= 0
 
 	if has_hooks then
 	    invoke_hook(world, EcsOnAdd, id, entity)
@@ -599,7 +626,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 	local from = record.archetype
 	local to = archetype_traverse_add(world, id, from)
 	local idr = world.componentIndex[id]
-	local has_hooks = bit32.band(idr.flags, EcsIdHasHooks)
+	local has_hooks = bit32.band(idr.flags, ECS_ID_HAS_HOOKS) ~= 0
 
     if from == to then
 		-- If the archetypes are the same it can avoid moving the entity
@@ -623,14 +650,11 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 		end
 	end
 
-	if not has_hooks then
-	    local tr = to.records[id]
-		from.columns[tr.column][record.row] = data
-	else
-	    invoke_hook(world, EcsOnAdd, id, entity)
-		local tr = to.records[id]
-		to.columns[tr.column][record.row] = data
-		invoke_hook(world, EcsOnSet, id, entity, data)
+    local tr = to.records[id]
+	to.columns[tr.column][record.row] = data
+
+	if has_hooks then
+	    invoke_hook(world, EcsOnSet, id, entity, data)
 	end
 end
 
@@ -764,13 +788,18 @@ local function archetype_delete(world: World, archetype,
                 table.insert(children, child)
             end
         end
-        for _, child in children do
-            if world_has_one_inline(world, child, EcsDelete) then
+        local flags = idr.flags
+        if bit32.band(flags, ECS_ID_HAS_DELETE) ~= 0 then
+            for _, child in children do
+                -- Cascade deletion to children
                 world_delete(world, child)
-            else
+            end
+        else
+            for _, child in children do
                 world_remove(world, child, delete)
             end
         end
+
         component_index[delete] = nil
     end
 
@@ -822,7 +851,7 @@ local function archetype_delete(world: World, archetype,
 
                 if id_record then
                     local flags = id_record.flags
-                    if bit32.band(flags, EcsIdHasDelete) ~= 0 then
+                    if bit32.band(flags, ECS_ID_HAS_DELETE) ~= 0 then
                         for _, child in children do
                             -- Cascade deletions of it has Delete as component trait
                             world_delete(world, child)
