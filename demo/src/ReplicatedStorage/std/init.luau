@@ -1,6 +1,5 @@
 local jecs = require(game:GetService("ReplicatedStorage").ecs)
 local world = require(script.world)
-export type World = world.World
 
 local std = {
     ChangeTracker = require(script.changetracker),

@@ -16,7 +16,7 @@ type ArchetypeEdge = {
 	remove: Archetype,
 }
 
-type Archetype = {
+export type Archetype = {
 	id: number,
 	edges: { [i53]: ArchetypeEdge },
 	types: Ty,
@@ -65,8 +65,9 @@ local EcsOnSet 				= HI_COMPONENT_ID + 3
 local EcsWildcard 			= HI_COMPONENT_ID + 4
 local EcsChildOf 			= HI_COMPONENT_ID + 5
 local EcsComponent  		= HI_COMPONENT_ID + 6
-local EcsDelete             = HI_COMPONENT_ID + 7
-local EcsRest 				= HI_COMPONENT_ID + 8
+local EcsOnDeleteTarget     = HI_COMPONENT_ID + 7
+local EcsDelete             = HI_COMPONENT_ID + 8
+local EcsRest 				= HI_COMPONENT_ID + 9
 
 local ECS_PAIR_FLAG 		= 0x8
 local ECS_ID_FLAGS_MASK 	= 0x10
@@ -328,20 +329,6 @@ local function world_get_one_inline(world: World, entity: i53, id: i53)
    	return archetype.columns[tr.column][record.row]
 end
 
-local function world_has_one_inline(world: World, entity: i53, id: i53): boolean
-   	local record = world.entityIndex.sparse[entity]
-   	if not record then
-  		return false
-   	end
-
-   	local archetype = record.archetype
-   	if not archetype then
-	   return false
-   	end
-
-    return archetype.records[id] ~= nil
-end
-
 local function world_has(world: World, entity: number, ...: i53): boolean
    	local record = world.entityIndex.sparse[entity]
    	if not record then
@@ -386,9 +373,31 @@ local function world_has_any(world: World, entity: number, ...: i53): boolean
     return false
 end
 
+-- TODO:
+-- should have an additional `nth` parameter which selects the nth target
+-- this is important when an entity can have multiple relationships with the same target
+local function world_target(world: World, entity: i53, relation: i24--[[, nth: number]]): i24?
+	local record = world.entityIndex.sparse[entity]
+	local archetype = record.archetype
+	if not archetype then
+		return nil
+	end
+
+	local idr = world.componentIndex[ECS_PAIR(relation, EcsWildcard)]
+	if not idr then
+		return nil
+	end
+
+	local tr = idr.cache[archetype.id]
+	if not tr then
+		return nil
+	end
+
+	return ecs_pair_second(world, archetype.types[tr.column])
+end
 
 local function id_record_ensure(
-    world,
+    world: World,
 	id: number
 ): ArchetypeMap
     local componentIndex = world.componentIndex
@@ -397,8 +406,9 @@ local function id_record_ensure(
 	if not idr then
 	    local flags = 0b0000
 		local relation = ECS_ENTITY_T_HI(id)
-		if world_has_one_inline(world, relation, EcsDelete) then
-		    flags = bit32.bor(flags, ECS_ID_HAS_DELETE)
+		local cleanup_policy = world_target(world, relation, EcsOnDeleteTarget)
+		if cleanup_policy == EcsDelete then
+            flags = bit32.bor(flags, ECS_ID_HAS_DELETE)
 		end
 
 		if world_has_any(world, relation,
@@ -429,7 +439,7 @@ local function ECS_ID_IS_WILDCARD(e: i53): boolean
 	return first == EcsWildcard or second == EcsWildcard
 end
 
-local function archetype_create(world: any, types: { i24 }, prev: Archetype?): Archetype
+local function archetype_create(world: World, types: { i24 }, prev: Archetype?): Archetype
 	local ty = hash(types)
 
 	local id = world.nextArchetypeId + 1
@@ -487,29 +497,6 @@ local function world_entity(world: World): i53
 	local entityId = world.nextEntityId + 1
 	world.nextEntityId = entityId
 	return entity_index_new_id(world.entityIndex, entityId + EcsRest)
-end
-
--- TODO:
--- should have an additional `nth` parameter which selects the nth target
--- this is important when an entity can have multiple relationships with the same target
-local function world_target(world: World, entity: i53, relation: i24--[[, nth: number]]): i24?
-	local record = world.entityIndex.sparse[entity]
-	local archetype = record.archetype
-	if not archetype then
-		return nil
-	end
-
-	local idr = world.componentIndex[ECS_PAIR(relation, EcsWildcard)]
-	if not idr then
-		return nil
-	end
-
-	local tr = idr.cache[archetype.id]
-	if not tr then
-		return nil
-	end
-
-	return ecs_pair_second(world, archetype.types[tr.column])
 end
 
 local function world_parent(world: World, entity: i53)
@@ -717,25 +704,27 @@ local function world_clear(world: World, entity: i53)
 	entity_move(world.entityIndex, entity, record, ROOT_ARCHETYPE)
 end
 
-local function archetype_fast_delete_last(world, columns,
-    column_count, types, entity)
+local function archetype_fast_delete_last(columns, column_count,
+    types, entity)
 
     for i, column in columns do
         column[column_count] = nil
     end
 end
 
-local function archetype_fast_delete(world, columns,
-    column_count, row, types, entity)
+local function archetype_fast_delete(columns, column_count,
+    row, types, entity)
+
     for i, column in columns do
         column[row] = column[column_count]
         column[column_count] = nil
     end
 end
 
+local ERROR_DELETE_PANIC = "Tried to delete entity that has (OnDelete, Panic)"
 
-local function archetype_delete(world: World, archetype,
-    row, track)
+local function archetype_delete(world: World,
+    archetype: Archetype, row: number)
 
     local entityIndex = world.entityIndex
     local columns = archetype.columns
@@ -763,10 +752,10 @@ local function archetype_delete(world: World, archetype,
 	end
 
     if row == last then
-        archetype_fast_delete_last(world, columns,
+        archetype_fast_delete_last(columns,
             column_count, types, delete)
     else
-        archetype_fast_delete(world, columns, column_count,
+        archetype_fast_delete(columns, column_count,
             row, types, delete)
     end
 
@@ -852,12 +841,12 @@ local function archetype_delete(world: World, archetype,
                             -- Cascade deletions of it has Delete as component trait
                             world_delete(world, child)
                         end
-                    end
-                else
-                    local object = ECS_ENTITY_T_LO(id)
-                    if object == delete then
-                        for _, child in children do
-                            world_remove(world, child, id)
+                    else
+                        local object = ECS_ENTITY_T_LO(id)
+                        if object == delete then
+                            for _, child in children do
+                                world_remove(world, child, id)
+                            end
                         end
                     end
                 end
@@ -867,7 +856,7 @@ local function archetype_delete(world: World, archetype,
     end
 end
 
-function world_delete(world: World, entity: i53, track)
+function world_delete(world: World, entity: i53)
 	local entityIndex = world.entityIndex
 
 	local record = entityIndex.sparse[entity]
@@ -881,14 +870,14 @@ function world_delete(world: World, entity: i53, track)
 	if archetype then
 	    -- In the future should have a destruct mode for
 	    -- deleting archetypes themselves. Maybe requires recycling
-	    archetype_delete(world, archetype, row, track)
+	    archetype_delete(world, archetype, row)
 	end
 
     record.archetype = nil :: any
 	entityIndex.sparse[entity] = nil
 end
 
-local function world_contains(world, entity)
+local function world_contains(world: World, entity)
 
     return world.entityIndex.sparse[entity]
 end
@@ -930,7 +919,7 @@ do
        	end
     end
 
-    function world_query(world, ...)
+    function world_query(world: World, ...)
             -- breaking
        	if (...) == nil then
       		error("Missing components")
@@ -1418,7 +1407,7 @@ World.target = world_target
 World.parent = world_parent
 World.contains = world_contains
 
-function World.new()
+function World.new(): t_world
     local self = setmetatable({
         archetypeIndex = {} :: { [string]: Archetype },
         archetypes = {} :: Archetypes,
@@ -1427,11 +1416,11 @@ function World.new()
  			dense = {} :: { [i24]: i53 },
  			sparse = {} :: { [i53]: Record },
   		} :: EntityIndex,
-  		nextArchetypeId = 0,
-  		nextComponentId = 0,
-  		nextEntityId = 0,
+  		nextArchetypeId = 0 :: number,
+  		nextComponentId = 0 :: number,
+  		nextEntityId = 0 :: number,
   		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
-    }, World)
+    }, World) :: any
 
 	self.ROOT_ARCHETYPE = archetype_create(self, {})
 
@@ -1440,7 +1429,8 @@ function World.new()
 		entity_index_new_id(self.entityIndex, i)
 	end
 
-	world_add(self :: any, EcsChildOf, EcsDelete)
+	world_add(self, EcsChildOf,
+	   ECS_PAIR(EcsOnDeleteTarget, EcsDelete))
 
 	return self
 end
@@ -1464,49 +1454,97 @@ type Query<T...> = typeof(setmetatable({}, {
     archetypes: () -> { Archetype },
 }
 
-export type World = {
+type World = {
     archetypeIndex: { [string]: Archetype },
     archetypes: Archetypes,
     componentIndex: ComponentIndex,
     entityIndex: EntityIndex,
-    nextArchetypeId: number,
+    ROOT_ARCHETYPE: Archetype,
+
     nextComponentId: number,
     nextEntityId: number,
-    ROOT_ARCHETYPE: Archetype,
-} & {
-    target: (World, entity: Entity, relation: Entity) -> Entity,
-    parent: (World, entity: Entity) -> Entity,
-    entity: (World) -> Entity,
-    clear: (World, entity: Entity) -> (),
-    delete: (World, entity: Entity) -> (),
-    component: <T>(World) -> Entity<T>,
-    get: (<T>(World, entity: Entity, id: Entity<T>) -> T)
-        & (<A, B>(World, id: Entity, Entity<A>, Entity<B>) -> (A, B))
-		& (<A, B, C>(World, id: Entity, Entity<A>, Entity<B>, Entity<C>) -> (A, B, C))
-		&  <A, B, C, D>(World, id: Entity, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> (A, B, C, D),
-    has: (World, entity: Entity, ...Entity) -> boolean,
-    add: (World, entity: Entity, id: Entity) -> (),
-    set: <T>(World, entity: Entity,
-        id: Entity<T>, data: T) -> (),
-    remove: (World, entity: Entity, id: Entity) -> (),
-    query:
-    (<A>(World, Entity<A>) -> Query<A>)
-    & (<A, B>(World, Entity<A>, Entity<B>) -> Query<A, B>)
-    & (<A, B, C>(World, Entity<A>, Entity<B>, Entity<C>) -> Query<A, B, C>)
-    & (<A, B, C, D>(World, Entity<A>, Entity<B>, Entity<C>,
-        Entity<D>) -> Query<A, B, C, D>)
-    & (<A, B, C, D, E>(World, Entity<A>, Entity<B>, Entity<C>,
-        Entity<D>, Entity<E>) -> Query<A, B, C, D, E>)
-    & (<A, B, C, D, E, F>(World, Entity<A>, Entity<B>, Entity<C>,
-        Entity<D>, Entity<E>, Entity<F>) -> Query<A, B, C, D, E, F>)
-    & (<A, B, C, D, E, F, G>(World, Entity<A>, Entity<B>, Entity<C>,
-        Entity<D>, Entity<E>, Entity<F>, Entity<G>) -> Query<A, B, C, D, E, F, G>)
-    & (<A, B, C, D, E, F, G, H>(World, Entity<A>, Entity<B>, Entity<C>,
-        Entity<D>, Entity<E>, Entity<F>, Entity<G>, Entity<H>) -> Query<A, B, C, D, E, F, G, H>)
+    nextArchetypeId: number,
 }
 
+export type t_world = typeof(setmetatable(
+	{} :: {
+
+		--- Creates a new entity
+		entity: (t_world) -> Entity,
+		--- Creates a new entity located in the first 256 ids.
+		--- These should be used for static components for fast access.
+		component: <T>(t_world) -> Entity<T>,
+		--- Gets the target of an relationship. For example, when a user calls
+		--- `world:target(id, ChildOf(parent))`, you will obtain the parent entity.
+		target: (t_world, id: Entity, relation: Entity) -> Entity?,
+		--- Deletes an entity and all it's related components and relationships.
+		delete: (t_world, id: Entity) -> (),
+
+		--- Adds a component to the entity with no value
+		add: <T>(world: t_world, id: Entity, component: Entity<T>) -> (),
+		--- Assigns a value to a component on the given entity
+		set: <T>(world: World, id: Entity, component: Entity<T>, data: T) -> (),
+
+		-- Clears an entity from the world
+		clear: (t_world, id: Entity) -> (),
+		--- Removes a component from the given entity
+		remove: (t_world, id: Entity, component: Entity) -> (),
+		--- Retrieves the value of up to 4 components. These values may be nil.
+		get: (<A>(t_world, id: any, Entity<A>) -> A)
+			& (<A, B>(t_world, id: Entity, Entity<A>, Entity<B>) -> (A, B))
+			& (<A, B, C>(t_world, id: Entity, Entity<A>, Entity<B>, Entity<C>) -> (A, B, C))
+			& <A, B, C, D>(t_world, id: Entity, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> (A, B, C, D),
+
+		--- Searches the world for entities that match a given query
+		query: (<A>(t_world, Entity<A>) -> Query<A>)
+			& (<A, B>(t_world, Entity<A>, Entity<B>) -> Query<A, B>)
+			& (<A, B, C>(t_world, Entity<A>, Entity<B>, Entity<C>) -> Query<A, B, C>)
+			& (<A, B, C, D>(t_world, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> Query<A, B, C, D>)
+			& (<A, B, C, D, E>(
+				t_world,
+				Entity<A>,
+				Entity<B>,
+				Entity<C>,
+				Entity<D>,
+				Entity<E>
+			) -> Query<A, B, C, D, E>)
+			& (<A, B, C, D, E, F>(
+				t_world,
+				Entity<A>,
+				Entity<B>,
+				Entity<C>,
+				Entity<D>,
+				Entity<E>,
+				Entity<F>
+			) -> Query<A, B, C, D, E, F>)
+			& (<A, B, C, D, E, F, G>(
+				t_world,
+				Entity<A>,
+				Entity<B>,
+				Entity<C>,
+				Entity<D>,
+				Entity<E>,
+				Entity<F>,
+				Entity<G>
+			) -> Query<A, B, C, D, E, F, G>)
+			& (<A, B, C, D, E, F, G, H>(
+				t_world,
+				Entity<A>,
+				Entity<B>,
+				Entity<C>,
+				Entity<D>,
+				Entity<E>,
+				Entity<F>,
+				Entity<G>,
+				Entity<H>,
+				...Entity<any>
+			) -> Query<A, B, C, D, E, F, G, H>),
+	}, {}
+))
+
+
 return {
-	World = World :: { new: () -> World },
+	World = World :: { new: () -> t_world },
 
 	OnAdd = EcsOnAdd :: Entity,
 	OnRemove = EcsOnRemove :: Entity,
@@ -1515,6 +1553,7 @@ return {
 	Component = EcsComponent :: Entity,
 	Wildcard = EcsWildcard :: Entity,
 	w = EcsWildcard :: Entity,
+	OnDeleteTarget = EcsOnDeleteTarget :: Entity,
 	Delete = EcsDelete :: Entity,
 	Rest = EcsRest :: Entity,
 
