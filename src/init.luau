@@ -442,7 +442,7 @@ end
 local function archetype_create(world: World, types: { i24 }, prev: Archetype?): Archetype
 	local ty = hash(types)
 
-	local id = world.nextArchetypeId + 1
+	local id = (world.nextArchetypeId :: number) + 1
 	world.nextArchetypeId = id
 
 	local length = #types
@@ -494,7 +494,7 @@ local function archetype_create(world: World, types: { i24 }, prev: Archetype?):
 end
 
 local function world_entity(world: World): i53
-	local entityId = world.nextEntityId + 1
+	local entityId = (world.nextEntityId :: number) + 1
 	world.nextEntityId = entityId
 	return entity_index_new_id(world.entityIndex, entityId + EcsRest)
 end
@@ -605,7 +605,8 @@ end
 
 -- Symmetric like `World.add` but idempotent
 local function world_set(world: World, entity: i53, id: i53, data: unknown)
-	local record = world.entityIndex.sparse[entity]
+    local entityIndex = world.entityIndex
+	local record = entityIndex.sparse[entity]
 	local from = record.archetype
 	local to = archetype_traverse_add(world, id, from)
 	local idr = world.componentIndex[id]
@@ -625,7 +626,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 
 	if from then
 		-- If there was a previous archetype, then the entity needs to move the archetype
-		entity_move(world.entityIndex, entity, record, to)
+		entity_move(entityIndex, entity, record, to)
 	else
 		if #to.types > 0 then
 			-- When there is no previous archetype it should create the archetype
@@ -634,15 +635,19 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 	end
 
     local tr = to.records[id]
-	to.columns[tr.column][record.row] = data
+	local column = to.columns[tr.column]
 
-	if has_hooks then
+    if not has_hooks then
+        column[record.row] = data
+	else
+    	invoke_hook(world, EcsOnAdd, id, entity, data)
+	    column[record.row] = data
 	    invoke_hook(world, EcsOnSet, id, entity, data)
 	end
 end
 
 local function world_component(world: World): i53
-	local componentId = world.nextComponentId + 1
+	local componentId = (world.nextComponentId :: number) + 1
 	if componentId > HI_COMPONENT_ID then
 		-- IDs are partitioned into ranges because component IDs are not nominal,
 		-- so it needs to error when IDs intersect into the entity range.
@@ -1407,7 +1412,7 @@ World.target = world_target
 World.parent = world_parent
 World.contains = world_contains
 
-function World.new(): self: World
+function World.new()
     local self = setmetatable({
         archetypeIndex = {} :: { [string]: Archetype },
         archetypes = {} :: Archetypes,
