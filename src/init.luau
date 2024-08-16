@@ -365,7 +365,7 @@ local function world_has_any(world: World, entity: number, ...: i53): boolean
     local records = archetype.records
 
     for i = 1, select("#", ...) do
-        if not records[select(i, ...)] then
+        if records[select(i, ...)] then
             return true
         end
     end
@@ -1407,7 +1407,7 @@ World.target = world_target
 World.parent = world_parent
 World.contains = world_contains
 
-function World.new(): t_world
+function World.new(): self: World
     local self = setmetatable({
         archetypeIndex = {} :: { [string]: Archetype },
         archetypes = {} :: Archetypes,
@@ -1464,44 +1464,40 @@ type World = {
     nextComponentId: number,
     nextEntityId: number,
     nextArchetypeId: number,
-}
-
-export type t_world = typeof(setmetatable(
-	{} :: {
-
+} & {
 		--- Creates a new entity
-		entity: (t_world) -> Entity,
+		entity: (self: World) -> Entity,
 		--- Creates a new entity located in the first 256 ids.
 		--- These should be used for static components for fast access.
-		component: <T>(t_world) -> Entity<T>,
+		component: <T>(self: World) -> Entity<T>,
 		--- Gets the target of an relationship. For example, when a user calls
 		--- `world:target(id, ChildOf(parent))`, you will obtain the parent entity.
-		target: (t_world, id: Entity, relation: Entity) -> Entity?,
+		target: (self: World, id: Entity, relation: Entity) -> Entity?,
 		--- Deletes an entity and all it's related components and relationships.
-		delete: (t_world, id: Entity) -> (),
+		delete: (self: World, id: Entity) -> (),
 
 		--- Adds a component to the entity with no value
-		add: <T>(world: t_world, id: Entity, component: Entity<T>) -> (),
+		add: <T>(self: World, id: Entity, component: Entity<T>) -> (),
 		--- Assigns a value to a component on the given entity
-		set: <T>(world: World, id: Entity, component: Entity<T>, data: T) -> (),
+		set: <T>(self: World, id: Entity, component: Entity<T>, data: T) -> (),
 
 		-- Clears an entity from the world
-		clear: (t_world, id: Entity) -> (),
+		clear: (self: World, id: Entity) -> (),
 		--- Removes a component from the given entity
-		remove: (t_world, id: Entity, component: Entity) -> (),
+		remove: (self: World, id: Entity, component: Entity) -> (),
 		--- Retrieves the value of up to 4 components. These values may be nil.
-		get: (<A>(t_world, id: any, Entity<A>) -> A)
-			& (<A, B>(t_world, id: Entity, Entity<A>, Entity<B>) -> (A, B))
-			& (<A, B, C>(t_world, id: Entity, Entity<A>, Entity<B>, Entity<C>) -> (A, B, C))
-			& <A, B, C, D>(t_world, id: Entity, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> (A, B, C, D),
+		get: (<A>(self: World, id: any, Entity<A>) -> A)
+			& (<A, B>(self: World, id: Entity, Entity<A>, Entity<B>) -> (A, B))
+			& (<A, B, C>(self: World, id: Entity, Entity<A>, Entity<B>, Entity<C>) -> (A, B, C))
+			& <A, B, C, D>(self: World, id: Entity, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> (A, B, C, D),
 
 		--- Searches the world for entities that match a given query
-		query: (<A>(t_world, Entity<A>) -> Query<A>)
-			& (<A, B>(t_world, Entity<A>, Entity<B>) -> Query<A, B>)
-			& (<A, B, C>(t_world, Entity<A>, Entity<B>, Entity<C>) -> Query<A, B, C>)
-			& (<A, B, C, D>(t_world, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> Query<A, B, C, D>)
+		query: (<A>(self: World, Entity<A>) -> Query<A>)
+			& (<A, B>(self: World, Entity<A>, Entity<B>) -> Query<A, B>)
+			& (<A, B, C>(self: World, Entity<A>, Entity<B>, Entity<C>) -> Query<A, B, C>)
+			& (<A, B, C, D>(self: World, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> Query<A, B, C, D>)
 			& (<A, B, C, D, E>(
-				t_world,
+				self: World,
 				Entity<A>,
 				Entity<B>,
 				Entity<C>,
@@ -1509,7 +1505,7 @@ export type t_world = typeof(setmetatable(
 				Entity<E>
 			) -> Query<A, B, C, D, E>)
 			& (<A, B, C, D, E, F>(
-				t_world,
+				self: World,
 				Entity<A>,
 				Entity<B>,
 				Entity<C>,
@@ -1518,7 +1514,7 @@ export type t_world = typeof(setmetatable(
 				Entity<F>
 			) -> Query<A, B, C, D, E, F>)
 			& (<A, B, C, D, E, F, G>(
-				t_world,
+				self: World,
 				Entity<A>,
 				Entity<B>,
 				Entity<C>,
@@ -1528,7 +1524,7 @@ export type t_world = typeof(setmetatable(
 				Entity<G>
 			) -> Query<A, B, C, D, E, F, G>)
 			& (<A, B, C, D, E, F, G, H>(
-				t_world,
+				self: World,
 				Entity<A>,
 				Entity<B>,
 				Entity<C>,
@@ -1539,12 +1535,10 @@ export type t_world = typeof(setmetatable(
 				Entity<H>,
 				...Entity<any>
 			) -> Query<A, B, C, D, E, F, G, H>),
-	}, {}
-))
-
+	}
 
 return {
-	World = World :: { new: () -> t_world },
+	World = World :: { new: () -> World },
 
 	OnAdd = EcsOnAdd :: Entity,
 	OnRemove = EcsOnRemove :: Entity,
