@@ -1142,5 +1142,105 @@ TEST("Hooks", function()
         CHECK(not world:has(e1, A))
     end
 
+    do CASE "the filip incident"
+        local world = jecs.World.new()
+
+        export type Iterator<T> = () -> (Entity, T?, T?)
+        export type Destructor = () -> ()
+
+        -- Helpers
+
+        type ValuesMap<T> = { [Entity]: T? }
+        type ChangeSet = { [Entity]: true? }
+        type ChangeSets = { [ChangeSet]: true? }
+        type ChangeSetsCache = {
+           	Added: ChangeSets,
+           	Changed: ChangeSets,
+           	Removed: ChangeSets,
+        }
+
+        local cachedChangeSets = {}
+        local function getChangeSets(component): ChangeSetsCache
+           	if cachedChangeSets[component] == nil then
+          		local changeSetsAdded: ChangeSets = {}
+          		local changeSetsChanged: ChangeSets = {}
+          		local changeSetsRemoved: ChangeSets = {}
+          		world:set(component, jecs.OnAdd, function(id)
+         			for set in changeSetsAdded do
+            				set[id] = true
+         			end
+          		end)
+          		world:set(component, jecs.OnSet, function(id)
+         			for set in changeSetsChanged do
+            				set[id] = true
+         			end
+          		end)
+          		world:set(component, jecs.OnRemove, function(id)
+         			for set in changeSetsRemoved do
+            				set[id] = true
+         			end
+          		end)
+          		cachedChangeSets[component] = {
+         			Added = changeSetsAdded,
+         			Changed = changeSetsChanged,
+         			Removed = changeSetsRemoved,
+          		}
+           	end
+           	return cachedChangeSets[component]
+        end
+
+        local function ChangeTracker<T>(component): (Iterator<T>, Destructor)
+           	local values: ValuesMap<T> = {}
+           	local changeSet: ChangeSet = {}
+
+           	for id in world:query(component) do
+          		changeSet[id] = true
+           	end
+
+           	local changeSets = getChangeSets(component)
+           	changeSets.Added[changeSet] = true
+           	changeSets.Changed[changeSet] = true
+           	changeSets.Removed[changeSet] = true
+
+           	local id: Entity? = nil
+           	local iter: Iterator<T> = function()
+          		id = next(changeSet)
+          		if id then
+         			changeSet[id] = nil
+         			local old: T? = values[id]
+         			local new: T? = world:get(id, component)
+         			if old ~= nil and new == nil then
+        				-- Old value but no new value = removed
+        				values[id] = nil
+         			else
+        				-- Old+new value or just new value = new becomes old
+        				values[id] = new
+         			end
+         			return id, old, new
+          		end
+          		return nil :: any, nil, nil
+           	end
+
+           	local destroy: Destructor = function()
+          		changeSets.Added[changeSet] = nil
+          		changeSets.Changed[changeSet] = nil
+          		changeSets.Removed[changeSet] = nil
+           	end
+
+           	return iter, destroy
+        end
+
+        local Transform = world:component()
+        local iter, destroy = ChangeTracker(Transform)
+
+        local e1 = world:entity()
+        world:set(e1, Transform, {1,1})
+        local counter = 0
+        for _ in iter do
+            counter += 1
+        end
+        CHECK(counter == 1)
+    end
+
 end)
 FINISH()
