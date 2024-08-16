@@ -851,7 +851,7 @@ TEST("world:delete", function()
 	do CASE "cycle"
         local world = jecs.World.new()
         local Likes = world:component()
-        world:add(Likes, jecs.Delete)
+        world:add(Likes, pair(jecs.OnDeleteTarget, jecs.Delete))
         local bob = world:entity()
         local alice = world:entity()
 
