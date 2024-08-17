@@ -33,7 +33,7 @@ type Query<T extends unknown[]> = {
 } & IterableFunction<LuaTuple<[Entity, ...T]>>;
 
 // Utility Types
-export type Entity<T = unknown> = number & { __DO_NOT_USE_OR_YOU_WILL_BE_FIRED: T };
+export type Entity<T = unknown> = number & { __T: T };
 export type EntityType<T> = T extends Entity<infer A> ? A : never;
 export type InferComponents<A extends Entity[]> = {
     [K in keyof A]: EntityType<A[K]>;
@@ -162,5 +162,7 @@ export const Component: Entity;
 export const OnAdd: Entity;
 export const OnRemove: Entity;
 export const OnSet: Entity;
+export const OnDeleteTarget: Entity;
+export const Delete: Entity;
 export const Wildcard: Entity;
 export const Rest: Entity;
