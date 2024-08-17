@@ -1,6 +1,6 @@
 {
   "name": "@rbxts/jecs",
-  "version": "0.2.3",
+  "version": "0.2.9",
   "description": "Stupidly fast Entity Component System",
   "main": "src",
   "repository": {
