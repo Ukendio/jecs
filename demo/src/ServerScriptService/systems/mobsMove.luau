@@ -1,12 +1,11 @@
+--!strict
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local blink = require(game:GetService("ServerScriptService").net)
 local jecs = require(ReplicatedStorage.ecs)
-local pair = jecs.pair
 local __ = jecs.Wildcard
 
 local std = require(ReplicatedStorage.std)
-local world = std.world
-
+local world: std.World = std.world
 local cts = std.components
 
 local Mob = cts.Mob
@@ -14,7 +13,6 @@ local Transform = cts.Transform
 local Velocity = cts.Velocity
 local Player = cts.Player
 local Character = cts.Character
-print("client Model", cts.Model)
 
 local function mobsMove(dt: number)
     local players = world:query(Character):with(Player)
@@ -23,15 +21,18 @@ local function mobsMove(dt: number)
         local p = cf.Position
 
         local target
-        for playerId, character in players do
-            local pos = character.PrimaryPart.Position
+
+        for playerId, character in players:iter() do
+            local pos = (character.PrimaryPart::Part).Position
             if true then
                 target = pos
                 break
             end
             if not target then
                 target = pos
-            elseif (p - pos).Magnitude < (p - target) then
+            elseif (p - pos).Magnitude
+                < (p - target).Magnitude
+            then
                 target = pos
             end
         end

@@ -1,6 +1,6 @@
 local jecs = require(game:GetService("ReplicatedStorage").ecs)
-local world = require(script.world)
-
+local world = require(script.world) :: jecs.World
+export type World = jecs.World
 local std = {
     ChangeTracker = require(script.changetracker),
     Scheduler = require(script.scheduler),
@@ -11,7 +11,7 @@ local std = {
     handle = require(script.handle),
     interval = require(script.interval),
     ref = require(script.ref),
-    world = world,
+    world = world :: World,
     pair = jecs.pair,
     __ = jecs.w,
 }

@@ -1442,9 +1442,9 @@ end
 
 export type Pair = number
 
-type Item = () -> (number, ...any)
+type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 
-export type Entity<T = nil> = number & {__DO_NOT_USE_OR_YOU_WILL_BE_FIRED: T }
+export type Entity<T = nil> = number & {__T: T }
 
 type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 
@@ -1452,14 +1452,14 @@ type Query<T...> = typeof(setmetatable({}, {
     __iter = (nil :: any) :: Iter<T...>
 })) & {
     iter: Iter<T...>,
-    next: Item,
-    with: (Query<T...>) -> Query<T...>,
-    without: (Query<T...>, ...i53) -> Query<T...>,
-    replace: (Query<T...>, <U...>(T...) -> (U...)) -> (),
+    next: Item<T...>,
+    with: (self: Query<T...>, ...i53) -> Query<T...>,
+    without: (self: Query<T...>, ...i53) -> Query<T...>,
+    replace: (self: Query<T...>, <U...>(T...) -> (U...)) -> (),
     archetypes: () -> { Archetype },
 }
 
-type World = {
+export type World = {
     archetypeIndex: { [string]: Archetype },
     archetypes: Archetypes,
     componentIndex: ComponentIndex,
@@ -1495,6 +1495,10 @@ type World = {
 			& (<A, B>(self: World, id: Entity, Entity<A>, Entity<B>) -> (A, B))
 			& (<A, B, C>(self: World, id: Entity, Entity<A>, Entity<B>, Entity<C>) -> (A, B, C))
 			& <A, B, C, D>(self: World, id: Entity, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> (A, B, C, D),
+
+		has: (self: World, ...Entity) -> boolean,
+
+		parent: (self: World, entity: Entity) -> Entity,
 
 		--- Searches the world for entities that match a given query
 		query: (<A>(self: World, Entity<A>) -> Query<A>)

@@ -1,13 +1,22 @@
 local jecs = require(game:GetService("ReplicatedStorage").ecs)
 local world = require(script.Parent.world)
 
-local components = {
+type Entity<T=nil> = jecs.Entity<T>
+local components: {
+    Character: Entity<Model>,
+    Mob: Entity,
+    Model: Entity<Model>,
+    Player: Entity,
+    Target: Entity,
+    Transform: Entity<CFrame>,
+    Velocity: Entity<number>,
+} = {
     Character = world:component(),
     Mob = world:component(),
-    Model = world:component() :: jecs.Entity<Model>,
+    Model = world:component(),
     Player = world:component(),
     Target = world:component(),
-    Transform = world:component() :: jecs.Entity<CFrame>,
+    Transform = world:component(),
     Velocity = world:component(),
 }
 

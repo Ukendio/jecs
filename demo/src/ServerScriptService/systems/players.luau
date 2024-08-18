@@ -11,14 +11,16 @@ local Character = cts.Character
 
 local playersAdded = collect(Players.PlayerAdded)
 local playersRemoved = collect(Players.PlayerRemoving)
+local world: std.World = std.world
 
 local conn = {}
 
 local function players()
     for _, player in playersAdded do
-        std.world:set(
+        world:set(
             std.world:entity(),
-            std.world:entity())
+            cts.Transform
+        )
 
         local e = ref(player.UserId):set(Player, player)
         local characterAdd = player.CharacterAdded
