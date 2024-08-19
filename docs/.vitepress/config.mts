@@ -28,22 +28,22 @@ export default defineConfig({
                 {
                     text: "Introduction",
                     items: [
-                        { text: 'Getting Started', link: 'learn/overview/get-started' },
-                        { text: 'First Jecs Project', link: 'learn/overview/first-jecs-project' }
+                        { text: 'Getting Started', link: '/learn/overview/get-started' },
+                        { text: 'First Jecs Project', link: '/learn/overview/first-jecs-project' }
                     ]
                 },
                 {
                     text: 'Concepts',
                     items: [
-                        { text: 'Entities and Components', link: 'learn/concepts/entities-and-components' },
-                        { text: 'Queries', link: 'learn/concepts/queries' },
-                        { text: 'Relationships', link: 'learn/concepts/relationships' },
+                        { text: 'Entities and Components', link: '/learn/concepts/entities-and-components' },
+                        { text: 'Queries', link: '/learn/concepts/queries' },
+                        { text: 'Relationships', link: '/learn/concepts/relationships' },
                     ]
                 },
                 {
                     text: "FAQ",
                     items: [
-                        { text: 'How can I contribute?', link: 'learn/faq/contributing' }
+                        { text: 'How can I contribute?', link: '/learn/faq/contributing' }
                     ]
                 },
 
@@ -52,9 +52,9 @@ export default defineConfig({
                 {
                     text: 'Contributing',
                     items: [
-                        { text: 'Contribution Guidelines', link: 'learn/contributing/guidelines' },
-                        { text: 'Submitting Issues', link: 'learn/contributing/issues' },
-                        { text: 'Submitting Pull Requests', link: 'learn/contributing/pull-requests' },
+                        { text: 'Contribution Guidelines', link: '/learn/contributing/guidelines' },
+                        { text: 'Submitting Issues', link: '/learn/contributing/issues' },
+                        { text: 'Submitting Pull Requests', link: '/learn/contributing/pull-requests' },
                     ]
                 }
             ]
