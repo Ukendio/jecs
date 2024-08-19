@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 [semver]: https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
+- `[luau]`:
+    - Exported Query
+    - Improved types for the hooks `OnAdd`, `OnSet`, `OnRemove`
 
 ## [0.2.2] - 2024-07-07
 
