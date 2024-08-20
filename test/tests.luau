@@ -1243,4 +1243,251 @@ TEST("Hooks", function()
     end
 
 end)
+
+TEST("scheduler", function()
+    type System = {
+        callback: (world: World) -> ()
+    }
+    type Systems = { System }
+
+
+    type Events = {
+        RenderStepped: Systems,
+        Heartbeat: Systems
+    }
+
+    local scheduler_new: (w: World) -> {
+        components: {
+            Disabled: Entity,
+            System: Entity<System>,
+            Phase: Entity,
+            DependsOn: Entity
+        },
+
+        systems: {
+            collect: {
+                under_event: (event: Entity) -> Systems,
+                all: () -> Events
+            },
+            run: (events: Events) -> ()
+        },
+
+        phases: {
+            RenderStepped: Entity,
+            Heartbeat: Entity
+        },
+
+        phase: (after: Entity) -> Entity
+    }
+
+    do
+        local world
+        local Disabled
+        local System
+        local DependsOn
+        local Phase
+        local RenderStepped
+        local Heartbeat
+
+        local function scheduler_collect_systems_under_phase_recursive(systems, phase)
+            for _, system in world:query(System):with(pair(DependsOn, phase)) do
+                table.insert(systems, system)
+            end
+            for dependant in world:query(Phase):with(pair(DependsOn, phase)) do
+                scheduler_collect_systems_under_phase_recursive(systems, dependant)
+            end
+        end
+
+        local function scheduler_collect_systems_under_event(event)
+            local systems = {}
+            scheduler_collect_systems_under_phase_recursive(systems, event)
+            return systems
+        end
+
+        local function scheduler_collect_systems_all()
+            local systems = {
+                RenderStepped = scheduler_collect_systems_under_event(
+                    RenderStepped),
+                Heartbeat = scheduler_collect_systems_under_event(
+                    Heartbeat)
+            }
+            return systems
+        end
+
+        local function scheduler_run_systems(events)
+            for _, system in events.RenderStepped do
+                system.callback(world)
+            end
+            for _, system in events.Heartbeat do
+                system.callback(world)
+            end
+        end
+
+        local function scheduler_phase_new(after)
+            local phase = world:entity()
+            world:add(phase, Phase)
+            local dependency = pair(DependsOn, after)
+            world:add(phase, dependency)
+            return phase
+        end
+
+        local function scheduler_systems_new(callback, phase)
+            local system = world:entity()
+            world:set(system, System, { callback = callback })
+            world:add(system, pair(DependsOn, phase))
+            return system
+        end
+
+        function scheduler_new(w)
+            world = w
+            Disabled = world:component()
+            System = world:component()
+            Phase = world:component()
+            DependsOn = world:component()
+
+            RenderStepped = world:component()
+            Heartbeat = world:component()
+
+            world:add(RenderStepped, Phase)
+            world:add(Heartbeat, Phase)
+
+            return {
+                phase = scheduler_phase_new,
+
+                phases = {
+                    RenderStepped = RenderStepped,
+                    Heartbeat = Heartbeat,
+                },
+
+                world = world,
+
+                collect_systems = {
+                    under_event = scheduler_collect_systems_under_event,
+                    all = scheduler_collect_systems_all
+                },
+
+                run_systems = scheduler_run_systems,
+
+                components = {
+                    DependsOn = DependsOn,
+                    Disabled = Disabled,
+                    Heartbeat = Heartbeat,
+                    Phase = Phase,
+                    RenderStepped = RenderStepped,
+                    System = System,
+                },
+
+                systems = {
+                    run = scheduler_run_systems,
+                    collect = {
+                        under_event = scheduler_collect_systems_under_event,
+                        all = scheduler_collect_systems_all
+                    },
+                    new = scheduler_systems_new,
+                }
+            }
+        end
+    end
+
+    do CASE "event dependant phase"
+
+        local world = jecs.World.new()
+        local scheduler = scheduler_new(world)
+        local components = scheduler.components
+        local phases = scheduler.phases
+        local Heartbeat = phases.Heartbeat
+        local DependsOn = components.DependsOn
+
+        local Physics = scheduler.phase(Heartbeat)
+        CHECK(world:target(Physics, DependsOn) == Heartbeat)
+    end
+
+    do CASE "user-defined sub phases"
+        local world = jecs.World.new()
+        local scheduler = scheduler_new(world)
+        local components = scheduler.components
+        local phases = scheduler.phases
+        local DependsOn = components.DependsOn
+
+        local A = scheduler.phase(phases.Heartbeat)
+        local B = scheduler.phase(A)
+
+        CHECK(world:target(B, DependsOn) == A)
+    end
+
+    do CASE "phase order"
+        local world = jecs.World.new()
+        local scheduler = scheduler_new(world)
+
+        local phases = scheduler.phases
+        local Physics = scheduler.phase(phases.Heartbeat)
+        local Collisions = scheduler.phase(Physics)
+
+        local order = "BEGIN"
+
+        local function move()
+            order ..= "->move"
+        end
+
+        local function hit()
+            order ..= "->hit"
+        end
+
+        local createSystem = scheduler.systems.new
+
+        createSystem(hit, Collisions)
+        createSystem(move, Physics)
+
+        local events = scheduler.systems.collect.all()
+        scheduler.systems.run(events)
+
+        order ..= "->END"
+
+        CHECK(order == "BEGIN->move->hit->END")
+    end
+
+    do CASE "collect only systems under phase recursive"
+        local world = jecs.World.new()
+        local scheduler = scheduler_new(world)
+        local phases = scheduler.phases
+        local Heartbeat = phases.Heartbeat
+        local RenderStepped = phases.RenderStepped
+        local Render = scheduler.phase(RenderStepped)
+        local Physics = scheduler.phase(Heartbeat)
+        local Collisions = scheduler.phase(Physics)
+
+        local function move()
+        end
+
+        local function hit()
+        end
+
+        local function camera()
+        end
+
+        local createSystem = scheduler.systems.new
+
+        createSystem(hit, Collisions)
+        createSystem(move, Physics)
+        createSystem(camera, Render)
+
+        local systems = scheduler.systems.collect.under_event(Collisions)
+
+        CHECK(#systems == 1)
+        CHECK(systems[1].callback == hit)
+
+        systems = scheduler.systems.collect.under_event(Physics)
+
+        CHECK(#systems == 2)
+
+        systems = scheduler.systems.collect.under_event(Heartbeat)
+
+        CHECK(#systems == 2)
+
+        systems = scheduler.systems.collect.under_event(Render)
+
+        CHECK(#systems == 1)
+        CHECK(systems[1].callback == camera)
+    end
+end)
 FINISH()

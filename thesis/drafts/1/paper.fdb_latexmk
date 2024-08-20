@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1722383502.05394 "c:/Users/Marcus/Documents/packages/jecs/thesis/drafts/1/paper.tex" "paper.pdf" "paper" 1722383503.46586 0
+["pdflatex"] 1724165754.00483 "c:/Users/Marcus/Documents/packages/jecs/thesis/drafts/1/paper.tex" "paper.pdf" "paper" 1724165755.21979 0
   "../../images/archetype_graph.png" 1709688578 50172 8f93f7d24d4920bd8720f4b480771eb4 ""
   "../../images/insertion.png" 1720373630 158773 c2f9fb7fae25fea3afb7e426b1d318d6 ""
   "../../images/queries.png" 1720373630 205571 d976c9319fb29ae7dffc46ded3de4e55 ""
@@ -152,12 +152,12 @@
   "C:/Users/Marcus/AppData/Local/Programs/MiKTeX/tex/latex/url/url.sty" 1388490452 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
   "C:/Users/Marcus/AppData/Local/Programs/MiKTeX/tex/latex/xcolor/xcolor.sty" 1700127522 55487 80a65caedd3722f4c20a14a69e785d8f ""
   "C:/Users/Marcus/AppData/Local/Programs/MiKTeX/tex/latex/xkeyval/xkeyval.sty" 1656236919 4937 4ce600ce9bd4ec84d0250eb6892fcf4f ""
-  "c:/Users/Marcus/Documents/packages/jecs/thesis/drafts/1/paper.tex" 1722383500 33628 2358f35913ab57bac270409214a52615 ""
+  "c:/Users/Marcus/Documents/packages/jecs/thesis/drafts/1/paper.tex" 1722532428 33628 2358f35913ab57bac270409214a52615 ""
   "listings-rust.sty" 1720461559 12349 f346af5561f91e34970cbe0b79654ec2 ""
-  "paper.aux" 1722383503 5596 e71f1baf7c13471206b3537d383c78e2 "pdflatex"
-  "paper.out" 1722383503 3695 a11dbc9d88dd30c22755dc5ebf6964ec "pdflatex"
-  "paper.tex" 1722383500 33628 2358f35913ab57bac270409214a52615 ""
-  "paper.toc" 1722383503 3025 f0a34bc8923dbdfdaeb8258045835a7e "pdflatex"
+  "paper.aux" 1724165755 5596 e71f1baf7c13471206b3537d383c78e2 "pdflatex"
+  "paper.out" 1724165755 3695 a11dbc9d88dd30c22755dc5ebf6964ec "pdflatex"
+  "paper.tex" 1722532428 33628 2358f35913ab57bac270409214a52615 ""
+  "paper.toc" 1724165755 3025 f0a34bc8923dbdfdaeb8258045835a7e "pdflatex"
   (generated)
   "paper.aux"
   "paper.log"
