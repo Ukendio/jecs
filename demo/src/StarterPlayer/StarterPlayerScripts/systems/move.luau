@@ -14,4 +14,7 @@ local function move(dt: number)
     end
 end
 
-return move
+return function(scheduler: std.Scheduler)
+    return scheduler.systems.new(move,
+        scheduler.phases.RenderStepped)
+end

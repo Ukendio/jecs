@@ -27,4 +27,7 @@ local function spawnMobs()
     end
 end
 
-return spawnMobs
+return function(scheduler: std.Scheduler)
+    return scheduler.systems.new(spawnMobs,
+        scheduler.phases.Heartbeat)
+end

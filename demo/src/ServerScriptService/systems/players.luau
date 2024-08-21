@@ -39,4 +39,7 @@ local function players()
     end
 end
 
-return players
+return function(scheduler: std.Scheduler)
+    return scheduler.systems.new(players,
+        scheduler.phases.Heartbeat)
+end
