@@ -52,9 +52,12 @@ do
     local DependsOn
     local Phase
     local Event
+    local Name
+
     local RenderStepped
     local Heartbeat
-    local Name
+    local PreAnimation
+    local PreSimulation
 
     local system
     local dt
@@ -69,12 +72,11 @@ do
     end
     local function begin(events)
         local connections = {}
-        for phase, systems in events do
+        for event, systems in events do
 
-            local event = world:get(phase, Event)
             if not event then continue end
             local event_name = tostring(event)
-            connections[phase] = event:Connect(function(last)
+            connections[event] = event:Connect(function(last)
                 debug.profilebegin(event_name)
                 for _, sys in systems do
                     system = sys
@@ -117,8 +119,8 @@ do
 
     local function scheduler_collect_systems_all()
         local systems = {}
-        for phase in world:query(Phase):with(Event) do
-            systems[phase] = scheduler_collect_systems_under_event(phase)
+        for phase, event in world:query(Event):with(Phase) do
+            systems[event] = scheduler_collect_systems_under_event(phase)
         end
         return systems
     end
@@ -152,7 +154,6 @@ do
         PreSimulation = world:component()
         PreAnimation = world:component()
 
-
         local RunService = game:GetService("RunService")
         if RunService:IsClient() then
             world:add(RenderStepped, Phase)
@@ -163,11 +164,10 @@ do
         world:set(Heartbeat, Event, RunService.Heartbeat)
 
         world:add(PreSimulation, Phase)
-        world:add(PreSimulation, Event, RunService.PreSimulation)
+        world:set(PreSimulation, Event, RunService.PreSimulation)
 
         world:add(PreAnimation, Phase)
-        world:add(PreAnimation, Event, RunService.PreAnimation)
-
+        world:set(PreAnimation, Event, RunService.PreAnimation)
 
         return {
             phase = scheduler_phase_new,
