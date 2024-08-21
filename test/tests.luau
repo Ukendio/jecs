@@ -1269,7 +1269,8 @@ TEST("scheduler", function()
                 under_event: (event: Entity) -> Systems,
                 all: () -> Events
             },
-            run: (events: Events) -> ()
+            run: (events: Events) -> (),
+            new: (callback: (world: World) -> (), phase: Entity) -> Entity
         },
 
         phases: {
@@ -1360,13 +1361,6 @@ TEST("scheduler", function()
                 },
 
                 world = world,
-
-                collect_systems = {
-                    under_event = scheduler_collect_systems_under_event,
-                    all = scheduler_collect_systems_all
-                },
-
-                run_systems = scheduler_run_systems,
 
                 components = {
                     DependsOn = DependsOn,
