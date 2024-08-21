@@ -9,8 +9,12 @@ local Model = cts.Model
 local Transform = cts.Transform
 
 local function move(dt: number)
-    for _, cf, model in world:query(Transform, Model) do
-        model.PrimaryPart.CFrame = cf
+    for _, transform, model in world:query(Transform, Model):iter() do
+        local cf = transform.new
+        if cf ~= transform.old then
+            model.PrimaryPart.CFrame = cf
+            transform.old = cf
+        end
     end
 end
 

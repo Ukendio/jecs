@@ -23,7 +23,8 @@ local function mobsMove(dt: number)
         table.insert(targets, (character.PrimaryPart :: Part).Position)
     end
 
-    for mob, cf, v in world:query(Transform, Velocity):with(Mob):iter() do
+    for mob, transform, v in world:query(Transform, Velocity):with(Mob):iter() do
+        local cf = transform.new
         local p = cf.Position
 
         local target
@@ -42,7 +43,7 @@ local function mobsMove(dt: number)
         end
 
         local moving = CFrame.new(p + (target - p).Unit * dt * v)
-        world:set(mob, Transform, moving)
+        transform.new = moving
         blink.UpdateTransform.FireAll(mob, moving)
     end
 end

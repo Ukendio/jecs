@@ -8,8 +8,12 @@ local cts = std.components
 
 local function syncTransforms()
     for _, id, cf in blink.UpdateTransform.Iter() do
-        ref("server-"..id)
-            :set(cts.Transform, cf)
+        local e = ref("server-"..id)
+        local transform = e:get(cts.Transform)
+        if not transform then
+            continue
+        end
+        transform.new = cf
     end
 end
 

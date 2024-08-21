@@ -19,7 +19,7 @@ local function spawnMobs()
 
         local id = ref()
             :set(Velocity, v)
-            :set(Transform, cf)
+            :set(Transform, { new = cf })
             :add(Mob)
             .id()
 

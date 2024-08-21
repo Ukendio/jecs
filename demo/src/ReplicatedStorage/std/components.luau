@@ -8,7 +8,7 @@ local components: {
     Model: Entity<Model>,
     Player: Entity,
     Target: Entity,
-    Transform: Entity<CFrame>,
+    Transform: Entity<{ old: CFrame, new: CFrame }>,
     Velocity: Entity<number>,
 } = {
     Character = world:component(),

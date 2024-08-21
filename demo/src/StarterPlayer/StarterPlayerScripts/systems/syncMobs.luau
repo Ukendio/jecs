@@ -17,7 +17,7 @@ local function syncMobs()
         model.Parent = workspace
 
         ref("server-"..id)
-            :set(cts.Transform, cf)
+            :set(cts.Transform, { new = cf, old = cf })
             :set(cts.Velocity, vel)
             :set(cts.Model, model)
             :add(cts.Mob)
