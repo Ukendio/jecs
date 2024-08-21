@@ -1264,11 +1264,12 @@ TEST("scheduler", function()
             DependsOn: Entity
         },
 
+        collect: {
+            under_event: (event: Entity) -> Systems,
+            all: () -> Events
+        },
+
         systems: {
-            collect: {
-                under_event: (event: Entity) -> Systems,
-                all: () -> Events
-            },
             run: (events: Events) -> (),
             new: (callback: (world: World) -> (), phase: Entity) -> Entity
         },
@@ -1287,8 +1288,20 @@ TEST("scheduler", function()
         local System
         local DependsOn
         local Phase
+        local Event
         local RenderStepped
         local Heartbeat
+        local Name
+
+        local function scheduler_systems_run(events)
+            for _, system in events[RenderStepped] do
+                system.callback()
+            end
+            print(Heartbeat, events[Heartbeat])
+            for _, system in events[Heartbeat] do
+                system.callback()
+            end
+        end
 
         local function scheduler_collect_systems_under_phase_recursive(systems, phase)
             for _, system in world:query(System):with(pair(DependsOn, phase)) do
@@ -1306,22 +1319,11 @@ TEST("scheduler", function()
         end
 
         local function scheduler_collect_systems_all()
-            local systems = {
-                RenderStepped = scheduler_collect_systems_under_event(
-                    RenderStepped),
-                Heartbeat = scheduler_collect_systems_under_event(
-                    Heartbeat)
-            }
+            local systems = {}
+            for phase in world:query(Phase, Event) do
+                systems[phase] = scheduler_collect_systems_under_event(phase)
+            end
             return systems
-        end
-
-        local function scheduler_run_systems(events)
-            for _, system in events.RenderStepped do
-                system.callback(world)
-            end
-            for _, system in events.Heartbeat do
-                system.callback(world)
-            end
         end
 
         local function scheduler_phase_new(after)
@@ -1345,12 +1347,15 @@ TEST("scheduler", function()
             System = world:component()
             Phase = world:component()
             DependsOn = world:component()
+            Event = world:component()
 
             RenderStepped = world:component()
             Heartbeat = world:component()
 
             world:add(RenderStepped, Phase)
+            world:add(RenderStepped, Event)
             world:add(Heartbeat, Phase)
+            world:add(Heartbeat, Event)
 
             return {
                 phase = scheduler_phase_new,
@@ -1371,13 +1376,14 @@ TEST("scheduler", function()
                     System = System,
                 },
 
+                collect = {
+                    under_event = scheduler_collect_systems_under_event,
+                    all = scheduler_collect_systems_all
+                },
+
                 systems = {
-                    run = scheduler_run_systems,
-                    collect = {
-                        under_event = scheduler_collect_systems_under_event,
-                        all = scheduler_collect_systems_all
-                    },
                     new = scheduler_systems_new,
+                    run = scheduler_systems_run
                 }
             }
         end
@@ -1432,7 +1438,7 @@ TEST("scheduler", function()
         createSystem(hit, Collisions)
         createSystem(move, Physics)
 
-        local events = scheduler.systems.collect.all()
+        local events = scheduler.collect.all()
         scheduler.systems.run(events)
 
         order ..= "->END"
@@ -1465,20 +1471,20 @@ TEST("scheduler", function()
         createSystem(move, Physics)
         createSystem(camera, Render)
 
-        local systems = scheduler.systems.collect.under_event(Collisions)
+        local systems = scheduler.collect.under_event(Collisions)
 
         CHECK(#systems == 1)
         CHECK(systems[1].callback == hit)
 
-        systems = scheduler.systems.collect.under_event(Physics)
+        systems = scheduler.collect.under_event(Physics)
 
         CHECK(#systems == 2)
 
-        systems = scheduler.systems.collect.under_event(Heartbeat)
+        systems = scheduler.collect.under_event(Heartbeat)
 
         CHECK(#systems == 2)
 
-        systems = scheduler.systems.collect.under_event(Render)
+        systems = scheduler.collect.under_event(Render)
 
         CHECK(#systems == 1)
         CHECK(systems[1].callback == camera)

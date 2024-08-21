@@ -1,6 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local std = require(ReplicatedStorage.std)
+local scheduler = std.Scheduler
+for _, module in script.Parent:WaitForChild("systems"):GetChildren() do
+    require(module)(scheduler)
+end
+local events = scheduler.collect.all()
 
-print(script.Parent:WaitForChild("systems"):GetChildren())
-local loop = std.Scheduler(unpack(script.Parent:WaitForChild("systems"):GetChildren()))
-game:GetService("RunService").Heartbeat:Connect(loop)
+scheduler.systems.begin(events)

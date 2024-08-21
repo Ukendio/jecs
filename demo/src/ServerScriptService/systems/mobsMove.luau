@@ -1,4 +1,7 @@
+--!optimize 2
+--!native
 --!strict
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local blink = require(game:GetService("ServerScriptService").net)
 local jecs = require(ReplicatedStorage.ecs)
@@ -15,25 +18,22 @@ local Player = cts.Player
 local Character = cts.Character
 
 local function mobsMove(dt: number)
-    local players = world:query(Character):with(Player)
+    local targets = {}
+    for _, character in world:query(Character):with(Player):iter() do
+        table.insert(targets, (character.PrimaryPart :: Part).Position)
+    end
 
     for mob, cf, v in world:query(Transform, Velocity):with(Mob):iter() do
         local p = cf.Position
 
         local target
+        local closest
 
-        for playerId, character in players:iter() do
-            local pos = (character.PrimaryPart::Part).Position
-            if true then
+        for _, pos in targets do
+            local distance = (p - pos).Magnitude
+            if not target or distance < closest then
                 target = pos
-                break
-            end
-            if not target then
-                target = pos
-            elseif (p - pos).Magnitude
-                < (p - target).Magnitude
-            then
-                target = pos
+                closest = distance
             end
         end
 
@@ -47,4 +47,7 @@ local function mobsMove(dt: number)
     end
 end
 
-return mobsMove
+return function(scheduler: std.Scheduler)
+    return scheduler.systems.new(mobsMove,
+        scheduler.phases.Heartbeat)
+end

@@ -22,7 +22,9 @@ local function syncMobs()
             :set(cts.Model, model)
             :add(cts.Mob)
     end
-
 end
 
-return syncMobs
+return function(scheduler: std.Scheduler)
+    return scheduler.systems.new(syncMobs,
+        scheduler.phases.RenderStepped)
+end

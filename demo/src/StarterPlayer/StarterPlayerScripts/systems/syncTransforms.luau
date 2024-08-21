@@ -13,4 +13,7 @@ local function syncTransforms()
     end
 end
 
-return syncTransforms
+return function(scheduler: std.Scheduler)
+    return scheduler.systems.new(syncTransforms,
+        scheduler.phases.RenderStepped)
+end
