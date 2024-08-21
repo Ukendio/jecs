@@ -7,12 +7,10 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache-blue.svg?style=for-the-badge)](LICENSE-APACHE)
 [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs)
 
-Just an ECS
-
-jecs is a stupidly fast Entity Component System (ECS).
+jecs is Just a stupidly fast Entity Component System
 
 - Entity Relationships as first class citizens
-- Iterate 500,000 entities at 60 frames per second
+- Iterate 800,000 entities at 60 frames per second
 - Type-safe [Luau](https://luau-lang.org/) API
 - Zero-dependency package
 - Optimized for column-major operations
