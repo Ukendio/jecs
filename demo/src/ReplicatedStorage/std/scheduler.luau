@@ -6,7 +6,10 @@ type World = jecs.World
 type Entity<T=nil> = jecs.Entity<T>
 
 type System = {
-    callback: (world: World) -> ()
+    callback: (world: World) -> (),
+    name: string,
+    rate: number?,
+    interval: number?
 }
 
 type Systems = { System }
@@ -31,7 +34,7 @@ export type Scheduler = {
     },
 
     systems: {
-        begin: (events: Events) -> (),
+        begin: (events: Events) -> { [Entity]: thread },
         new: (callback: (dt: number) -> (), phase: Entity) -> Entity
     },
 
@@ -59,7 +62,7 @@ do
     local PreAnimation
     local PreSimulation
 
-    local system
+    local system: System
     local dt
     local function run()
         debug.profilebegin(system.name)
@@ -70,44 +73,46 @@ do
         -- We don't want to interrupt the loop when we error
         task.spawn(error, str)
     end
-    local function begin(events)
-        local connections = {}
-        for event, systems in events do
-
+    local function begin(events: { Systems })
+        local threads = {}
+        for event, systems in events  do
             if not event then continue end
             local event_name = tostring(event)
-            connections[event] = event:Connect(function(last)
-                debug.profilebegin(event_name)
-                for _, sys in systems do
-                    system = sys
-                    dt = last
+            threads[event] = task.spawn(function()
+                while true do
+                    dt = event:Wait()
 
-                    local didNotYield, why = xpcall(function()
-                        for _ in run do end
-                    end, debug.traceback)
+                    debug.profilebegin(event_name)
+                    for _, sys in systems do
+                        system = sys
 
-                    if didNotYield then
-             			continue
-              		end
+                        local didNotYield, why = xpcall(function()
+                            for _ in run do end
+                        end, debug.traceback)
 
-              		if string.find(why, "thread is not yieldable") then
-             			panic("Not allowed to yield in the systems.")
-              		else
-              		    panic(why)
-              		end
+                        if didNotYield then
+                 			continue
+                  		end
+
+                  		if string.find(why, "thread is not yieldable") then
+                 			panic("Not allowed to yield in the systems.")
+                  		else
+                  		    panic(why)
+                  		end
+                    end
+                    debug.profileend()
                 end
-                debug.profileend()
             end)
         end
-        return connections
+        return threads
     end
 
     local function scheduler_collect_systems_under_phase_recursive(systems, phase)
         for _, system in world:query(System):with(pair(DependsOn, phase)) do
             table.insert(systems, system)
         end
-        for dependant in world:query(Phase):with(pair(DependsOn, phase)) do
-            scheduler_collect_systems_under_phase_recursive(systems, dependant)
+        for after in world:query(Phase):with(pair(DependsOn, phase)) do
+            scheduler_collect_systems_under_phase_recursive(systems, after)
         end
     end
 
