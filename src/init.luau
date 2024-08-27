@@ -1549,9 +1549,9 @@ export type World = {
 return {
 	World = World :: { new: () -> World },
 
-	OnAdd = EcsOnAdd :: Entity,
-	OnRemove = EcsOnRemove :: Entity,
-	OnSet = EcsOnSet :: Entity,
+	OnAdd = EcsOnAdd :: Entity<(entity: Entity) -> ()>,
+	OnRemove = EcsOnRemove :: Entity<(entity: Entity) -> ()>,
+	OnSet = EcsOnSet :: Entity<(entity: Entity, data: any) -> ()>,
 	ChildOf = EcsChildOf :: Entity,
 	Component = EcsComponent :: Entity,
 	Wildcard = EcsWildcard :: Entity,
