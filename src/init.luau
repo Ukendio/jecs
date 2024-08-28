@@ -67,7 +67,8 @@ local EcsChildOf 			= HI_COMPONENT_ID + 5
 local EcsComponent  		= HI_COMPONENT_ID + 6
 local EcsOnDeleteTarget     = HI_COMPONENT_ID + 7
 local EcsDelete             = HI_COMPONENT_ID + 8
-local EcsRest 				= HI_COMPONENT_ID + 9
+local EcsTag                = HI_COMPONENT_ID + 9
+local EcsRest 				= HI_COMPONENT_ID + 10
 
 local ECS_PAIR_FLAG 		= 0x8
 local ECS_ID_FLAGS_MASK 	= 0x10
@@ -77,6 +78,9 @@ local ECS_GENERATION_MASK 	= bit32.lshift(1, 16)
 local ECS_ID_HAS_DELETE     = 0b0001
 local ECS_ID_HAS_HOOKS      = 0b0010
 --local EcsIdExclusive   = 0b0100
+local ECS_ID_IS_TAG         = 0b1000
+
+local TAG_OBJ = {}
 
 local function FLAGS_ADD(is_pair: boolean): number
 	local flags = 0x0
@@ -202,8 +206,8 @@ local function archetype_move(entity_index: EntityIndex, to: Archetype,
 		local tr = records[types[i]]
 
 		-- Sometimes target column may not exist, e.g. when you remove a component.
-		if tr then
-		    dst_columns[tr.column][dst_row] = column[src_row]
+		if tr and column ~= TAG_OBJ then
+            dst_columns[tr.column][dst_row] = column[src_row]
 		end
 		-- If the entity is the last row in the archetype then swapping it would be meaningless.
 		if src_row ~= last then
@@ -329,6 +333,22 @@ local function world_get_one_inline(world: World, entity: i53, id: i53)
    	return archetype.columns[tr.column][record.row]
 end
 
+local function world_has_one_inline(world: World, entity: number, id: i53): boolean
+   	local record = world.entityIndex.sparse[entity]
+   	if not record then
+  		return false
+   	end
+
+   	local archetype = record.archetype
+   	if not archetype then
+	   return false
+   	end
+
+    local records = archetype.records
+
+    return records[id] ~= nil
+end
+
 local function world_has(world: World, entity: number, ...: i53): boolean
    	local record = world.entityIndex.sparse[entity]
    	if not record then
@@ -417,6 +437,10 @@ local function id_record_ensure(
 		    flags = bit32.bor(flags, ECS_ID_HAS_HOOKS)
 		end
 
+		if world_has_one_inline(world, id, EcsTag) then
+		    flags = bit32.bor(flags, ECS_ID_IS_TAG)
+		end
+
 		-- local FLAG2 = 0b0010
 		-- local FLAG3 = 0b0100
 		-- local FLAG4 = 0b1000
@@ -432,7 +456,7 @@ local function id_record_ensure(
 	return idr
 end
 
-local function _ECS_ID_IS_WILDCARD(e: i53): boolean
+local function ECS_ID_IS_WILDCARD(e: i53): boolean
 	assert(ECS_IS_PAIR(e))
 	local first = ECS_ENTITY_T_HI(e)
 	local second = ECS_ENTITY_T_LO(e)
@@ -474,7 +498,11 @@ local function archetype_create(world: World, types: { i24 }, prev: Archetype?):
 			idr_r.size += 1
 			idr_o.size += 1
 		end
-		columns[i] = {}
+		if bit32.band(idr.flags, ECS_ID_IS_TAG) == 0 then
+		    columns[i] = {}
+		else
+		    columns[i] = TAG_OBJ
+		end
 	end
 
 	local archetype: Archetype = {
@@ -610,9 +638,14 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 	local from = record.archetype
 	local to = archetype_traverse_add(world, id, from)
 	local idr = world.componentIndex[id]
-	local has_hooks = bit32.band(idr.flags, ECS_ID_HAS_HOOKS) ~= 0
+	local flags = idr.flags
+	local is_tag = bit32.band(flags, ECS_ID_IS_TAG) ~= 0
+	local has_hooks = bit32.band(flags, ECS_ID_HAS_HOOKS) ~= 0
 
     if from == to then
+        if is_tag then
+            return
+        end
 		-- If the archetypes are the same it can avoid moving the entity
 		-- and just set the data directly.
 		local tr = to.records[id]
@@ -637,6 +670,9 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
     local tr = to.records[id]
 	local column = to.columns[tr.column]
 
+	if is_tag then
+	    return
+	end
     if not has_hooks then
         column[record.row] = data
 	else
@@ -1558,6 +1594,7 @@ return {
 	w = EcsWildcard :: Entity,
 	OnDeleteTarget = EcsOnDeleteTarget :: Entity,
 	Delete = EcsDelete :: Entity,
+	Tag = EcsTag :: Entity,
 	Rest = EcsRest :: Entity,
 
 	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity, obj: Entity) -> number,

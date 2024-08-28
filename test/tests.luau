@@ -724,6 +724,24 @@ TEST("world:component()", function()
         CHECK(world:has(A, jecs.Component))
         CHECK(not world:has(e, jecs.Component))
 	end
+
+	do CASE "tag"
+	    local world = jecs.World.new() :: World
+    	local A = world:component()
+        local B = world:component()
+        local C = world:component()
+        world:add(B, jecs.Tag)
+        world:add(C, jecs.Tag)
+    	local e = world:entity()
+        world:set(e, A, "test")
+        world:add(e, B, "test")
+        world:set(e, C, 11)
+
+        CHECK(world:has(e, A))
+        CHECK(world:get(e, A) == "test")
+        CHECK(world:get(e, B) == nil)
+        CHECK(world:get(e, C) == nil)
+	end
 end)
 
 TEST("world:delete", function()
@@ -1297,7 +1315,6 @@ TEST("scheduler", function()
             for _, system in events[RenderStepped] do
                 system.callback()
             end
-            print(Heartbeat, events[Heartbeat])
             for _, system in events[Heartbeat] do
                 system.callback()
             end
