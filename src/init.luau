@@ -80,7 +80,7 @@ local ECS_ID_HAS_HOOKS      = 0b0010
 --local EcsIdExclusive   = 0b0100
 local ECS_ID_IS_TAG         = 0b1000
 
-local TAG_OBJ = {}
+local NULL_ARRAY = table.freeze({})
 
 local function FLAGS_ADD(is_pair: boolean): number
 	local flags = 0x0
@@ -201,12 +201,15 @@ local function archetype_move(entity_index: EntityIndex, to: Archetype,
 	local records = to.records
 
 	for i, column in src_columns do
-		-- Retrieves the new column index from the source archetype's record from each component
+	    if column == NULL_ARRAY then
+    	    continue
+    	end
+	    -- Retrieves the new column index from the source archetype's record from each component
 		-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
 		local tr = records[types[i]]
 
 		-- Sometimes target column may not exist, e.g. when you remove a component.
-		if tr and column ~= TAG_OBJ then
+		if tr then
             dst_columns[tr.column][dst_row] = column[src_row]
 		end
 		-- If the entity is the last row in the archetype then swapping it would be meaningless.
@@ -501,7 +504,7 @@ local function archetype_create(world: World, types: { i24 }, prev: Archetype?):
 		if bit32.band(idr.flags, ECS_ID_IS_TAG) == 0 then
 		    columns[i] = {}
 		else
-		    columns[i] = TAG_OBJ
+		    columns[i] = NULL_ARRAY
 		end
 	end
 

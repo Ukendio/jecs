@@ -211,6 +211,16 @@ TEST("world:add()", function()
 end)
 
 TEST("world:query()", function()
+    do CASE "tag"
+        local world = jecs.World.new()
+        local A = world:component()
+        world:add(A, jecs.Tag)
+        local e = world:entity()
+        world:set(e, A, "test")
+        for id, a in world:query(A) do
+            CHECK(a == nil)
+        end
+    end
     do CASE "query single component"
         do
             local world = jecs.World.new()
