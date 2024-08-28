@@ -1440,6 +1440,8 @@ function World.new()
 	return self
 end
 
+export type Id<T = nil> = Entity<T> | Pair
+
 export type Pair = number
 
 type Item<T...> = (self: Query<T...>) -> (Entity, T...)
@@ -1482,67 +1484,67 @@ export type World = {
 		delete: (self: World, id: Entity) -> (),
 
 		--- Adds a component to the entity with no value
-		add: <T>(self: World, id: Entity, component: Entity<T>) -> (),
+		add: <T>(self: World, id: Entity, component: Id<T>) -> (),
 		--- Assigns a value to a component on the given entity
-		set: <T>(self: World, id: Entity, component: Entity<T>, data: T) -> (),
+		set: <T>(self: World, id: Entity, component: Id<T>, data: T) -> (),
 
 		-- Clears an entity from the world
 		clear: (self: World, id: Entity) -> (),
 		--- Removes a component from the given entity
-		remove: (self: World, id: Entity, component: Entity) -> (),
+		remove: (self: World, id: Entity, component: Id) -> (),
 		--- Retrieves the value of up to 4 components. These values may be nil.
-		get: (<A>(self: World, id: any, Entity<A>) -> A)
-			& (<A, B>(self: World, id: Entity, Entity<A>, Entity<B>) -> (A, B))
-			& (<A, B, C>(self: World, id: Entity, Entity<A>, Entity<B>, Entity<C>) -> (A, B, C))
-			& <A, B, C, D>(self: World, id: Entity, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> (A, B, C, D),
+		get: (<A>(self: World, id: any, Id<A>) -> A?)
+			& (<A, B>(self: World, id: Entity, Id<A>, Id<B>) -> (A?, B?))
+			& (<A, B, C>(self: World, id: Entity, Id<A>, Id<B>, Id<C>) -> (A?, B?, C?))
+			& <A, B, C, D>(self: World, id: Entity, Id<A>, Id<B>, Id<C>, Id<D>) -> (A?, B?, C?, D?),
 
-		has: (self: World, ...Entity) -> boolean,
+		has: (self: World, ...Id) -> boolean,
 
 		parent: (self: World, entity: Entity) -> Entity,
 
 		--- Searches the world for entities that match a given query
-		query: (<A>(self: World, Entity<A>) -> Query<A>)
-			& (<A, B>(self: World, Entity<A>, Entity<B>) -> Query<A, B>)
-			& (<A, B, C>(self: World, Entity<A>, Entity<B>, Entity<C>) -> Query<A, B, C>)
-			& (<A, B, C, D>(self: World, Entity<A>, Entity<B>, Entity<C>, Entity<D>) -> Query<A, B, C, D>)
+		query: (<A>(self: World, Id<A>) -> Query<A>)
+			& (<A, B>(self: World, Id<A>, Id<B>) -> Query<A, B>)
+			& (<A, B, C>(self: World, Id<A>, Id<B>, Id<C>) -> Query<A, B, C>)
+			& (<A, B, C, D>(self: World, Id<A>, Id<B>, Id<C>, Id<D>) -> Query<A, B, C, D>)
 			& (<A, B, C, D, E>(
 				self: World,
-				Entity<A>,
-				Entity<B>,
-				Entity<C>,
-				Entity<D>,
-				Entity<E>
+				Id<A>,
+				Id<B>,
+				Id<C>,
+				Id<D>,
+				Id<E>
 			) -> Query<A, B, C, D, E>)
 			& (<A, B, C, D, E, F>(
 				self: World,
-				Entity<A>,
-				Entity<B>,
-				Entity<C>,
-				Entity<D>,
-				Entity<E>,
-				Entity<F>
+				Id<A>,
+				Id<B>,
+				Id<C>,
+				Id<D>,
+				Id<E>,
+				Id<F>
 			) -> Query<A, B, C, D, E, F>)
 			& (<A, B, C, D, E, F, G>(
 				self: World,
-				Entity<A>,
-				Entity<B>,
-				Entity<C>,
-				Entity<D>,
-				Entity<E>,
-				Entity<F>,
-				Entity<G>
+				Id<A>,
+				Id<B>,
+				Id<C>,
+				Id<D>,
+				Id<E>,
+				Id<F>,
+				Id<G>
 			) -> Query<A, B, C, D, E, F, G>)
 			& (<A, B, C, D, E, F, G, H>(
 				self: World,
-				Entity<A>,
-				Entity<B>,
-				Entity<C>,
-				Entity<D>,
-				Entity<E>,
-				Entity<F>,
-				Entity<G>,
-				Entity<H>,
-				...Entity<any>
+				Id<A>,
+				Id<B>,
+				Id<C>,
+				Id<D>,
+				Id<E>,
+				Id<F>,
+				Id<G>,
+				Id<H>,
+				...Id<any>
 			) -> Query<A, B, C, D, E, F, G, H>),
 	}
 
