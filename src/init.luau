@@ -1537,7 +1537,7 @@ export type World = {
 			& (<A, B, C>(self: World, id: Entity, Id<A>, Id<B>, Id<C>) -> (A?, B?, C?))
 			& <A, B, C, D>(self: World, id: Entity, Id<A>, Id<B>, Id<C>, Id<D>) -> (A?, B?, C?, D?),
 
-		has: (self: World, ...Id) -> boolean,
+		has: (self: World, entity: Entity, ...Id) -> boolean,
 
 		parent: (self: World, entity: Entity) -> Entity,
 
