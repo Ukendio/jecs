@@ -10,6 +10,9 @@
             },
             "net": {
                 "$path": "demo/net/client.luau"
+            },
+            "Packages": {
+                "$path": "demo/Packages"
             }
         },
         "ServerScriptService": {

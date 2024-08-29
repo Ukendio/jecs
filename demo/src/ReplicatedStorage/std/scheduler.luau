@@ -1,6 +1,9 @@
 --!native
 --!optimize 2
-local jecs = require(game:GetService("ReplicatedStorage").ecs)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local jabby = require(ReplicatedStorage.Packages.jabby)
+local jecs = require(ReplicatedStorage.ecs)
+local components = require(ReplicatedStorage.std.components)
 local pair = jecs.pair
 type World = jecs.World
 type Entity<T=nil> = jecs.Entity<T>
@@ -48,6 +51,7 @@ export type Scheduler = {
 
 local scheduler_new: (w: World) -> Scheduler
 
+
 do
     local world
     local Disabled
@@ -56,6 +60,8 @@ do
     local Phase
     local Event
     local Name
+
+    local scheduler
 
     local RenderStepped
     local Heartbeat
@@ -84,21 +90,7 @@ do
 
                     debug.profilebegin(event_name)
                     for _, sys in systems do
-                        system = sys
-
-                        local didNotYield, why = xpcall(function()
-                            for _ in run do end
-                        end, debug.traceback)
-
-                        if didNotYield then
-                 			continue
-                  		end
-
-                  		if string.find(why, "thread is not yieldable") then
-                 			panic("Not allowed to yield in the systems.")
-                  		else
-                  		    panic(why)
-                  		end
+                        scheduler:run(sys.id, sys.system, dt)
                     end
                     debug.profileend()
                 end
@@ -108,8 +100,15 @@ do
     end
 
     local function scheduler_collect_systems_under_phase_recursive(systems, phase)
+        local phase_name = world:get(phase, Name)
         for _, system in world:query(System):with(pair(DependsOn, phase)) do
-            table.insert(systems, system)
+            table.insert(systems, {
+                id = scheduler:register_system({
+                    name = system.name,
+                    phase = phase_name
+                }),
+                system = system.callback
+            })
         end
         for after in world:query(Phase):with(pair(DependsOn, phase)) do
             scheduler_collect_systems_under_phase_recursive(systems, after)
@@ -123,11 +122,11 @@ do
     end
 
     local function scheduler_collect_systems_all()
-        local systems = {}
+        local events = {}
         for phase, event in world:query(Event):with(Phase) do
-            systems[event] = scheduler_collect_systems_under_event(phase)
+            events[event] = scheduler_collect_systems_under_event(phase)
         end
-        return systems
+        return events
     end
 
     local function scheduler_phase_new(after)
@@ -153,6 +152,7 @@ do
         Phase = world:component()
         DependsOn = world:component()
         Event = world:component()
+        Name = world:component()
 
         RenderStepped = world:component()
         Heartbeat = world:component()
@@ -166,6 +166,7 @@ do
         end
 
         world:add(Heartbeat, Phase)
+        world:set(Heartbeat, Name)
         world:set(Heartbeat, Event, RunService.Heartbeat)
 
         world:add(PreSimulation, Phase)
@@ -174,6 +175,22 @@ do
         world:add(PreAnimation, Phase)
         world:set(PreAnimation, Event, RunService.PreAnimation)
 
+        jabby.public.updated = true
+        table.insert(jabby.public, {
+            class_name = "World",
+            name = "MyWorld",
+            world = world,
+            debug = Name,
+            entities = {}
+        })
+        for name, component in components do
+            world:set(component, Name, name)
+            print(Name, name)
+        end
+
+        scheduler = jabby.scheduler.create("scheduler")
+
+        table.insert(jabby.public, scheduler)
         return {
             phase = scheduler_phase_new,
 

@@ -7,3 +7,6 @@ end
 local events = scheduler.collect.all()
 
 scheduler.systems.begin(events)
+local jabby = require(ReplicatedStorage.Packages.jabby)
+local client = jabby.obtain_client()
+client.spawn_app(client.apps.home)
