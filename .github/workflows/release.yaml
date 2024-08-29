@@ -61,8 +61,8 @@ jobs:
       - name: Checkout Project
         uses: actions/checkout@v4
 
-      - name: Install Aftman
-        uses: ok-nick/setup-aftman@v0.3.0
+      - name: Install Rokit
+        uses: CompeyDev/setup-rokit@v0.1.2
 
       - name: Wally Login
         run: wally login --token ${{ secrets.WALLY_AUTH_TOKEN }}
