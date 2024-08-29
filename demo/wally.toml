@@ -1,0 +1,8 @@
+[package]
+name = "marcus/demo"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+jabby = "alicesaidhi/jabby@0.1.0"
