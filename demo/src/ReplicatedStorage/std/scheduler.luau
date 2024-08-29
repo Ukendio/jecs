@@ -10,9 +10,7 @@ type Entity<T=nil> = jecs.Entity<T>
 
 type System = {
     callback: (world: World) -> (),
-    name: string,
-    rate: number?,
-    interval: number?
+    id: number,
 }
 
 type Systems = { System }
@@ -71,9 +69,14 @@ do
     local system: System
     local dt
     local function run()
-        debug.profilebegin(system.name)
+        local id = system.id
+        local system_data = scheduler.system_data[id]
+		if system_data.paused then return end
+
+		scheduler:mark_system_frame_start(id)
         system.callback(dt)
-        debug.profileend()
+        scheduler:mark_system_frame_end(id)
+
     end
     local function panic(str)
         -- We don't want to interrupt the loop when we error
@@ -90,7 +93,25 @@ do
 
                     debug.profilebegin(event_name)
                     for _, sys in systems do
-                        scheduler:run(sys.id, sys.system, dt)
+                        system = sys
+                        local didNotYield, why = xpcall(function()
+                            for _ in run do end
+                        end, debug.traceback)
+
+                        if didNotYield then
+            				continue
+             			end
+
+             			if string.find(why, "thread is not yieldable") then
+            				panic("Not allowed to yield in the systems."
+                				.. "\n"
+                				.. "System: "
+                				.. debug.info(system.callback, "n")
+                				.. " has been ejected"
+				            )
+            				continue
+             			end
+             			panic(why)
                     end
                     debug.profileend()
                 end
@@ -107,7 +128,7 @@ do
                     name = system.name,
                     phase = phase_name
                 }),
-                system = system.callback
+                callback = system.callback
             })
         end
         for after in world:query(Phase):with(pair(DependsOn, phase)) do
@@ -166,7 +187,6 @@ do
         end
 
         world:add(Heartbeat, Phase)
-        world:set(Heartbeat, Name)
         world:set(Heartbeat, Event, RunService.Heartbeat)
 
         world:add(PreSimulation, Phase)
@@ -174,20 +194,20 @@ do
 
         world:add(PreAnimation, Phase)
         world:set(PreAnimation, Event, RunService.PreAnimation)
+        for name, component in components do
+            world:set(component, Name, name)
+        end
 
-        jabby.public.updated = true
         table.insert(jabby.public, {
             class_name = "World",
             name = "MyWorld",
             world = world,
             debug = Name,
             entities = {}
-        })
-        for name, component in components do
-            world:set(component, Name, name)
-            print(Name, name)
-        end
+        }   )
 
+
+        jabby.public.updated = true
         scheduler = jabby.scheduler.create("scheduler")
 
         table.insert(jabby.public, scheduler)

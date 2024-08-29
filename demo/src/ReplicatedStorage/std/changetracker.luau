@@ -1,8 +1,5 @@
 local jecs = require(game:GetService("ReplicatedStorage").ecs)
-
-local world = require(script.Parent.world)
-local sparse = ((world :: any) :: jecs.World).entityIndex.sparse
-type World = world.World
+type World = jecs.World
 
 type Tracker<T> = { track: (world: World, fn: (changes: {
         added: () -> () -> (number, T),
@@ -32,7 +29,8 @@ local function diff(a, b)
     return false
 end
 
-local function ChangeTracker<T>(T: Entity<T>): Tracker<T>
+local function ChangeTracker<T>(world: World, T: Entity<T>): Tracker<T>
+    local sparse = world.entityIndex.sparse
     local PreviousT = jecs.pair(jecs.Rest, T)
     local add = {}
     local added
