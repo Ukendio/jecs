@@ -12,6 +12,12 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 - `[luau]`:
     - Exported Query
     - Improved types for the hooks `OnAdd`, `OnSet`, `OnRemove`
+    - Expose `world:contains()` in `World` type and expose `query:drain()` in `Query` type
+    - Allow functions to accept any ID including pairs in type parameters
+      - Applies to `world:add()`, `world:set()`, `world:remove()`, `world:get()`, `world:has()` and `world:query()`
+      - New exported type `Id<T = nil> = Entity<T> | Pair`
+    - Make `world:contains()` return a `boolean` instead of an entity which may or may not exist
+    - Fix `world:has()` to explicitly take in an entity (new: `(self: World, entity: Entity, ...id) -> boolean`, old: `(self: World, ...Id) -> boolean`)
 
 ## [0.2.2] - 2024-07-07
 

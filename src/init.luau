@@ -921,9 +921,8 @@ function world_delete(world: World, entity: i53)
 	entityIndex.sparse[entity] = nil
 end
 
-local function world_contains(world: World, entity)
-
-    return world.entityIndex.sparse[entity]
+local function world_contains(world: World, entity): boolean
+    return world.entityIndex.sparse[entity] ~= nil
 end
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
@@ -1494,6 +1493,7 @@ type Query<T...> = typeof(setmetatable({}, {
 })) & {
     iter: Iter<T...>,
     next: Item<T...>,
+    drain: (self: Query<T...>) -> Query<T...>,
     with: (self: Query<T...>, ...i53) -> Query<T...>,
     without: (self: Query<T...>, ...i53) -> Query<T...>,
     replace: (self: Query<T...>, <U...>(T...) -> (U...)) -> (),
@@ -1537,9 +1537,12 @@ export type World = {
 			& (<A, B, C>(self: World, id: Entity, Id<A>, Id<B>, Id<C>) -> (A?, B?, C?))
 			& <A, B, C, D>(self: World, id: Entity, Id<A>, Id<B>, Id<C>, Id<D>) -> (A?, B?, C?, D?),
 
-		has: (self: World, ...Id) -> boolean,
+		has: (self: World, entity: Entity, ...Id) -> boolean,
 
 		parent: (self: World, entity: Entity) -> Entity,
+
+		--- Checks if the world contains the given entity
+		contains: (self: World, entity: Entity) -> boolean,
 
 		--- Searches the world for entities that match a given query
 		query: (<A>(self: World, Id<A>) -> Query<A>)
