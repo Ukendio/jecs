@@ -3,9 +3,12 @@ local jecs = require(game:GetService("ReplicatedStorage").ecs)
 local world = require(script.world) :: jecs.World
 export type World = jecs.World
 
+local Scheduler = require(script.scheduler)
+export type Scheduler = Scheduler.Scheduler
+
 local std = {
     ChangeTracker = require(script.changetracker),
-    Scheduler = require(script.scheduler),
+    Scheduler = Scheduler,
     bt = require(script.bt),
     collect = require(script.collect),
     components = require(script.components),

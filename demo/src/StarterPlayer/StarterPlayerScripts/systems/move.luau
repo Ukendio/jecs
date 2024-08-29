@@ -12,7 +12,8 @@ local function move(dt: number)
     for _, transform, model in world:query(Transform, Model):iter() do
         local cf = transform.new
         if cf ~= transform.old then
-            model.PrimaryPart.CFrame = cf
+            local origo = model.PrimaryPart.CFrame
+            model.PrimaryPart.CFrame = origo:Lerp(cf, 1)
             transform.old = cf
         end
     end

@@ -204,7 +204,7 @@ do
             world = world,
             debug = Name,
             entities = {}
-        }   )
+        })
 
 
         jabby.public.updated = true

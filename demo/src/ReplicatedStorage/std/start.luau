@@ -12,10 +12,12 @@ local function start(modules)
     end
     local events = scheduler.collect.all()
     scheduler.systems.begin(events)
+
+    jabby.set_check_function(function(player)
+        return true
+    end)
     if RunService:IsClient() then
         local client = jabby.obtain_client()
-        local player = game:GetService("Players").LocalPlayer
-        local apps = player:WaitForChild("PlayerGui")
         local dtor
         UserInputService.InputBegan:Connect(function(input)
             if input.KeyCode == Enum.KeyCode.F4 then

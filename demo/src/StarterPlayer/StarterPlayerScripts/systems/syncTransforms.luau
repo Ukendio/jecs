@@ -5,9 +5,11 @@ local ref = std.ref
 local world = std.world
 
 local cts = std.components
-
+local UpdateTransforms = ReplicatedStorage:WaitForChild("UpdateTransforms") :: RemoteEvent
+local collect = std.collect
+local stream = collect(UpdateTransforms.OnClientEvent)
 local function syncTransforms()
-    for _, id, cf in blink.UpdateTransform.Iter() do
+    for _, id, cf in stream do
         local e = ref("server-"..id)
         local transform = e:get(cts.Transform)
         if not transform then
