@@ -921,9 +921,8 @@ function world_delete(world: World, entity: i53)
 	entityIndex.sparse[entity] = nil
 end
 
-local function world_contains(world: World, entity)
-
-    return world.entityIndex.sparse[entity]
+local function world_contains(world: World, entity): boolean
+    return world.entityIndex.sparse[entity] ~= nil
 end
 
 type CompatibleArchetype = { archetype: Archetype, indices: { number } }
@@ -1540,6 +1539,9 @@ export type World = {
 		has: (self: World, ...Id) -> boolean,
 
 		parent: (self: World, entity: Entity) -> Entity,
+
+		--- Checks if the world contains the given entity
+		contains: (self: World, entity: Entity) -> boolean,
 
 		--- Searches the world for entities that match a given query
 		query: (<A>(self: World, Id<A>) -> Query<A>)
