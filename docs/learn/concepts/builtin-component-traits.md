@@ -1,6 +1,7 @@
 # Builtin Component Traits
 
-Component traits are ID and pairs that can be added to components to modify their behavior. This manual contains an overview of all component traits supported by Jecs.
+Component traits are IDs and pairs that can be added to components to modify their behavior. This manual contains an overview of all component traits supported by Jecs.
+
 
 # Cleanup Traits
 
