@@ -65,20 +65,22 @@ local EcsOnSet 				= HI_COMPONENT_ID + 3
 local EcsWildcard 			= HI_COMPONENT_ID + 4
 local EcsChildOf 			= HI_COMPONENT_ID + 5
 local EcsComponent  		= HI_COMPONENT_ID + 6
-local EcsOnDeleteTarget     = HI_COMPONENT_ID + 7
-local EcsDelete             = HI_COMPONENT_ID + 8
-local EcsTag                = HI_COMPONENT_ID + 9
-local EcsRest 				= HI_COMPONENT_ID + 10
+local EcsOnDelete           = HI_COMPONENT_ID + 7
+local EcsOnDeleteTarget     = HI_COMPONENT_ID + 8
+local EcsDelete             = HI_COMPONENT_ID + 9
+local EcsRemove             = HI_COMPONENT_ID + 10
+local EcsTag                = HI_COMPONENT_ID + 11
+local EcsRest 				= HI_COMPONENT_ID + 12
 
 local ECS_PAIR_FLAG 		= 0x8
 local ECS_ID_FLAGS_MASK 	= 0x10
 local ECS_ENTITY_MASK 		= bit32.lshift(1, 24)
 local ECS_GENERATION_MASK 	= bit32.lshift(1, 16)
 
-local ECS_ID_HAS_DELETE     = 0b0001
+local ECS_ID_DELETE         = 0b0001
 local ECS_ID_HAS_HOOKS      = 0b0010
---local EcsIdExclusive   = 0b0100
-local ECS_ID_IS_TAG         = 0b1000
+local ECS_ID_IS_TAG         = 0b0100
+local ECS_ID_MASK           = 0b0000
 
 local NULL_ARRAY = table.freeze({})
 
@@ -427,11 +429,15 @@ local function id_record_ensure(
 	local idr = componentIndex[id]
 
 	if not idr then
-	    local flags = 0b0000
+	    local flags = ECS_ID_MASK
 		local relation = ECS_ENTITY_T_HI(id)
-		local cleanup_policy = world_target(world, relation, EcsOnDeleteTarget)
-		if cleanup_policy == EcsDelete then
-            flags = bit32.bor(flags, ECS_ID_HAS_DELETE)
+
+		local cleanup_policy = world_target(world, relation, EcsOnDelete)
+		local cleanup_policy_target = world_target(world, relation,
+		    EcsOnDeleteTarget)
+
+		if cleanup_policy == EcsDelete or cleanup_policy_target == EcsDelete then
+            flags = bit32.bor(flags, ECS_ID_DELETE)
 		end
 
 		if world_has_any(world, relation,
@@ -818,7 +824,7 @@ local function archetype_delete(world: World,
             end
         end
         local flags = idr.flags
-        if bit32.band(flags, ECS_ID_HAS_DELETE) ~= 0 then
+        if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
             for _, child in children do
                 -- Cascade deletion to children
                 world_delete(world, child)
@@ -880,7 +886,7 @@ local function archetype_delete(world: World,
 
                 if id_record then
                     local flags = id_record.flags
-                    if bit32.band(flags, ECS_ID_HAS_DELETE) ~= 0 then
+                    if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
                         for _, child in children do
                             -- Cascade deletions of it has Delete as component trait
                             world_delete(world, child)
@@ -1600,8 +1606,10 @@ return {
 	Component = EcsComponent :: Entity,
 	Wildcard = EcsWildcard :: Entity,
 	w = EcsWildcard :: Entity,
+	OnDelete = EcsOnDelete :: Entity,
 	OnDeleteTarget = EcsOnDeleteTarget :: Entity,
 	Delete = EcsDelete :: Entity,
+	Remove = EcsRemove :: Entity,
 	Tag = EcsTag :: Entity,
 	Rest = EcsRest :: Entity,
 

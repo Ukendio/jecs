@@ -38,6 +38,7 @@ export default defineConfig({
                         { text: 'Entities and Components', link: '/learn/concepts/entities-and-components' },
                         { text: 'Queries', link: '/learn/concepts/queries' },
                         { text: 'Relationships', link: '/learn/concepts/relationships' },
+                        { text: 'Builtin Component Traits', link: 'learn/concepts/builtin-component-traits' }
                     ]
                 },
                 {
