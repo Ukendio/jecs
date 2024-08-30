@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 - `[traits]`:
     - Added cleanup condition `jecs.OnDelete` for when the entity or component is deleted
     - Added cleanup action `jecs.Remove` which removes instances of the specified (component) id from all entities
+        - This is the default cleanup action
     - Added component trait `jecs.Tag` which allows for zero-cost components used as tags
         - Setting data to a component with this trait will do nothing
 - `[luau]`:
