@@ -77,10 +77,10 @@ local ECS_ID_FLAGS_MASK 	= 0x10
 local ECS_ENTITY_MASK 		= bit32.lshift(1, 24)
 local ECS_GENERATION_MASK 	= bit32.lshift(1, 16)
 
-local ECS_ID_DELETE     = 0b0001
-local ECS_ID_HAS_HOOKS  = 0b0010
-local ECS_ID_IS_TAG     = 0b0100
-local ECS_ID_MASK       = 0b0000
+local ECS_ID_DELETE         = 0b0001
+local ECS_ID_HAS_HOOKS      = 0b0010
+local ECS_ID_IS_TAG         = 0b0100
+local ECS_ID_MASK           = 0b0000
 
 local NULL_ARRAY = table.freeze({})
 
