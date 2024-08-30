@@ -769,7 +769,7 @@ TEST("world:delete", function()
 		world:set(id1, Health, 50)
 
 		world:delete(id)
-
+		CHECK(not world:contains(id))
 		CHECK(world:get(id, Poison) == nil)
 		CHECK(world:get(id, Health) == nil)
 
@@ -781,6 +781,7 @@ TEST("world:delete", function()
         local world = jecs.World.new()
 
 		local Health = world:entity()
+		world:add(Health, pair(jecs.OnDelete, jecs.Delete))
 		local Poison = world:component()
 
 		local id = world:entity()
@@ -794,8 +795,15 @@ TEST("world:delete", function()
 		CHECK(world:has(id1, Poison, Health))
 		world:delete(Poison)
 
+		CHECK(world:contains(id))
 		CHECK(not world:has(id, Poison))
 		CHECK(not world:has(id1, Poison))
+
+		world:delete(Health)
+		CHECK(not world:contains(id))
+		CHECK(not world:contains(id1))
+		CHECK(not world:has(id, Health))
+		CHECK(not world:has(id1, Health))
 	end
 
 	do CASE "delete children"
