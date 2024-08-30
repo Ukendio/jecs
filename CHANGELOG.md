@@ -9,15 +9,21 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 [semver]: https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
+- `[traits]`:
+    - Added cleanup condition `jecs.OnDelete` for when the entity or component is deleted
+    - Added cleanup action `jecs.Remove` which removes instances of the specified (component) id from all entities
+    - Added component trait `jecs.Tag` which allows for zero-cost components used as tags
+        - Setting data to a component with this trait will do nothing
 - `[luau]`:
-    - Exported Query
-    - Improved types for the hooks `OnAdd`, `OnSet`, `OnRemove`
-    - Expose `world:contains()` in `World` type and expose `query:drain()` in `Query` type
-    - Allow functions to accept any ID including pairs in type parameters
+    - Exported `world:contains()`
+    - Exported `query:drain()`
+    - Exported `Query`
+    - Improved types for the hook `OnAdd`, `OnSet`, `OnRemove`
+    - Changed functions to accept any ID including pairs in type parameters
       - Applies to `world:add()`, `world:set()`, `world:remove()`, `world:get()`, `world:has()` and `world:query()`
       - New exported type `Id<T = nil> = Entity<T> | Pair`
-    - Make `world:contains()` return a `boolean` instead of an entity which may or may not exist
-    - Fix `world:has()` to explicitly take in an entity (new: `(self: World, entity: Entity, ...id) -> boolean`, old: `(self: World, ...Id) -> boolean`)
+    - Changed `world:contains()` to return a `boolean` instead of an entity which may or may not exist
+    - Fixed `world:has()` to take the correct parameters
 
 ## [0.2.2] - 2024-07-07
 
