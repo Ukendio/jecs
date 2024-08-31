@@ -77,10 +77,12 @@ local ECS_ID_FLAGS_MASK     = 0x10
 local ECS_ENTITY_MASK       = bit32.lshift(1, 24)
 local ECS_GENERATION_MASK   = bit32.lshift(1, 16)
 
-local ECS_ID_DELETE         = 0b0001
-local ECS_ID_HAS_HOOKS      = 0b0010
-local ECS_ID_IS_TAG         = 0b0100
-local ECS_ID_MASK           = 0b0000
+local ECS_ID_DELETE         = 0b0000_0001
+local ECS_ID_IS_TAG         = 0b0000_0010
+local ECS_ID_HAS_ON_ADD     = 0b0000_0100
+local ECS_ID_HAS_ON_SET     = 0b0000_1000
+local ECS_ID_HAS_ON_REMOVE  = 0b0001_0000
+local ECS_ID_MASK           = 0b0000_0000
 
 local NULL_ARRAY = table.freeze({})
 
@@ -379,28 +381,6 @@ local function world_has(world: World, entity: number, ...: i53): boolean
 	return true
 end
 
-local function world_has_any(world: World, entity: number, ...: i53): boolean
-	local record = world.entityIndex.sparse[entity]
-	if not record then
-		return false
-	end
-
-	local archetype = record.archetype
-	if not archetype then
-		return false
-	end
-
-	local records = archetype.records
-
-	for i = 1, select("#", ...) do
-		if records[select(i, ...)] then
-			return true
-		end
-	end
-
-	return false
-end
-
 -- TODO:
 -- should have an additional `nth` parameter which selects the nth target
 -- this is important when an entity can have multiple relationships with the same target
@@ -437,23 +417,23 @@ local function id_record_ensure(world: World, id: number): ArchetypeMap
 		local cleanup_policy = world_target(world, relation, EcsOnDelete)
 		local cleanup_policy_target = world_target(world, relation, EcsOnDeleteTarget)
 
+		local has_delete = false
+
 		if cleanup_policy == EcsDelete or cleanup_policy_target == EcsDelete then
-			flags = bit32.bor(flags, ECS_ID_DELETE)
+		    has_delete = true
 		end
 
-		if world_has_any(world, relation,
-		    EcsOnAdd, EcsOnSet, EcsOnRemove)
-		then
-			flags = bit32.bor(flags, ECS_ID_HAS_HOOKS)
-		end
+	    local on_add, on_set, on_remove = world_get(world, relation, EcsOnAdd, EcsOnSet, EcsOnRemove)
 
-		if world_has_one_inline(world, id, EcsTag) then
-			flags = bit32.bor(flags, ECS_ID_IS_TAG)
-		end
+		local has_tag = world_has_one_inline(world, id, EcsTag)
 
-		-- local FLAG2 = 0b0010
-		-- local FLAG3 = 0b0100
-		-- local FLAG4 = 0b1000
+		flags = bit32.bor(flags,
+		    if on_add then ECS_ID_HAS_ON_ADD else 0,
+			if on_remove then ECS_ID_HAS_ON_REMOVE else 0,
+			if on_set then ECS_ID_HAS_ON_SET else 0,
+			if has_delete then ECS_ID_DELETE else 0,
+			if has_tag then ECS_ID_IS_TAG else 0
+		)
 
 		idr = {
 			size = 0,
@@ -634,9 +614,9 @@ local function world_add(world: World, entity: i53, id: i53)
 	end
 
 	local idr = world.componentIndex[id]
-	local has_hooks = bit32.band(idr.flags, ECS_ID_HAS_HOOKS) ~= 0
+	local has_on_add = bit32.band(idr.flags, ECS_ID_HAS_ON_ADD) ~= 0
 
-	if has_hooks then
+	if has_on_add then
 		invoke_hook(world, EcsOnAdd, id, entity)
 	end
 end
@@ -650,7 +630,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 	local idr = world.componentIndex[id]
 	local flags = idr.flags
 	local is_tag = bit32.band(flags, ECS_ID_IS_TAG) ~= 0
-	local has_hooks = bit32.band(flags, ECS_ID_HAS_HOOKS) ~= 0
+	local has_on_set = bit32.band(idr.flags, ECS_ID_HAS_ON_SET) ~= 0
 
 	if from == to then
 		if is_tag then
@@ -660,7 +640,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 		-- and just set the data directly.
 		local tr = to.records[id]
 		from.columns[tr.column][record.row] = data
-		if has_hooks then
+		if has_on_set then
 			invoke_hook(world, EcsOnSet, id, entity, data)
 		end
 
@@ -683,7 +663,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 	if is_tag then
 		return
 	end
-	if not has_hooks then
+	if not has_on_set then
 		column[record.row] = data
 	else
 		invoke_hook(world, EcsOnAdd, id, entity, data)
