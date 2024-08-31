@@ -1,5 +1,5 @@
 # Addons
-A collection of third-party jecs addons made by the community. If you would like to share what you're working on, [submit a pull request]()!
+A collection of third-party jecs addons made by the community. If you would like to share what you're working on, [submit a pull request](https://github.com/Ukendio/jecs)!
 
 # Debuggers
 
