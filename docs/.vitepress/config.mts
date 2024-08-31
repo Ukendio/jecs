@@ -39,7 +39,7 @@ export default defineConfig({
                         { text: 'Queries', link: '/learn/concepts/queries' },
                         { text: 'Relationships', link: '/learn/concepts/relationships' },
                         { text: 'Component Traits', link: 'learn/concepts/component-traits' },
-                        { text: 'Addons', link: '/learn/addons' }
+                        { text: 'Addons', link: '/learn/concepts/addons' }
                     ]
                 },
                 {
