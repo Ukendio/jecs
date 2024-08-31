@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 [semver]: https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
+- `[world]`:
+    - Improved performance for hooks
+    - Changed `world:set` to be idempotent when setting tags
 - `[traits]`:
     - Added cleanup condition `jecs.OnDelete` for when the entity or component is deleted
     - Added cleanup action `jecs.Remove` which removes instances of the specified (component) id from all entities

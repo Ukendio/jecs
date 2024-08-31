@@ -630,7 +630,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 	local idr = world.componentIndex[id]
 	local flags = idr.flags
 	local is_tag = bit32.band(flags, ECS_ID_IS_TAG) ~= 0
-	local has_on_set = bit32.band(idr.flags, ECS_ID_HAS_ON_SET) ~= 0
+	local has_on_set = bit32.band(flags, ECS_ID_HAS_ON_SET) ~= 0
 
 	if from == to then
 		if is_tag then
@@ -657,18 +657,23 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown)
 		end
 	end
 
-	local tr = to.records[id]
-	local column = to.columns[tr.column]
+	local has_on_add = bit32.band(flags, ECS_ID_HAS_ON_ADD) ~= 0
+
+	if has_on_add then
+	    invoke_hook(world, EcsOnAdd, id, entity)
+	end
 
 	if is_tag then
 		return
 	end
-	if not has_on_set then
-		column[record.row] = data
-	else
-		invoke_hook(world, EcsOnAdd, id, entity, data)
-		column[record.row] = data
-		invoke_hook(world, EcsOnSet, id, entity, data)
+
+	local tr = to.records[id]
+	local column = to.columns[tr.column]
+
+	column[record.row] = data
+
+	if has_on_set then
+	    invoke_hook(world, EcsOnSet, id, entity, data)
 	end
 end
 
