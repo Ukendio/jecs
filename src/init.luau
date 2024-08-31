@@ -57,7 +57,7 @@ type ArchetypeDiff = {
 	removed: Ty,
 }
 
-local HI_COMPONENT_ID = 256
+local HI_COMPONENT_ID       = 256
 
 local EcsOnAdd              = HI_COMPONENT_ID + 1
 local EcsOnRemove           = HI_COMPONENT_ID + 2
@@ -441,7 +441,9 @@ local function id_record_ensure(world: World, id: number): ArchetypeMap
 			flags = bit32.bor(flags, ECS_ID_DELETE)
 		end
 
-		if world_has_any(world, relation, EcsOnAdd, EcsOnSet, EcsOnRemove) then
+		if world_has_any(world, relation,
+		    EcsOnAdd, EcsOnSet, EcsOnRemove)
+		then
 			flags = bit32.bor(flags, ECS_ID_HAS_HOOKS)
 		end
 
