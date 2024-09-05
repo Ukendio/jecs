@@ -8,8 +8,9 @@ local components: {
     Model: Entity<Model>,
     Player: Entity,
     Target: Entity,
-    Transform: Entity<{ old: CFrame, new: CFrame }>,
+    Transform: Entity<CFrame>,
     Velocity: Entity<number>,
+    Previous: Entity,
 } = {
     Character = world:component(),
     Mob = world:component(),
@@ -18,6 +19,7 @@ local components: {
     Target = world:component(),
     Transform = world:component(),
     Velocity = world:component(),
+    Previous = world:component(),
 }
 
 return table.freeze(components)
