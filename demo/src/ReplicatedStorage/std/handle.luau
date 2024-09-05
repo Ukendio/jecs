@@ -31,6 +31,9 @@ do
         world:clear(e)
         return self
     end
+    local function delete(self)
+        world:delete(e)
+    end
     local function id()
         return e
     end

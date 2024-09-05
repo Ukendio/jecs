@@ -2,7 +2,7 @@ local world = require(script.Parent.world)
 local handle = require(script.Parent.handle)
 local refs = {}
 
-local function fini(e, key)
+local function fini(key)
     return function()
         refs[key] = nil
     end
@@ -18,7 +18,7 @@ local function ref(key): (handle.Handle, (() -> ())?)
         refs[key] = e
     end
     -- Cannot cache handles because they will get invalidated
-    return handle(e), fini(e, key)
+    return handle(e), fini(key)
 end
 
 return ref
