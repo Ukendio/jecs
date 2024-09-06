@@ -2,11 +2,12 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local jabby = require(ReplicatedStorage.Packages.jabby)
-local Scheduler = require(ReplicatedStorage.std.scheduler)
-local world = require(ReplicatedStorage.std.world)
+local std = require(ReplicatedStorage.std)
+local Scheduler = std.Scheduler
+local world = std.world
 
 local function start(modules)
-    local scheduler = Scheduler.new(world)
+    local scheduler = Scheduler.new(world, ReplicatedStorage.std.components)
     for _, module in modules do
         require(module)(scheduler)
     end
@@ -26,7 +27,7 @@ local function start(modules)
                 end
                 dtor = client.spawn_app(client.apps.home)
  			end
-        end )
+        end)
 	end
 end
 

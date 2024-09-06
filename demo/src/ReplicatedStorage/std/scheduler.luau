@@ -3,7 +3,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local jabby = require(ReplicatedStorage.Packages.jabby)
 local jecs = require(ReplicatedStorage.ecs)
-local components = require(ReplicatedStorage.std.components)
 local pair = jecs.pair
 type World = jecs.World
 type Entity<T=nil> = jecs.Entity<T>
@@ -47,7 +46,7 @@ export type Scheduler = {
     phase: (after: Entity) -> Entity
 }
 
-local scheduler_new: (w: World) -> Scheduler
+local scheduler_new: (w: World, components: { [string]: Entity }) -> Scheduler
 
 
 do
@@ -166,7 +165,7 @@ do
         return system
     end
 
-    function scheduler_new(w)
+    function scheduler_new(w: World, components: { [string]: Entity })
         world = w
         Disabled = world:component()
         System = world:component()
@@ -242,7 +241,6 @@ do
         }
     end
 end
-
 
 return {
     new = scheduler_new
