@@ -1,6 +1,6 @@
 [package]
 name = "ukendio/jecs"
-version = "0.2.10-rc.4"
+version = "0.2.10"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 include = [
