@@ -159,10 +159,13 @@ export const IS_PAIR: (e: Entity) => boolean;
  */
 export const Component: Entity;
 
-export const OnAdd: Entity;
-export const OnRemove: Entity;
-export const OnSet: Entity;
+export const OnAdd: Entity<(e: Entity) => void>;
+export const OnRemove: Entity<(e: Entity) => void>;
+export const OnSet: Entity<(e: Entity, value: unknown) => void>;
 export const OnDeleteTarget: Entity;
+export const OnDelete: Entity;
 export const Delete: Entity;
+export const Remove: Entity;
+export const Tag: Entity;
 export const Wildcard: Entity;
 export const Rest: Entity;
