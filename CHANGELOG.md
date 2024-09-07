@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 [semver]: https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
+
+## [0.2.10] - 2024-09-07
+
 - `[world]`:
     - Improved performance for hooks
     - Changed `world:set` to be idempotent when setting tags
@@ -28,6 +31,7 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
       - New exported type `Id<T = nil> = Entity<T> | Pair`
     - Changed `world:contains()` to return a `boolean` instead of an entity which may or may not exist
     - Fixed `world:has()` to take the correct parameters
+
 
 ## [0.2.2] - 2024-07-07
 

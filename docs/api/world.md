@@ -2,9 +2,9 @@
 
 A World contains entities which have components. The World is queryable and can be used to get entities with a specific set of components.
 
-## Functions
+# Functions
 
-### new()
+## new()
 ```luau
 function World.new(): World
 ```
@@ -44,7 +44,7 @@ const entity = world.entity();
 
 :::
 
-### component()
+## component()
 ```luau
 function World:component<T>(): Entity<T> -- The new componen.
 ```
@@ -68,7 +68,7 @@ You should use this when creating components.
 For example, a Health type should be created using this.
 :::
 
-### get()
+## get()
 ```luau
 function World:get<T>(
     entity: Entity, -- The entity
@@ -77,7 +77,7 @@ function World:get<T>(
 ```
 Returns the data for the component data the corresponding entity, nil if entity does not have the ID or was a tag.
 
-### has()
+## has()
 ```luau
 function World:has(
     entity: Entity, -- The entity
@@ -88,7 +88,7 @@ Returns whether the entity has the ID.
 
 :::
 
-### add()
+## add()
 ```luau
 function World:add(
     entity: Entity, -- The entity
@@ -104,7 +104,7 @@ This function is idempotent, meaning if the entity already has the id, this oper
 :::
 
 
-### set()
+## set()
 ```luau
 function World:set(
     entity: Entity, -- The entity
@@ -114,7 +114,7 @@ function World:set(
 ```
 Adds or changes the entity's component.
 
-### query()
+## query()
 ```luau
 function World:query(
     ...: Entity -- The IDs to query with
@@ -143,7 +143,7 @@ for (const [id, position, velocity] of world.query(Position, Velocity) {
 Queries are uncached by default, this is generally very cheap unless you have high fragmentation from e.g. relationships.
 
 :::
-### target()
+## target()
 ```luau
 function World:target(
     entity: Entity, -- The entity
@@ -157,7 +157,7 @@ This will return a target (second element of a pair) of the entity for the speci
 
 If there is no pair with specified relationship, it will return nil.
 
-### parent()
+## parent()
 ```luau
 function World:parent(
     child: Entity -- The child ID to find the parent of

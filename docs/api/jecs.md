@@ -2,40 +2,40 @@
 
 Jecs. Just an Entity Component System.
 
-## Properties
+# Properties
 
-### World
+## World
 ```luau
 jecs.World: World
 ```
 A world is a container of all ECS data. Games can have multiple worlds but component IDs may conflict between worlds. Ensure to register the same component IDs in the same order for each world.
 
-### Wildcard
+## Wildcard
 ```luau
 jecs.Wildcard: Entity
 ```
 Builtin component type. This ID is used for wildcard queries.
 
-### Component
+## Component
 ```luau
 jecs.Component: Entity
 ```
 Builtin component type. Every ID created with [world:component()](world.md#component()) has this type added to it. This is meant for querying every component ID.
 
-### ChildOf
+## ChildOf
 ```luau
 jecs.ChildOf: Entity
 ```
 Builtin component type. This ID is for creating parent-child hierarchies.
 
-### Rest
+## Rest
 ```luau
 jecs.Rest: Entity
 ```
 
-## Functions
+# Functions
 
-### pair()
+## pair()
 ```luau
 function jecs.pair(
     first: Entity, -- The first element of the pair, referred to as the relationship of the relationship pair.
