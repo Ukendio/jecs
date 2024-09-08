@@ -19,7 +19,6 @@ local std = {
     world = world :: World,
     pair = jecs.pair,
     __ = jecs.w,
-    start = require(script.start)
 }
 
 return std

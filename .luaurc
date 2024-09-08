@@ -3,5 +3,6 @@
         "jecs": "src",
         "testkit": "testkit",
         "mirror": "mirror",
-    }
+    },
+    languageMode: "strict"
 }

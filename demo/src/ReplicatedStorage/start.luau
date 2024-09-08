@@ -7,7 +7,7 @@ local Scheduler = std.Scheduler
 local world = std.world
 
 local function start(modules)
-    local scheduler = Scheduler.new(world, ReplicatedStorage.std.components)
+    local scheduler = Scheduler.new(world, require(ReplicatedStorage.std.components))
     for _, module in modules do
         require(module)(scheduler)
     end
