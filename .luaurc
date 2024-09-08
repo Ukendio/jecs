@@ -1,4 +1,5 @@
 {
+    "languageMode": "strict",
     "aliases": {
         "jecs": "src",
         "testkit": "testkit",
