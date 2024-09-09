@@ -25,6 +25,7 @@ local function syncMobs()
 end
 
 return function(scheduler: std.Scheduler)
-    return scheduler.systems.new(syncMobs,
-        scheduler.phases.RenderStepped)
+    local phases = scheduler.phases
+    local system_new = scheduler.systems.new
+    system_new(syncMobs, phases.RenderStepped)
 end

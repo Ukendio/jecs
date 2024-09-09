@@ -1,7 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
+local blink = require(ReplicatedStorage.net)
 local std = require(ReplicatedStorage.std)
 local world = std.world
+local ref = std.ref
 
 local cts = std.components
 
@@ -19,7 +20,20 @@ local function move(dt: number)
     end
 end
 
+local function syncTransforms()
+    for _, id, cf in blink.UpdateTransform.Iter() do
+        local e = ref("server-"..id)
+        local transform = e:get(cts.Transform)
+        if not transform then
+            continue
+        end
+        transform.new = cf
+    end
+end
+
 return function(scheduler: std.Scheduler)
-    return scheduler.systems.new(move,
-        scheduler.phases.RenderStepped)
+    local phases = scheduler.phases
+    local system_new = scheduler.systems.new
+    system_new(move, phases.Heartbeat)
+    system_new(syncTransforms, phases.RenderStepped)
 end

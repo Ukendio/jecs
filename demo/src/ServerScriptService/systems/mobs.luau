@@ -8,6 +8,9 @@ local jecs = require(ReplicatedStorage.ecs)
 local __ = jecs.Wildcard
 
 local std = require(ReplicatedStorage.std)
+local ref = std.ref
+local interval = std.interval
+
 local world: std.World = std.world
 local cts = std.components
 
@@ -48,7 +51,28 @@ local function mobsMove(dt: number)
     end
 end
 
+local throttle = interval(5)
+
+local function spawnMobs()
+    if throttle() then
+        local p = Vector3.new(0, 5, 0)
+        local cf = CFrame.new(p)
+        local v = 5
+
+        local id = ref()
+            :set(Velocity, v)
+            :set(Transform, { new = cf })
+            :add(Mob)
+            .id()
+
+        blink.SpawnMob.FireAll(id, cf, v)
+    end
+end
+
 return function(scheduler: std.Scheduler)
-    return scheduler.systems.new(mobsMove,
-        scheduler.phases.Heartbeat)
+    local phases = scheduler.phases
+    local system_new = scheduler.systems.new
+    system_new(mobsMove, phases.Heartbeat)
+    system_new(spawnMobs, phases.Heartbeat)
+
 end

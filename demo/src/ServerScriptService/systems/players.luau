@@ -40,6 +40,7 @@ local function players()
 end
 
 return function(scheduler: std.Scheduler)
-    return scheduler.systems.new(players,
-        scheduler.phases.Heartbeat)
+    local phases = scheduler.phases
+    local system_new = scheduler.systems.new
+    system_new(players, phases.Heartbeat)
 end
