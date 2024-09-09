@@ -40,7 +40,7 @@ export type Scheduler = {
 
     phases: {
         RenderStepped: Entity,
-        Heartbeat: Entity
+        Heartbeat: Entity,
     },
 
     phase: (after: Entity) -> Entity
@@ -50,9 +50,9 @@ local scheduler_new: (w: World, components: { [string]: Entity }) -> Scheduler
 
 
 do
-    local world
-    local Disabled
-    local System
+    local world: World
+    local Disabled: Entity
+    local System: Entity<{}>
     local DependsOn
     local Phase
     local Event

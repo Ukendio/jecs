@@ -4,5 +4,5 @@
         "testkit": "testkit",
         "mirror": "mirror",
     },
-    languageMode: "strict"
+    "languageMode": "strict"
 }
