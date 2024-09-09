@@ -19,6 +19,7 @@ local std = {
     world = world :: World,
     pair = jecs.pair,
     __ = jecs.w,
+    hooks = require(script.hooks)
 }
 
 return std

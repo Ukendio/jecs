@@ -4,6 +4,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local jabby = require(ReplicatedStorage.Packages.jabby)
 local jecs = require(ReplicatedStorage.ecs)
 local pair = jecs.pair
+local Name = jecs.Name
+
 type World = jecs.World
 type Entity<T=nil> = jecs.Entity<T>
 
@@ -43,20 +45,20 @@ export type Scheduler = {
         Heartbeat: Entity,
     },
 
-    phase: (after: Entity) -> Entity
+    phase: (after: Entity) -> Entity,
+
+    debugging: boolean,
 }
 
 local scheduler_new: (w: World, components: { [string]: Entity }) -> Scheduler
 
-
 do
     local world: World
     local Disabled: Entity
-    local System: Entity<{}>
-    local DependsOn
-    local Phase
-    local Event
-    local Name
+    local System: Entity<System>
+    local DependsOn: Entity
+    local Phase: Entity
+    local Event: Entity<RBXScriptSignal>
 
     local scheduler
 
@@ -65,18 +67,19 @@ do
     local PreAnimation
     local PreSimulation
 
-    local system: System
+    local sys: System
     local dt
+
     local function run()
-        local id = system.id
+        local id = sys.id
         local system_data = scheduler.system_data[id]
 		if system_data.paused then return end
 
-		scheduler:mark_system_frame_start(id)
-        system.callback(dt)
+  		scheduler:mark_system_frame_start(id)
+        sys.callback(dt)
         scheduler:mark_system_frame_end(id)
-
     end
+
     local function panic(str)
         -- We don't want to interrupt the loop when we error
         task.spawn(error, str)
@@ -91,10 +94,10 @@ do
                     dt = event:Wait()
 
                     debug.profilebegin(event_name)
-                    for _, sys in systems do
-                        system = sys
+                    for _, s in systems do
+                        sys = s
                         local didNotYield, why = xpcall(function()
-                            for _ in run do end
+                            for _ in run do break end
                         end, debug.traceback)
 
                         if didNotYield then
@@ -105,7 +108,7 @@ do
             				panic("Not allowed to yield in the systems."
                 				.. "\n"
                 				.. "System: "
-                				.. debug.info(system.callback, "n")
+                				.. debug.info(s.callback, "n")
                 				.. " has been ejected"
 				            )
             				continue
@@ -121,13 +124,13 @@ do
 
     local function scheduler_collect_systems_under_phase_recursive(systems, phase)
         local phase_name = world:get(phase, Name)
-        for _, system in world:query(System):with(pair(DependsOn, phase)) do
+        for _, s in world:query(System):with(pair(DependsOn, phase)) do
             table.insert(systems, {
                 id = scheduler:register_system({
-                    name = system.name,
+                    name = s.name,
                     phase = phase_name
                 }),
-                callback = system.callback
+                callback = s.callback
             })
         end
         for after in world:query(Phase):with(pair(DependsOn, phase)) do
@@ -172,7 +175,6 @@ do
         Phase = world:component()
         DependsOn = world:component()
         Event = world:component()
-        Name = world:component()
 
         RenderStepped = world:component()
         Heartbeat = world:component()
@@ -193,6 +195,7 @@ do
 
         world:add(PreAnimation, Phase)
         world:set(PreAnimation, Event, RunService.PreAnimation)
+
         for name, component in components do
             world:set(component, Name, name)
         end
@@ -210,6 +213,7 @@ do
         scheduler = jabby.scheduler.create("scheduler")
 
         table.insert(jabby.public, scheduler)
+
         return {
             phase = scheduler_phase_new,
 
