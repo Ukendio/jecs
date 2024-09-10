@@ -1,3 +1,4 @@
+
 local jecs = require("@jecs")
 local testkit = require("@testkit")
 local BENCH, START = testkit.benchmark()
@@ -9,6 +10,7 @@ local pair = jecs.pair
 local getAlive = jecs.entity_index_get_alive
 local ecs_pair_first = jecs.pair_first
 local ecs_pair_second = jecs.pair_second
+local world_new = jecs.World.new
 
 local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
 local function CHECK_NO_ERR<T...>(s: string, fn: (T...) -> (), ...: T...)
@@ -138,24 +140,50 @@ TEST("world:set()", function()
     end
 
     do CASE "arbitrary order"
-		local world = jecs.World.new()
+    	local world = jecs.World.new()
 
-		local Health = world:entity()
-		local Poison = world:component()
+    	local Health = world:entity()
+    	local Poison = world:component()
 
-		local id = world:entity()
-		world:set(id, Poison, 5)
-		world:set(id, Health, 50)
+    	local id = world:entity()
+    	world:set(id, Poison, 5)
+    	world:set(id, Health, 50)
 
-		CHECK(world:get(id, Poison) == 5)
-	end
+    	CHECK(world:get(id, Poison) == 5)
+    end
+
+    do CASE "pairs"
+   	    local world = jecs.World.new()
+
+        local C1 = world:component()
+        local C2 = world:component()
+        local T1 = world:entity()
+        local T2 = world:entity()
+
+        local e = world:entity()
+
+        world:set(e, pair(C1, C2), true)
+        world:set(e, pair(C1, T1), true)
+        world:set(e, pair(T1, C1), true)
+        world:set(e, pair(T1, T2), true)
+
+        CHECK(world:get(e, pair(C1, C2)))
+        CHECK(world:get(e, pair(C1, T1)))
+        CHECK(not world:get(e, pair(T1, C1)))
+        CHECK(not world:get(e, pair(T1, T2)))
+
+        local e2 = world:entity()
+
+        world:set(e2, pair(jecs.ChildOf, e), true)
+        CHECK(not world:get(e2, pair(jecs.ChildOf, e)))
+    end
 end)
 
 TEST("world:remove()", function()
     do CASE "should allow remove a component that doesn't exist on entity"
 		local world = jecs.World.new()
 
-		local Health = world:entity()
+		local Health = world:component()
 		local Poison = world:component()
 
 		local id = world:entity()
@@ -213,12 +241,33 @@ end)
 TEST("world:query()", function()
     do CASE "tag"
         local world = jecs.World.new()
-        local A = world:component()
-        world:add(A, jecs.Tag)
+        local A = world:entity()
         local e = world:entity()
         world:set(e, A, "test")
         for id, a in world:query(A) do
             CHECK(a == nil)
+        end
+    end
+    do CASE "pairs"
+   	    local world = jecs.World.new()
+
+        local C1 = world:component()
+        local C2 = world:component()
+        local T1 = world:entity()
+        local T2 = world:entity()
+
+        local e = world:entity()
+
+        world:set(e, pair(C1, C2), true)
+        world:set(e, pair(C1, T1), true)
+        world:set(e, pair(T1, C1), true)
+        world:set(e, pair(T1, T2), true)
+
+        for id, a, b, c, d in world:query(pair(C1, C2), pair(C1, T1), pair(T1, C1), pair(T1, T2)) do
+            CHECK(a == true)
+            CHECK(b == true)
+            CHECK(c == nil)
+            CHECK(d == nil)
         end
     end
     do CASE "query single component"
@@ -405,8 +454,8 @@ TEST("world:query()", function()
 
 	do CASE("should allow querying for relations")
 		local world = jecs.World.new()
-		local Eats = world:entity()
-		local Apples = world:entity()
+		local Eats = world:component()
+		local Apples = world:component()
 		local bob = world:entity()
 
 		world:set(bob, pair(Eats, Apples), true)
@@ -418,7 +467,7 @@ TEST("world:query()", function()
 
 	do CASE("should allow wildcards in queries")
 		local world = jecs.World.new()
-		local Eats = world:entity()
+		local Eats = world:component()
 		local Apples = world:entity()
 		local bob = world:entity()
 
@@ -437,7 +486,7 @@ TEST("world:query()", function()
 
 	do CASE("should match against multiple pairs")
 		local world = jecs.World.new()
-		local Eats = world:entity()
+		local Eats = world:component()
 		local Apples = world:entity()
 		local Oranges = world:entity()
 		local bob = world:entity()
@@ -697,32 +746,32 @@ TEST("world:clear()", function()
 end)
 
 TEST("world:has()", function()
-    do CASE "should find Tag on entity"
-        local world = jecs.World.new()
+do CASE "should find Tag on entity"
+    local world = jecs.World.new()
 
-        local Tag = world:component()
+    local Tag = world:entity()
 
-        local e = world:entity()
-        world:add(e, Tag)
+    local e = world:entity()
+    world:add(e, Tag)
 
-        CHECK(world:has(e, Tag))
-    end
+    CHECK(world:has(e, Tag))
+end
 
-    do CASE "should return false when missing one tag"
-        local world = jecs.World.new()
+do CASE "should return false when missing one tag"
+    local world = jecs.World.new()
 
-        local A = world:component()
-        local B = world:component()
-        local C = world:component()
-        local D = world:component()
+    local A = world:entity()
+    local B = world:entity()
+    local C = world:entity()
+    local D = world:entity()
 
-        local e = world:entity()
-        world:add(e, A)
-        world:add(e, C)
-        world:add(e, D)
+    local e = world:entity()
+    world:add(e, A)
+    world:add(e, C)
+    world:add(e, D)
 
-        CHECK(world:has(e, A, B, C, D) == false)
-    end
+    CHECK(world:has(e, A, B, C, D) == false)
+end
 end)
 
 TEST("world:component()", function()
@@ -738,10 +787,8 @@ TEST("world:component()", function()
 	do CASE "tag"
 	    local world = jecs.World.new() :: World
     	local A = world:component()
-        local B = world:component()
-        local C = world:component()
-        world:add(B, jecs.Tag)
-        world:add(C, jecs.Tag)
+        local B = world:entity()
+        local C = world:entity()
     	local e = world:entity()
         world:set(e, A, "test")
         world:add(e, B, "test")
@@ -758,7 +805,7 @@ TEST("world:delete", function()
     do CASE("should allow deleting components")
 		local world = jecs.World.new()
 
-		local Health = world:entity()
+		local Health = world:component()
 		local Poison = world:component()
 
 		local id = world:entity()
@@ -900,13 +947,66 @@ TEST("world:delete", function()
 	end
 end)
 
+TEST("world:target", function()
+    do CASE "nth index"
+        local world = world_new()
+        local A = world:component()
+        local B = world:component()
+        local C = world:component()
+        local D = world:component()
+        local e = world:entity()
+
+        world:add(e, pair(A, B))
+        world:add(e, pair(A, C))
+        world:add(e, pair(B, C))
+        world:add(e, pair(B, D))
+        world:add(e, pair(C, D))
+
+        CHECK(pair(A, B) < pair(A, C))
+
+        CHECK(world:target(e, A, 0) == B)
+        CHECK(world:target(e, A, 1) == C)
+        CHECK(world:target(e, B, 0) == C)
+        CHECK(world:target(e, B, 1) == D)
+        CHECK(world:target(e, C, 0) == D)
+        CHECK(world:target(e, C, 1) == nil)
+    end
+
+    do CASE "loop until no target"
+        local world = world_new()
+
+        local ROOT = world:entity()
+        local e1 = world:entity()
+        local targets = {}
+
+        for i = 1, 10 do
+            local target = world:entity()
+            targets[i] = target
+            world:add(e1, pair(ROOT, target))
+        end
+
+        local i = 0
+        local target = world:target(e1, ROOT, 0)
+        while target do
+            i+=1
+            CHECK(targets[i] == target)
+            target = world:target(e1, ROOT, i)
+        end
+
+        CHECK(i == 10)
+    end
+
+end)
+
 TEST("world:contains", function()
     local world = jecs.World.new()
-
 	local id = world:entity()
 	CHECK(world:contains(id))
-	world:delete(id)
-    CHECK(not world:contains(id))
+
+    do CASE "should not exist after delete"
+        world:delete(id)
+        CHECK(not world:contains(id))
+    end
 end)
 type Tracker<T> = { track: (world: World, fn: (changes: {
         added: () -> () -> (number, T),
@@ -1434,7 +1534,7 @@ TEST("scheduler", function()
         local DependsOn = components.DependsOn
 
         local Physics = scheduler.phase(Heartbeat)
-        CHECK(world:target(Physics, DependsOn) == Heartbeat)
+        CHECK(world:target(Physics, DependsOn, 0) == Heartbeat)
     end
 
     do CASE "user-defined sub phases"
@@ -1447,7 +1547,7 @@ TEST("scheduler", function()
         local A = scheduler.phase(phases.Heartbeat)
         local B = scheduler.phase(A)
 
-        CHECK(world:target(B, DependsOn) == A)
+        CHECK(world:target(B, DependsOn, 0) == A)
     end
 
     do CASE "phase order"
