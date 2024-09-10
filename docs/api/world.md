@@ -147,15 +147,17 @@ Queries are uncached by default, this is generally very cheap unless you have hi
 ```luau
 function World:target(
     entity: Entity, -- The entity
-    relation: Entity -- The relationship between the entity and the target
-): Entity? -- Returns the parent of the child
+    relation: Entity, -- The relationship between the entity and the target
+    nth: number, -- The index
+): Entity? -- The target for the relationship at the specified index.
+
 ```
 
 Get the target of a relationship.
 
-This will return a target (second element of a pair) of the entity for the specified relationship.
+This will return a target (second element of a pair) of the entity for the specified relationship. The index allows for iterating through the targets, if a single entity has multiple targets for the same relationship.
 
-If there is no pair with specified relationship, it will return nil.
+If the index is larger than the total number of instances the entity has for the relationship or if there is no pair with the specified relationship on the entity, the operation will return nil.
 
 ## parent()
 ```luau
@@ -169,5 +171,5 @@ Get parent (target of ChildOf relationship) for entity. If there is no ChildOf r
 This operation is the same as calling:
 
 ```luau
-world:target(entity, jecs.ChildOf)
+world:target(entity, jecs.ChildOf, 0)
 ```
