@@ -461,11 +461,23 @@ local function id_record_ensure(world: World, id: number): ArchetypeMap
 	return idr
 end
 
+local function archetype_append_to_records(idr: ArchetypeMap, archetype_id, records, id, index)
+    local tr = idr.cache[archetype_id]
+    if not tr then
+        tr = { column = index, count = 1}
+        idr.cache[archetype_id] = tr
+        idr.size += 1
+  		records[id] = tr
+    else
+        tr.count += 1
+    end
+end
+
 local function archetype_create(world: World, types: { i24 }, prev: Archetype?): Archetype
 	local ty = hash(types)
 
-	local id = (world.nextArchetypeId :: number) + 1
-	world.nextArchetypeId = id
+	local archetype_id = (world.nextArchetypeId :: number) + 1
+	world.nextArchetypeId = archetype_id
 
 	local length = #types
 	local columns = (table.create(length) :: any) :: { Column }
@@ -473,10 +485,7 @@ local function archetype_create(world: World, types: { i24 }, prev: Archetype?):
 	local records: { ArchetypeRecord } = {}
 	for i, componentId in types do
 		local idr = id_record_ensure(world, componentId)
-		local tr = { column = i, count = 1 }
-        idr.cache[id] = tr
-        idr.size += 1
-  		records[componentId] = tr
+		archetype_append_to_records(idr, archetype_id, records, componentId, i)
 
 		if ECS_IS_PAIR(componentId) then
 			local relation = ecs_pair_first(world, componentId)
@@ -484,27 +493,11 @@ local function archetype_create(world: World, types: { i24 }, prev: Archetype?):
 
 			local r = ECS_PAIR(relation, EcsWildcard)
 			local idr_r = id_record_ensure(world, r)
-            local r_tr = idr_r.cache[id]
-			if not r_tr then
-                r_tr = { column = i, count = 1 }
-                idr_r.cache[id] = r_tr
-                idr_r.size += 1
-                records[r] = r_tr
-            else
-                r_tr.count += 1
-            end
+			archetype_append_to_records(idr_r, archetype_id, records, r, i)
 
 			local t = ECS_PAIR(EcsWildcard, object)
 			local idr_t = id_record_ensure(world, t)
-			local t_tr = idr_t.cache[id]
-			if not t_tr then
-			    t_tr = { column = i, count = 1 }
-				idr_t.cache[id] = t_tr
-				idr_t.size += 1
-				records[t] = t_tr
-			else
-			    t_tr.count += 1
-			end
+			archetype_append_to_records(idr_t, archetype_id, records, t, i)
 		end
 		if bit32.band(idr.flags, ECS_ID_IS_TAG) == 0 then
 			columns[i] = {}
@@ -517,14 +510,14 @@ local function archetype_create(world: World, types: { i24 }, prev: Archetype?):
 		columns = columns,
 		edges = {},
 		entities = {},
-		id = id,
+		id = archetype_id,
 		records = records,
 		type = ty,
 		types = types,
 	}
 
 	world.archetypeIndex[ty] = archetype
-	world.archetypes[id] = archetype
+	world.archetypes[archetype_id] = archetype
 
 	return archetype
 end
