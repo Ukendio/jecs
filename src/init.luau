@@ -69,9 +69,8 @@ local EcsOnDelete           = HI_COMPONENT_ID + 7
 local EcsOnDeleteTarget     = HI_COMPONENT_ID + 8
 local EcsDelete             = HI_COMPONENT_ID + 9
 local EcsRemove             = HI_COMPONENT_ID + 10
-local EcsTag                = HI_COMPONENT_ID + 11
-local EcsName               = HI_COMPONENT_ID + 12
-local EcsRest               = HI_COMPONENT_ID + 13
+local EcsName               = HI_COMPONENT_ID + 11
+local EcsRest               = HI_COMPONENT_ID + 12
 
 local ECS_PAIR_FLAG         = 0x8
 local ECS_ID_FLAGS_MASK     = 0x10
@@ -937,7 +936,7 @@ local function ARM(query, ...)
 end
 
 local EMPTY_LIST = {}
-local EmptyQuery = {
+local EMPTY_QUERY = {
 	__iter = function()
 		return NOOP
 	end,
@@ -954,7 +953,7 @@ local EmptyQuery = {
 	end,
 }
 
-setmetatable(EmptyQuery, EmptyQuery)
+setmetatable(EMPTY_QUERY, EMPTY_QUERY)
 
 local function query_init(query)
     local world_query_iter_next = query.iter_next
@@ -968,7 +967,7 @@ local function query_init(query)
     local lastArchetype = 1
 	local archetype = compatible_archetypes[1]
 	if not archetype then
-		return EmptyQuery
+		return EMPTY_QUERY
 	end
 	local columns = archetype.columns
 	local entities = archetype.entities
@@ -1226,7 +1225,6 @@ end
 
 local function query_without(query, ...)
     local compatible_archetypes = query.compatible_archetypes
-    local length: number = query.length
     local N = select("#", ...)
 	for i = #compatible_archetypes, 1, -1 do
 		local archetype = compatible_archetypes[i]
@@ -1247,14 +1245,11 @@ local function query_without(query, ...)
 				compatible_archetypes[i] = compatible_archetypes[last]
 			end
 			compatible_archetypes[last] = nil
-			length -= 1
 		end
 	end
 
-	query.length = length
-
-	if length == 0 then
-		return EmptyQuery
+	if #compatible_archetypes == 0 then
+		return EMPTY_QUERY
 	end
 
 	return query
@@ -1262,7 +1257,6 @@ end
 
 local function query_with(query, ...)
     local compatible_archetypes = query.compatible_archetypes
-    local length: number = query.length
 	local N = select("#", ...)
 	for i = #compatible_archetypes, 1, -1 do
 		local archetype = compatible_archetypes[i]
@@ -1283,12 +1277,10 @@ local function query_with(query, ...)
 				compatible_archetypes[i] = compatible_archetypes[last]
 			end
 			compatible_archetypes[last] = nil
-			length -= 1
 		end
 	end
-	query.length = length
-	if length == 0 then
-		return EmptyQuery
+	if #compatible_archetypes == 0 then
+		return EMPTY_QUERY
 	end
 	return query
 end
@@ -1352,6 +1344,7 @@ end
 local Query = {}
 Query.__index = Query
 Query.__iter = query_iter
+Query.iter = query_iter
 Query.without = query_without
 Query.with = query_with
 Query.archetypes = query_archetypes
@@ -1373,7 +1366,7 @@ local function world_query(world: World, ...)
 	for _, id in ids do
 		local map = componentIndex[id]
 		if not map then
-			return EmptyQuery
+			return EMPTY_QUERY
 		end
 
 		if idr == nil or map.size < idr.size then
@@ -1407,14 +1400,13 @@ local function world_query(world: World, ...)
 	end
 
 	if length == 0 then
-		return EmptyQuery
+		return EMPTY_QUERY
 	end
 
 	local q = setmetatable({
 	    compatible_archetypes = compatible_archetypes,
-		length = length,
 		ids = ids,
-	}, Query)
+	}, Query) :: any
 
 	return q
 end
@@ -1436,13 +1428,17 @@ World.target = world_target
 World.parent = world_parent
 World.contains = world_contains
 
-if _G.__JECS_DEBUG == true then
+if _G.__JECS_DEBUG then
     -- taken from https://github.com/centau/ecr/blob/main/src/ecr.luau
     -- error but stack trace always starts at first callsite outside of this file
     local function throw(msg: string)
         local s = 1
         repeat s += 1 until debug.info(s, "s") ~= debug.info(1, "s")
-        error(msg, s)
+        if warn then
+            error(msg, s)
+        else
+            print(`[jecs] error: {msg}\n`)
+        end
     end
 
     local function ASSERT<T>(v: T, msg: string)
@@ -1452,21 +1448,45 @@ if _G.__JECS_DEBUG == true then
         throw(msg)
     end
 
+    local function get_name(world, id): string | number
+        local name: string | nil
+        if ECS_IS_PAIR(id) then
+            name = `({get_name(world, ECS_ENTITY_T_HI(id))}, {get_name(world, ECS_ENTITY_T_LO(id))})`
+        else
+            local _1 = world_get_one_inline(world, id, EcsName)
+            if _1 then
+                name = `${_1}`
+            end
+        end
+        if name then
+            return name
+        else
+            return `${id}`
+        end
+    end
+
+    local function ID_IS_TAG(world, id)
+        return not world_has_one_inline(world, ECS_ENTITY_T_HI(id), EcsComponent)
+    end
+
     World.query = function(world: World, ...)
         ASSERT((...), "Requires at least a single component")
         return world_query(world, ...)
     end
 
     World.set = function(world: World, entity: i53, id: i53, value: any): ()
-        local idr = world.componentIndex[id]
-        local flags = idr.flags
-        local id_is_tag = bit32.band(flags, ECS_ID_IS_TAG) ~= 0
-        if id_is_tag then
-            local name = world_get_one_inline(world, id, EcsName) or `${id}`
-            throw(`({name}) is a tag. Did you mean to use "world:add(entity, {name})"`)
-        elseif value == nil then
-            local name = world_get_one_inline(world, id, EcsName) or `${id}`
-            throw(`cannot set component ({name}) value to nil. If this was intentional, use "world:add(entity, {name})"`)
+        local is_tag = ID_IS_TAG(world, id)
+        if (is_tag and value == nil) then
+            local _1 = get_name(world, entity)
+            local _2 = get_name(world, id)
+            local why = "cannot set component value to nil"
+            throw(why)
+        elseif (value ~= nil and is_tag) then
+            local _1 = get_name(world, entity)
+            local _2 = get_name(world, id)
+            local why = `cannot set a component value because {_2} is a tag`
+            why ..= `\n[jecs] note: consider using "world:add({_1}, {_2})" instead`
+            throw(why)
         end
 
         world_set(world, entity, id, value)
@@ -1474,8 +1494,10 @@ if _G.__JECS_DEBUG == true then
 
     World.add = function(world: World, entity: i53, id: i53, value: nil)
         if value ~= nil then
-            local name = world_get_one_inline(world, id, EcsName) or `${id}`
-            throw(`You provided a value when none was expected. Did you mean to use "world:add(entity, {name})"`)
+            local _1 = get_name(world, entity)
+            local _2 = get_name(world, id)
+            throw("You provided a value when none was expected. "
+            ..`Did you mean to use "world:add({_1}, {_2})"`)
         end
 
         world_add(world, entity, id)
@@ -1483,19 +1505,34 @@ if _G.__JECS_DEBUG == true then
 
     World.get = function(world: World, entity: i53, ...)
         local length = select("#", ...)
-        ASSERT(length > 4, "world:get does not support more than 4 components")
+        ASSERT(length < 5, "world:get does not support more than 4 components")
+        local _1
         for i = 1, length do
             local id = select(i, ...)
-            local idr = world.componentIndex[id]
-            local flags = idr.flags
-            local id_is_tag = bit32.band(flags, ECS_ID_IS_TAG) ~= 0
+            local id_is_tag = not world_has(world, id, EcsComponent)
             if id_is_tag then
-                local name = world_get_one_inline(world, id, EcsName) or `${id}`
-                throw(`cannot get component ({name}) value because it is a tag. If this was intentional, use "world:has(entity, {name})"`)
+                local name = get_name(world, id)
+                if not _1 then
+                    _1 = get_name(world, entity)
+                end
+                throw(
+                    `cannot get (#{i}) component {name} value because it is a tag.`
+                    ..`\n[jecs] note: If this was intentional, use "world:has({_1}, {name}) instead"`)
             end
         end
 
         return world_get(world, entity, ...)
+    end
+
+    World.target = function(world, entity, relation, index)
+        if index == nil then
+            local _1 = get_name(world, entity)
+            local _2 = get_name(world, relation)
+
+            throw("We have changed the function call to require an index parameter,"
+                ..` please use world:target({_1}, {_2}, 0)`)
+        end
+        return world_target(world, entity, relation, index)
     end
 end
 
@@ -1521,13 +1558,27 @@ function World.new()
 		entity_index_new_id(self.entityIndex, i)
 	end
 
+	world_add(self, EcsName, EcsComponent)
 	world_add(self, EcsOnSet, EcsComponent)
 	world_add(self, EcsOnAdd, EcsComponent)
 	world_add(self, EcsOnRemove, EcsComponent)
-	world_add(self, EcsRest, EcsComponent)
-	world_add(self, EcsName, EcsComponent)
-	world_add(self, EcsChildOf, ECS_PAIR(EcsOnDeleteTarget, EcsDelete))
 	world_add(self, EcsWildcard, EcsComponent)
+	world_add(self, EcsRest, EcsComponent)
+
+    world_set(self, EcsOnAdd, EcsName, "jecs.OnAdd")
+	world_set(self, EcsOnRemove, EcsName, "jecs.OnRemove")
+	world_set(self, EcsOnSet, EcsName, "jecs.OnSet")
+	world_set(self, EcsWildcard, EcsName, "jecs.Wildcard")
+	world_set(self, EcsChildOf, EcsName, "jecs.ChildOf")
+	world_set(self, EcsComponent, EcsName, "jecs.Component")
+	world_set(self, EcsOnDelete, EcsName, "jecs.OnDelete")
+	world_set(self, EcsOnDeleteTarget, EcsName, "jecs.OnDeleteTarget")
+	world_set(self, EcsDelete, EcsName, "jecs.Delete")
+	world_set(self, EcsRemove, EcsName, "jecs.Remove")
+	world_set(self, EcsName, EcsName, "jecs.Name")
+	world_set(self, EcsRest, EcsRest, "jecs.Rest")
+
+	world_add(self, EcsChildOf, ECS_PAIR(EcsOnDeleteTarget, EcsDelete))
 
 	return self
 end
@@ -1660,7 +1711,6 @@ return {
 	OnDeleteTarget = EcsOnDeleteTarget :: Entity,
 	Delete = EcsDelete :: Entity,
 	Remove = EcsRemove :: Entity,
-	Tag = EcsTag :: Entity,
 	Name = EcsName :: Entity<string>,
 	Rest = EcsRest :: Entity,
 
