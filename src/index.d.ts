@@ -98,7 +98,7 @@ export class World {
 	 * @param relation The Relationship
 	 * @returns The Parent Entity if it exists
 	 */
-	target(entity: Entity, relation: Entity): Entity | undefined;
+	target(entity: Entity, relation: Entity, index: number): Entity | undefined;
 
 	/**
 	 * Clears an entity from the world.
