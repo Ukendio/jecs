@@ -69,9 +69,8 @@ local EcsOnDelete           = HI_COMPONENT_ID + 7
 local EcsOnDeleteTarget     = HI_COMPONENT_ID + 8
 local EcsDelete             = HI_COMPONENT_ID + 9
 local EcsRemove             = HI_COMPONENT_ID + 10
-local EcsTag                = HI_COMPONENT_ID + 11
-local EcsName               = HI_COMPONENT_ID + 12
-local EcsRest               = HI_COMPONENT_ID + 13
+local EcsName               = HI_COMPONENT_ID + 11
+local EcsRest               = HI_COMPONENT_ID + 12
 
 local ECS_PAIR_FLAG         = 0x8
 local ECS_ID_FLAGS_MASK     = 0x10
@@ -937,7 +936,7 @@ local function ARM(query, ...)
 end
 
 local EMPTY_LIST = {}
-local EmptyQuery = {
+local EMPTY_QUERY = {
 	__iter = function()
 		return NOOP
 	end,
@@ -954,75 +953,72 @@ local EmptyQuery = {
 	end,
 }
 
-setmetatable(EmptyQuery, EmptyQuery)
+setmetatable(EMPTY_QUERY, EMPTY_QUERY)
 
-local function columns_replace_values(row, columns, ...)
-	for i, column in columns do
-		column[row] = select(i, ...)
+local function query_init(query)
+    local world_query_iter_next = query.iter_next
+    if world_query_iter_next then
+        return world_query_iter_next
+    end
+    local compatible_archetypes = query.compatible_archetypes
+    local ids = query.ids
+    local A, B, C, D, E, F, G, H, I = unpack(ids)
+    local a, b, c, d, e, f, g, h
+    local lastArchetype = 1
+	local archetype = compatible_archetypes[1]
+	if not archetype then
+		return EMPTY_QUERY
 	end
-end
+	local columns = archetype.columns
+	local entities = archetype.entities
+	local i = #entities
 
-local function world_query(world: World, ...)
-	local compatible_archetypes = {}
-	local length = 0
-
-	local ids = { ... }
-	local A, B, C, D, E, F, G, H, I = ...
-	local a, b, c, d, e, f, g, h
-
-	local archetypes = world.archetypes
-
-	local idr: ArchetypeMap
-	local componentIndex = world.componentIndex
-
-	for _, id in ids do
-		local map = componentIndex[id]
-		if not map then
-			return EmptyQuery
-		end
-
-		if idr == nil or map.size < idr.size then
-			idr = map
-		end
+	local records = archetype.records
+	if not B then
+		a = columns[records[A].column]
+	elseif not C then
+		a = columns[records[A].column]
+		b = columns[records[B].column]
+	elseif not D then
+		a = columns[records[A].column]
+		b = columns[records[B].column]
+		c = columns[records[C].column]
+	elseif not E then
+		a = columns[records[A].column]
+		b = columns[records[B].column]
+		c = columns[records[C].column]
+		d = columns[records[D].column]
+	elseif not F then
+		a = columns[records[A].column]
+		b = columns[records[B].column]
+		c = columns[records[C].column]
+		d = columns[records[D].column]
+		e = columns[records[E].column]
+	elseif not G then
+		a = columns[records[A].column]
+		b = columns[records[B].column]
+		c = columns[records[C].column]
+		d = columns[records[D].column]
+		e = columns[records[E].column]
+		f = columns[records[F].column]
+	elseif not H then
+		a = columns[records[A].column]
+		b = columns[records[B].column]
+		c = columns[records[C].column]
+		d = columns[records[D].column]
+		e = columns[records[E].column]
+		f = columns[records[F].column]
+		g = columns[records[G].column]
+	elseif not I then
+		a = columns[records[A].column]
+		b = columns[records[B].column]
+		c = columns[records[C].column]
+		d = columns[records[D].column]
+		e = columns[records[E].column]
+		f = columns[records[F].column]
+		g = columns[records[G].column]
+		h = columns[records[H].column]
 	end
-
-	for archetype_id in idr.cache do
-		local compatibleArchetype = archetypes[archetype_id]
-		if #compatibleArchetype.entities == 0 then
-			continue
-		end
-		local records = compatibleArchetype.records
-
-		local skip = false
-
-		for i, id in ids do
-			local tr = records[id]
-			if not tr then
-				skip = true
-				break
-			end
-		end
-
-		if skip then
-			continue
-		end
-
-		length += 1
-		compatible_archetypes[length] = compatibleArchetype
-	end
-
-	if length == 0 then
-		return EmptyQuery
-	end
-
-	local lastArchetype = 1
-	local archetype
-	local columns
-	local entities
-	local i
-	local queryOutput
-
-	local world_query_iter_next
 
 	if not B then
 		function world_query_iter_next(): any
@@ -1135,6 +1131,7 @@ local function world_query(world: World, ...)
 			return entityId, a[row], b[row], c[row], d[row]
 		end
 	else
+	    local queryOutput = {}
 		function world_query_iter_next(): any
 			local entityId = entities[i]
 			while entityId == nil do
@@ -1208,221 +1205,210 @@ local function world_query(world: World, ...)
 		end
 	end
 
-	local init = false
-	local drain = false
+	query.iter_next = world_query_iter_next
+    return world_query_iter_next
+end
 
-	local function query_init(query)
-		if init and drain then
-			return true
-		end
+local function query_iter(query)
+    return query_init(query)
+end
 
-		init = true
-		lastArchetype = 1
-		archetype = compatible_archetypes[lastArchetype]
+local function query_drain(query)
+    local query_iter_next = query_init(query)
+    query.next = query_iter_next
+    return query
+end
 
-		if not archetype then
-			return false
-		end
+local function query_next(query)
+    error("Did you forget to call drain?")
+end
 
-		queryOutput = {}
-
-		entities = archetype.entities
-		i = #entities
-		columns = archetype.columns
-
+local function query_without(query, ...)
+    local compatible_archetypes = query.compatible_archetypes
+    local N = select("#", ...)
+	for i = #compatible_archetypes, 1, -1 do
+		local archetype = compatible_archetypes[i]
 		local records = archetype.records
-		if not B then
-			a = columns[records[A].column]
-		elseif not C then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-		elseif not D then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-		elseif not E then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-		elseif not F then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-			e = columns[records[E].column]
-		elseif not G then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-			e = columns[records[E].column]
-			f = columns[records[F].column]
-		elseif not H then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-			e = columns[records[E].column]
-			f = columns[records[F].column]
-			g = columns[records[G].column]
-		elseif not I then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-			e = columns[records[E].column]
-			f = columns[records[F].column]
-			g = columns[records[G].column]
-			h = columns[records[H].column]
-		end
-		return true
-	end
+		local shouldRemove = false
 
-	local function world_query_without(query, ...)
-		local N = select("#", ...)
-		for i = #compatible_archetypes, 1, -1 do
-			local archetype = compatible_archetypes[i]
-			local records = archetype.records
-			local shouldRemove = false
-
-			for j = 1, N do
-				local id = select(j, ...)
-				if records[id] then
-					shouldRemove = true
-					break
-				end
-			end
-
-			if shouldRemove then
-				local last = #compatible_archetypes
-				if last ~= i then
-					compatible_archetypes[i] = compatible_archetypes[last]
-				end
-				compatible_archetypes[last] = nil
-				length -= 1
+		for j = 1, N do
+			local id = select(j, ...)
+			if records[id] then
+				shouldRemove = true
+				break
 			end
 		end
 
-		if length == 0 then
-			return EmptyQuery
+		if shouldRemove then
+			local last = #compatible_archetypes
+			if last ~= i then
+				compatible_archetypes[i] = compatible_archetypes[last]
+			end
+			compatible_archetypes[last] = nil
 		end
-
-		return query
 	end
 
-	local function world_query_replace(query, fn: (...any) -> ...any)
-		query_init(query)
+	if #compatible_archetypes == 0 then
+		return EMPTY_QUERY
+	end
 
-		for i, archetype in compatible_archetypes do
-			local columns = archetype.columns
-			local records = archetype.records
-			for row in archetype.entities do
-				if not B then
-					local va = columns[records[A].column]
-					local pa = fn(va[row])
+	return query
+end
 
-					va[row] = pa
-				elseif not C then
-					local va = columns[records[A].column]
-					local vb = columns[records[B].column]
+local function query_with(query, ...)
+    local compatible_archetypes = query.compatible_archetypes
+	local N = select("#", ...)
+	for i = #compatible_archetypes, 1, -1 do
+		local archetype = compatible_archetypes[i]
+		local records = archetype.records
+		local shouldRemove = false
 
-					va[row], vb[row] = fn(va[row], vb[row])
-				elseif not D then
-					local va = columns[records[A].column]
-					local vb = columns[records[B].column]
-					local vc = columns[records[C].column]
+		for j = 1, N do
+			local id = select(j, ...)
+			if not records[id] then
+				shouldRemove = true
+				break
+			end
+		end
 
-					va[row], vb[row], vc[row] = fn(va[row], vb[row], vc[row])
-				elseif not E then
-					local va = columns[records[A].column]
-					local vb = columns[records[B].column]
-					local vc = columns[records[C].column]
-					local vd = columns[records[D].column]
+		if shouldRemove then
+			local last = #compatible_archetypes
+			if last ~= i then
+				compatible_archetypes[i] = compatible_archetypes[last]
+			end
+			compatible_archetypes[last] = nil
+		end
+	end
+	if #compatible_archetypes == 0 then
+		return EMPTY_QUERY
+	end
+	return query
+end
 
-					va[row], vb[row], vc[row], vd[row] = fn(va[row], vb[row], vc[row], vd[row])
-				else
-					for j, id in ids do
-						local tr = records[id]
-						queryOutput[j] = columns[tr.column][row]
-					end
-					columns_replace_values(row, columns, fn(unpack(queryOutput)))
+local function columns_replace_values(row, columns, ...)
+	for i, column in columns do
+		column[row] = select(i, ...)
+	end
+end
+
+local function query_replace(query, fn: (...any) -> ...any)
+    local compatible_archetypes = query.compatible_archetypes
+    local ids = query.ids
+    local A, B, C, D, E = unpack(ids, 1, 5)
+    local queryOutput = {}
+	for i, archetype in compatible_archetypes do
+		local columns = archetype.columns
+		local records = archetype.records
+		for row in archetype.entities do
+			if not B then
+				local va = columns[records[A].column]
+				local pa = fn(va[row])
+
+				va[row] = pa
+			elseif not C then
+				local va = columns[records[A].column]
+				local vb = columns[records[B].column]
+
+				va[row], vb[row] = fn(va[row], vb[row])
+			elseif not D then
+				local va = columns[records[A].column]
+				local vb = columns[records[B].column]
+				local vc = columns[records[C].column]
+
+				va[row], vb[row], vc[row] = fn(va[row], vb[row], vc[row])
+			elseif not E then
+				local va = columns[records[A].column]
+				local vb = columns[records[B].column]
+				local vc = columns[records[C].column]
+				local vd = columns[records[D].column]
+
+				va[row], vb[row], vc[row], vd[row] = fn(va[row], vb[row], vc[row], vd[row])
+			else
+				for j, id in ids do
+					local tr = records[id]
+					queryOutput[j] = columns[tr.column][row]
 				end
+				columns_replace_values(row, columns, fn(unpack(queryOutput)))
 			end
 		end
 	end
+end
 
-	local function world_query_with(query, ...)
-		local N = select("#", ...)
-		for i = #compatible_archetypes, 1, -1 do
-			local archetype = compatible_archetypes[i]
-			local records = archetype.records
-			local shouldRemove = false
+-- Meant for directly iterating over archetypes to minimize
+-- function call overhead. Should not be used unless iterating over
+-- hundreds of thousands of entities in bulk.
+local function query_archetypes(query)
+	return query.compatible_archetypes
+end
 
-			for j = 1, N do
-				local id = select(j, ...)
-				if not records[id] then
-					shouldRemove = true
-					break
-				end
+local Query = {}
+Query.__index = Query
+Query.__iter = query_iter
+Query.iter = query_iter
+Query.without = query_without
+Query.with = query_with
+Query.archetypes = query_archetypes
+Query.drain = query_drain
+Query.next = query_next
+Query.replace = query_replace
+
+local function world_query(world: World, ...)
+	local compatible_archetypes = {}
+	local length = 0
+
+	local ids = { ... }
+
+	local archetypes = world.archetypes
+
+	local idr: ArchetypeMap
+	local componentIndex = world.componentIndex
+
+	for _, id in ids do
+		local map = componentIndex[id]
+		if not map then
+			return EMPTY_QUERY
+		end
+
+		if idr == nil or map.size < idr.size then
+			idr = map
+		end
+	end
+
+	for archetype_id in idr.cache do
+		local compatibleArchetype = archetypes[archetype_id]
+		if #compatibleArchetype.entities == 0 then
+			continue
+		end
+		local records = compatibleArchetype.records
+
+		local skip = false
+
+		for i, id in ids do
+			local tr = records[id]
+			if not tr then
+				skip = true
+				break
 			end
-
-			if shouldRemove then
-				local last = #compatible_archetypes
-				if last ~= i then
-					compatible_archetypes[i] = compatible_archetypes[last]
-				end
-				compatible_archetypes[last] = nil
-				length -= 1
-			end
 		end
-		if length == 0 then
-			return EmptyQuery
+
+		if skip then
+			continue
 		end
-		return query
+
+		length += 1
+		compatible_archetypes[length] = compatibleArchetype
 	end
 
-	-- Meant for directly iterating over archetypes to minimize
-	-- function call overhead. Should not be used unless iterating over
-	-- hundreds of thousands of entities in bulk.
-	local function world_query_archetypes()
-		return compatible_archetypes
+	if length == 0 then
+		return EMPTY_QUERY
 	end
 
-	local function world_query_drain(query)
-		drain = true
-		if query_init(query) then
-			return query
-		end
-		return EmptyQuery
-	end
+	local q = setmetatable({
+	    compatible_archetypes = compatible_archetypes,
+		ids = ids,
+	}, Query) :: any
 
-	local function world_query_iter(query)
-		query_init(query)
-		return world_query_iter_next
-	end
-
-	local function world_query_next(world)
-		if not drain then
-			error("Did you forget to call query:drain()?")
-		end
-		return world_query_iter_next(world)
-	end
-
-	local it = {
-		__iter = world_query_iter,
-		iter = world_query_iter,
-		drain = world_query_drain,
-		next = world_query_next,
-		with = world_query_with,
-		without = world_query_without,
-		replace = world_query_replace,
-		archetypes = world_query_archetypes,
-	} :: any
-
-	setmetatable(it, it)
-
-	return it
+	return q
 end
 
 local World = {}
@@ -1442,13 +1428,17 @@ World.target = world_target
 World.parent = world_parent
 World.contains = world_contains
 
-if _G.__JECS_DEBUG == true then
+if _G.__JECS_DEBUG then
     -- taken from https://github.com/centau/ecr/blob/main/src/ecr.luau
     -- error but stack trace always starts at first callsite outside of this file
     local function throw(msg: string)
         local s = 1
         repeat s += 1 until debug.info(s, "s") ~= debug.info(1, "s")
-        error(msg, s)
+        if warn then
+            error(msg, s)
+        else
+            print(`[jecs] error: {msg}\n`)
+        end
     end
 
     local function ASSERT<T>(v: T, msg: string)
@@ -1458,21 +1448,45 @@ if _G.__JECS_DEBUG == true then
         throw(msg)
     end
 
+    local function get_name(world, id): string | number
+        local name: string | nil
+        if ECS_IS_PAIR(id) then
+            name = `({get_name(world, ECS_ENTITY_T_HI(id))}, {get_name(world, ECS_ENTITY_T_LO(id))})`
+        else
+            local _1 = world_get_one_inline(world, id, EcsName)
+            if _1 then
+                name = `${_1}`
+            end
+        end
+        if name then
+            return name
+        else
+            return `${id}`
+        end
+    end
+
+    local function ID_IS_TAG(world, id)
+        return not world_has_one_inline(world, ECS_ENTITY_T_HI(id), EcsComponent)
+    end
+
     World.query = function(world: World, ...)
         ASSERT((...), "Requires at least a single component")
         return world_query(world, ...)
     end
 
     World.set = function(world: World, entity: i53, id: i53, value: any): ()
-        local idr = world.componentIndex[id]
-        local flags = idr.flags
-        local id_is_tag = bit32.band(flags, ECS_ID_IS_TAG) ~= 0
-        if id_is_tag then
-            local name = world_get_one_inline(world, id, EcsName) or `${id}`
-            throw(`({name}) is a tag. Did you mean to use "world:add(entity, {name})"`)
-        elseif value == nil then
-            local name = world_get_one_inline(world, id, EcsName) or `${id}`
-            throw(`cannot set component ({name}) value to nil. If this was intentional, use "world:add(entity, {name})"`)
+        local is_tag = ID_IS_TAG(world, id)
+        if (is_tag and value == nil) then
+            local _1 = get_name(world, entity)
+            local _2 = get_name(world, id)
+            local why = "cannot set component value to nil"
+            throw(why)
+        elseif (value ~= nil and is_tag) then
+            local _1 = get_name(world, entity)
+            local _2 = get_name(world, id)
+            local why = `cannot set a component value because {_2} is a tag`
+            why ..= `\n[jecs] note: consider using "world:add({_1}, {_2})" instead`
+            throw(why)
         end
 
         world_set(world, entity, id, value)
@@ -1480,8 +1494,10 @@ if _G.__JECS_DEBUG == true then
 
     World.add = function(world: World, entity: i53, id: i53, value: nil)
         if value ~= nil then
-            local name = world_get_one_inline(world, id, EcsName) or `${id}`
-            throw(`You provided a value when none was expected. Did you mean to use "world:add(entity, {name})"`)
+            local _1 = get_name(world, entity)
+            local _2 = get_name(world, id)
+            throw("You provided a value when none was expected. "
+            ..`Did you mean to use "world:add({_1}, {_2})"`)
         end
 
         world_add(world, entity, id)
@@ -1489,19 +1505,34 @@ if _G.__JECS_DEBUG == true then
 
     World.get = function(world: World, entity: i53, ...)
         local length = select("#", ...)
-        ASSERT(length > 4, "world:get does not support more than 4 components")
+        ASSERT(length < 5, "world:get does not support more than 4 components")
+        local _1
         for i = 1, length do
             local id = select(i, ...)
-            local idr = world.componentIndex[id]
-            local flags = idr.flags
-            local id_is_tag = bit32.band(flags, ECS_ID_IS_TAG) ~= 0
+            local id_is_tag = not world_has(world, id, EcsComponent)
             if id_is_tag then
-                local name = world_get_one_inline(world, id, EcsName) or `${id}`
-                throw(`cannot get component ({name}) value because it is a tag. If this was intentional, use "world:has(entity, {name})"`)
+                local name = get_name(world, id)
+                if not _1 then
+                    _1 = get_name(world, entity)
+                end
+                throw(
+                    `cannot get (#{i}) component {name} value because it is a tag.`
+                    ..`\n[jecs] note: If this was intentional, use "world:has({_1}, {name}) instead"`)
             end
         end
 
         return world_get(world, entity, ...)
+    end
+
+    World.target = function(world, entity, relation, index)
+        if index == nil then
+            local _1 = get_name(world, entity)
+            local _2 = get_name(world, relation)
+
+            throw("We have changed the function call to require an index parameter,"
+                ..` please use world:target({_1}, {_2}, 0)`)
+        end
+        return world_target(world, entity, relation, index)
     end
 end
 
@@ -1527,11 +1558,26 @@ function World.new()
 		entity_index_new_id(self.entityIndex, i)
 	end
 
+	world_add(self, EcsName, EcsComponent)
 	world_add(self, EcsOnSet, EcsComponent)
 	world_add(self, EcsOnAdd, EcsComponent)
 	world_add(self, EcsOnRemove, EcsComponent)
+	world_add(self, EcsWildcard, EcsComponent)
 	world_add(self, EcsRest, EcsComponent)
-	world_add(self, EcsName, EcsComponent)
+
+    world_set(self, EcsOnAdd, EcsName, "jecs.OnAdd")
+	world_set(self, EcsOnRemove, EcsName, "jecs.OnRemove")
+	world_set(self, EcsOnSet, EcsName, "jecs.OnSet")
+	world_set(self, EcsWildcard, EcsName, "jecs.Wildcard")
+	world_set(self, EcsChildOf, EcsName, "jecs.ChildOf")
+	world_set(self, EcsComponent, EcsName, "jecs.Component")
+	world_set(self, EcsOnDelete, EcsName, "jecs.OnDelete")
+	world_set(self, EcsOnDeleteTarget, EcsName, "jecs.OnDeleteTarget")
+	world_set(self, EcsDelete, EcsName, "jecs.Delete")
+	world_set(self, EcsRemove, EcsName, "jecs.Remove")
+	world_set(self, EcsName, EcsName, "jecs.Name")
+	world_set(self, EcsRest, EcsRest, "jecs.Rest")
+
 	world_add(self, EcsChildOf, ECS_PAIR(EcsOnDeleteTarget, EcsDelete))
 
 	return self
@@ -1665,11 +1711,10 @@ return {
 	OnDeleteTarget = EcsOnDeleteTarget :: Entity,
 	Delete = EcsDelete :: Entity,
 	Remove = EcsRemove :: Entity,
-	Tag = EcsTag :: Entity,
 	Name = EcsName :: Entity<string>,
 	Rest = EcsRest :: Entity,
 
-	pair = (ECS_PAIR :: any) :: <R, T>(pred: Entity, obj: Entity) -> number,
+	pair = ECS_PAIR,
 
 	-- Inwards facing API for testing
 	ECS_ID = ECS_ENTITY_T_LO,
