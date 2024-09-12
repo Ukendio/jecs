@@ -1451,7 +1451,7 @@ if _G.__JECS_DEBUG then
     local function get_name(world, id): string | number
         local name: string | nil
         if ECS_IS_PAIR(id) then
-            name = `({get_name(world, ECS_ENTITY_T_HI(id))}, {get_name(world, ECS_ENTITY_T_LO(id))})`
+            name = `pair({get_name(world, ECS_ENTITY_T_HI(id))}, {get_name(world, ECS_ENTITY_T_LO(id))})`
         else
             local _1 = world_get_one_inline(world, id, EcsName)
             if _1 then
@@ -1477,16 +1477,20 @@ if _G.__JECS_DEBUG then
     World.set = function(world: World, entity: i53, id: i53, value: any): ()
         local is_tag = ID_IS_TAG(world, id)
         if (is_tag and value == nil) then
+            world_add(world, entity, id)
             local _1 = get_name(world, entity)
             local _2 = get_name(world, id)
             local why = "cannot set component value to nil"
             throw(why)
+            return
         elseif (value ~= nil and is_tag) then
+            world_add(world, entity, id)
             local _1 = get_name(world, entity)
             local _2 = get_name(world, id)
             local why = `cannot set a component value because {_2} is a tag`
             why ..= `\n[jecs] note: consider using "world:add({_1}, {_2})" instead`
             throw(why)
+            return
         end
 
         world_set(world, entity, id, value)
@@ -1498,6 +1502,7 @@ if _G.__JECS_DEBUG then
             local _2 = get_name(world, id)
             throw("You provided a value when none was expected. "
             ..`Did you mean to use "world:add({_1}, {_2})"`)
+            return
         end
 
         world_add(world, entity, id)
