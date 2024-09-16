@@ -44,7 +44,7 @@ local Position = world:component()
 local Velocity = world:component()
 
 for id, position, velocity in world:query(Position, Velocity) do
-    world:set(id, Position, position += velocity)
+    world:set(id, Position, position + velocity)
     world:set(id, Velocity, velocity * 0.9)
 end
 ```
@@ -57,7 +57,7 @@ const Position = world.component()
 const Velocity = world.component()
 
 for (const [id, position, velocity] of world.query(Position, Velocity)) {
-    world.set(id, Position, position.add(velocity)
+    world.set(id, Position, position.add(velocity))
     world.set(id, Velocity, velocity.mul(0.9))
 }
 ```
