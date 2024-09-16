@@ -239,6 +239,24 @@ TEST("world:add()", function()
 end)
 
 TEST("world:query()", function()
+    do CASE "multiple iter"
+        local world = jecs.World.new()
+        local A = world:component()
+        local B = world:component()
+        local e = world:entity()
+        world:add(e, A, "a")
+        world:add(e, B)
+        local q = world:query(A, B)
+        local counter = 0
+        for x in q:iter() do
+            counter += 1
+        end
+        for x in q:iter() do
+            counter += 1
+        end
+        print(counter)
+        CHECK(counter == 2)
+    end
     do CASE "tag"
         local world = jecs.World.new()
         local A = world:entity()
@@ -545,8 +563,8 @@ TEST("world:query()", function()
 
 	do CASE("should error when setting invalid pair")
 		local world = jecs.World.new()
-		local Eats = world:entity()
-		local Apples = world:entity()
+		local Eats = world:component()
+		local Apples = world:component()
 		local bob = world:entity()
 
 		world:delete(Apples)

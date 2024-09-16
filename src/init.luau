@@ -956,14 +956,16 @@ local EMPTY_QUERY = {
 setmetatable(EMPTY_QUERY, EMPTY_QUERY)
 
 local function query_init(query)
-    local world_query_iter_next = query.iter_next
-    if world_query_iter_next then
-        return world_query_iter_next
+    local world_query_iter_next
+
+    if query.should_drain then
+        world_query_iter_next = query.iter_next
+        if world_query_iter_next then
+            return world_query_iter_next
+        end
     end
+
     local compatible_archetypes = query.compatible_archetypes
-    local ids = query.ids
-    local A, B, C, D, E, F, G, H, I = unpack(ids)
-    local a, b, c, d, e, f, g, h
     local lastArchetype = 1
 	local archetype = compatible_archetypes[1]
 	if not archetype then
@@ -972,8 +974,12 @@ local function query_init(query)
 	local columns = archetype.columns
 	local entities = archetype.entities
 	local i = #entities
-
 	local records = archetype.records
+
+    local ids = query.ids
+    local A, B, C, D, E, F, G, H, I = unpack(ids)
+    local a, b, c, d, e, f, g, h
+
 	if not B then
 		a = columns[records[A].column]
 	elseif not C then
@@ -1216,6 +1222,7 @@ end
 local function query_drain(query)
     local query_iter_next = query_init(query)
     query.next = query_iter_next
+    query.should_drain = true
     return query
 end
 
