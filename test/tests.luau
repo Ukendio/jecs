@@ -1284,16 +1284,37 @@ TEST("Hooks", function()
     end
 
     do CASE "OnRemove"
-        local world = jecs.World.new()
-        local A = world:component()
-        local e1 = world:entity()
-        world:add(e1, A)
-        world:set(A, jecs.OnRemove, function(entity)
-            CHECK(e1 == entity)
-            CHECK(world:has(e1, A))
-        end)
-        world:remove(e1, A)
-        CHECK(not world:has(e1, A))
+        do
+            -- basic
+            local world = jecs.World.new()
+            local A = world:component()
+            local e1 = world:entity()
+            world:add(e1, A)
+            world:set(A, jecs.OnRemove, function(entity)
+                CHECK(e1 == entity)
+                CHECK(not world:has(e1, A))
+            end)
+            world:remove(e1, A)
+            CHECK(not world:has(e1, A))
+        end
+        do
+            -- [BUG] https://github.com/Ukendio/jecs/issues/118
+            local world = world_new()
+            local A = world:component()
+            local B = world:component()
+            local e = world:entity()
+
+            world:set(A, jecs.OnRemove, function(entity)
+                world:set(entity, B, true)
+                CHECK(not world:get(entity, A))
+                CHECK(world:get(entity, B))
+            end)
+
+            world:set(e, A, true)
+            world:remove(e, A)
+            CHECK(not world:get(e, A))
+            CHECK(world:get(e, B))
+        end
     end
 
     do CASE "the filip incident"

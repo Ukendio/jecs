@@ -152,10 +152,10 @@ do TITLE "target"
 			world:set(ent, pair(A, B))
 			world:set(ent, pair(A, C))
 			world:set(ent, pair(A, D))
-		end	
+		end
 
 		for i = 1, START(N) do
-			world:target(entities[i], A)
+			world:target(entities[i], A, 0)
 		end
 	end)
 
@@ -170,7 +170,10 @@ do TITLE(`query {N} entities`)
 	local function view_bench(n: number)
 		BENCH(`{n} entities per archetype`, function()
 			local world = jecs.World.new()
-			local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
+			local A = world:component()
+			local B = world:component()
+			local C = world:component()
+			local D = world:component()
 
 			for i = 1, N, n do
 				local ct = world:entity()
@@ -184,15 +187,48 @@ do TITLE(`query {N} entities`)
 				end
 			end
 
+
 			START()
 			for id in world:query(A, B, C, D) do
 			end
+		end)
 
+		BENCH(`inlined query`, function()
+		    local world = jecs.World.new()
+			local A = world:component()
+			local B = world:component()
+			local C = world:component()
+			local D = world:component()
+
+			for i = 1, N, n do
+				local ct = world:entity()
+				for j = 1, n do
+					local id = world:entity()
+					world:set(id, A, true)
+					world:set(id, B, true)
+					world:set(id, C, true)
+					world:set(id, D, true)
+					world:set(id, ct, true)
+				end
+			end
+
+
+			START()
+			for _, archetype in world:query(A, B, C, D):archetypes() do
+			    local columns, records = archetype.columns, archetype.records
+				local a = columns[records[A].column]
+				local b = columns[records[B].column]
+				local c = columns[records[C].column]
+				local d = columns[records[D].column]
+			    for row in archetype.entities do
+					local _1, _2, _3, _4 = a[row], b[row], c[row], d[row]
+				end
+			end
 		end)
 	end
 
 	for i = 13, 0, -1 do
 		view_bench(2^i)
-	end	
+	end
 
 end
