@@ -728,8 +728,13 @@ local function world_remove(world: World, entity: i53, id: i53)
 	local to = archetype_traverse_remove(world, id, from)
 
 	if from and not (from == to) then
-		invoke_hook(world, EcsOnRemove, id, entity)
 		entity_move(entity_index, entity, record, to)
+		local idr = world.componentIndex[id]
+		local flags = idr.flags
+		local has_on_remove = bit32.band(flags, ECS_ID_HAS_ON_REMOVE) ~= 0
+		if has_on_remove then
+    		invoke_hook(world, EcsOnRemove, id, entity)
+		end
 	end
 end
 
@@ -955,7 +960,7 @@ local EMPTY_QUERY = {
 
 setmetatable(EMPTY_QUERY, EMPTY_QUERY)
 
-local function query_init(query)
+local function query_iter(query)
     local world_query_iter_next
 
     if query.should_drain then
@@ -1215,12 +1220,8 @@ local function query_init(query)
     return world_query_iter_next
 end
 
-local function query_iter(query)
-    return query_init(query)
-end
-
 local function query_drain(query)
-    local query_iter_next = query_init(query)
+    local query_iter_next = query_iter(query)
     query.next = query_iter_next
     query.should_drain = true
     return query
