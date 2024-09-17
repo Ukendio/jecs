@@ -12,7 +12,7 @@ local ecs_pair_first = jecs.pair_first
 local ecs_pair_second = jecs.pair_second
 local world_new = jecs.World.new
 
-local TEST, CASE, CHECK, FINISH, SKIP = testkit.test()
+local TEST, CASE, CHECK, FINISH, SKIP, FOCUS = testkit.test()
 local function CHECK_NO_ERR<T...>(s: string, fn: (T...) -> (), ...: T...)
 	local ok, err: string? = pcall(fn, ...)
 
