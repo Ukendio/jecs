@@ -21,7 +21,8 @@ do TITLE "create"
 		end
 	end)
 
-	local A, B = world:entity(), world:entity()
+	local A = world:component()
+    local B = world:component()
 
 	BENCH("pair", function()
 		for i = 1, START(N) do
@@ -100,8 +101,10 @@ end
 do TITLE "get"
 
 	local world = jecs.World.new()
-	local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
-
+	local A = world:component()
+	local B = world:component()
+	local C = world:component()
+	local D = world:component()
 	local entities = table.create(N)
 
 	for i = 1, N do
@@ -141,7 +144,10 @@ do TITLE "target"
 
 	BENCH("1st target", function()
 		local world = jecs.World.new()
-		local A, B, C, D = world:entity(), world:entity(), world:entity(), world:entity()
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		local D = world:component()
 		local entities = table.create(N)
 
 		for i = 1, N do
@@ -170,6 +176,7 @@ do TITLE(`query {N} entities`)
 	local function view_bench(n: number)
 		BENCH(`{n} entities per archetype`, function()
 			local world = jecs.World.new()
+
 			local A = world:component()
 			local B = world:component()
 			local C = world:component()
