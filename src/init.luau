@@ -11,14 +11,27 @@ type ArchetypeId = number
 
 type Column = { any }
 
-type ArchetypeEdge = {
-	add: Archetype,
-	remove: Archetype,
+type Map<K, V> = {[K]: V}
+
+type GraphEdge = {
+    from: Archetype,
+    to: Archetype?,
+    prev: GraphEdge?,
+    next: GraphEdge?,
+    parent: GraphNode?,
+    id: number
+}
+
+type GraphNode = {
+    add: Map<i53, GraphEdge>,
+	remove: Map<i53, GraphEdge>,
+	add_ref: GraphEdge,
+	remove_ref: GraphEdge
 }
 
 export type Archetype = {
 	id: number,
-	edges: { [i53]: ArchetypeEdge },
+	node: GraphNode,
 	types: Ty,
 	type: string | number,
 	entities: { number },
@@ -28,27 +41,26 @@ export type Archetype = {
 type Record = {
 	archetype: Archetype,
 	row: number,
-	dense: i24,
-	componentRecord: ArchetypeMap,
+	dense: i24
 }
 
-type EntityIndex = { dense: { [i24]: i53 }, sparse: { [i53]: Record } }
+type EntityIndex = {
+    dense: Map<i24, i53>,
+    sparse: Map<i53, Record>
+}
 
 type ArchetypeRecord = {
 	count: number,
 	column: number,
 }
 
-type ArchetypeMap = {
+type IdRecord = {
 	cache: { ArchetypeRecord },
 	flags: number,
-	first: ArchetypeMap,
-	second: ArchetypeMap,
-	parent: ArchetypeMap,
 	size: number,
 }
 
-type ComponentIndex = { [i24]: ArchetypeMap }
+type ComponentIndex = Map<i53, IdRecord>
 
 type Archetypes = { [ArchetypeId]: Archetype }
 
@@ -420,7 +432,7 @@ local function ECS_ID_IS_WILDCARD(e: i53): boolean
 	return first == EcsWildcard or second == EcsWildcard
 end
 
-local function id_record_ensure(world: World, id: number): ArchetypeMap
+local function id_record_ensure(world: World, id: number): IdRecord
 	local componentIndex = world.componentIndex
 	local idr = componentIndex[id]
 
@@ -453,14 +465,20 @@ local function id_record_ensure(world: World, id: number): ArchetypeMap
 			size = 0,
 			cache = {},
 			flags = flags,
-		} :: ArchetypeMap
+		} :: IdRecord
 		componentIndex[id] = idr
 	end
 
 	return idr
 end
 
-local function archetype_append_to_records(idr: ArchetypeMap, archetype_id, records, id, index)
+local function archetype_append_to_records(
+    idr: IdRecord,
+    archetype_id: number,
+    records: Map<i53, ArchetypeRecord>,
+    id: number,
+    index: number
+)
     local tr = idr.cache[archetype_id]
     if not tr then
         tr = { column = index, count = 1}
@@ -472,7 +490,7 @@ local function archetype_append_to_records(idr: ArchetypeMap, archetype_id, reco
     end
 end
 
-local function archetype_create(world: World, types: { i24 }, prev: Archetype?): Archetype
+local function archetype_create(world: World, types: { i24 }, prev: i53?): Archetype
 	local ty = hash(types)
 
 	local archetype_id = (world.nextArchetypeId :: number) + 1
@@ -507,7 +525,7 @@ local function archetype_create(world: World, types: { i24 }, prev: Archetype?):
 
 	local archetype: Archetype = {
 		columns = columns,
-		edges = {},
+		node = { add = {}, remove = {} },
 		entities = {},
 		id = archetype_id,
 		records = records,
@@ -531,7 +549,7 @@ local function world_parent(world: World, entity: i53)
 	return world_target(world, entity, EcsChildOf, 0)
 end
 
-local function archetype_ensure(world: World, types, prev): Archetype
+local function archetype_ensure(world: World, types): Archetype
 	if #types < 1 then
 		return world.ROOT_ARCHETYPE
 	end
@@ -542,7 +560,7 @@ local function archetype_ensure(world: World, types, prev): Archetype
 		return archetype
 	end
 
-	return archetype_create(world, types, prev)
+	return archetype_create(world, types)
 end
 
 local function find_insert(types: { i53 }, toAdd: i53): number
@@ -572,32 +590,70 @@ local function find_archetype_with(world: World, node: Archetype, id: i53): Arch
 	end
 	table.insert(dst, at, id)
 
-	return archetype_ensure(world, dst, node)
+	return archetype_ensure(world, dst)
 end
 
-local function edge_ensure(archetype: Archetype, id: i53): ArchetypeEdge
-	local edges = archetype.edges
-	local edge = edges[id]
+local function edge_ensure(archetype: Archetype, edges, id: i53): GraphEdge
+	local node = archetype.node
+	local edge = node[id]
 	if not edge then
 		edge = {} :: any
 		edges[id] = edge
 	end
 	return edge
 end
+local function archetype_init_edge(archetype: Archetype,
+    edge: GraphEdge, id: i53, to: Archetype)
+    edge.from = archetype
+    edge.to = archetype
+    edge.id = id
+end
 
-local function archetype_traverse_add(world: World, id: i53, from: Archetype): Archetype
-	from = from or world.ROOT_ARCHETYPE
+local function archetype_ensure_edge(world, edges, id): GraphEdge
+    local edge = edges[id]
+    if not edge then
+        edge = ({
+            from = nil :: any,
+            to = nil :: any,
+            id = id,
+            prev = nil,
+            next = nil,
+            parent = nil
+        }) :: GraphEdge
+        edges[id] = edge
+    end
 
-	local edge = edge_ensure(from, id)
-	local add = edge.add
-	if not add then
-		-- Save an edge using the component ID to the archetype to allow
-		-- faster traversals to adjacent archetypes.
-		add = find_archetype_with(world, from, id)
-		edge.add = add :: never
-	end
+    return edge
+end
 
-	return add
+local function init_edge_for_add(world, archetype, edge, id, to)
+    archetype_init_edge(archetype, edge, id, to)
+    archetype_ensure_edge(world, archetype.node.add, id)
+end
+
+local function create_edge_for_add(world: World, node: Archetype,
+    edge: GraphEdge, id: i53): Archetype
+
+    local to = find_archetype_with(world, node, id)
+    init_edge_for_add(world, node, edge, id, to)
+    return to
+end
+
+
+local function archetype_traverse_add(world: World, id: i53,
+    from: Archetype): Archetype
+
+    from = from or world.ROOT_ARCHETYPE
+
+    local edge = archetype_ensure_edge(
+        world, from.node.add, id)
+
+    local to = edge.to
+    if not to then
+        to = create_edge_for_add(world, from, edge, id)
+    end
+
+    return to :: Archetype
 end
 
 local function invoke_hook(world: World, hook_id: number, id: i53, entity: i53, data: any?)
@@ -701,9 +757,9 @@ local function world_component(world: World): i53
 end
 
 local function archetype_traverse_remove(world: World, id: i53, from: Archetype): Archetype
-	local edge = edge_ensure(from, id)
+	local edge = from.node.remove
 
-	local remove = edge.remove
+	local remove = edge[id]
 	if not remove then
 		local to = table.clone(from.types) :: { i53 }
 		local at = table.find(to, id)
@@ -711,8 +767,8 @@ local function archetype_traverse_remove(world: World, id: i53, from: Archetype)
 			return from
 		end
 		table.remove(to, at)
-		remove = archetype_ensure(world, to, from)
-		edge.remove = remove :: any
+		remove = archetype_ensure(world, to)
+		edge[id] = remove :: any
 	end
 
 	return remove
@@ -777,8 +833,27 @@ do
             end
     	end
     end
+    local function archetype_disconnect_edge(edges: GraphNode,
+        id: i53, edge: GraphEdge)
+
+        local edge_next = edge.parent
+        edge.node.add[id] = nil
+        edge.node.remove[id] = nil
+        edges[id] = nil
+    end
+    local function archetype_clear_edges(archetype: Archetype)
+        local node = archetype.node
+        local add = node.add
+        local remove = node.remove
+        for key, ptr in add do
+            archetype_disconnect_edge(node, key, ptr)
+        end
+        for key, ptr in remove do
+            archetype_disconnect_edge(node, key, ptr)
+        end
+    end
     local function archetype_delete(world: World,
-        archetype: Archetype, row: number)
+        archetype: Archetype, row: number, destruct: boolean?)
 
     	local entityIndex = world.entityIndex
     	local columns = archetype.columns
@@ -812,6 +887,18 @@ do
     	end
 
     	local component_index = world.componentIndex
+        if #entities == 0 then
+            archetype_clear_edges(archetype)
+            local archetype_id = archetype.id
+            world.archetypes[archetype_id] = nil
+            world.archetypeIndex[archetype.type] = nil
+            local records = archetype.records
+            for id in records do
+                component_index[id].cache[archetype_id] = nil
+                records[id] = nil
+            end
+        end
+
     	local archetypes = world.archetypes
 
     	local idr = component_index[delete]
@@ -828,7 +915,7 @@ do
     		if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
     			for _, child in children do
     				-- Cascade deletion to children
-    				world_delete(world, child)
+    				world_delete(world, child, destruct)
     			end
     		else
     			for _, child in children do
@@ -890,7 +977,7 @@ do
     					if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
     						for _, child in children do
     							-- Cascade deletions of it has Delete as component trait
-    							world_delete(world, child)
+    							world_delete(world, child, destruct)
     						end
     					else
     						local object = ECS_ENTITY_T_LO(id)
@@ -907,7 +994,7 @@ do
     	end
     end
 
-    function world_delete(world: World, entity: i53)
+    function world_delete(world: World, entity: i53, destruct: boolean)
     	local entityIndex = world.entityIndex
 
     	local record = entityIndex.sparse[entity]
@@ -921,7 +1008,7 @@ do
     	if archetype then
     		-- In the future should have a destruct mode for
     		-- deleting archetypes themselves. Maybe requires recycling
-    		archetype_delete(world, archetype, row)
+    		archetype_delete(world, archetype, row, destruct)
     	end
 
     	record.archetype = nil :: any
@@ -1368,7 +1455,7 @@ local function world_query(world: World, ...)
 
 	local archetypes = world.archetypes
 
-	local idr: ArchetypeMap
+	local idr: IdRecord
 	local componentIndex = world.componentIndex
 
 	for _, id in ids do
