@@ -842,7 +842,7 @@ TEST("world:delete", function()
 		CHECK(world:get(id1, Health) == 50)
 	end
 
-	do CASE "delete entities using another Entity as component"
+	do CASE "delete entities using another Entity as component with Delete cleanup action"
         local world = jecs.World.new()
 
 		local Health = world:entity()
