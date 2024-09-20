@@ -67,6 +67,10 @@ local function debug_world_inspect(world)
     }
 end
 
+local function name(world, e)
+    return world:get(e, jecs.Name)
+end
+
 TEST("world:entity()", function()
     do CASE "unique IDs"
         local world = jecs.World.new()
@@ -254,7 +258,6 @@ TEST("world:query()", function()
         for x in q:iter() do
             counter += 1
         end
-        print(counter)
         CHECK(counter == 2)
     end
     do CASE "tag"
@@ -764,32 +767,32 @@ TEST("world:clear()", function()
 end)
 
 TEST("world:has()", function()
-do CASE "should find Tag on entity"
-    local world = jecs.World.new()
+    do CASE "should find Tag on entity"
+        local world = jecs.World.new()
 
-    local Tag = world:entity()
+        local Tag = world:entity()
 
-    local e = world:entity()
-    world:add(e, Tag)
+        local e = world:entity()
+        world:add(e, Tag)
 
-    CHECK(world:has(e, Tag))
-end
+        CHECK(world:has(e, Tag))
+    end
 
-do CASE "should return false when missing one tag"
-    local world = jecs.World.new()
+    do CASE "should return false when missing one tag"
+        local world = jecs.World.new()
 
-    local A = world:entity()
-    local B = world:entity()
-    local C = world:entity()
-    local D = world:entity()
+        local A = world:entity()
+        local B = world:entity()
+        local C = world:entity()
+        local D = world:entity()
 
-    local e = world:entity()
-    world:add(e, A)
-    world:add(e, C)
-    world:add(e, D)
+        local e = world:entity()
+        world:add(e, A)
+        world:add(e, C)
+        world:add(e, D)
 
-    CHECK(world:has(e, A, B, C, D) == false)
-end
+        CHECK(world:has(e, A, B, C, D) == false)
+    end
 end)
 
 TEST("world:component()", function()
@@ -820,27 +823,46 @@ TEST("world:component()", function()
 end)
 
 TEST("world:delete", function()
+    do CASE "bug: Empty entity does not respect cleanup policy"
+        local world = world_new()
+        local parent = world:entity()
+        local tag = world:entity()
+
+        local child = world:entity()
+        world:add(child, jecs.pair(jecs.ChildOf, parent))
+        world:delete(parent)
+
+        CHECK(not world:contains(parent))
+        CHECK(not world:contains(child))
+
+        local entity = world:entity()
+        world:add(entity, tag)
+        world:delete(tag)
+        CHECK(world:contains(entity))
+        CHECK(not world:contains(tag))
+        CHECK(not world:has(entity, tag)) -- => true
+    end
     do CASE("should allow deleting components")
-		local world = jecs.World.new()
+        local world = jecs.World.new()
 
-		local Health = world:component()
-		local Poison = world:component()
+        local Health = world:component()
+        local Poison = world:component()
 
-		local id = world:entity()
-		world:set(id, Poison, 5)
-		world:set(id, Health, 50)
-		local id1 = world:entity()
-		world:set(id1, Poison, 500)
-		world:set(id1, Health, 50)
+        local id = world:entity()
+        world:set(id, Poison, 5)
+        world:set(id, Health, 50)
+        local id1 = world:entity()
+        world:set(id1, Poison, 500)
+        world:set(id1, Health, 50)
 
-		world:delete(id)
-		CHECK(not world:contains(id))
-		CHECK(world:get(id, Poison) == nil)
-		CHECK(world:get(id, Health) == nil)
+        world:delete(id)
+        CHECK(not world:contains(id))
+        CHECK(world:get(id, Poison) == nil)
+        CHECK(world:get(id, Health) == nil)
 
-		CHECK(world:get(id1, Poison) == 500)
-		CHECK(world:get(id1, Health) == 50)
-	end
+        CHECK(world:get(id1, Poison) == 500)
+        CHECK(world:get(id1, Health) == 50)
+    end
 
 	do CASE "delete entities using another Entity as component with Delete cleanup action"
         local world = jecs.World.new()
@@ -918,7 +940,7 @@ TEST("world:delete", function()
         end)
 
         for i, friend in friends do
-  		    CHECK(not world:has(friends, pair(jecs.ChildOf, e)))
+  		    CHECK(not world:has(friend, pair(FriendsWith, e)))
  			CHECK(world:has(friend, Health))
   		end
     end
