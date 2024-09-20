@@ -992,98 +992,6 @@ do
     	else
     		archetype_fast_delete(columns, column_count, row, types, delete)
     	end
-
-    	local component_index = world.componentIndex
-
-    	local archetypes = world.archetypes
-
-        local idr = component_index[delete]
-       	if idr then
-      		local children = {}
-      		for archetype_id in idr.cache do
-     			local idr_archetype = archetypes[archetype_id]
-
-     			for i, child in idr_archetype.entities do
-    				table.insert(children, child)
-     			end
-      		end
-      		local flags = idr.flags
-      		if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
-     			for _, child in children do
-    				-- Cascade deletion to children
-    				world_delete(world, child)
-     			end
-      		else
-     			for _, child in children do
-    				world_remove(world, child, delete)
-     			end
-      		end
-       	end
-    	-- TODO: iterate each linked record.
-    	-- local r = ECS_PAIR(delete, EcsWildcard)
-    	-- local idr_r = component_index[r]
-    	-- if idr_r then
-    	--     -- Doesn't work for relations atm
-    	--     for archetype_id in idr_o.cache do
-    	--         local children = {}
-    	--         local idr_r_archetype = archetypes[archetype_id]
-    	--         local idr_r_types = idr_r_archetype.types
-
-    	--         for _, child in idr_r_archetype.entities do
-    	--             table.insert(children, child)
-    	--         end
-
-    	--         for _, id in idr_r_types do
-    	--             local relation = ECS_ENTITY_T_HI(id)
-    	--             if world_target(world, child, relation) == delete then
-    	--                 world_remove(world, child, ECS_PAIR(relation, delete))
-    	--             end
-    	--         end
-    	--     end
-    	-- end
-
-    	local o = ECS_PAIR(EcsWildcard, delete)
-    	local idr_o = component_index[o]
-
-    	if idr_o then
-    		for archetype_id in idr_o.cache do
-    			local children = {}
-    			local idr_o_archetype = archetypes[archetype_id]
-    			-- In the future, this needs to be optimized to only
-    			-- look for linked records instead of doing this linearly
-
-    			local idr_o_types = idr_o_archetype.types
-
-    			for _, child in idr_o_archetype.entities do
-    				table.insert(children, child)
-    			end
-
-    			for _, id in idr_o_types do
-    				if not ECS_IS_PAIR(id) then
-    					continue
-    				end
-
-    				local id_record = component_index[id]
-
-    				if id_record then
-    					local flags = id_record.flags
-    					if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
-    						for _, child in children do
-    							-- Cascade deletions of it has Delete as component trait
-    							world_delete(world, child, destruct)
-    						end
-    					else
-    						local object = ECS_ENTITY_T_LO(id)
-    						if object == delete then
-    							for _, child in children do
-    								world_remove(world, child, id)
-    							end
-    						end
-    					end
-    				end
-    			end
-    		end
-    	end
     end
 
     function world_delete(world: World, entity: i53, destruct: boolean?)
@@ -1102,6 +1010,73 @@ do
     		-- deleting archetypes themselves. Maybe requires recycling
     		archetype_delete(world, archetype, row, destruct)
     	end
+
+        local delete = entity
+        local component_index = world.componentIndex
+        local archetypes = world.archetypes
+        local tgt = ECS_PAIR(EcsWildcard, delete)
+       	local idr_t = component_index[tgt]
+        local idr = component_index[delete]
+
+        if idr then
+            local children = {}
+            for archetype_id in idr.cache do
+                local idr_archetype = archetypes[archetype_id]
+
+                for i, child in idr_archetype.entities do
+               	    table.insert(children, child)
+                end
+            end
+            local flags = idr.flags
+            if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
+                for _, child in children do
+         			-- Cascade deletion to children
+         			world_delete(world, child)
+                end
+            else
+                for _, child in children do
+                   	world_remove(world, child, delete)
+                end
+            end
+        end
+
+        if idr_t then
+            for archetype_id in idr_t.cache do
+                local children = {}
+                local idr_o_archetype = archetypes[archetype_id]
+
+                local idr_o_types = idr_o_archetype.types
+
+                for _, child in idr_o_archetype.entities do
+                    table.insert(children, child)
+                end
+
+                for _, id in idr_o_types do
+         			if not ECS_IS_PAIR(id) then
+                        continue
+         			end
+
+         			local id_record = component_index[id]
+
+         			if id_record then
+        				local flags = id_record.flags
+        				if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
+            				for _, child in children do
+                				-- Cascade deletions of it has Delete as component trait
+                				world_delete(world, child, destruct)
+            				end
+        				else
+            				local object = ECS_ENTITY_T_LO(id)
+            				if object == delete then
+            				    for _, child in children do
+                    				world_remove(world, child, id)
+            				    end
+            				end
+        				end
+         			end
+          		end
+           	end
+        end
 
     	record.archetype = nil :: any
     	entityIndex.sparse[entity] = nil
