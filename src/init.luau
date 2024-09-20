@@ -892,11 +892,11 @@ local function archetype_clear_edges(archetype: Archetype)
     local node = archetype.node
     local add = node.add
     local remove = node.remove
-    for _, ptr in add do
-        archetype_disconnect_edge(ptr)
+    for _, edge in add do
+        archetype_disconnect_edge(edge)
     end
-    for _, ptr in remove do
-        archetype_disconnect_edge(ptr)
+    for _, edge in remove do
+        archetype_disconnect_edge(edge)
     end
     local node_add_ref = node.add_ref
     if node_add_ref then
