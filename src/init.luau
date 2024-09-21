@@ -822,13 +822,14 @@ local function world_remove(world: World, entity: i53, id: i53)
 	local to = archetype_traverse_remove(world, id, from)
 
 	if from and not (from == to) then
-		entity_move(entity_index, entity, record, to)
 		local idr = world.componentIndex[id]
 		local flags = idr.flags
 		local has_on_remove = bit32.band(flags, ECS_ID_HAS_ON_REMOVE) ~= 0
 		if has_on_remove then
     		invoke_hook(world, EcsOnRemove, id, entity)
 		end
+
+		entity_move(entity_index, entity, record, to)
 	end
 end
 
