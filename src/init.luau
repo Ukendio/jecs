@@ -1666,16 +1666,14 @@ if _G.__JECS_DEBUG then
             return
         end
 
-
-
         if world_has_one_inline(world, entity, id) then
             if invoked_hook then
                 local file, line = debug.info(2, "sl")
                 local hook_fn = `{file}::{line}`
-                throw(
-                ([[cannot call world:set within the
-                This world:set function invokes a structural change because %s doesn't exist on the entity.\n
-                call world:add when the hook %s is in process]]):format(get_name(world, id), hook_fn))
+                local why = `cannot call world:set inside {hook_fn} because it adds the component {get_name(world, id)}`
+                why ..= `\n[jecs note]: consider handling this logic inside of a system`
+                throw(why)
+                return
             end
         end
 
