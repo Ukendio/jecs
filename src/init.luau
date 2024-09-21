@@ -1613,7 +1613,7 @@ if _G.__JECS_DEBUG then
         throw(msg)
     end
 
-    local function get_name(world, id): string | number
+    local function get_name(world, id): string
         local name: string | nil
         if ECS_IS_PAIR(id) then
             name = `pair({get_name(world, ECS_ENTITY_T_HI(id))}, {get_name(world, ECS_ENTITY_T_LO(id))})`
@@ -1632,6 +1632,14 @@ if _G.__JECS_DEBUG then
 
     local function ID_IS_TAG(world, id)
         return not world_has_one_inline(world, ECS_ENTITY_T_HI(id), EcsComponent)
+    end
+
+    local original_invoke_hook = invoke_hook
+    local invoked_hook = false
+    invoke_hook = function(...)
+        invoked_hook = true
+        original_invoke_hook(...)
+        invoked_hook = false
     end
 
     World.query = function(world: World, ...)
@@ -1658,6 +1666,19 @@ if _G.__JECS_DEBUG then
             return
         end
 
+
+
+        if world_has_one_inline(world, entity, id) then
+            if invoked_hook then
+                local file, line = debug.info(2, "sl")
+                local hook_fn = `{file}::{line}`
+                throw(
+                ([[cannot call world:set within the
+                This world:set function invokes a structural change because %s doesn't exist on the entity.\n
+                call world:add when the hook %s is in process]]):format(get_name(world, id), hook_fn))
+            end
+        end
+
         world_set(world, entity, id, value)
     end
 
@@ -1670,6 +1691,10 @@ if _G.__JECS_DEBUG then
             return
         end
 
+        if invoked_hook then
+            local hook_fn = debug.info(2, "sl")
+            throw(`Cannot call world:add when the hook {hook_fn} is in process`)
+        end
         world_add(world, entity, id)
     end
 
@@ -1703,6 +1728,10 @@ if _G.__JECS_DEBUG then
                 ..` please use world:target({_1}, {_2}, 0)`)
         end
         return world_target(world, entity, relation, index)
+    end
+
+    World.remove = function()
+
     end
 end
 

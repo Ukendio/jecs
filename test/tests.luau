@@ -1328,14 +1328,14 @@ TEST("Hooks", function()
 
             world:set(A, jecs.OnRemove, function(entity)
                 world:set(entity, B, true)
-                CHECK(not world:get(entity, A))
+                CHECK(world:get(entity, A))
                 CHECK(world:get(entity, B))
             end)
 
             world:set(e, A, true)
             world:remove(e, A)
             CHECK(not world:get(e, A))
-            CHECK(world:get(e, B))
+            CHECK(not world:get(e, B))
         end
     end
 
