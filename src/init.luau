@@ -11,23 +11,23 @@ type ArchetypeId = number
 
 type Column = { any }
 
-type Map<K, V> = {[K]: V}
+type Map<K, V> = { [K]: V }
 
 type GraphEdge = {
-    from: Archetype,
-    to: Archetype?,
-    prev: GraphEdge?,
-    next: GraphEdge?,
-    id: number
+	from: Archetype,
+	to: Archetype?,
+	prev: GraphEdge?,
+	next: GraphEdge?,
+	id: number,
 }
 
 type GraphEdges = Map<i53, GraphEdge>
 
 type GraphNode = {
-    add: GraphEdges,
+	add: GraphEdges,
 	remove: GraphEdges,
 	add_ref: GraphEdge?,
-	remove_ref: GraphEdge?
+	remove_ref: GraphEdge?,
 }
 
 export type Archetype = {
@@ -42,12 +42,12 @@ export type Archetype = {
 type Record = {
 	archetype: Archetype,
 	row: number,
-	dense: i24
+	dense: i24,
 }
 
 type EntityIndex = {
-    dense: Map<i24, i53>,
-    sparse: Map<i53, Record>
+	dense: Map<i24, i53>,
+	sparse: Map<i53, Record>,
 }
 
 type ArchetypeRecord = {
@@ -97,7 +97,7 @@ local ECS_ID_HAS_ON_SET     = 0b0000_1000
 local ECS_ID_HAS_ON_REMOVE  = 0b0001_0000
 local ECS_ID_MASK           = 0b0000_0000
 
-local NULL_ARRAY = table.freeze({})
+local NULL_ARRAY            = table.freeze({})
 
 local function FLAGS_ADD(is_pair: boolean): number
 	local flags = 0x0
@@ -205,9 +205,7 @@ local function entity_index_new_id(entityIndex: EntityIndex, index: i24): i53
 	return id
 end
 
-local function archetype_move(entity_index: EntityIndex, to: Archetype,
-    dst_row: i24, from: Archetype, src_row: i24)
-
+local function archetype_move(entity_index: EntityIndex, to: Archetype, dst_row: i24, from: Archetype, src_row: i24)
 	local src_columns = from.columns
 	local dst_columns = to.columns
 	local dst_entities = to.entities
@@ -287,8 +285,7 @@ local function hash(arr: { number }): string
 	return table.concat(arr, "_")
 end
 
-local world_get: (world: World, entityId: i53,
-    a: i53, b: i53?, c: i53?, d: i53?, e: i53?) -> ...any
+local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?) -> ...any
 do
 	-- Keeping the function as small as possible to enable inlining
 	local records
@@ -305,9 +302,7 @@ do
 		return columns[tr.column][row]
 	end
 
-	function world_get(world: World, entity: i53,
-	    a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
-
+	function world_get(world: World, entity: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
 		local record = world.entityIndex.sparse[entity]
 		if not record then
 			return nil
@@ -394,9 +389,7 @@ local function world_has(world: World, entity: number, ...: i53): boolean
 	return true
 end
 
-local function world_target(world: World, entity: i53,
-    relation: i24, index: number): i24?
-
+local function world_target(world: World, entity: i53, relation: i24, index: number): i24?
 	local record = world.entityIndex.sparse[entity]
 	local archetype = record.archetype
 	if not archetype then
@@ -415,13 +408,13 @@ local function world_target(world: World, entity: i53,
 
 	local count = tr.count
 	if index >= count then
-	    index = index + count + 1
+		index = index + count + 1
 	end
 
 	local nth = archetype.types[index + tr.column]
 
 	if not nth then
-	   return nil
+		return nil
 	end
 
 	return ecs_pair_second(world, nth)
@@ -447,15 +440,16 @@ local function id_record_ensure(world: World, id: number): IdRecord
 		local has_delete = false
 
 		if cleanup_policy == EcsDelete or cleanup_policy_target == EcsDelete then
-		    has_delete = true
+			has_delete = true
 		end
 
-	    local on_add, on_set, on_remove = world_get(world, relation, EcsOnAdd, EcsOnSet, EcsOnRemove)
+		local on_add, on_set, on_remove = world_get(world, relation, EcsOnAdd, EcsOnSet, EcsOnRemove)
 
-	    local is_tag = not world_has_one_inline(world, relation, EcsComponent)
+		local is_tag = not world_has_one_inline(world, relation, EcsComponent)
 
-		flags = bit32.bor(flags,
-		    if on_add then ECS_ID_HAS_ON_ADD else 0,
+		flags = bit32.bor(
+			flags,
+			if on_add then ECS_ID_HAS_ON_ADD else 0,
 			if on_remove then ECS_ID_HAS_ON_REMOVE else 0,
 			if on_set then ECS_ID_HAS_ON_SET else 0,
 			if has_delete then ECS_ID_DELETE else 0,
@@ -474,21 +468,21 @@ local function id_record_ensure(world: World, id: number): IdRecord
 end
 
 local function archetype_append_to_records(
-    idr: IdRecord,
-    archetype_id: number,
-    records: Map<i53, ArchetypeRecord>,
-    id: number,
-    index: number
+	idr: IdRecord,
+	archetype_id: number,
+	records: Map<i53, ArchetypeRecord>,
+	id: number,
+	index: number
 )
-    local tr = idr.cache[archetype_id]
-    if not tr then
-        tr = { column = index, count = 1}
-        idr.cache[archetype_id] = tr
-        idr.size += 1
-  		records[id] = tr
-    else
-        tr.count += 1
-    end
+	local tr = idr.cache[archetype_id]
+	if not tr then
+		tr = { column = index, count = 1 }
+		idr.cache[archetype_id] = tr
+		idr.size += 1
+		records[id] = tr
+	else
+		tr.count += 1
+	end
 end
 
 local function archetype_create(world: World, types: { i24 }, prev: i53?): Archetype
@@ -607,109 +601,99 @@ local function find_archetype_without(world: World, node: Archetype, id: i53): A
 	return archetype_ensure(world, dst)
 end
 
-local function archetype_init_edge(archetype: Archetype,
-    edge: GraphEdge, id: i53, to: Archetype)
-    edge.from = archetype
-    edge.to = to
-    edge.id = id
+local function archetype_init_edge(archetype: Archetype, edge: GraphEdge, id: i53, to: Archetype)
+	edge.from = archetype
+	edge.to = to
+	edge.id = id
 end
 
 local function archetype_ensure_edge(world, edges, id): GraphEdge
-    local edge = edges[id]
-    if not edge then
-        edge = {
-            from = nil :: any,
-            to = nil :: any,
-            id = id,
-            prev = nil,
-            next = nil,
-        } :: GraphEdge
-        edges[id] = edge
-    end
+	local edge = edges[id]
+	if not edge then
+		edge = {
+			from = nil :: any,
+			to = nil :: any,
+			id = id,
+			prev = nil,
+			next = nil,
+		} :: GraphEdge
+		edges[id] = edge
+	end
 
-    return edge
+	return edge
 end
 
 local function init_edge_for_add(world, archetype, edge, id, to)
-    archetype_init_edge(archetype, edge, id, to)
-    archetype_ensure_edge(world, archetype.node.add, id)
-    if archetype ~= to then
-        local to_add_ref = to.node.add_ref
-        edge.next = to_add_ref
-        edge.prev = nil
-        if to_add_ref then
-            to_add_ref.prev = edge
-        end
-        to.node.add_ref = edge
-    end
+	archetype_init_edge(archetype, edge, id, to)
+	archetype_ensure_edge(world, archetype.node.add, id)
+	if archetype ~= to then
+		local to_add_ref = to.node.add_ref
+		edge.next = to_add_ref
+		edge.prev = nil
+		if to_add_ref then
+			to_add_ref.prev = edge
+		end
+		to.node.add_ref = edge
+	end
 end
 
 local function init_edge_for_remove(world, archetype, edge, id, to)
-    archetype_init_edge(archetype, edge, id, to)
-    archetype_ensure_edge(world, archetype.node.remove, id)
-    if archetype ~= to then
-        local to_remove_ref = to.node.remove_ref
-        local prev
-        if to_remove_ref then
-            prev = to_remove_ref.prev
-            to_remove_ref.prev = edge
-            edge.next = to_remove_ref
-        else
-            to.node.remove_ref = edge
-            edge.next = nil
-        end
+	archetype_init_edge(archetype, edge, id, to)
+	archetype_ensure_edge(world, archetype.node.remove, id)
+	if archetype ~= to then
+		local to_remove_ref = to.node.remove_ref
+		local prev
+		if to_remove_ref then
+			prev = to_remove_ref.prev
+			to_remove_ref.prev = edge
+			edge.next = to_remove_ref
+		else
+			to.node.remove_ref = edge
+			edge.next = nil
+		end
 
-        edge.prev = prev
-        if prev then
-            prev.next = edge
-        end
-    end
+		edge.prev = prev
+		if prev then
+			prev.next = edge
+		end
+	end
 end
 
-local function create_edge_for_add(world: World, node: Archetype,
-    edge: GraphEdge, id: i53): Archetype
-
-    local to = find_archetype_with(world, node, id)
-    init_edge_for_add(world, node, edge, id, to)
-    return to
+local function create_edge_for_add(world: World, node: Archetype, edge: GraphEdge, id: i53): Archetype
+	local to = find_archetype_with(world, node, id)
+	init_edge_for_add(world, node, edge, id, to)
+	return to
 end
 
-local function create_edge_for_remove(world: World, node: Archetype,
-    edge: GraphEdge, id: i53): Archetype
-
-    local to = find_archetype_without(world, node, id)
-    init_edge_for_remove(world, node, edge, id, to)
-    return to
+local function create_edge_for_remove(world: World, node: Archetype, edge: GraphEdge, id: i53): Archetype
+	local to = find_archetype_without(world, node, id)
+	init_edge_for_remove(world, node, edge, id, to)
+	return to
 end
 
+local function archetype_traverse_add(world: World, id: i53, from: Archetype): Archetype
+	from = from or world.ROOT_ARCHETYPE
+	local edge = archetype_ensure_edge(world, from.node.add, id)
 
-local function archetype_traverse_add(world: World, id: i53,
-    from: Archetype): Archetype
+	local to = edge.to
+	if not to then
+		to = create_edge_for_add(world, from, edge, id)
+	end
 
-    from = from or world.ROOT_ARCHETYPE
-    local edge = archetype_ensure_edge(
-        world, from.node.add, id)
-
-    local to = edge.to
-    if not to then
-        to = create_edge_for_add(world, from, edge, id)
-    end
-
-    return to :: Archetype
+	return to :: Archetype
 end
 
 local function archetype_traverse_remove(world: World, id: i53, from: Archetype): Archetype
-    from = from or world.ROOT_ARCHETYPE
+	from = from or world.ROOT_ARCHETYPE
 
-    local edge = archetype_ensure_edge(
-        world, from.node.add, id)
+	local edge = archetype_ensure_edge(world, from.node.add, id)
 
-    local to = edge.to
-    if not to then
-        to = create_edge_for_remove(world, from, edge, id)
-    end
+	local to = edge.to
+	if not to then
+		to = create_edge_for_remove(world, from, edge, id)
+	end
 
-    return to :: Archetype
+	return to :: Archetype
 end
 
 local function invoke_hook(world: World, hook_id: number, id: i53, entity: i53, data: any?)
@@ -755,9 +739,9 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 	local has_on_set = bit32.band(flags, ECS_ID_HAS_ON_SET) ~= 0
 
 	if from == to then
-        if is_tag then
-       	    return
-        end
+		if is_tag then
+			return
+		end
 		-- If the archetypes are the same it can avoid moving the entity
 		-- and just set the data directly.
 		local tr = to.records[id]
@@ -782,7 +766,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 	local has_on_add = bit32.band(flags, ECS_ID_HAS_ON_ADD) ~= 0
 
 	if has_on_add then
-	    invoke_hook(world, EcsOnAdd, id, entity)
+		invoke_hook(world, EcsOnAdd, id, entity)
 	end
 
 	if is_tag then
@@ -795,7 +779,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 	column[record.row] = data
 
 	if has_on_set then
-	    invoke_hook(world, EcsOnSet, id, entity, data)
+		invoke_hook(world, EcsOnSet, id, entity, data)
 	end
 end
 
@@ -826,7 +810,7 @@ local function world_remove(world: World, entity: i53, id: i53)
 		local flags = idr.flags
 		local has_on_remove = bit32.band(flags, ECS_ID_HAS_ON_REMOVE) ~= 0
 		if has_on_remove then
-    		invoke_hook(world, EcsOnRemove, id, entity)
+			invoke_hook(world, EcsOnRemove, id, entity)
 		end
 
 		entity_move(entity_index, entity, record, to)
@@ -850,250 +834,240 @@ local function world_clear(world: World, entity: i53)
 	entity_move(world.entityIndex, entity, record, ROOT_ARCHETYPE)
 end
 
-local function archetype_fast_delete_last(columns: { Column },
-    column_count: number, types: { i53 }, entity: i53)
-
-   	for i, column in columns do
-        if column ~= NULL_ARRAY then
-      		column[column_count] = nil
-        end
-   	end
+local function archetype_fast_delete_last(columns: { Column }, column_count: number, types: { i53 }, entity: i53)
+	for i, column in columns do
+		if column ~= NULL_ARRAY then
+			column[column_count] = nil
+		end
+	end
 end
 
-local function archetype_fast_delete(columns: { Column },
-    column_count: number, row, types, entity)
-
-   	for i, column in columns do
-        if column ~= NULL_ARRAY then
-      		column[row] = column[column_count]
-            column[column_count] = nil
-        end
-   	end
+local function archetype_fast_delete(columns: { Column }, column_count: number, row, types, entity)
+	for i, column in columns do
+		if column ~= NULL_ARRAY then
+			column[row] = column[column_count]
+			column[column_count] = nil
+		end
+	end
 end
 
 local function archetype_disconnect_edge(edge: GraphEdge)
-    local edge_next = edge.next
-    local edge_prev = edge.prev
-    if edge_next then
-        edge_next.prev = edge_prev
-    end
-    if edge_prev then
-        edge_prev.next = edge_next
-    end
+	local edge_next = edge.next
+	local edge_prev = edge.prev
+	if edge_next then
+		edge_next.prev = edge_prev
+	end
+	if edge_prev then
+		edge_prev.next = edge_next
+	end
 end
 
-local function archetype_remove_edge(edges: Map<i53, GraphEdge>,
-    id: i53, edge: GraphEdge)
-
-    archetype_disconnect_edge(edge)
-    edges[id] = nil
+local function archetype_remove_edge(edges: Map<i53, GraphEdge>, id: i53, edge: GraphEdge)
+	archetype_disconnect_edge(edge)
+	edges[id] = nil
 end
 
 local function archetype_clear_edges(archetype: Archetype)
-    local node = archetype.node
-    local add = node.add
-    local remove = node.remove
-    for _, edge in add do
-        archetype_disconnect_edge(edge)
-    end
-    for _, edge in remove do
-        archetype_disconnect_edge(edge)
-    end
-    local node_add_ref = node.add_ref
-    if node_add_ref then
-        local current = node_add_ref.next
-        while current do
-            local edge = current
-            current = current.next
-            local node_add = edge.from.node.add
-            if node_add then
-                archetype_remove_edge(node_add, edge.id, edge)
-            end
-        end
-    end
+	local node = archetype.node
+	local add = node.add
+	local remove = node.remove
+	for _, edge in add do
+		archetype_disconnect_edge(edge)
+	end
+	for _, edge in remove do
+		archetype_disconnect_edge(edge)
+	end
+	local node_add_ref = node.add_ref
+	if node_add_ref then
+		local current = node_add_ref.next
+		while current do
+			local edge = current
+			current = current.next
+			local node_add = edge.from.node.add
+			if node_add then
+				archetype_remove_edge(node_add, edge.id, edge)
+			end
+		end
+	end
 
-    local node_remove_ref = node.remove_ref
-    if node_remove_ref then
-        local current = node_remove_ref.prev
-        while current do
-            local edge = current
-            current = current.prev
-            local node_remove = edge.from.node.remove
-            if node_remove then
-                archetype_remove_edge(node_remove, edge.id, edge)
-            end
-        end
-    end
+	local node_remove_ref = node.remove_ref
+	if node_remove_ref then
+		local current = node_remove_ref.prev
+		while current do
+			local edge = current
+			current = current.prev
+			local node_remove = edge.from.node.remove
+			if node_remove then
+				archetype_remove_edge(node_remove, edge.id, edge)
+			end
+		end
+	end
 
-    node.add = nil :: any
-    node.remove = nil :: any
-    node.add_ref = nil :: any
-    node.remove_ref = nil :: any
+	node.add = nil :: any
+	node.remove = nil :: any
+	node.add_ref = nil :: any
+	node.remove_ref = nil :: any
 end
 
 local function archetype_destroy(world: World, archetype: Archetype)
-    local component_index = world.componentIndex
-    archetype_clear_edges(archetype)
-    local archetype_id = archetype.id
-    world.archetypes[archetype_id] = nil
-    world.archetypeIndex[archetype.type] = nil
-    local records = archetype.records
+	local component_index = world.componentIndex
+	archetype_clear_edges(archetype)
+	local archetype_id = archetype.id
+	world.archetypes[archetype_id] = nil
+	world.archetypeIndex[archetype.type] = nil
+	local records = archetype.records
 
-    for id in records do
-        local idr = component_index[id]
-        idr.cache[archetype_id] = nil
-        idr.size -= 1
-        records[id] = nil
-        if idr.size == 0 then
-            component_index[id] = nil
-        end
-    end
+	for id in records do
+		local idr = component_index[id]
+		idr.cache[archetype_id] = nil
+		idr.size -= 1
+		records[id] = nil
+		if idr.size == 0 then
+			component_index[id] = nil
+		end
+	end
 end
 
 local function world_cleanup(world)
-    for _, archetype in world.archetypes do
-        if #archetype.entities == 0 then
-            archetype_destroy(world, archetype)
-        end
-    end
+	for _, archetype in world.archetypes do
+		if #archetype.entities == 0 then
+			archetype_destroy(world, archetype)
+		end
+	end
 end
 
 local world_delete: (world: World, entity: i53, destruct: boolean?) -> ()
 do
-    local function archetype_delete(world: World,
-        archetype: Archetype, row: number, destruct: boolean?)
+	local function archetype_delete(world: World, archetype: Archetype, row: number, destruct: boolean?)
+		local entityIndex = world.entityIndex
+		local columns = archetype.columns
+		local types = archetype.types
+		local entities = archetype.entities
+		local column_count = #entities
+		local last = #entities
+		local move = entities[last]
+		local delete = entities[row]
+		entities[row] = move
+		entities[last] = nil
 
-    	local entityIndex = world.entityIndex
-    	local columns = archetype.columns
-    	local types = archetype.types
-    	local entities = archetype.entities
-    	local column_count = #entities
-    	local last = #entities
-    	local move = entities[last]
-    	local delete = entities[row]
-    	entities[row] = move
-    	entities[last] = nil
+		if row ~= last then
+			-- TODO: should be "entity_index_sparse_get(entityIndex, move)"
+			local record_to_move = entityIndex.sparse[move]
+			if record_to_move then
+				record_to_move.row = row
+			end
+		end
 
-    	if row ~= last then
-    		-- TODO: should be "entity_index_sparse_get(entityIndex, move)"
-    		local record_to_move = entityIndex.sparse[move]
-    		if record_to_move then
-    			record_to_move.row = row
-    		end
-    	end
+		-- TODO: if last == 0 then deactivate table
 
-    	-- TODO: if last == 0 then deactivate table
+		for _, id in types do
+			invoke_hook(world, EcsOnRemove, id, delete)
+		end
 
-    	for _, id in types do
-    		invoke_hook(world, EcsOnRemove, id, delete)
-    	end
+		if row == last then
+			archetype_fast_delete_last(columns, column_count, types, delete)
+		else
+			archetype_fast_delete(columns, column_count, row, types, delete)
+		end
+	end
 
-    	if row == last then
-    		archetype_fast_delete_last(columns, column_count, types, delete)
-    	else
-    		archetype_fast_delete(columns, column_count, row, types, delete)
-    	end
-    end
+	function world_delete(world: World, entity: i53, destruct: boolean?)
+		local entityIndex = world.entityIndex
 
-    function world_delete(world: World, entity: i53, destruct: boolean?)
-    	local entityIndex = world.entityIndex
+		local record = entityIndex.sparse[entity]
+		if not record then
+			return
+		end
 
-    	local record = entityIndex.sparse[entity]
-    	if not record then
-    		return
-    	end
+		local archetype = record.archetype
+		local row = record.row
 
-    	local archetype = record.archetype
-    	local row = record.row
+		if archetype then
+			-- In the future should have a destruct mode for
+			-- deleting archetypes themselves. Maybe requires recycling
+			archetype_delete(world, archetype, row, destruct)
+		end
 
-    	if archetype then
-    		-- In the future should have a destruct mode for
-    		-- deleting archetypes themselves. Maybe requires recycling
-    		archetype_delete(world, archetype, row, destruct)
-    	end
+		local delete = entity
+		local component_index = world.componentIndex
+		local archetypes = world.archetypes
+		local tgt = ECS_PAIR(EcsWildcard, delete)
+		local idr_t = component_index[tgt]
+		local idr = component_index[delete]
 
-        local delete = entity
-        local component_index = world.componentIndex
-        local archetypes = world.archetypes
-        local tgt = ECS_PAIR(EcsWildcard, delete)
-       	local idr_t = component_index[tgt]
-        local idr = component_index[delete]
+		if idr then
+			local children = {}
+			for archetype_id in idr.cache do
+				local idr_archetype = archetypes[archetype_id]
 
-        if idr then
-            local children = {}
-            for archetype_id in idr.cache do
-                local idr_archetype = archetypes[archetype_id]
+				for i, child in idr_archetype.entities do
+					table.insert(children, child)
+				end
+			end
+			local flags = idr.flags
+			if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
+				for _, child in children do
+					-- Cascade deletion to children
+					world_delete(world, child)
+				end
+			else
+				for _, child in children do
+					world_remove(world, child, delete)
+				end
+			end
+		end
 
-                for i, child in idr_archetype.entities do
-               	    table.insert(children, child)
-                end
-            end
-            local flags = idr.flags
-            if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
-                for _, child in children do
-         			-- Cascade deletion to children
-         			world_delete(world, child)
-                end
-            else
-                for _, child in children do
-                   	world_remove(world, child, delete)
-                end
-            end
-        end
+		if idr_t then
+			for archetype_id in idr_t.cache do
+				local children = {}
+				local idr_t_archetype = archetypes[archetype_id]
 
-        if idr_t then
-            for archetype_id in idr_t.cache do
-                local children = {}
-                local idr_o_archetype = archetypes[archetype_id]
+				local idr_t_types = idr_t_archetype.types
 
-                local idr_o_types = idr_o_archetype.types
+				for _, child in idr_t_archetype.entities do
+					table.insert(children, child)
+				end
 
-                for _, child in idr_o_archetype.entities do
-                    table.insert(children, child)
-                end
+				for _, id in idr_t_types do
+					if not ECS_IS_PAIR(id) then
+						continue
+					end
 
-                for _, id in idr_o_types do
-         			if not ECS_IS_PAIR(id) then
-                        continue
-         			end
+					local id_record = component_index[id]
 
-         			local id_record = component_index[id]
+					if id_record then
+						local flags = id_record.flags
+						if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
+							for _, child in children do
+								-- Cascade deletions of it has Delete as component trait
+								world_delete(world, child, destruct)
+							end
+						else
+							local object = ECS_ENTITY_T_LO(id)
+							if object == delete then
+								for _, child in children do
+									world_remove(world, child, id)
+								end
+							end
+						end
+					end
+				end
+			end
+		end
 
-         			if id_record then
-        				local flags = id_record.flags
-        				if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
-            				for _, child in children do
-                				-- Cascade deletions of it has Delete as component trait
-                				world_delete(world, child, destruct)
-            				end
-        				else
-            				local object = ECS_ENTITY_T_LO(id)
-            				if object == delete then
-            				    for _, child in children do
-                    				world_remove(world, child, id)
-            				    end
-            				end
-        				end
-         			end
-          		end
-           	end
-        end
-
-    	record.archetype = nil :: any
-    	entityIndex.sparse[entity] = nil
-
-    end
+		record.archetype = nil :: any
+		entityIndex.sparse[entity] = nil
+	end
 end
 
 local function world_contains(world: World, entity): boolean
 	return world.entityIndex.sparse[entity] ~= nil
 end
 
-
 local function NOOP() end
 
 local function ARM(query, ...)
-   	return query
+	return query
 end
 
 local EMPTY_LIST = {}
@@ -1117,17 +1091,17 @@ local EMPTY_QUERY = {
 setmetatable(EMPTY_QUERY, EMPTY_QUERY)
 
 local function query_iter(query)
-    local world_query_iter_next
+	local world_query_iter_next
 
-    if query.should_drain then
-        world_query_iter_next = query.iter_next
-        if world_query_iter_next then
-            return world_query_iter_next
-        end
-    end
+	if query.should_drain then
+		world_query_iter_next = query.iter_next
+		if world_query_iter_next then
+			return world_query_iter_next
+		end
+	end
 
-    local compatible_archetypes = query.compatible_archetypes
-    local lastArchetype = 1
+	local compatible_archetypes = query.compatible_archetypes
+	local lastArchetype = 1
 	local archetype = compatible_archetypes[1]
 	if not archetype then
 		return EMPTY_QUERY
@@ -1137,9 +1111,9 @@ local function query_iter(query)
 	local i = #entities
 	local records = archetype.records
 
-    local ids = query.ids
-    local A, B, C, D, E, F, G, H, I = unpack(ids)
-    local a, b, c, d, e, f, g, h
+	local ids = query.ids
+	local A, B, C, D, E, F, G, H, I = unpack(ids)
+	local a, b, c, d, e, f, g, h
 
 	if not B then
 		a = columns[records[A].column]
@@ -1298,7 +1272,7 @@ local function query_iter(query)
 			return entityId, a[row], b[row], c[row], d[row]
 		end
 	else
-	    local queryOutput = {}
+		local queryOutput = {}
 		function world_query_iter_next(): any
 			local entityId = entities[i]
 			while entityId == nil do
@@ -1373,23 +1347,23 @@ local function query_iter(query)
 	end
 
 	query.iter_next = world_query_iter_next
-    return world_query_iter_next
+	return world_query_iter_next
 end
 
 local function query_drain(query)
-    local query_iter_next = query_iter(query)
-    query.next = query_iter_next
-    query.should_drain = true
-    return query
+	local query_iter_next = query_iter(query)
+	query.next = query_iter_next
+	query.should_drain = true
+	return query
 end
 
 local function query_next(query)
-    error("Did you forget to call drain?")
+	error("Did you forget to call drain?")
 end
 
 local function query_without(query, ...)
-    local compatible_archetypes = query.compatible_archetypes
-    local N = select("#", ...)
+	local compatible_archetypes = query.compatible_archetypes
+	local N = select("#", ...)
 	for i = #compatible_archetypes, 1, -1 do
 		local archetype = compatible_archetypes[i]
 		local records = archetype.records
@@ -1420,7 +1394,7 @@ local function query_without(query, ...)
 end
 
 local function query_with(query, ...)
-    local compatible_archetypes = query.compatible_archetypes
+	local compatible_archetypes = query.compatible_archetypes
 	local N = select("#", ...)
 	for i = #compatible_archetypes, 1, -1 do
 		local archetype = compatible_archetypes[i]
@@ -1456,10 +1430,10 @@ local function columns_replace_values(row, columns, ...)
 end
 
 local function query_replace(query, fn: (...any) -> ...any)
-    local compatible_archetypes = query.compatible_archetypes
-    local ids = query.ids
-    local A, B, C, D, E = unpack(ids, 1, 5)
-    local queryOutput = {}
+	local compatible_archetypes = query.compatible_archetypes
+	local ids = query.ids
+	local A, B, C, D, E = unpack(ids, 1, 5)
+	local queryOutput = {}
 	for i, archetype in compatible_archetypes do
 		local columns = archetype.columns
 		local records = archetype.records
@@ -1568,7 +1542,7 @@ local function world_query(world: World, ...)
 	end
 
 	local q = setmetatable({
-	    compatible_archetypes = compatible_archetypes,
+		compatible_archetypes = compatible_archetypes,
 		ids = ids,
 	}, Query) :: any
 
@@ -1594,143 +1568,145 @@ World.contains = world_contains
 World.cleanup = world_cleanup
 
 if _G.__JECS_DEBUG then
-    -- taken from https://github.com/centau/ecr/blob/main/src/ecr.luau
-    -- error but stack trace always starts at first callsite outside of this file
-    local function throw(msg: string)
-        local s = 1
-        repeat s += 1 until debug.info(s, "s") ~= debug.info(1, "s")
-        if warn then
-            error(msg, s)
-        else
-            print(`[jecs] error: {msg}\n`)
-        end
-    end
+	-- taken from https://github.com/centau/ecr/blob/main/src/ecr.luau
+	-- error but stack trace always starts at first callsite outside of this file
+	local function throw(msg: string)
+		local s = 1
+		repeat
+			s += 1
+		until debug.info(s, "s") ~= debug.info(1, "s")
+		if warn then
+			error(msg, s)
+		else
+			print(`[jecs] error: {msg}\n`)
+		end
+	end
 
-    local function ASSERT<T>(v: T, msg: string)
-        if v then
-            return
-        end
-        throw(msg)
-    end
+	local function ASSERT<T>(v: T, msg: string)
+		if v then
+			return
+		end
+		throw(msg)
+	end
 
-    local function get_name(world, id): string
-        local name: string | nil
-        if ECS_IS_PAIR(id) then
-            name = `pair({get_name(world, ECS_ENTITY_T_HI(id))}, {get_name(world, ECS_ENTITY_T_LO(id))})`
-        else
-            local _1 = world_get_one_inline(world, id, EcsName)
-            if _1 then
-                name = `${_1}`
-            end
-        end
-        if name then
-            return name
-        else
-            return `${id}`
-        end
-    end
+	local function get_name(world, id): string
+		local name: string | nil
+		if ECS_IS_PAIR(id) then
+			name = `pair({get_name(world, ECS_ENTITY_T_HI(id))}, {get_name(world, ECS_ENTITY_T_LO(id))})`
+		else
+			local _1 = world_get_one_inline(world, id, EcsName)
+			if _1 then
+				name = `${_1}`
+			end
+		end
+		if name then
+			return name
+		else
+			return `${id}`
+		end
+	end
 
-    local function ID_IS_TAG(world, id)
-        return not world_has_one_inline(world, ECS_ENTITY_T_HI(id), EcsComponent)
-    end
+	local function ID_IS_TAG(world, id)
+		return not world_has_one_inline(world, ECS_ENTITY_T_HI(id), EcsComponent)
+	end
 
-    local original_invoke_hook = invoke_hook
-    local invoked_hook = false
-    invoke_hook = function(...)
-        invoked_hook = true
-        original_invoke_hook(...)
-        invoked_hook = false
-    end
+	local original_invoke_hook = invoke_hook
+	local invoked_hook = false
+	invoke_hook = function(...)
+		invoked_hook = true
+		original_invoke_hook(...)
+		invoked_hook = false
+	end
 
-    World.query = function(world: World, ...)
-        ASSERT((...), "Requires at least a single component")
-        return world_query(world, ...)
-    end
+	World.query = function(world: World, ...)
+		ASSERT((...), "Requires at least a single component")
+		return world_query(world, ...)
+	end
 
-    World.set = function(world: World, entity: i53, id: i53, value: any): ()
-        local is_tag = ID_IS_TAG(world, id)
-        if (is_tag and value == nil) then
-            world_add(world, entity, id)
-            local _1 = get_name(world, entity)
-            local _2 = get_name(world, id)
-            local why = "cannot set component value to nil"
-            throw(why)
-            return
-        elseif (value ~= nil and is_tag) then
-            world_add(world, entity, id)
-            local _1 = get_name(world, entity)
-            local _2 = get_name(world, id)
-            local why = `cannot set a component value because {_2} is a tag`
-            why ..= `\n[jecs] note: consider using "world:add({_1}, {_2})" instead`
-            throw(why)
-            return
-        end
+	World.set = function(world: World, entity: i53, id: i53, value: any): ()
+		local is_tag = ID_IS_TAG(world, id)
+		if is_tag and value == nil then
+			world_add(world, entity, id)
+			local _1 = get_name(world, entity)
+			local _2 = get_name(world, id)
+			local why = "cannot set component value to nil"
+			throw(why)
+			return
+		elseif value ~= nil and is_tag then
+			world_add(world, entity, id)
+			local _1 = get_name(world, entity)
+			local _2 = get_name(world, id)
+			local why = `cannot set a component value because {_2} is a tag`
+			why ..= `\n[jecs] note: consider using "world:add({_1}, {_2})" instead`
+			throw(why)
+			return
+		end
 
-        if world_has_one_inline(world, entity, id) then
-            if invoked_hook then
-                local file, line = debug.info(2, "sl")
-                local hook_fn = `{file}::{line}`
-                local why = `cannot call world:set inside {hook_fn} because it adds the component {get_name(world, id)}`
-                why ..= `\n[jecs note]: consider handling this logic inside of a system`
-                throw(why)
-                return
-            end
-        end
+		if world_has_one_inline(world, entity, id) then
+			if invoked_hook then
+				local file, line = debug.info(2, "sl")
+				local hook_fn = `{file}::{line}`
+				local why = `cannot call world:set inside {hook_fn} because it adds the component {get_name(world, id)}`
+				why ..= `\n[jecs note]: consider handling this logic inside of a system`
+				throw(why)
+				return
+			end
+		end
 
-        world_set(world, entity, id, value)
-    end
+		world_set(world, entity, id, value)
+	end
 
-    World.add = function(world: World, entity: i53, id: i53, value: nil)
-        if value ~= nil then
-            local _1 = get_name(world, entity)
-            local _2 = get_name(world, id)
-            throw("You provided a value when none was expected. "
-            ..`Did you mean to use "world:add({_1}, {_2})"`)
-            return
-        end
+	World.add = function(world: World, entity: i53, id: i53, value: nil)
+		if value ~= nil then
+			local _1 = get_name(world, entity)
+			local _2 = get_name(world, id)
+			throw("You provided a value when none was expected. " .. `Did you mean to use "world:add({_1}, {_2})"`)
+			return
+		end
 
-        if invoked_hook then
-            local hook_fn = debug.info(2, "sl")
-            throw(`Cannot call world:add when the hook {hook_fn} is in process`)
-        end
-        world_add(world, entity, id)
-    end
+		if invoked_hook then
+			local hook_fn = debug.info(2, "sl")
+			throw(`Cannot call world:add when the hook {hook_fn} is in process`)
+		end
+		world_add(world, entity, id)
+	end
 
-    World.get = function(world: World, entity: i53, ...)
-        local length = select("#", ...)
-        ASSERT(length < 5, "world:get does not support more than 4 components")
-        local _1
-        for i = 1, length do
-            local id = select(i, ...)
-            local id_is_tag = not world_has(world, id, EcsComponent)
-            if id_is_tag then
-                local name = get_name(world, id)
-                if not _1 then
-                    _1 = get_name(world, entity)
-                end
-                throw(
-                    `cannot get (#{i}) component {name} value because it is a tag.`
-                    ..`\n[jecs] note: If this was intentional, use "world:has({_1}, {name}) instead"`)
-            end
-        end
+	World.get = function(world: World, entity: i53, ...)
+		local length = select("#", ...)
+		ASSERT(length < 5, "world:get does not support more than 4 components")
+		local _1
+		for i = 1, length do
+			local id = select(i, ...)
+			local id_is_tag = not world_has(world, id, EcsComponent)
+			if id_is_tag then
+				local name = get_name(world, id)
+				if not _1 then
+					_1 = get_name(world, entity)
+				end
+				throw(
+					`cannot get (#{i}) component {name} value because it is a tag.`
+						.. `\n[jecs] note: If this was intentional, use "world:has({_1}, {name}) instead"`
+				)
+			end
+		end
 
-        return world_get(world, entity, ...)
-    end
+		return world_get(world, entity, ...)
+	end
 
-    World.target = function(world, entity, relation, index)
-        if index == nil then
-            local _1 = get_name(world, entity)
-            local _2 = get_name(world, relation)
+	World.target = function(world, entity, relation, index)
+		if index == nil then
+			local _1 = get_name(world, entity)
+			local _2 = get_name(world, relation)
 
-            throw("We have changed the function call to require an index parameter,"
-                ..` please use world:target({_1}, {_2}, 0)`)
-        end
-        return world_target(world, entity, relation, index)
-    end
+			throw(
+				"We have changed the function call to require an index parameter,"
+					.. ` please use world:target({_1}, {_2}, 0)`
+			)
+		end
+		return world_target(world, entity, relation, index)
+	end
 
-    World.remove = function()
-
-    end
+	World.remove = function() end
 end
 
 function World.new()
@@ -1762,7 +1738,7 @@ function World.new()
 	world_add(self, EcsWildcard, EcsComponent)
 	world_add(self, EcsRest, EcsComponent)
 
-    world_set(self, EcsOnAdd, EcsName, "jecs.OnAdd")
+	world_set(self, EcsOnAdd, EcsName, "jecs.OnAdd")
 	world_set(self, EcsOnRemove, EcsName, "jecs.OnRemove")
 	world_set(self, EcsOnSet, EcsName, "jecs.OnSet")
 	world_set(self, EcsWildcard, EcsName, "jecs.Wildcard")
@@ -1853,14 +1829,7 @@ export type World = {
 		& (<A, B>(self: World, Id<A>, Id<B>) -> Query<A, B>)
 		& (<A, B, C>(self: World, Id<A>, Id<B>, Id<C>) -> Query<A, B, C>)
 		& (<A, B, C, D>(self: World, Id<A>, Id<B>, Id<C>, Id<D>) -> Query<A, B, C, D>)
-		& (<A, B, C, D, E>(
-			self: World,
-			Id<A>,
-			Id<B>,
-			Id<C>,
-			Id<D>,
-			Id<E>
-		) -> Query<A, B, C, D, E>)
+		& (<A, B, C, D, E>(self: World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>) -> Query<A, B, C, D, E>)
 		& (<A, B, C, D, E, F>(
 			self: World,
 			Id<A>,
