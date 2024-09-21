@@ -1052,6 +1052,8 @@ do
 						end
 					end
 				end
+
+				archetype_destroy(world, idr_t_archetype)
 			end
 		end
 
