@@ -987,8 +987,9 @@ do
 
 	function world_delete(world: World, entity: i53, destruct: boolean?)
 		local entityIndex = world.entityIndex
+		local sparse_array = entityIndex.sparse
 
-		local record = entityIndex.sparse[entity]
+		local record = sparse_array[entity]
 		if not record then
 			return
 		end
@@ -1071,7 +1072,7 @@ do
 		end
 
 		record.archetype = nil :: any
-		entityIndex.sparse[entity] = nil
+		sparse_array[entity] = nil
 	end
 end
 
