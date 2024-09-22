@@ -938,7 +938,7 @@ local function world_cleanup(world)
 		end
 	end
 
-	local new_archetypes = {}
+	local new_archetypes = table.create(#archetypes)
 	local new_archetype_map = {}
 
 	for index, archetype in archetypes do
