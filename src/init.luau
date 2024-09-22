@@ -912,8 +912,10 @@ local function archetype_destroy(world: World, archetype: Archetype)
 	local component_index = world.componentIndex
 	archetype_clear_edges(archetype)
 	local archetype_id = archetype.id
-	world.archetypes[archetype_id] = nil
-	world.archetypeIndex[archetype.type] = nil
+	if archetype ~= world.ROOT_ARCHETYPE then
+	    world.archetypes[archetype_id] = nil
+		world.archetypeIndex[archetype.type] = nil
+	end
 	local records = archetype.records
 
 	for id in records do
@@ -928,11 +930,24 @@ local function archetype_destroy(world: World, archetype: Archetype)
 end
 
 local function world_cleanup(world)
-	for _, archetype in world.archetypes do
+    local archetypes = world.archetypes
+
+	for _, archetype in archetypes do
 		if #archetype.entities == 0 then
 			archetype_destroy(world, archetype)
 		end
 	end
+
+	local new_archetypes = {}
+	local new_archetype_map = {}
+
+	for index, archetype in archetypes do
+	    new_archetypes[index] = archetype
+		new_archetype_map[archetype.type] = archetype
+	end
+
+	world.archetypes = new_archetypes
+	world.archetypeIndex = new_archetype_map
 end
 
 local world_delete: (world: World, entity: i53, destruct: boolean?) -> ()
