@@ -1813,7 +1813,7 @@ export type World = {
 	component: <T>(self: World) -> Entity<T>,
 	--- Gets the target of an relationship. For example, when a user calls
 	--- `world:target(id, ChildOf(parent), 0)`, you will obtain the parent entity.
-	target: (self: World, id: Entity, relation: Entity, nth: number) -> Entity?,
+	target: (self: World, id: Entity, relation: Entity, nth: number?) -> Entity?,
 	--- Deletes an entity and all it's related components and relationships.
 	delete: (self: World, id: Entity) -> (),
 
