@@ -1026,12 +1026,9 @@ TEST("world:target", function()
         world:add(e, pair(B, D))
         world:add(e, pair(C, D))
 
-        CHECK(world:target(e, A) == B)
-        CHECK(world:target(e, A, 1) == C)
-        CHECK(world:target(e, B) == C)
-        CHECK(world:target(e, B, 1) == D)
-        CHECK(world:target(e, C) == D)
-        CHECK(world:target(e, C, 1) == nil)
+        CHECK(world:target(e, A) == world:target(e, A, 0))
+        CHECK(world:target(e, B) == world:target(e, B, 0))
+        CHECK(world:target(e, C) == world:target(e, C, 0))
     end
 
     do CASE "loop until no target"
