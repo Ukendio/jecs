@@ -95,10 +95,20 @@ export class World {
      * Gets the target of a relationship. For example, when a user calls
      * `world.target(entity, ChildOf(parent))`, you will obtain the parent entity.
      * @param entity Entity
+     * @param index Target index
      * @param relation The Relationship
      * @returns The Parent Entity if it exists
      */
     target(entity: Entity, relation: Entity, index: number): Entity | undefined;
+
+    /**
+     * Gets the target of a relationship. For example, when a user calls
+     * `world.target(entity, ChildOf(parent))`, you will obtain the parent entity.
+     * @param entity Entity
+     * @param relation The Relationship
+     * @returns The Parent Entity if it exists
+     */
+    target(entity: Entity, relation: Entity): Entity | undefined;
 
     /**
      * Clears an entity from the world.

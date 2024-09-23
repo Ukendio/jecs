@@ -1012,6 +1012,28 @@ TEST("world:target", function()
         CHECK(world:target(e, C, 1) == nil)
     end
 
+    do CASE "infer index when unspecified"
+        local world = world_new()
+        local A = world:component()
+        local B = world:component()
+        local C = world:component()
+        local D = world:component()
+        local e = world:entity()
+
+        world:add(e, pair(A, B))
+        world:add(e, pair(A, C))
+        world:add(e, pair(B, C))
+        world:add(e, pair(B, D))
+        world:add(e, pair(C, D))
+
+        CHECK(world:target(e, A) == B)
+        CHECK(world:target(e, A, 1) == C)
+        CHECK(world:target(e, B) == C)
+        CHECK(world:target(e, B, 1) == D)
+        CHECK(world:target(e, C) == D)
+        CHECK(world:target(e, C, 1) == nil)
+    end
+
     do CASE "loop until no target"
         local world = world_new()
 

@@ -389,7 +389,8 @@ local function world_has(world: World, entity: number, ...: i53): boolean
 	return true
 end
 
-local function world_target(world: World, entity: i53, relation: i24, index: number): i24?
+local function world_target(world: World, entity: i53, relation: i24, index_opt: number?): i24?
+	local index = if index_opt then index_opt else 0
 	local record = world.entityIndex.sparse[entity]
 	local archetype = record.archetype
 	if not archetype then
