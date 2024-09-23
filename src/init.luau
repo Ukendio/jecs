@@ -389,8 +389,10 @@ local function world_has(world: World, entity: number, ...: i53): boolean
 	return true
 end
 
-local function world_target(world: World, entity: i53, relation: i24, index_opt: number?): i24?
-	local index = if index_opt then index_opt else 0
+local function world_target(world: World, entity: i53, relation: i24, index): i24?
+    if index == nil then
+        index = 0
+    end
 	local record = world.entityIndex.sparse[entity]
 	local archetype = record.archetype
 	if not archetype then
@@ -1813,7 +1815,7 @@ export type World = {
 	component: <T>(self: World) -> Entity<T>,
 	--- Gets the target of an relationship. For example, when a user calls
 	--- `world:target(id, ChildOf(parent), 0)`, you will obtain the parent entity.
-	target: (self: World, id: Entity, relation: Entity, nth: number?) -> Entity?,
+	target: (self: World, id: Entity, relation: Entity, nth: number) -> Entity?,
 	--- Deletes an entity and all it's related components and relationships.
 	delete: (self: World, id: Entity) -> (),
 
