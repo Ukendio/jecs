@@ -53,11 +53,10 @@ local E8 = mcs:entity()
 local registry2 = ecr.registry()
 
 local function flip()
-	return math.random() >= 0.15
+	return math.random() >= 0.25
 end
 
-local common = 0
-local N = 5000
+local N = 2^16-2
 local archetypes = {}
 
 local hm = 0
@@ -68,6 +67,12 @@ for i = 1, N do
 	local entity = ecs:entity()
 	local m = mcs:entity()
 
+	if flip() then
+		registry2:set(id, B1, {value = true})
+		ecs:set(entity, D1, { value = true})
+		newWorld:insert(n, A1({value = true}))
+		mcs:set(m, E1, { value = 2})
+	end
 	if flip() then
 		combination ..= "B"
 		registry2:set(id, B2, {value = true})
@@ -121,15 +126,7 @@ for i = 1, N do
 
 	end
 
-	if #combination == 7 then
-		combination = "A" .. combination
-		common += 1
-		registry2:set(id, B1, {value = true})
-		ecs:set(entity, D1, { value = true})
-		newWorld:insert(n, A1({value = true}))
-		mcs:set(m, E1, { value = 2})
 
-	end
 
 	if combination:find("BCDF") then
 		if not archetypes[combination] then
@@ -148,21 +145,13 @@ local green = rgb.green
 
 local WALL = gray(" │ ")
 
-local numberOfArchetypes = 0
-for _  in archetypes do
-	numberOfArchetypes += 1
-end
-print(common)
+local count = 0
 
-print(
-	"N entities "..yellow(N)
-	..WALL
-	.."with common components: "
-	..yellow(tostring(common).."/"..tostring(N)).." "
-	..yellow("("..string.format("%.2f", (common / (2^16 - 2)* 100)).."%)")
-	..WALL
-	..yellow("Total Archetypes: "..numberOfArchetypes)
-)
+for _, archetype in ecs:query(D2, D4, D6, D8):archetypes() do
+    count += #archetype.entities
+end
+
+print(count)
 
 return {
 	ParameterGenerator = function()
@@ -170,14 +159,19 @@ return {
 	end,
 
 	Functions = {
-		Mirror = function()
-			for entityId, firstComponent in mcs:query(E1, E2, E3, E4) do
+		Matter = function()
+			for entityId, firstComponent in newWorld:query(A2, A4, A6, A8) do
 			end
 		end,
 
+		ECR = function()
+    		for entityId, firstComponent in registry2:view(B2, B4, B6, B8) do
+            end
+	    end,
+
 		Jecs = function()
- 			for entityId, firstComponent in ecs:query(D1, D2, D3, D4) do
- 			end
+    		for entityId, firstComponent in ecs:query(D2, D4, D6, D8) do
+            end
 		end,
 	},
 }
