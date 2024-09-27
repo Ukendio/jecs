@@ -488,9 +488,7 @@ local function archetype_append_to_records(
 	end
 end
 
-local function archetype_create(world: World, types: { i24 }, prev: i53?): Archetype
-	local ty = hash(types)
-
+local function archetype_create(world: World, types: { i24 }, ty, prev: i53?): Archetype
 	local archetype_id = (world.nextArchetypeId :: number) + 1
 	world.nextArchetypeId = archetype_id
 
@@ -558,7 +556,7 @@ local function archetype_ensure(world: World, types): Archetype
 		return archetype
 	end
 
-	return archetype_create(world, types)
+	return archetype_create(world, types, ty)
 end
 
 local function find_insert(types: { i53 }, toAdd: i53): number
@@ -1743,7 +1741,7 @@ function World.new()
 		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
 	}, World) :: any
 
-	self.ROOT_ARCHETYPE = archetype_create(self, {})
+	self.ROOT_ARCHETYPE = archetype_create(self, {}, "")
 
 	for i = HI_COMPONENT_ID + 1, EcsRest do
 		-- Initialize built-in components
