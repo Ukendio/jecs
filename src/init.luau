@@ -1710,19 +1710,6 @@ if _G.__JECS_DEBUG then
 		return world_get(world, entity, ...)
 	end
 
-	World.target = function(world, entity, relation, index)
-		if index == nil then
-			local _1 = get_name(world, entity)
-			local _2 = get_name(world, relation)
-
-			throw(
-				"We have changed the function call to require an index parameter,"
-					.. ` please use world:target({_1}, {_2}, 0)`
-			)
-		end
-		return world_target(world, entity, relation, index)
-	end
-
 	World.remove = function() end
 end
 
