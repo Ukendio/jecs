@@ -1,8 +1,8 @@
 # World
 A World contains entities which have components. The World is queryable and can be used to get entities with a specific set of components and to perform different kinds of operations on them.
 
-## Functions
-### new
+# Functions
+## new
 `World` utilizes a class, meaning JECS allows you to create multiple worlds.
 ```luau
 function World.new(): World
@@ -24,8 +24,8 @@ const myOtherWorld = new World();
 ```
 :::
 
-## Methods
-### entity
+# Methods
+## entity
 Creates a new entity.
 ```luau
 function World:entity(): Entity
@@ -43,7 +43,7 @@ const entity = world.entity();
 ```
 :::
 
-### component
+## component
 Creates a new component. Do note components are entities as well, meaning JECS allows you to add other components onto them.
 
 These are meant to be added onto other entities through `add` and `set`
@@ -63,7 +63,7 @@ const Health = world.component<number>();
 ```
 :::
 
-### get
+## get
 Returns the data present in the component that was set in the entity. Will return nil if the component was a tag or is not present.
 ```luau
 function World:get<T>(
@@ -100,7 +100,7 @@ print(world.get(EntityWithNoHealth, Health)) // Outputs undefined (nil)
 ```
 :::
 
-### has
+## has
 Returns whether an entity has a component (ID). Useful for checking if an entity has a tag or if you don't care of the data that is inside the component.
 ```luau
 function World:has(
@@ -145,7 +145,7 @@ print(world.has(Entity, Ragdolled)); // Outputs true
 ```
 :::
 
-### add
+## add
 Adds a component (ID) to the entity. Useful for adding a tag to an entity, as this adds the component to the entity without any additional values inside
 
 ```luau
@@ -159,7 +159,7 @@ function World:add(
 This function is idempotent, meaning if the entity already has the id, this operation will have no side effects.
 :::
 
-### set
+## set
 Adds or changes data in the entity's component.
 ```luau
 function World:set(
@@ -197,7 +197,7 @@ print(world.get(Entity, Health)) // Outputs 50
 ```
 :::
 
-### query
+## query
 Creates a [`query`](query) with the given components (IDs). Entities that satisfies the conditions of the query will be returned and their corresponding data.
 ```luau
 function World:query(
@@ -228,7 +228,7 @@ for (const [entity, position, velocity] of world.query(Position, Velocity) {
 Queries are uncached by default, this is generally very cheap unless you have high fragmentation from e.g. relationships.
 
 :::
-### target
+## target
 Get the target of a relationship.
 This will return a target (second element of a pair) of the entity for the specified relationship. The index allows for iterating through the targets, if a single entity has multiple targets for the same relationship.
 If the index is larger than the total number of instances the entity has for the relationship or if there is no pair with the specified relationship on the entity, the operation will return nil.
@@ -240,7 +240,7 @@ function World:target(
 ): Entity? -- The target for the relationship at the specified index.
 ```
 
-### parent
+## parent
 Get parent (target of ChildOf relationship) for entity. If there is no ChildOf relationship pair, it will return nil.
 ```luau
 function World:parent(
@@ -254,7 +254,7 @@ This operation is the same as calling:
 world:target(entity, jecs.ChildOf, 0)
 ```
 
-### contains
+## contains
 Checks if an entity or component (id) exists in the world.
 ```luau
 function World:contains(
@@ -280,7 +280,7 @@ print(world.contains(2)); // Outputs false
 ```
 :::
 
-### remove
+## remove
 Removes a component (ID) from an entity
 ```luau
 function World:remove(
@@ -317,7 +317,7 @@ print(world.has(entity, IsMoving)); // Outputs false
 ```
 :::
 
-### delete
+## delete
 Deletes an entity and all of its related components and relationships.
 ```luau
 function World:delete(
@@ -347,7 +347,7 @@ print(world.has(entity)) // Outputs false
 ```
 :::
 
-### clear
+## clear
 Clears all of the components and relationships of the entity without deleting it.
 ```luau
 function World:clear(
