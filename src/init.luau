@@ -1709,12 +1709,6 @@ if _G.__JECS_DEBUG then
 
 		return world_get(world, entity, ...)
 	end
-
-	World.target = function(world, entity, relation, index)
-		return world_target(world, entity, relation, index)
-	end
-
-	World.remove = function() end
 end
 
 function World.new()
