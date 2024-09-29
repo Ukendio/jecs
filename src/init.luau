@@ -687,7 +687,7 @@ end
 local function archetype_traverse_remove(world: World, id: i53, from: Archetype): Archetype
 	from = from or world.ROOT_ARCHETYPE
 
-	local edge = archetype_ensure_edge(world, from.node.add, id)
+	local edge = archetype_ensure_edge(world, from.node.remove, id)
 
 	local to = edge.to
 	if not to then
