@@ -328,7 +328,7 @@ TEST("world:query()", function()
       		world:set(eAB, B, true)
 
             -- Should drain the iterator
-      		local q = world:query(A):drain()
+      		local q = world:query(A)
 
       		local i = 0
       		local j = 0
@@ -403,9 +403,9 @@ TEST("world:query()", function()
   		world:set(eAB, A, true)
   		world:set(eAB, B, true)
 
-  		local q = world:query(A):drain()
+  		local it = world:query(A):iter()
 
-  		local e, data = q.next()
+  		local e, data = it()
   		while e do
             if e == eA then
                 CHECK(data)
@@ -415,7 +415,7 @@ TEST("world:query()", function()
                 CHECK(false)
             end
 
- 			e, data = q.next()
+ 			e, data = it()
   		end
         CHECK(true)
    	end
@@ -689,9 +689,10 @@ TEST("world:query()", function()
       		world:add(e1, A)
 
       		local query = world:query(B)
-      		CHECK(query:next() == nil)
-      		CHECK(query:replace() == nil)
       		CHECK(query:without() == query)
+            CHECK(query:with() == query)
+            -- They always return the same EMPTY_LIST
+            CHECK(query:archetypes() == world:query(B):archetypes())
         end
 
         do
@@ -709,26 +710,6 @@ TEST("world:query()", function()
 
     		CHECK(count == 0)
         end
-    end
-
-    do CASE "replace"
-        local world = jecs.World.new()
-  		local A = world:component()
-  		local B = world:component()
-   	    local C = world:component()
-
-  		local e = world:entity()
-  		world:set(e, A, 1)
-  		world:set(e, B, true)
-  		world:set(e, C, "hello ")
-
-  		world:query(A, B, C):replace(function(a, b, c)
-  		    return a * 2, not b, c.."world"
-  		end)
-
-  		CHECK(world:get(e, A) == 2)
-  		CHECK(world:get(e, B) == false)
-  		CHECK(world:get(e, C) == "hello world")
     end
 
     do CASE "without"
@@ -1104,9 +1085,9 @@ local function ChangeTracker<T>(world, T: Entity<T>): Tracker<T>
 
     local function changes_added()
         added = true
-        local q = world:query(T):without(PreviousT):drain()
+        local it = world:query(T):without(PreviousT):iter()
         return function()
-            local id, data = q.next()
+            local id, data = it()
             if not id then
                 return nil
             end
@@ -1120,10 +1101,10 @@ local function ChangeTracker<T>(world, T: Entity<T>): Tracker<T>
     end
 
     local function changes_changed()
-        local q = world:query(T, PreviousT):drain()
+        local it = world:query(T, PreviousT):iter()
 
         return function()
-            local id, new, old = q.next()
+            local id, new, old = it()
             while true do
                 if not id then
                     return nil
@@ -1137,7 +1118,7 @@ local function ChangeTracker<T>(world, T: Entity<T>): Tracker<T>
                     break
                 end
 
-                id, new, old = q.next()
+                id, new, old = it()
             end
 
             add[id] = new
@@ -1149,9 +1130,9 @@ local function ChangeTracker<T>(world, T: Entity<T>): Tracker<T>
     local function changes_removed()
         removed = true
 
-        local q = world:query(PreviousT):without(T):drain()
+        local it = world:query(PreviousT):without(T):iter()
         return function()
-            local id = q.next()
+            local id = it()
             if id then
                 world:remove(id, PreviousT)
             end
@@ -1703,6 +1684,39 @@ TEST("scheduler", function()
 
         CHECK(#systems == 1)
         CHECK(systems[1].callback == camera)
+    end
+end)
+
+TEST("repro", function()
+    do CASE ""
+        local world = world_new()
+        local reproEntity = world:component()
+        local components = { Cooldown = world:component() }
+        world:set(reproEntity, components.Cooldown, 2)
+
+        local function updateCooldowns(dt: number)
+            local toRemove = {}
+
+            for id, cooldown in world:query(components.Cooldown):iter() do
+                cooldown -= dt
+
+                if cooldown <= 0 then
+                    table.insert(toRemove, id)
+                    print('removing')
+                    -- world:remove(id, components.Cooldown)
+                else
+                    world:set(id, components.Cooldown, cooldown)
+                end
+            end
+
+            for _, id in toRemove do
+                world:remove(id, components.Cooldown)
+                CHECK(not world:get(id, components.Cooldown))
+            end
+        end
+
+        updateCooldowns(1.5)
+        updateCooldowns(1.5)
     end
 end)
 FINISH()
