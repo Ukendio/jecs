@@ -104,7 +104,6 @@ function query.archetypes(): { Archetype }
 
 Example:
 
-::: code-group
 ```luau [luau]
 for i, archetype in world:query(Position, Velocity).archetypes() do
     local columns = archetype.columns
@@ -120,23 +119,6 @@ for i, archetype in world:query(Position, Velocity).archetypes() do
     end
 end
 ```
-
-```ts [typescript]
-for (const [i, archetype] of world.query(Position, Velocity).archetypes()) {
-    const columns = archetype.columns;
-    const field = archetype.records;
-
-    const P = field[Position];
-    const V = field[Velocity];
-
-    for (const [row, entity] of archetype.entities) {
-        local position = columns[P][row];
-        local velocity = columns[V][row];
-        // Do something
-    }
-}
-```
-:::
 
 :::info
 This function is meant for internal usage. Use this if you want to maximize performance by inlining the iterator.
