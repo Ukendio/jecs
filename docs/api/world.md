@@ -81,7 +81,10 @@ local Health = world:component() :: jecs.Entity<number>
 local Entity = world:entity()
 world:set(Entity, Health, 100)
 
-print(world:get(Entity, Health)) -- Outputs 100
+print(world:get(Entity, Health))
+
+-- Outputs:
+-- 100
 ```
 
 ```ts [typescript]
@@ -90,7 +93,10 @@ const Health = world.component<number>();
 const Entity = world.entity();
 world.set(Entity, Health, 100);
 
-print(world.get(Entity, Health)) // Outputs 100
+print(world.get(Entity, Health))
+
+// Outputs:
+// 100
 ```
 :::
 
@@ -115,11 +121,17 @@ local Entity = world:entity()
 world:set(Entity, Health, 100)
 world:add(Entity, Ragdolled)
 
-print(world:has(Entity, Health)) -- Outputs true
-print(world:has(Entity, IsMoving)) -- Outputs false
+print(world:has(Entity, Health))
+print(world:has(Entity, IsMoving)
 
-print(world:get(Entity, Ragdolled)) -- Outputs nil
-print(world:has(Entity, Ragdolled)) -- Outputs true
+print(world:get(Entity, Ragdolled))
+print(world:has(Entity, Ragdolled))
+
+-- Outputs:
+-- true
+-- false
+-- nil
+-- true
 ```
 
 ```ts [typescript]
@@ -131,11 +143,17 @@ const Entity = world.entity();
 world.set(Entity, Health, 100);
 world.add(Entity, Ragdolled);
 
-print(world.has(Entity, Health)); // Outputs true
-print(world.has(Entity, IsMoving)); // Outputs false
+print(world.has(Entity, Health));
+print(world.has(Entity, IsMoving));
 
-print(world.get(Entity, Ragdolled)); // Outputs undefined (nil)
-print(world.has(Entity, Ragdolled)); // Outputs true
+print(world.get(Entity, Ragdolled));
+print(world.has(Entity, Ragdolled));
+
+// Outputs:
+// true
+// false
+// nil
+// true
 ```
 :::
 
@@ -172,10 +190,14 @@ local Health = world:component() :: jecs.Entity<number>
 local Entity = world:entity()
 world:set(Entity, Health, 100)
 
-print(world:get(Entity, Health)) -- Outputs 100
+print(world:get(Entity, Health))
 
 world:set(Entity, Health, 50)
-print(world:get(Entity, Health)) -- Outputs 50
+print(world:get(Entity, Health))
+
+-- Outputs:
+-- 100
+-- 50
 ```
 
 ```ts [typescript]
@@ -184,10 +206,14 @@ const Health = world.component<number>();
 const Entity = world.entity();
 world.set(Entity, Health, 100);
 
-print(world.get(Entity, Health)) // Outputs 100
+print(world.get(Entity, Health)) 
 
 world.set(Entity, Health, 50);
-print(world.get(Entity, Health)) // Outputs 50
+print(world.get(Entity, Health))
+
+// Outputs:
+// 100
+// 50
 ```
 :::
 
@@ -261,16 +287,26 @@ Example:
 ::: code-group
 ```luau [luau]
 local entity = world:entity()
-print(world:contains(entity)) -- Outputs true
-print(world:contains(1)) -- Outputs true, because 1 is given to the entity we just created!
-print(world:contains(2)) -- Outputs false
+print(world:contains(entity))
+print(world:contains(1))
+print(world:contains(2))
+
+-- Outputs:
+-- true
+-- true
+-- false
 ```
 
 ```ts [typescript]
 const entity = world.entity();
-print(world.contains(entity)); // Outputs true
-print(world.contains(1)); // Outputs true, because 1 is given to the entity we just created!
-print(world.contains(2)); // Outputs false
+print(world.contains(entity));
+print(world.contains(1));
+print(world.contains(2));
+
+// Outputs:
+// true
+// true
+// false
 ```
 :::
 
@@ -292,10 +328,14 @@ local IsMoving = world:component()
 local entity = world:entity()
 world:add(entity, IsMoving)
 
-print(world:has(entity, IsMoving)) -- Outputs true
+print(world:has(entity, IsMoving)) 
 
 world:remove(entity, IsMoving)
-print(world:has(entity, IsMoving)) -- Outputs false
+print(world:has(entity, IsMoving))
+
+-- Outputs:
+-- true
+-- false
 ```
 
 ```ts [typescript]
@@ -304,10 +344,14 @@ const IsMoving = world.component();
 const entity = world.entity();
 world.add(entity, IsMoving);
 
-print(world.has(entity, IsMoving)) // Outputs true
+print(world.has(entity, IsMoving));
 
 world.remove(entity, IsMoving);
-print(world.has(entity, IsMoving)); // Outputs false
+print(world.has(entity, IsMoving));
+
+// Outputs:
+// true
+// false
 ```
 :::
 
@@ -324,20 +368,28 @@ Example:
 ::: code-group
 ```luau [luau]
 local entity = world:entity()
-print(world:has(entity)) -- Outputs true
+print(world:has(entity))
 
 world:delete(entity)
 
-print(world:has(entity)) -- Outputs false
+print(world:has(entity))
+
+-- Outputs:
+-- true
+-- false
 ```
 
 ```ts [typescript]
-const entity = world.entity()
-print(world.has(entity)) // Outputs true
+const entity = world.entity();
+print(world.has(entity));
 
-world.delete(entity)
+world.delete(entity);
 
-print(world.has(entity)) // Outputs false
+print(world.has(entity));
+
+// Outputs:
+// true
+// false
 ```
 :::
 
