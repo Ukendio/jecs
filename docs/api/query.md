@@ -2,23 +2,21 @@
 
 A World contains entities which have components. The World is queryable and can be used to get entities with a specific set of components.
 
-To create a query, you must utilize [`world:query`](world).
+# Methods
 
-## Methods
-
-### drain
+## drain
 This method will impede it from being reset when the query is being iterated.
 ```luau
 function query:drain(): Query
 ```
 
-### next
+## next
 Get the next result in the query. Drain must have been called beforehand or otherwise it will error.
 ```luau
 function query:next(): Query
 ```
 
-### with
+## with
 Adds components (IDs) to query with, but will not use their data. This is useful for Tags or generally just data you do not care for.
 
 ```luau
@@ -48,7 +46,7 @@ for (const [id, position] of world.query(Position).with(Velocity)) {
 Put the IDs inside of `world:query()` instead if you need the data.
 :::
 
-### without
+## without
 Removes entities with the provided components from the query.
 
 ```luau
@@ -73,7 +71,7 @@ for (const [entity, position] of world.query(Position).without(Velocity)) {
 ```
 :::
 
-### replace
+## replace
 This function takes a callback which is given the current queried data of each matching entity. The values returned by the callback will be set as the new data for each given ID on the entity.
 ```luau
 function query:replace(
@@ -98,7 +96,7 @@ world
 ```
 :::
 
-### archetypes
+## archetypes
 Returns the matching archetypes of the query.
 ```luau
 function query.archetypes(): { Archetype }
