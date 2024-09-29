@@ -81,10 +81,7 @@ local Health = world:component() :: jecs.Entity<number>
 local Entity = world:entity()
 world:set(Entity, Health, 100)
 
-local EntityWithNoHealth = world:entity()
-
 print(world:get(Entity, Health)) -- Outputs 100
-print(world:get(EntityWithNoHealth, Health)) -- Outputs nil
 ```
 
 ```ts [typescript]
@@ -93,10 +90,7 @@ const Health = world.component<number>();
 const Entity = world.entity();
 world.set(Entity, Health, 100);
 
-const EntityWithNoHealth = world.entity();
-
 print(world.get(Entity, Health)) // Outputs 100
-print(world.get(EntityWithNoHealth, Health)) // Outputs undefined (nil)
 ```
 :::
 
@@ -114,7 +108,7 @@ Example:
 ::: code-group
 ```luau [luau]
 local IsMoving = world:component()
-local Ragdolled = world:component() -- This is a tag, meaning it won't contain data
+local Ragdolled = world:entity() -- This is a tag, meaning it won't contain data
 local Health = world:component() :: jecs.Entity<number>
 
 local Entity = world:entity()
@@ -130,7 +124,7 @@ print(world:has(Entity, Ragdolled)) -- Outputs true
 
 ```ts [typescript]
 const IsMoving = world.component();
-const Ragdolled = world.component(); -- This is a tag, meaning it won't contain data
+const Ragdolled = world.entity(); -- This is a tag, meaning it won't contain data
 const Health = world.component<number>();
 
 const Entity = world.entity();
