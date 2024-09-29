@@ -3,8 +3,6 @@ A World contains entities which have components. The World is queryable and can 
 
 ## Functions
 ### new
-Creates a new world (necessary step to utilize the methods of the class)
-
 `World` utilizes a class, meaning JECS allows you to create multiple worlds.
 ```luau
 function World.new(): World
