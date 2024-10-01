@@ -71,6 +71,58 @@ local function name(world, e)
     return world:get(e, jecs.Name)
 end
 
+TEST("world:cleanup()", function()
+    local world = world_new()
+    local A = world:component()
+    local B = world:component()
+    local C = world:component()
+
+    local e1 = world:entity()
+    local e2 = world:entity()
+    local e3 = world:entity()
+
+    world:set(e1, A, true)
+
+    world:set(e2, A, true)
+    world:set(e2, B, true)
+
+    world:set(e3, A, true)
+    world:set(e3, B, true)
+    world:set(e3, C, true)
+
+    local archetypeIndex = world.archetypeIndex
+
+    CHECK(#archetypeIndex["1"].entities == 1)
+    CHECK(#archetypeIndex["1_2"].entities == 1)
+    CHECK(#archetypeIndex["1_2_3"].entities == 1)
+
+    world:delete(e1)
+    world:delete(e2)
+    world:delete(e3)
+
+    world:cleanup()
+
+    archetypeIndex = world.archetypeIndex
+
+    CHECK(archetypeIndex["1"] == nil)
+    CHECK(archetypeIndex["1_2"] == nil)
+    CHECK(archetypeIndex["1_2_3"] == nil)
+
+    local e4 = world:entity()
+    world:set(e4, A, true)
+    CHECK(#archetypeIndex["1"].entities == 1)
+    CHECK(archetypeIndex["1_2"] == nil)
+    CHECK(archetypeIndex["1_2_3"] == nil)
+    world:set(e4, B, true)
+    CHECK(#archetypeIndex["1"].entities == 0)
+    CHECK(#archetypeIndex["1_2"].entities == 1)
+    CHECK(archetypeIndex["1_2_3"] == nil)
+    world:set(e4, C, true)
+    CHECK(#archetypeIndex["1"].entities == 0)
+    CHECK(#archetypeIndex["1_2"].entities == 0)
+    CHECK(#archetypeIndex["1_2_3"].entities == 1)
+end)
+
 TEST("world:entity()", function()
     do CASE "unique IDs"
         local world = jecs.World.new()

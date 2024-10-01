@@ -26,8 +26,7 @@ type GraphEdges = Map<i53, GraphEdge>
 type GraphNode = {
 	add: GraphEdges,
 	remove: GraphEdges,
-	add_ref: GraphEdge?,
-	remove_ref: GraphEdge?,
+	refs: GraphEdge
 }
 
 export type Archetype = {
@@ -521,7 +520,7 @@ local function archetype_create(world: World, types: { i24 }, ty, prev: i53?): A
 
 	local archetype: Archetype = {
 		columns = columns,
-		node = { add = {}, remove = {} },
+		node = { add = {}, remove = {}, refs = {} },
 		entities = {},
 		id = archetype_id,
 		records = records,
@@ -624,17 +623,20 @@ local function archetype_ensure_edge(world, edges, id): GraphEdge
 	return edge
 end
 
-local function init_edge_for_add(world, archetype, edge, id, to)
+local function init_edge_for_add(world, archetype, edge: GraphEdge, id, to)
 	archetype_init_edge(archetype, edge, id, to)
 	archetype_ensure_edge(world, archetype.node.add, id)
 	if archetype ~= to then
-		local to_add_ref = to.node.add_ref
-		edge.next = to_add_ref
-		edge.prev = nil
-		if to_add_ref then
-			to_add_ref.prev = edge
-		end
-		to.node.add_ref = edge
+	    local to_refs = to.node.refs
+        local next_edge = to_refs.next
+
+        to_refs.next = edge
+        edge.prev = to_refs
+        edge.next = next_edge
+
+        if next_edge then
+            next_edge.prev = edge
+        end
 	end
 end
 
@@ -642,21 +644,16 @@ local function init_edge_for_remove(world, archetype, edge, id, to)
 	archetype_init_edge(archetype, edge, id, to)
 	archetype_ensure_edge(world, archetype.node.remove, id)
 	if archetype ~= to then
-		local to_remove_ref = to.node.remove_ref
-		local prev
-		if to_remove_ref then
-			prev = to_remove_ref.prev
-			to_remove_ref.prev = edge
-			edge.next = to_remove_ref
-		else
-			to.node.remove_ref = edge
-			edge.next = nil
-		end
+	    local to_refs = to.node.refs
+        local prev_edge = to_refs.prev
 
-		edge.prev = prev
-		if prev then
-			prev.next = edge
-		end
+        to_refs.prev = edge
+        edge.next = to_refs
+        edge.prev = prev_edge
+
+        if prev_edge then
+            prev_edge.next = edge
+        end
 	end
 end
 
@@ -871,52 +868,47 @@ local function archetype_clear_edges(archetype: Archetype)
 	local node = archetype.node
 	local add = node.add
 	local remove = node.remove
-	for _, edge in add do
+	local node_refs = node.refs
+	for id, edge in add do
 		archetype_disconnect_edge(edge)
+		add[id] = nil
 	end
-	for _, edge in remove do
+	for id, edge in remove do
 		archetype_disconnect_edge(edge)
-	end
-	local node_add_ref = node.add_ref
-	if node_add_ref then
-		local current = node_add_ref.next
-		while current do
-			local edge = current
-			current = current.next
-			local node_add = edge.from.node.add
-			if node_add then
-				archetype_remove_edge(node_add, edge.id, edge)
-			end
-		end
+		remove[id] = nil
 	end
 
-	local node_remove_ref = node.remove_ref
-	if node_remove_ref then
-		local current = node_remove_ref.prev
-		while current do
-			local edge = current
-			current = current.prev
-			local node_remove = edge.from.node.remove
-			if node_remove then
-				archetype_remove_edge(node_remove, edge.id, edge)
-			end
-		end
-	end
+	local cur = node_refs.next
+    while cur do
+        local edge = cur
+        local next_edge = edge.next
+        archetype_remove_edge(edge.from.node.add, edge.id, edge)
+        cur = next_edge
+    end
 
-	node.add = nil :: any
-	node.remove = nil :: any
-	node.add_ref = nil :: any
-	node.remove_ref = nil :: any
+    cur = node_refs.prev
+    while cur do
+        local edge = cur
+        local next_edge = edge.prev
+        archetype_remove_edge(edge.from.node.remove, edge.id, edge)
+        cur = next_edge
+    end
+
+	node_refs.next = nil
+	node_refs.prev = nil
 end
 
 local function archetype_destroy(world: World, archetype: Archetype)
+
+    if archetype == world.ROOT_ARCHETYPE then
+        return
+    end
+
 	local component_index = world.componentIndex
 	archetype_clear_edges(archetype)
 	local archetype_id = archetype.id
-	if archetype ~= world.ROOT_ARCHETYPE then
-	    world.archetypes[archetype_id] = nil
-		world.archetypeIndex[archetype.type] = nil
-	end
+    world.archetypes[archetype_id] = nil
+	world.archetypeIndex[archetype.type] = nil
 	local records = archetype.records
 
 	for id in records do
