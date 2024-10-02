@@ -520,7 +520,7 @@ local function archetype_create(world: World, types: { i24 }, ty, prev: i53?): A
 
 	local archetype: Archetype = {
 		columns = columns,
-		node = { add = {}, remove = {}, refs = {} },
+		node = { add = {}, remove = {}, refs = {} :: GraphEdge },
 		entities = {},
 		id = archetype_id,
 		records = records,
