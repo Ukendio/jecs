@@ -610,13 +610,7 @@ end
 local function archetype_ensure_edge(world, edges, id): GraphEdge
 	local edge = edges[id]
 	if not edge then
-		edge = {
-			from = nil :: any,
-			to = nil :: any,
-			id = id,
-			prev = nil,
-			next = nil,
-		} :: GraphEdge
+		edge = {} :: GraphEdge
 		edges[id] = edge
 	end
 
@@ -1087,9 +1081,6 @@ local EMPTY_QUERY = {
 	iter = function()
 		return NOOP
 	end,
-	drain = ARM,
-	next = NOOP,
-	replace = NOOP,
 	with = ARM,
 	without = ARM,
 	archetypes = function()
@@ -1099,15 +1090,8 @@ local EMPTY_QUERY = {
 
 setmetatable(EMPTY_QUERY, EMPTY_QUERY)
 
-local function query_iter(query)
+local function query_iter_init(query)
 	local world_query_iter_next
-
-	if query.should_drain then
-		world_query_iter_next = query.iter_next
-		if world_query_iter_next then
-			return world_query_iter_next
-		end
-	end
 
 	local compatible_archetypes = query.compatible_archetypes
 	local lastArchetype = 1
@@ -1355,19 +1339,16 @@ local function query_iter(query)
 		end
 	end
 
-	query.iter_next = world_query_iter_next
+	query.next = world_query_iter_next
 	return world_query_iter_next
 end
 
-local function query_drain(query)
-	local query_iter_next = query_iter(query)
-	query.next = query_iter_next
-	query.should_drain = true
-	return query
-end
-
-local function query_next(query)
-	error("Did you forget to call drain?")
+local function query_iter(query)
+    local query_next = query.next
+    if not query_next then
+        query_next = query_iter_init(query)
+    end
+    return query_next
 end
 
 local function query_without(query, ...)
@@ -1432,55 +1413,6 @@ local function query_with(query, ...)
 	return query
 end
 
-local function columns_replace_values(row, columns, ...)
-	for i, column in columns do
-		column[row] = select(i, ...)
-	end
-end
-
-local function query_replace(query, fn: (...any) -> ...any)
-	local compatible_archetypes = query.compatible_archetypes
-	local ids = query.ids
-	local A, B, C, D, E = unpack(ids, 1, 5)
-	local queryOutput = {}
-	for i, archetype in compatible_archetypes do
-		local columns = archetype.columns
-		local records = archetype.records
-		for row in archetype.entities do
-			if not B then
-				local va = columns[records[A].column]
-				local pa = fn(va[row])
-
-				va[row] = pa
-			elseif not C then
-				local va = columns[records[A].column]
-				local vb = columns[records[B].column]
-
-				va[row], vb[row] = fn(va[row], vb[row])
-			elseif not D then
-				local va = columns[records[A].column]
-				local vb = columns[records[B].column]
-				local vc = columns[records[C].column]
-
-				va[row], vb[row], vc[row] = fn(va[row], vb[row], vc[row])
-			elseif not E then
-				local va = columns[records[A].column]
-				local vb = columns[records[B].column]
-				local vc = columns[records[C].column]
-				local vd = columns[records[D].column]
-
-				va[row], vb[row], vc[row], vd[row] = fn(va[row], vb[row], vc[row], vd[row])
-			else
-				for j, id in ids do
-					local tr = records[id]
-					queryOutput[j] = columns[tr.column][row]
-				end
-				columns_replace_values(row, columns, fn(unpack(queryOutput)))
-			end
-		end
-	end
-end
-
 -- Meant for directly iterating over archetypes to minimize
 -- function call overhead. Should not be used unless iterating over
 -- hundreds of thousands of entities in bulk.
@@ -1491,13 +1423,10 @@ end
 local Query = {}
 Query.__index = Query
 Query.__iter = query_iter
-Query.iter = query_iter
+Query.iter = query_iter_init
 Query.without = query_without
 Query.with = query_with
 Query.archetypes = query_archetypes
-Query.drain = query_drain
-Query.next = query_next
-Query.replace = query_replace
 
 local function world_query(world: World, ...)
 	local compatible_archetypes = {}
