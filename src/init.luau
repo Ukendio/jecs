@@ -1166,9 +1166,6 @@ local function query_iter_init(query)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entityId = entities[i]
 				columns = archetype.columns
 				local records = archetype.records
@@ -1192,9 +1189,6 @@ local function query_iter_init(query)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entityId = entities[i]
 				columns = archetype.columns
 				local records = archetype.records
@@ -1219,9 +1213,6 @@ local function query_iter_init(query)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entityId = entities[i]
 				columns = archetype.columns
 				local records = archetype.records
@@ -1247,9 +1238,6 @@ local function query_iter_init(query)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entityId = entities[i]
 				columns = archetype.columns
 				local records = archetype.records
@@ -1277,9 +1265,6 @@ local function query_iter_init(query)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entityId = entities[i]
 				columns = archetype.columns
 				local records = archetype.records
