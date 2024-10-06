@@ -1,0 +1,20 @@
+name: Stylua
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  run:
+    name: Run Stylua
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v4
+
+      - name: Run Stylua
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+            token: ${{ secrets.GITHUB_TOKEN }}
+            version: latest # NOTE: we recommend pinning to a specific version in case of formatting changes
+            # CLI arguments
+            args: --check ./src
