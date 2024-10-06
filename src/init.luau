@@ -26,7 +26,7 @@ type GraphEdges = Map<i53, GraphEdge>
 type GraphNode = {
 	add: GraphEdges,
 	remove: GraphEdges,
-	refs: GraphEdge
+	refs: GraphEdge,
 }
 
 export type Archetype = {
@@ -69,34 +69,34 @@ type ArchetypeDiff = {
 	removed: Ty,
 }
 
-local HI_COMPONENT_ID       = _G.__JECS_HI_COMPONENT_ID or 256
+local HI_COMPONENT_ID = _G.__JECS_HI_COMPONENT_ID or 256
 
-local EcsOnAdd              = HI_COMPONENT_ID + 1
-local EcsOnRemove           = HI_COMPONENT_ID + 2
-local EcsOnSet              = HI_COMPONENT_ID + 3
-local EcsWildcard           = HI_COMPONENT_ID + 4
-local EcsChildOf            = HI_COMPONENT_ID + 5
-local EcsComponent          = HI_COMPONENT_ID + 6
-local EcsOnDelete           = HI_COMPONENT_ID + 7
-local EcsOnDeleteTarget     = HI_COMPONENT_ID + 8
-local EcsDelete             = HI_COMPONENT_ID + 9
-local EcsRemove             = HI_COMPONENT_ID + 10
-local EcsName               = HI_COMPONENT_ID + 11
-local EcsRest               = HI_COMPONENT_ID + 12
+local EcsOnAdd =             HI_COMPONENT_ID +  1
+local EcsOnRemove =          HI_COMPONENT_ID +  2
+local EcsOnSet =             HI_COMPONENT_ID +  3
+local EcsWildcard =          HI_COMPONENT_ID +  4
+local EcsChildOf =           HI_COMPONENT_ID +  5
+local EcsComponent =         HI_COMPONENT_ID +  6
+local EcsOnDelete =          HI_COMPONENT_ID +  7
+local EcsOnDeleteTarget =    HI_COMPONENT_ID +  8
+local EcsDelete =            HI_COMPONENT_ID +  9
+local EcsRemove =            HI_COMPONENT_ID + 10
+local EcsName =              HI_COMPONENT_ID + 11
+local EcsRest =              HI_COMPONENT_ID + 12
 
-local ECS_PAIR_FLAG         = 0x8
-local ECS_ID_FLAGS_MASK     = 0x10
-local ECS_ENTITY_MASK       = bit32.lshift(1, 24)
-local ECS_GENERATION_MASK   = bit32.lshift(1, 16)
+local ECS_PAIR_FLAG =        0x8
+local ECS_ID_FLAGS_MASK =    0x10
+local ECS_ENTITY_MASK =      bit32.lshift(1, 24)
+local ECS_GENERATION_MASK =  bit32.lshift(1, 16)
 
-local ECS_ID_DELETE         = 0b0000_0001
-local ECS_ID_IS_TAG         = 0b0000_0010
-local ECS_ID_HAS_ON_ADD     = 0b0000_0100
-local ECS_ID_HAS_ON_SET     = 0b0000_1000
-local ECS_ID_HAS_ON_REMOVE  = 0b0001_0000
-local ECS_ID_MASK           = 0b0000_0000
+local ECS_ID_DELETE =        0b0000_0001
+local ECS_ID_IS_TAG =        0b0000_0010
+local ECS_ID_HAS_ON_ADD =    0b0000_0100
+local ECS_ID_HAS_ON_SET =    0b0000_1000
+local ECS_ID_HAS_ON_REMOVE = 0b0001_0000
+local ECS_ID_MASK =          0b0000_0000
 
-local NULL_ARRAY            = table.freeze({})
+local NULL_ARRAY =           table.freeze({})
 
 local function FLAGS_ADD(is_pair: boolean): number
 	local flags = 0x0
@@ -389,9 +389,9 @@ local function world_has(world: World, entity: number, ...: i53): boolean
 end
 
 local function world_target(world: World, entity: i53, relation: i24, index): i24?
-    if index == nil then
-        index = 0
-    end
+	if index == nil then
+		index = 0
+	end
 	local record = world.entityIndex.sparse[entity]
 	local archetype = record.archetype
 	if not archetype then
@@ -621,16 +621,16 @@ local function init_edge_for_add(world, archetype, edge: GraphEdge, id, to)
 	archetype_init_edge(archetype, edge, id, to)
 	archetype_ensure_edge(world, archetype.node.add, id)
 	if archetype ~= to then
-	    local to_refs = to.node.refs
-        local next_edge = to_refs.next
+		local to_refs = to.node.refs
+		local next_edge = to_refs.next
 
-        to_refs.next = edge
-        edge.prev = to_refs
-        edge.next = next_edge
+		to_refs.next = edge
+		edge.prev = to_refs
+		edge.next = next_edge
 
-        if next_edge then
-            next_edge.prev = edge
-        end
+		if next_edge then
+			next_edge.prev = edge
+		end
 	end
 end
 
@@ -638,16 +638,16 @@ local function init_edge_for_remove(world, archetype, edge, id, to)
 	archetype_init_edge(archetype, edge, id, to)
 	archetype_ensure_edge(world, archetype.node.remove, id)
 	if archetype ~= to then
-	    local to_refs = to.node.refs
-        local prev_edge = to_refs.prev
+		local to_refs = to.node.refs
+		local prev_edge = to_refs.prev
 
-        to_refs.prev = edge
-        edge.next = to_refs
-        edge.prev = prev_edge
+		to_refs.prev = edge
+		edge.next = to_refs
+		edge.prev = prev_edge
 
-        if prev_edge then
-            prev_edge.next = edge
-        end
+		if prev_edge then
+			prev_edge.next = edge
+		end
 	end
 end
 
@@ -873,35 +873,34 @@ local function archetype_clear_edges(archetype: Archetype)
 	end
 
 	local cur = node_refs.next
-    while cur do
-        local edge = cur
-        local next_edge = edge.next
-        archetype_remove_edge(edge.from.node.add, edge.id, edge)
-        cur = next_edge
-    end
+	while cur do
+		local edge = cur
+		local next_edge = edge.next
+		archetype_remove_edge(edge.from.node.add, edge.id, edge)
+		cur = next_edge
+	end
 
-    cur = node_refs.prev
-    while cur do
-        local edge = cur
-        local next_edge = edge.prev
-        archetype_remove_edge(edge.from.node.remove, edge.id, edge)
-        cur = next_edge
-    end
+	cur = node_refs.prev
+	while cur do
+		local edge = cur
+		local next_edge = edge.prev
+		archetype_remove_edge(edge.from.node.remove, edge.id, edge)
+		cur = next_edge
+	end
 
 	node_refs.next = nil
 	node_refs.prev = nil
 end
 
 local function archetype_destroy(world: World, archetype: Archetype)
-
-    if archetype == world.ROOT_ARCHETYPE then
-        return
-    end
+	if archetype == world.ROOT_ARCHETYPE then
+		return
+	end
 
 	local component_index = world.componentIndex
 	archetype_clear_edges(archetype)
 	local archetype_id = archetype.id
-    world.archetypes[archetype_id] = nil
+	world.archetypes[archetype_id] = nil
 	world.archetypeIndex[archetype.type] = nil
 	local records = archetype.records
 
@@ -917,7 +916,7 @@ local function archetype_destroy(world: World, archetype: Archetype)
 end
 
 local function world_cleanup(world)
-    local archetypes = world.archetypes
+	local archetypes = world.archetypes
 
 	for _, archetype in archetypes do
 		if #archetype.entities == 0 then
@@ -929,7 +928,7 @@ local function world_cleanup(world)
 	local new_archetype_map = {}
 
 	for index, archetype in archetypes do
-	    new_archetypes[index] = archetype
+		new_archetypes[index] = archetype
 		new_archetype_map[archetype.type] = archetype
 	end
 
@@ -1036,23 +1035,22 @@ do
 					end
 					local object = ECS_ENTITY_T_LO(id)
 					if object == delete then
-    					local id_record = component_index[id]
+						local id_record = component_index[id]
 						local flags = id_record.flags
 						if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
-                  		    for _, child in children do
-               					-- Cascade deletions of it has Delete as component trait
-               					world_delete(world, child, destruct)
-            				end
+							for _, child in children do
+								-- Cascade deletions of it has Delete as component trait
+								world_delete(world, child, destruct)
+							end
 
 							break
 						else
-    						for _, child in children do
-    							world_remove(world, child, id)
-    						end
+							for _, child in children do
+								world_remove(world, child, id)
+							end
 						end
 					end
 				end
-
 
 				archetype_destroy(world, idr_t_archetype)
 			end
@@ -1329,11 +1327,11 @@ local function query_iter_init(query)
 end
 
 local function query_iter(query)
-    local query_next = query.next
-    if not query_next then
-        query_next = query_iter_init(query)
-    end
-    return query_next
+	local query_next = query.next
+	if not query_next then
+		query_next = query_iter_init(query)
+	end
+	return query_next
 end
 
 local function query_without(query, ...)
@@ -1800,4 +1798,20 @@ return {
 	pair_first = ecs_pair_first,
 	pair_second = ecs_pair_second,
 	entity_index_get_alive = entity_index_get_alive,
+
+	archetype_append_to_records = archetype_append_to_records,
+	id_record_ensure = id_record_ensure,
+	archetype_create = archetype_create,
+	archetype_ensure = archetype_ensure,
+	find_insert = find_insert,
+	find_archetype_with = find_archetype_with,
+	find_archetype_without = find_archetype_without,
+	archetype_init_edge = archetype_init_edge,
+	archetype_ensure_edge = archetype_ensure_edge,
+	init_edge_for_add = init_edge_for_add,
+	init_edge_for_remove = init_edge_for_remove,
+	create_edge_for_add = create_edge_for_add,
+	create_edge_for_remove = create_edge_for_remove,
+	archetype_traverse_add = archetype_traverse_add,
+	archetype_traverse_remove = archetype_traverse_remove,
 }
