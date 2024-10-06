@@ -1,12 +1,10 @@
 
 <p align="center">
-  <img src="jecs_darkmode.svg#gh-dark-mode-only" width=50%/>
-  <img src="jecs_lightmode.svg#gh-light-mode-only" width=50%/>
+  <img src="image-5.png" width=50%/>
+
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache-blue.svg?style=for-the-badge)](LICENSE-APACHE) [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs)
+
 </p>
-
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache-blue.svg?style=for-the-badge)](LICENSE-APACHE)
-[![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs)
-
 jecs is Just a stupidly fast Entity Component System
 
 - Entity Relationships as first class citizens
