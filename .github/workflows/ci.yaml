@@ -15,6 +15,14 @@ jobs:
       - name: Install Luau
         uses: encodedvenom/install-luau@v2.1
 
+      - uses: actions/checkout@v4
+      - uses: JohnnyMorganz/stylua-action@v4
+        with:
+            token: ${{ secrets.GITHUB_TOKEN }}
+            version: latest # NOTE: we recommend pinning to a specific version in case of formatting changes
+            # CLI arguments
+            args: --check src
+
       - name: Run Unit Tests
         id: run_tests
         run: |
