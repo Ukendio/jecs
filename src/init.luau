@@ -69,7 +69,7 @@ type ArchetypeDiff = {
 	removed: Ty,
 }
 
-local HI_COMPONENT_ID = _G.__JECS_HI_COMPONENT_ID or 256
+local HI_COMPONENT_ID =      _G.__JECS_HI_COMPONENT_ID or 256
 
 local EcsOnAdd =             HI_COMPONENT_ID +  1
 local EcsOnRemove =          HI_COMPONENT_ID +  2
