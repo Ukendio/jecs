@@ -1,5 +1,6 @@
 
-local jecs = require("@jecs")
+local jecs: typeof(require("../jecs/src")) = require("@jecs");
+
 local testkit = require("@testkit")
 local BENCH, START = testkit.benchmark()
 local __ = jecs.Wildcard
@@ -70,6 +71,35 @@ end
 local function name(world, e)
     return world:get(e, jecs.Name)
 end
+
+TEST("archetype", function()
+    local archetype_append_to_records = jecs.archetype_append_to_records
+    local id_record_ensure = jecs.id_record_ensure
+    local archetype_create = jecs.archetype_create
+    local archetype_ensure = jecs.archetype_ensure
+    local find_insert = jecs.find_insert
+    local find_archetype_with = jecs.find_archetype_with
+    local find_archetype_without = jecs.find_archetype_without
+    local archetype_init_edge = jecs.archetype_init_edge
+    local archetype_ensure_edge = jecs.archetype_ensure_edge
+    local init_edge_for_add = jecs.init_edge_for_add
+    local init_edge_for_remove = jecs.init_edge_for_remove
+    local create_edge_for_add = jecs.create_edge_for_add
+    local create_edge_for_remove = jecs.create_edge_for_remove
+    local archetype_traverse_add = jecs.archetype_traverse_add
+    local archetype_traverse_remove = jecs.archetype_traverse_remove
+
+    local world = world_new()
+    local root = world.ROOT_ARCHETYPE
+    local c1 = world:component()
+    local c2 = world:component()
+    local c3 = world:component()
+
+    local a1 = archetype_traverse_add(world, c1, nil)
+    local a2 = archetype_traverse_remove(world, c1, a1)
+    CHECK(root.node.add[c1].to == a1)
+    CHECK(root == a2)
+end)
 
 TEST("world:cleanup()", function()
     local world = world_new()
