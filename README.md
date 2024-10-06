@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="image-5.png" width=50%/>
+  <img src="image-5.png" width=25%/>
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache-blue.svg?style=for-the-badge)](LICENSE-APACHE) [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs)
 
