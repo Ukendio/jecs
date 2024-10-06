@@ -21,7 +21,7 @@ jobs:
             token: ${{ secrets.GITHUB_TOKEN }}
             version: latest # NOTE: we recommend pinning to a specific version in case of formatting changes
             # CLI arguments
-            args: --check src
+            args: --check ./src
 
       - name: Run Unit Tests
         id: run_tests
