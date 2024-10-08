@@ -62,3 +62,7 @@ drafts/
 
 .vitepress/cache
 .vitepress/dist
+
+# Luau tools
+/tools
+profile.*

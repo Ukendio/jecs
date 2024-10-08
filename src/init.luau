@@ -69,34 +69,34 @@ type ArchetypeDiff = {
 	removed: Ty,
 }
 
-local HI_COMPONENT_ID =      _G.__JECS_HI_COMPONENT_ID or 256
+local HI_COMPONENT_ID = _G.__JECS_HI_COMPONENT_ID or 256
 
-local EcsOnAdd =             HI_COMPONENT_ID +  1
-local EcsOnRemove =          HI_COMPONENT_ID +  2
-local EcsOnSet =             HI_COMPONENT_ID +  3
-local EcsWildcard =          HI_COMPONENT_ID +  4
-local EcsChildOf =           HI_COMPONENT_ID +  5
-local EcsComponent =         HI_COMPONENT_ID +  6
-local EcsOnDelete =          HI_COMPONENT_ID +  7
-local EcsOnDeleteTarget =    HI_COMPONENT_ID +  8
-local EcsDelete =            HI_COMPONENT_ID +  9
-local EcsRemove =            HI_COMPONENT_ID + 10
-local EcsName =              HI_COMPONENT_ID + 11
-local EcsRest =              HI_COMPONENT_ID + 12
+local EcsOnAdd = HI_COMPONENT_ID + 1
+local EcsOnRemove = HI_COMPONENT_ID + 2
+local EcsOnSet = HI_COMPONENT_ID + 3
+local EcsWildcard = HI_COMPONENT_ID + 4
+local EcsChildOf = HI_COMPONENT_ID + 5
+local EcsComponent = HI_COMPONENT_ID + 6
+local EcsOnDelete = HI_COMPONENT_ID + 7
+local EcsOnDeleteTarget = HI_COMPONENT_ID + 8
+local EcsDelete = HI_COMPONENT_ID + 9
+local EcsRemove = HI_COMPONENT_ID + 10
+local EcsName = HI_COMPONENT_ID + 11
+local EcsRest = HI_COMPONENT_ID + 12
 
-local ECS_PAIR_FLAG =        0x8
-local ECS_ID_FLAGS_MASK =    0x10
-local ECS_ENTITY_MASK =      bit32.lshift(1, 24)
-local ECS_GENERATION_MASK =  bit32.lshift(1, 16)
+local ECS_PAIR_FLAG = 0x8
+local ECS_ID_FLAGS_MASK = 0x10
+local ECS_ENTITY_MASK = bit32.lshift(1, 24)
+local ECS_GENERATION_MASK = bit32.lshift(1, 16)
 
-local ECS_ID_DELETE =        0b0000_0001
-local ECS_ID_IS_TAG =        0b0000_0010
-local ECS_ID_HAS_ON_ADD =    0b0000_0100
-local ECS_ID_HAS_ON_SET =    0b0000_1000
+local ECS_ID_DELETE = 0b0000_0001
+local ECS_ID_IS_TAG = 0b0000_0010
+local ECS_ID_HAS_ON_ADD = 0b0000_0100
+local ECS_ID_HAS_ON_SET = 0b0000_1000
 local ECS_ID_HAS_ON_REMOVE = 0b0001_0000
-local ECS_ID_MASK =          0b0000_0000
+local ECS_ID_MASK = 0b0000_0000
 
-local NULL_ARRAY =           table.freeze({})
+local NULL_ARRAY = table.freeze({})
 
 local function FLAGS_ADD(is_pair: boolean): number
 	local flags = 0x0
@@ -1711,6 +1711,7 @@ export type World = {
 	--- Assigns a value to a component on the given entity
 	set: <T>(self: World, id: Entity, component: Id<T>, data: T) -> (),
 
+	cleanup: (self: World) -> (),
 	-- Clears an entity from the world
 	clear: (self: World, id: Entity) -> (),
 	--- Removes a component from the given entity
