@@ -1,208 +1,203 @@
 /**
- * Represents an entity
+ * A unique identifier in the world, entity.
  * The generic type T defines the data type when this entity is used as a component
  */
-export type Entity<T = unknown> = number & { __T: T };
+export type Entity<T = unknown> = number & { __jecs_value: T };
 
-export type Pair = number;
+/**
+ * An entity with no associated data when used as a component
+ */
+export type Tag = Entity<undefined>;
 
-export type Id<T = unknown> = Entity<T> | Pair;
+/**
+ * A pair of entities
+ * P is the type of the predicate, O is the type of the object, and V is the type of the value (defaults to P)
+ */
+export type Pair<P = undefined, O = undefined, V = P> = number & {
+	__jecs_pair_pred: P;
+	__jecs_pair_obj: O;
+	__jecs_pair_value: V;
+};
 
+/**
+ * Either an Entity or a Pair
+ */
+export type Id<T = unknown> = Entity<T> | Pair<unknown, unknown, T>;
+
+type InferComponent<E> = E extends Id<infer T> ? T : never;
 type FlattenTuple<T extends any[]> = T extends [infer U] ? U : LuaTuple<T>;
 type Nullable<T extends unknown[]> = { [K in keyof T]: T[K] | undefined };
-type InferComponents<A extends Id[]> = { [K in keyof A]: A[K] extends Id<infer T> ? T : never };
+type InferComponents<A extends Id[]> = {
+	[K in keyof A]: InferComponent<A[K]>;
+};
 type TupleForWorldGet = [Id] | [Id, Id] | [Id, Id, Id] | [Id, Id, Id, Id];
 
-type Item<T extends unknown[]> = (this: Query<T>) => LuaTuple<[Entity, ...T]>;
+type Iter<T extends unknown[]> = IterableFunction<LuaTuple<[Entity, ...T]>>;
 
 export type Query<T extends unknown[]> = {
-    /**
-     * Get the next result in the query. Drain must have been called beforehand or otherwise it will error.
-     */
-    next: Item<T>;
+	/**
+	 * Returns an iterator that returns a tuple of an entity and queried components
+	 */
+	iter(): Iter<T>;
 
-    /**
-     * Resets the Iterator for a query.
-     */
-    drain: (this: Query<T>) => Query<T>;
+	/**
+	 * Modifies the query to include specified components
+	 * @param components The components to include
+	 * @returns Modified Query
+	 */
+	with(...components: Id[]): Query<T>;
 
-    /**
-     * Modifies the query to include specified components, but will not include the values.
-     * @param components The components to include
-     * @returns Modified Query
-     */
-    with: (this: Query<T>, ...components: Id[]) => Query<T>;
-
-    /**
-     * Modifies the Query to exclude specified components
-     * @param components The components to exclude
-     * @returns Modified Query
-     */
-    without: (this: Query<T>, ...components: Id[]) => Query<T>;
-
-    /**
-     * Modifies component data with a callback function
-     * @param fn The function to modify data
-     */
-    replace: (this: Query<T>, fn: (...components: T) => FlattenTuple<T>) => void;
-
-    /**
-     * Returns the archetypes associated with this query.
-     */
-    archetypes: () => Archetype[];
-} & IterableFunction<LuaTuple<[Entity, ...T]>>;
-
-export type Archetype = {
-    id: number;
-    edges: { [key: number]: ArchetypeEdge };
-    types: number[];
-    type: string | number;
-    entities: number[];
-    columns: unknown[][];
-    records: { [key: number]: ArchetypeRecord };
-};
-
-type ArchetypeRecord = {
-    count: number;
-    column: number;
-};
-
-type ArchetypeEdge = {
-    add: Archetype;
-    remove: Archetype;
-};
+	/**
+	 * Modifies the Query to exclude specified components
+	 * @param components The components to exclude
+	 * @returns Modified Query
+	 */
+	without(...components: Id[]): Query<T>;
+} & Iter<T>;
 
 export class World {
-    /**
-     * Creates a new World
-     */
-    constructor();
+	/**
+	 * Creates a new World
+	 */
+	constructor();
 
-    /**
-     * Creates a new entity
-     * @returns Entity
-     */
-    entity(): Entity;
+	/**
+	 * Creates a new entity
+	 * @returns Entity
+	 */
+	entity(): Tag;
 
-    /**
-     * Creates a new entity located in the first 256 ids.
-     * These should be used for static components for fast access.
-     * @returns Entity<T>
-     */
-    component<T = unknown>(): Entity<T>;
+	/**
+	 * Creates a new entity located in the first 256 ids.
+	 * These should be used for static components for fast access.
+	 * @returns Entity<T>
+	 */
+	component<T = unknown>(): Entity<T>;
 
-    /**
-     * Gets the target of a relationship. For example, when a user calls
-     * `world.target(entity, ChildOf(parent))`, you will obtain the parent entity.
-     * @param entity Entity
-     * @param index Target index
-     * @param relation The Relationship
-     * @returns The Parent Entity if it exists
-     */
-    target(entity: Entity, relation: Entity, index: number): Entity | undefined;
+	/**
+	 * Gets the target of a relationship. For example, when a user calls
+	 * `world.target(entity, ChildOf(parent))`, you will obtain the parent entity.
+	 * @param entity Entity
+	 * @param relation The Relationship
+	 * @returns The Parent Entity if it exists
+	 */
+	target(entity: Entity, relation: Entity): Entity | undefined;
 
-    /**
-     * Gets the target of a relationship. For example, when a user calls
-     * `world.target(entity, ChildOf(parent))`, you will obtain the parent entity.
-     * @param entity Entity
-     * @param relation The Relationship
-     * @returns The Parent Entity if it exists
-     */
-    target(entity: Entity, relation: Entity): Entity | undefined;
+	/**
+	 * Gets the target of a relationship at a specific index.
+	 * For example, when a user calls `world.target(entity, ChildOf(parent), 0)`,
+	 * you will obtain the parent entity.
+	 * @param entity Entity
+	 * @param relation The Relationship
+	 * @param index Target index
+	 * @returns The Parent Entity if it exists
+	 */
+	target(entity: Entity, relation: Entity, index: number): Entity | undefined;
 
-    /**
-     * Clears an entity from the world.
-     * @param entity Entity to be cleared
-     */
-    clear(entity: Entity): void;
+	/**
+	 * Clears an entity from the world
+	 * @param entity Entity to be cleared
+	 */
+	clear(entity: Entity): void;
 
-    /**
-     * Deletes an entity and all its related components and relationships.
-     * @param entity Entity to be destroyed
-     */
-    delete(entity: Entity): void;
+	/**
+	 * Deletes an entity and all its related components and relationships
+	 * @param entity Entity to be destroyed
+	 */
+	delete(entity: Entity): void;
 
-    /**
-     * Adds a component to the entity with no value
-     * @param entity Target Entity
-     * @param component Component
-     */
-    add<T>(entity: Entity, component: Id<T>): void;
+	/**
+	 * Adds a component to the entity with no value
+	 * @param entity Target Entity
+	 * @param component Component
+	 */
+	add(entity: Entity, component: Id): void;
 
-    /**
-     * Assigns a value to a component on the given entity
-     * @param entity Target Entity
-     * @param component Target Component
-     * @param data Component Data
-     */
-    set<T>(entity: Entity, component: Id<T>, data: NoInfer<T>): void;
+	/**
+	 * Assigns a value to a component on the given entity
+	 * @param entity Target Entity
+	 * @param component Target Component
+	 * @param value Component Value
+	 */
+	set<E extends Id<unknown>>(entity: Entity, component: E, value: InferComponent<E>): void;
 
-    /**
-     * Removes a component from the given entity
-     * @param entity Target Entity
-     * @param component Target Component
-     */
-    remove(entity: Entity, component: Id): void;
+	/**
+	 * Removes a component from the given entity
+	 * @param entity Target Entity
+	 * @param component Target Component
+	 */
+	remove(entity: Entity, component: Id): void;
 
-    /**
-     * Retrieves the values of specified components for an entity.
-     * Some values may not exist when called.
-     * A maximum of 4 components are allowed at a time.
-     * @param id Target Entity
-     * @param components Target Components
-     * @returns Data associated with target components if it exists.
-     */
-    get<T extends TupleForWorldGet>(id: Entity, ...components: T): FlattenTuple<Nullable<InferComponents<T>>>;
+	/**
+	 * Retrieves the values of specified components for an entity.
+	 * Some values may not exist when called.
+	 * A maximum of 4 components are allowed at a time.
+	 * @param id Target Entity
+	 * @param components Target Components
+	 * @returns Data associated with target components if it exists.
+	 */
+	get<T extends TupleForWorldGet>(id: Entity, ...components: T): FlattenTuple<Nullable<InferComponents<T>>>;
 
-    /**
-     * Returns whether the entity has the specified components.
-     * A maximum of 4 components are allowed at a time.
-     * @param entity Target Entity
-     * @param components Target Components
-     * @returns If the entity contains the components
-     */
-    has(entity: Entity, ...components: Id[]): boolean;
+	/**
+	 * Returns whether the entity has the specified components.
+	 * A maximum of 4 components are allowed at a time.
+	 * @param entity Target Entity
+	 * @param components Target Components
+	 * @returns If the entity contains the components
+	 */
+	has(entity: Entity, ...components: Id[]): boolean;
 
-    /**
-     * Checks if an entity exists in the world
-     * @param entity Entity to check
-     * @returns Whether the entity exists in the world
-     */
-    contains(entity: Entity): boolean;
+	/**
+	 * Checks if an entity exists in the world
+	 * @param entity Entity to check
+	 * @returns Whether the entity exists in the world
+	 */
+	contains(entity: Entity): boolean;
 
-    /**
-     * Searches the world for entities that match a given query
-     * @param components Queried Components
-     * @returns Query
-     */
-    query<T extends Id[]>(...components: T): Query<InferComponents<T>>;
+	/**
+	 * Get parent (target of ChildOf relationship) for entity.
+	 * If there is no ChildOf relationship pair, it will return undefined.
+	 * @param entity Target Entity
+	 * @returns Parent Entity or undefined
+	 */
+	parent(entity: Entity): Entity | undefined;
 
-    /**
-     * Get parent (target of ChildOf relationship) for entity.
-     * If there is no ChildOf relationship pair, it will return undefined.
-     * @param entity Target Entity
-     * @returns Parent Entity or undefined
-     */
-    parent(entity: Entity): Entity | undefined;
+	/**
+	 * Searches the world for entities that match a given query
+	 * @param components Queried Components
+	 * @returns Query
+	 */
+	query<T extends Id[]>(...components: T): Query<InferComponents<T>>;
 }
 
 /**
- * Creates a composite key.
- * @param pred The first entity
- * @param obj The second entity
- * @returns The composite key
+ * Creates a composite key (pair)
+ * @param pred The first entity (predicate)
+ * @param obj The second entity (object)
+ * @returns The composite key (pair)
  */
-export function pair(pred: Entity, obj: Entity): Pair;
+export function pair<P, O, V = P>(pred: Entity<P>, obj: Entity<O>): Pair<P, O, V>;
 
 /**
- * Checks if the entity is a composite key
- * @param e The entity to check
+ * Checks if the entity is a composite key (pair)
+ * @param value The entity to check
  * @returns If the entity is a pair
  */
-export function IS_PAIR(e: Id): boolean;
+export function IS_PAIR(value: Id): value is Pair;
 
-/** Built-in Component used to find every component id */
-export const Component: Entity;
+/**
+ * Gets the first entity (predicate) of a pair
+ * @param pair The pair to get the first entity from
+ * @returns The first entity (predicate) of the pair
+ */
+export function pair_first<P, O, V = P>(pair: Pair<P, O, V>): Entity<P>;
+
+/**
+ * Gets the second entity (object) of a pair
+ * @param pair The pair to get the second entity from
+ * @returns The second entity (object) of the pair
+ */
+export function pair_second<P, O, V = P>(pair: Pair<P, O, V>): Entity<O>;
 
 export const OnAdd: Entity<(e: Entity) => void>;
 export const OnRemove: Entity<(e: Entity) => void>;
