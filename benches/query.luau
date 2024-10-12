@@ -20,7 +20,7 @@ do
 		TITLE("one component in common")
 
 		local function view_bench(world: jecs.World, A: i53, B: i53, C: i53, D: i53, E: i53, F: i53, G: i53, H: i53)
-		    BENCH("1 component", function()
+			BENCH("1 component", function()
 				for _ in world:query(A) do
 				end
 			end)
@@ -86,36 +86,36 @@ do
 
 			if flip() then
 				combination ..= "B"
-				ecs:set(entity, D2, {value = true})
+				ecs:set(entity, D2, { value = true })
 			end
 			if flip() then
 				combination ..= "C"
-				ecs:set(entity, D3, {value = true})
+				ecs:set(entity, D3, { value = true })
 			end
 			if flip() then
 				combination ..= "D"
-				ecs:set(entity, D4, {value = true})
+				ecs:set(entity, D4, { value = true })
 			end
 			if flip() then
 				combination ..= "E"
-				ecs:set(entity, D5, {value = true})
+				ecs:set(entity, D5, { value = true })
 			end
 			if flip() then
 				combination ..= "F"
-				ecs:set(entity, D6, {value = true})
+				ecs:set(entity, D6, { value = true })
 			end
 			if flip() then
 				combination ..= "G"
-				ecs:set(entity, D7, {value = true})
+				ecs:set(entity, D7, { value = true })
 			end
 			if flip() then
 				combination ..= "H"
-				ecs:set(entity, D8, {value = true})
+				ecs:set(entity, D8, { value = true })
 			end
 
 			if #combination == 7 then
 				added += 1
-				ecs:set(entity, D1, {value = true})
+				ecs:set(entity, D1, { value = true })
 			end
 			archetypes[combination] = true
 		end
@@ -202,36 +202,36 @@ do
 
 			if flip() then
 				combination ..= "B"
-				ecs:set(entity, D2, {value = true})
+				ecs:set(entity, D2, { value = true })
 			end
 			if flip() then
 				combination ..= "C"
-				ecs:set(entity, D3, {value = true})
+				ecs:set(entity, D3, { value = true })
 			end
 			if flip() then
 				combination ..= "D"
-				ecs:set(entity, D4, {value = true})
+				ecs:set(entity, D4, { value = true })
 			end
 			if flip() then
 				combination ..= "E"
-				ecs:set(entity, D5, {value = true})
+				ecs:set(entity, D5, { value = true })
 			end
 			if flip() then
 				combination ..= "F"
-				ecs:set(entity, D6, {value = true})
+				ecs:set(entity, D6, { value = true })
 			end
 			if flip() then
 				combination ..= "G"
-				ecs:set(entity, D7, {value = true})
+				ecs:set(entity, D7, { value = true })
 			end
 			if flip() then
 				combination ..= "H"
-				ecs:set(entity, D8, {value = true})
+				ecs:set(entity, D8, { value = true })
 			end
 
 			if #combination == 7 then
 				added += 1
-				ecs:set(entity, D1, {value = true})
+				ecs:set(entity, D1, { value = true })
 			end
 			archetypes[combination] = true
 		end

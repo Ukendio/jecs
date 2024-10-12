@@ -10,11 +10,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 if not RunService:IsClient() then
-    error("Client network module can only be required from the client.")
+	error("Client network module can only be required from the client.")
 end
 
 local Reliable: RemoteEvent = ReplicatedStorage:WaitForChild("BLINK_RELIABLE_REMOTE") :: RemoteEvent
-local Unreliable: UnreliableRemoteEvent = ReplicatedStorage:WaitForChild("BLINK_UNRELIABLE_REMOTE") :: UnreliableRemoteEvent
+local Unreliable: UnreliableRemoteEvent =
+	ReplicatedStorage:WaitForChild("BLINK_UNRELIABLE_REMOTE") :: UnreliableRemoteEvent
 
 local Invocations = 0
 
@@ -31,128 +32,128 @@ local RecieveInstances = {}
 local RecieveInstanceCursor = 0
 
 type Entry = {
-    value: any,
-    next: Entry?
+	value: any,
+	next: Entry?,
 }
 
 type Queue = {
-    head: Entry?,
-    tail: Entry?
+	head: Entry?,
+	tail: Entry?,
 }
 
 type BufferSave = {
-    Size: number, 
-    Cursor: number, 
-    Buffer: buffer, 
-    Instances: {Instance}
+	Size: number,
+	Cursor: number,
+	Buffer: buffer,
+	Instances: { Instance },
 }
 
 local function Read(Bytes: number)
-    local Offset = RecieveCursor
-    RecieveCursor += Bytes
-    return Offset
+	local Offset = RecieveCursor
+	RecieveCursor += Bytes
+	return Offset
 end
 
 local function Save(): BufferSave
-    return {
-        Size = SendSize,
-        Cursor = SendCursor,
-        Buffer = SendBuffer,
-        Instances = SendInstances
-    }
+	return {
+		Size = SendSize,
+		Cursor = SendCursor,
+		Buffer = SendBuffer,
+		Instances = SendInstances,
+	}
 end
 
 local function Load(Save: BufferSave?)
-    if Save then
-        SendSize = Save.Size
-        SendCursor = Save.Cursor
-        SendOffset = Save.Cursor
-        SendBuffer = Save.Buffer
-        SendInstances = Save.Instances
-        return
-    end
+	if Save then
+		SendSize = Save.Size
+		SendCursor = Save.Cursor
+		SendOffset = Save.Cursor
+		SendBuffer = Save.Buffer
+		SendInstances = Save.Instances
+		return
+	end
 
-    SendSize = 64
-    SendCursor = 0
-    SendOffset = 0
-    SendBuffer = buffer.create(64)
-    SendInstances = {}
+	SendSize = 64
+	SendCursor = 0
+	SendOffset = 0
+	SendBuffer = buffer.create(64)
+	SendInstances = {}
 end
 
 local function Invoke()
-    if Invocations == 255 then
-        Invocations = 0
-    end
+	if Invocations == 255 then
+		Invocations = 0
+	end
 
-    local Invocation = Invocations
-    Invocations += 1
-    return Invocation
+	local Invocation = Invocations
+	Invocations += 1
+	return Invocation
 end
 
 local function Allocate(Bytes: number)
-    local InUse = (SendCursor + Bytes)
-    if InUse > SendSize then
-        --> Avoid resizing the buffer for every write
-        while InUse > SendSize do
-            SendSize *= 1.5
-        end
+	local InUse = (SendCursor + Bytes)
+	if InUse > SendSize then
+		--> Avoid resizing the buffer for every write
+		while InUse > SendSize do
+			SendSize *= 1.5
+		end
 
-        local Buffer = buffer.create(SendSize)
-        buffer.copy(Buffer, 0, SendBuffer, 0, SendCursor)
-        SendBuffer = Buffer
-    end
+		local Buffer = buffer.create(SendSize)
+		buffer.copy(Buffer, 0, SendBuffer, 0, SendCursor)
+		SendBuffer = Buffer
+	end
 
-    SendOffset = SendCursor
-    SendCursor += Bytes
-    
-    return SendOffset
+	SendOffset = SendCursor
+	SendCursor += Bytes
+
+	return SendOffset
 end
 
 local function CreateQueue(): Queue
-    return {
-        head = nil,
-        tail = nil
-    }
+	return {
+		head = nil,
+		tail = nil,
+	}
 end
 
 local function Pop(queue: Queue): any
-    local head = queue.head
-    if head == nil then
-        return
-    end
+	local head = queue.head
+	if head == nil then
+		return
+	end
 
-    queue.head = head.next
-    return head.value
+	queue.head = head.next
+	return head.value
 end
 
 local function Push(queue: Queue, value: any)
-    local entry: Entry = {
-        value = value,
-        next = nil
-    }
+	local entry: Entry = {
+		value = value,
+		next = nil,
+	}
 
-    if queue.tail ~= nil then
-        queue.tail.next = entry
-    end
+	if queue.tail ~= nil then
+		queue.tail.next = entry
+	end
 
-    queue.tail = entry
+	queue.tail = entry
 
-    if queue.head == nil then
-        queue.head = entry
-    end
+	if queue.head == nil then
+		queue.head = entry
+	end
 end
 
 local Types = {}
 local Calls = table.create(256)
 
 local Events: any = {
-    Reliable = table.create(256),
-    Unreliable = table.create(256)
+	Reliable = table.create(256),
+	Unreliable = table.create(256),
 }
 
 local Queue: any = {
-    Reliable = table.create(256),
-    Unreliable = table.create(256)
+	Reliable = table.create(256),
+	Unreliable = table.create(256),
 }
 
 Queue.Unreliable[0] = CreateQueue()
@@ -220,21 +221,20 @@ function Types.WriteEVENT_SpawnMob(Value1: number, Value2: CFrame, Value3: numbe
 	buffer.writeu8(SendBuffer, BLOCK_START + 33, Value3)
 end
 
-
 local function StepReplication()
-    if SendCursor <= 0 then
-        return
-    end
+	if SendCursor <= 0 then
+		return
+	end
 
-    local Buffer = buffer.create(SendCursor)
-    buffer.copy(Buffer, 0, SendBuffer, 0, SendCursor)
-    Reliable:FireServer(Buffer, SendInstances)
+	local Buffer = buffer.create(SendCursor)
+	buffer.copy(Buffer, 0, SendBuffer, 0, SendCursor)
+	Reliable:FireServer(Buffer, SendInstances)
 
-    SendSize = 64
-    SendCursor = 0
-    SendOffset = 0
-    SendBuffer = buffer.create(64)
-    table.clear(SendInstances)
+	SendSize = 64
+	SendCursor = 0
+	SendOffset = 0
+	SendBuffer = buffer.create(64)
+	table.clear(SendInstances)
 end
 
 local Elapsed = 0
@@ -246,13 +246,13 @@ RunService.Heartbeat:Connect(function(DeltaTime: number)
 	end
 end)
 
-Reliable.OnClientEvent:Connect(function(Buffer: buffer, Instances: {Instance})
+Reliable.OnClientEvent:Connect(function(Buffer: buffer, Instances: { Instance })
 	RecieveCursor = 0
 	RecieveBuffer = Buffer
 	RecieveInstances = Instances
 	RecieveInstanceCursor = 0
 	local Size = buffer.len(RecieveBuffer)
-	while (RecieveCursor < Size) do
+	while RecieveCursor < Size do
 		-- Read BLOCK: 1 bytes
 		local BLOCK_START = Read(1)
 		local Index = buffer.readu8(RecieveBuffer, BLOCK_START + 0)
@@ -262,13 +262,13 @@ Reliable.OnClientEvent:Connect(function(Buffer: buffer, Instances: {Instance})
 	end
 end)
 
-Unreliable.OnClientEvent:Connect(function(Buffer: buffer, Instances: {Instance})
+Unreliable.OnClientEvent:Connect(function(Buffer: buffer, Instances: { Instance })
 	RecieveCursor = 0
 	RecieveBuffer = Buffer
 	RecieveInstances = Instances
 	RecieveInstanceCursor = 0
 	local Size = buffer.len(RecieveBuffer)
-	while (RecieveCursor < Size) do
+	while RecieveCursor < Size do
 		-- Read BLOCK: 1 bytes
 		local BLOCK_START = Read(1)
 		local Index = buffer.readu8(RecieveBuffer, BLOCK_START + 0)
@@ -285,53 +285,52 @@ return {
 		Iter = function(): () -> (number, number, CFrame)
 			local index = 0
 			local queue = Queue.Unreliable[0]
-			return function (): (number, number, CFrame)
+			return function(): (number, number, CFrame)
 				index += 1
 				local arguments = Pop(queue)
 				if arguments ~= nil then
 					return index, unpack(arguments, 1, arguments.n)
 				end
-				return 
+				return
 			end
 		end,
 		Next = function(): () -> (number, number, CFrame)
 			local index = 0
 			local queue = Queue.Unreliable[0]
-			return function (): (number, number, CFrame)
+			return function(): (number, number, CFrame)
 				index += 1
 				local arguments = Pop(queue)
 				if arguments ~= nil then
 					return index, unpack(arguments, 1, arguments.n)
 				end
-				return 
+				return
 			end
-		end
+		end,
 	},
 	SpawnMob = {
 		Iter = function(): () -> (number, number, CFrame, number)
 			local index = 0
 			local queue = Queue.Reliable[0]
-			return function (): (number, number, CFrame, number)
+			return function(): (number, number, CFrame, number)
 				index += 1
 				local arguments = Pop(queue)
 				if arguments ~= nil then
 					return index, unpack(arguments, 1, arguments.n)
 				end
-				return 
+				return
 			end
 		end,
 		Next = function(): () -> (number, number, CFrame, number)
 			local index = 0
 			local queue = Queue.Reliable[0]
-			return function (): (number, number, CFrame, number)
+			return function(): (number, number, CFrame, number)
 				index += 1
 				local arguments = Pop(queue)
 				if arguments ~= nil then
 					return index, unpack(arguments, 1, arguments.n)
 				end
-				return 
+				return
 			end
-		end
+		end,
 	},
-
 }

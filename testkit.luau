@@ -41,7 +41,7 @@ local color = {
 	end,
 
 	orange = function(s: string): string
-	   return if disable_ansi then s else `\27[38;5;208m{s}\27[0m`
+		return if disable_ansi then s else `\27[38;5;208m{s}\27[0m`
 	end,
 }
 
@@ -96,7 +96,7 @@ local function convert_units(unit: string, value: number): (number, string)
 	return value * sign, prefix_colors[order](prefixes[order] .. unit)
 end
 
-local WALL = color.gray "│"
+local WALL = color.gray("│")
 
 --------------------------------------------------------------------------------
 -- Testing
@@ -118,7 +118,7 @@ type Case = {
 	name: string,
 	result: number,
 	line: number?,
-	focus: boolean
+	focus: boolean,
 }
 
 local PASS, FAIL, NONE, ERROR, SKIPPED = 1, 2, 3, 4, 5
@@ -129,48 +129,51 @@ local test: Test?
 local tests: { Test } = {}
 
 local function output_test_result(test: Test)
-
 	if check_for_focused then
 		local any_focused = test.focus
 		for _, case in test.cases do
 			any_focused = any_focused or case.focus
 		end
 
-		if not any_focused then return end
+		if not any_focused then
+			return
+		end
 	end
 
 	print(color.white(test.name))
 
 	for _, case in test.cases do
 		local status = ({
-			[PASS] = color.green "PASS",
-			[FAIL] = color.red "FAIL",
-			[NONE] = color.orange "NONE",
-			[ERROR] = color.red "FAIL",
-			[SKIPPED] = color.yellow "SKIP"
+			[PASS] = color.green("PASS"),
+			[FAIL] = color.red("FAIL"),
+			[NONE] = color.orange("NONE"),
+			[ERROR] = color.red("FAIL"),
+			[SKIPPED] = color.yellow("SKIP"),
 		})[case.result]
 
 		local line = case.result == FAIL and color.red(`{case.line}:`) or ""
-		if check_for_focused and case.focus == false and test.focus == false then continue end
+		if check_for_focused and case.focus == false and test.focus == false then
+			continue
+		end
 		print(`{status}{WALL} {line}{color.gray(case.name)}`)
 	end
 
 	if test.error then
-		print(color.gray "error: " .. color.red(test.error.message))
-		print(color.gray "trace: " .. color.red(test.error.trace))
+		print(color.gray("error: ") .. color.red(test.error.message))
+		print(color.gray("trace: ") .. color.red(test.error.trace))
 	else
 		print()
 	end
 end
 
 local function CASE(name: string)
-    skip = false
+	skip = false
 	assert(test, "no active test")
 
 	local case = {
 		name = name,
 		result = NONE,
-		focus = false
+		focus = false,
 	}
 
 	test.case = case
@@ -183,7 +186,7 @@ local function CHECK<T>(value: T, stack: number?): T?
 	local case = test.case
 
 	if not case then
-		CASE ""
+		CASE("")
 		case = test.case
 	end
 
@@ -192,7 +195,7 @@ local function CHECK<T>(value: T, stack: number?): T?
 	if case.result ~= FAIL then
 		case.result = value and PASS or FAIL
 		if skip then
-		    case.result = SKIPPED
+			case.result = SKIPPED
 		end
 		case.line = debug.info(stack and stack + 1 or 2, "l")
 	end
@@ -208,7 +211,7 @@ local function TEST(name: string, fn: () -> ())
 		name = name,
 		cases = {},
 		duration = 0,
-		focus = false
+		focus = false,
 	}
 	assert(test)
 
@@ -221,7 +224,9 @@ local function TEST(name: string, fn: () -> ())
 	end)
 	test.duration = os.clock() - start
 
-	if not test.case then CASE "" end
+	if not test.case then
+		CASE("")
+	end
 	assert(test.case, "no active case")
 
 	if not success then
@@ -271,27 +276,14 @@ local function FINISH(): boolean
 		output_test_result(test)
 	end
 
-	print(
-		color.gray(
-			string.format(
-				`{passed_cases}/{total_cases} test cases passed in %.3f ms.`,
-				duration * 1e3
-			)
-		)
-	)
+	print(color.gray(string.format(`{passed_cases}/{total_cases} test cases passed in %.3f ms.`, duration * 1e3)))
 	if check_for_focused then
-		print(
-			color.gray(`{passed_focus_cases}/{total_focus_cases} focused test cases passed`)
-		)
+		print(color.gray(`{passed_focus_cases}/{total_focus_cases} focused test cases passed`))
 	end
 
 	local fails = total_cases - passed_cases
 
-	print(
-		(fails > 0 and color.red or color.green)(
-			`{fails} {fails == 1 and "fail" or "fails"}`
-		)
-	)
+	print((fails > 0 and color.red or color.green)(`{fails} {fails == 1 and "fail" or "fails"}`))
 
 	check_for_focused = false
 	return success, table.clear(tests)
@@ -331,7 +323,7 @@ local function BENCH(name: string, fn: () -> ())
 
 	bench = {}
 	assert(bench);
-	(collectgarbage :: any) "collect"
+	(collectgarbage :: any)("collect")
 
 	local mem_start = gcinfo()
 	local time_start = os.clock()
@@ -345,7 +337,7 @@ local function BENCH(name: string, fn: () -> ())
 	local mem_stop = gcinfo()
 
 	if not success then
-		print(`{WALL}{color.red "ERROR"}{WALL} {name}`)
+		print(`{WALL}{color.red("ERROR")}{WALL} {name}`)
 		print(color.gray(err_msg :: string))
 	else
 		time_start = bench.time_start or time_start
@@ -353,14 +345,10 @@ local function BENCH(name: string, fn: () -> ())
 
 		local n = bench.iterations or 1
 		local d, d_unit = convert_units("s", (time_stop - time_start) / n)
-		local a, a_unit =
-			convert_units("B", math.round((mem_stop - mem_start) / n * 1e3))
+		local a, a_unit = convert_units("B", math.round((mem_stop - mem_start) / n * 1e3))
 
 		local function round(x: number): string
-			return x > 0
-					and x < 10
-					and (x - math.floor(x)) > 0
-					and string.format("%2.1f", x)
+			return x > 0 and x < 10 and (x - math.floor(x)) > 0 and string.format("%2.1f", x)
 				or string.format("%3.f", x)
 		end
 
@@ -394,9 +382,9 @@ local function print2(v: unknown)
 
 		if type(value) == "string" then
 			local n = str.n
-			str[n + 1] = '"'
+			str[n + 1] = "\""
 			str[n + 2] = value
-			str[n + 3] = '"'
+			str[n + 3] = "\""
 			str.n = n + 3
 		elseif type(value) ~= "table" then
 			local n = str.n
@@ -468,25 +456,35 @@ end
 --------------------------------------------------------------------------------
 
 local function shallow_eq(a: {}, b: {}): boolean
-	if #a ~= #b then return false end
+	if #a ~= #b then
+		return false
+	end
 
 	for i, v in next, a do
-		if b[i] ~= v then return false end
+		if b[i] ~= v then
+			return false
+		end
 	end
 
 	for i, v in next, b do
-		if a[i] ~= v then return false end
+		if a[i] ~= v then
+			return false
+		end
 	end
 
 	return true
 end
 
 local function deep_eq(a: {}, b: {}): boolean
-	if #a ~= #b then return false end
+	if #a ~= #b then
+		return false
+	end
 
 	for i, v in next, a do
 		if type(b[i]) == "table" and type(v) == "table" then
-			if deep_eq(b[i], v) == false then return false end
+			if deep_eq(b[i], v) == false then
+				return false
+			end
 		elseif b[i] ~= v then
 			return false
 		end
@@ -494,7 +492,9 @@ local function deep_eq(a: {}, b: {}): boolean
 
 	for i, v in next, b do
 		if type(a[i]) == "table" and type(v) == "table" then
-			if deep_eq(a[i], v) == false then return false end
+			if deep_eq(a[i], v) == false then
+				return false
+			end
 		elseif a[i] ~= v then
 			return false
 		end

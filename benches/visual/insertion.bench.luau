@@ -3,8 +3,8 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Matter = require(ReplicatedStorage.DevPackages.Matter)
-local jecs = require(ReplicatedStorage.Lib)
 local ecr = require(ReplicatedStorage.DevPackages.ecr)
+local jecs = require(ReplicatedStorage.Lib)
 local newWorld = Matter.World.new()
 local ecs = jecs.World.new()
 local mirror = require(ReplicatedStorage.mirror)
@@ -45,7 +45,6 @@ local E6 = mcs:entity()
 local E7 = mcs:entity()
 local E8 = mcs:entity()
 
-
 local registry2 = ecr.registry()
 return {
 	ParameterGenerator = function()
@@ -53,51 +52,49 @@ return {
 	end,
 
 	Functions = {
-		Matter = function() 
-            local e = newWorld:spawn()
-            for i = 1, 5000 do 
-                newWorld:insert(e,
-                    A1({ value = true }),
-                    A2({ value = true }),
-                    A3({ value = true }),
-                    A4({ value = true }),
-                    A5({ value = true }),
-                    A6({ value = true }),
-                    A7({ value = true }),
-                    A8({ value = true })
-                )             
-            end
+		Matter = function()
+			local e = newWorld:spawn()
+			for i = 1, 5000 do
+				newWorld:insert(
+					e,
+					A1({ value = true }),
+					A2({ value = true }),
+					A3({ value = true }),
+					A4({ value = true }),
+					A5({ value = true }),
+					A6({ value = true }),
+					A7({ value = true }),
+					A8({ value = true })
+				)
+			end
 		end,
 
-
-		ECR = function() 
-            local e = registry2.create()
-            for i = 1, 5000 do
-                registry2:set(e, B1, {value = false}) 
-                registry2:set(e, B2, {value = false}) 
-                registry2:set(e, B3, {value = false}) 
-                registry2:set(e, B4, {value = false}) 
-                registry2:set(e, B5, {value = false}) 
-                registry2:set(e, B6, {value = false}) 
-                registry2:set(e, B7, {value = false}) 
-                registry2:set(e, B8, {value = false})
-            end
+		ECR = function()
+			local e = registry2.create()
+			for i = 1, 5000 do
+				registry2:set(e, B1, { value = false })
+				registry2:set(e, B2, { value = false })
+				registry2:set(e, B3, { value = false })
+				registry2:set(e, B4, { value = false })
+				registry2:set(e, B5, { value = false })
+				registry2:set(e, B6, { value = false })
+				registry2:set(e, B7, { value = false })
+				registry2:set(e, B8, { value = false })
+			end
 		end,
 
-
-		Jecs = function() 
-            local e = ecs:entity()
-            for i = 1, 5000 do 
-                ecs:set(e, C1, {value = false}) 
-                ecs:set(e, C2, {value = false}) 
-                ecs:set(e, C3, {value = false}) 
-                ecs:set(e, C4, {value = false}) 
-                ecs:set(e, C5, {value = false}) 
-                ecs:set(e, C6, {value = false}) 
-                ecs:set(e, C7, {value = false}) 
-                ecs:set(e, C8, {value = false}) 
-
-            end
+		Jecs = function()
+			local e = ecs:entity()
+			for i = 1, 5000 do
+				ecs:set(e, C1, { value = false })
+				ecs:set(e, C2, { value = false })
+				ecs:set(e, C3, { value = false })
+				ecs:set(e, C4, { value = false })
+				ecs:set(e, C5, { value = false })
+				ecs:set(e, C6, { value = false })
+				ecs:set(e, C7, { value = false })
+				ecs:set(e, C8, { value = false })
+			end
 		end,
 	},
 }

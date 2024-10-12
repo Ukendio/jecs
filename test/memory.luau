@@ -1,5 +1,5 @@
-local testkit = require("@testkit")
 local jecs = require("@jecs")
+local testkit = require("@testkit")
 
 local world = jecs.World.new()
 

@@ -8,11 +8,12 @@ local function TITLE(s: string)
 	print(testkit.color.white(s))
 end
 
-local N = 2^17
+local N = 2 ^ 17
 
 local pair = jecs.pair
 
-do TITLE "create"
+do
+	TITLE("create")
 	local world = jecs.World.new()
 
 	BENCH("entity", function()
@@ -22,17 +23,17 @@ do TITLE "create"
 	end)
 
 	local A = world:component()
-    local B = world:component()
+	local B = world:component()
 
 	BENCH("pair", function()
 		for i = 1, START(N) do
 			jecs.pair(A, B)
 		end
 	end)
-
 end
 
-do TITLE "set"
+do
+	TITLE("set")
 
 	local world = jecs.World.new()
 	local A = world:entity()
@@ -65,7 +66,8 @@ end
 -- we have a separate benchmark for relationships.
 -- this is due to that relationships have a very high id compared to normal
 -- components, which cause them to get added into the hashmap portion.
-do TITLE "set relationship"
+do
+	TITLE("set relationship")
 
 	local world = jecs.World.new()
 	local A = world:entity()
@@ -98,7 +100,8 @@ do TITLE "set relationship"
 	end)
 end
 
-do TITLE "get"
+do
+	TITLE("get")
 
 	local world = jecs.World.new()
 	local A = world:component()
@@ -140,7 +143,8 @@ do TITLE "get"
 	end)
 end
 
-do TITLE "target"
+do
+	TITLE("target")
 
 	BENCH("1st target", function()
 		local world = jecs.World.new()
@@ -164,14 +168,14 @@ do TITLE "target"
 			world:target(entities[i], A, 0)
 		end
 	end)
-
 end
 
 --- this benchmark is used to view how fragmentation affects query performance
 --- we use this by determining how many entities should fit per arcehtype, instead
 --- of creating x amount of archetypes. this would scale better with any amount of
 --- entities.
-do TITLE(`query {N} entities`)
+do
+	TITLE(`query {N} entities`)
 
 	local function view_bench(n: number)
 		BENCH(`{n} entities per archetype`, function()
@@ -194,14 +198,13 @@ do TITLE(`query {N} entities`)
 				end
 			end
 
-
 			START()
 			for id in world:query(A, B, C, D) do
 			end
 		end)
 
 		BENCH(`inlined query`, function()
-		    local world = jecs.World.new()
+			local world = jecs.World.new()
 			local A = world:component()
 			local B = world:component()
 			local C = world:component()
@@ -219,15 +222,14 @@ do TITLE(`query {N} entities`)
 				end
 			end
 
-
 			START()
 			for _, archetype in world:query(A, B, C, D):archetypes() do
-			    local columns, records = archetype.columns, archetype.records
+				local columns, records = archetype.columns, archetype.records
 				local a = columns[records[A].column]
 				local b = columns[records[B].column]
 				local c = columns[records[C].column]
 				local d = columns[records[D].column]
-			    for row in archetype.entities do
+				for row in archetype.entities do
 					local _1, _2, _3, _4 = a[row], b[row], c[row], d[row]
 				end
 			end
@@ -235,7 +237,6 @@ do TITLE(`query {N} entities`)
 	end
 
 	for i = 13, 0, -1 do
-		view_bench(2^i)
+		view_bench(2 ^ i)
 	end
-
 end

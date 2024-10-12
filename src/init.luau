@@ -972,8 +972,6 @@ local function world_cleanup(world)
 	world.archetypeIndex = new_archetype_map
 end
 
-
-
 local world_delete: (world: World, entity: i53, destruct: boolean?) -> ()
 do
 	function world_delete(world: World, entity: i53, destruct: boolean?)

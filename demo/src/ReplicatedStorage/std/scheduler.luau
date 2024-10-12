@@ -7,245 +7,250 @@ local pair = jecs.pair
 local Name = jecs.Name
 
 type World = jecs.World
-type Entity<T=nil> = jecs.Entity<T>
+type Entity<T = nil> = jecs.Entity<T>
 
 type System = {
-    callback: (world: World) -> (),
-    id: number,
+	callback: (world: World) -> (),
+	id: number,
 }
 
 type Systems = { System }
 
-
 type Events = {
-    RenderStepped: Systems,
-    Heartbeat: Systems
+	RenderStepped: Systems,
+	Heartbeat: Systems,
 }
 
 export type Scheduler = {
-    components: {
-        Disabled: Entity,
-        System: Entity<System>,
-        Phase: Entity,
-        DependsOn: Entity
-    },
+	components: {
+		Disabled: Entity,
+		System: Entity<System>,
+		Phase: Entity,
+		DependsOn: Entity,
+	},
 
-    collect: {
-        under_event: (event: Entity) -> Systems,
-        all: () -> Events
-    },
+	collect: {
+		under_event: (event: Entity) -> Systems,
+		all: () -> Events,
+	},
 
-    systems: {
-        begin: (events: Events) -> { [Entity]: thread },
-        new: (callback: (dt: number) -> (), phase: Entity) -> Entity
-    },
+	systems: {
+		begin: (events: Events) -> { [Entity]: thread },
+		new: (callback: (dt: number) -> (), phase: Entity) -> Entity,
+	},
 
-    phases: {
-        RenderStepped: Entity,
-        Heartbeat: Entity,
-    },
+	phases: {
+		RenderStepped: Entity,
+		Heartbeat: Entity,
+	},
 
-    phase: (after: Entity) -> Entity,
+	phase: (after: Entity) -> Entity,
 
-    debugging: boolean,
+	debugging: boolean,
 }
 
 local scheduler_new: (w: World, components: { [string]: Entity }) -> Scheduler
 
 do
-    local world: World
-    local Disabled: Entity
-    local System: Entity<System>
-    local DependsOn: Entity
-    local Phase: Entity
-    local Event: Entity<RBXScriptSignal>
+	local world: World
+	local Disabled: Entity
+	local System: Entity<System>
+	local DependsOn: Entity
+	local Phase: Entity
+	local Event: Entity<RBXScriptSignal>
 
-    local scheduler
+	local scheduler
 
-    local RenderStepped
-    local Heartbeat
-    local PreAnimation
-    local PreSimulation
+	local RenderStepped
+	local Heartbeat
+	local PreAnimation
+	local PreSimulation
 
-    local sys: System
-    local dt
+	local sys: System
+	local dt
 
-    local function run()
-        local id = sys.id
-        local system_data = scheduler.system_data[id]
-		if system_data.paused then return end
+	local function run()
+		local id = sys.id
+		local system_data = scheduler.system_data[id]
+		if system_data.paused then
+			return
+		end
 
-  		scheduler:mark_system_frame_start(id)
-        sys.callback(dt)
-        scheduler:mark_system_frame_end(id)
-    end
+		scheduler:mark_system_frame_start(id)
+		sys.callback(dt)
+		scheduler:mark_system_frame_end(id)
+	end
 
-    local function panic(str)
-        -- We don't want to interrupt the loop when we error
-        task.spawn(error, str)
-    end
-    local function begin(events: { Systems })
-        local threads = {}
-        for event, systems in events  do
-            if not event then continue end
-            local event_name = tostring(event)
-            threads[event] = task.spawn(function()
-                while true do
-                    dt = event:Wait()
+	local function panic(str)
+		-- We don't want to interrupt the loop when we error
+		task.spawn(error, str)
+	end
+	local function begin(events: { Systems })
+		local threads = {}
+		for event, systems in events do
+			if not event then
+				continue
+			end
+			local event_name = tostring(event)
+			threads[event] = task.spawn(function()
+				while true do
+					dt = event:Wait()
 
-                    debug.profilebegin(event_name)
-                    for _, s in systems do
-                        sys = s
-                        local didNotYield, why = xpcall(function()
-                            for _ in run do break end
-                        end, debug.traceback)
+					debug.profilebegin(event_name)
+					for _, s in systems do
+						sys = s
+						local didNotYield, why = xpcall(function()
+							for _ in run do
+								break
+							end
+						end, debug.traceback)
 
-                        if didNotYield then
-            				continue
-             			end
+						if didNotYield then
+							continue
+						end
 
-             			if string.find(why, "thread is not yieldable") then
-            				panic("Not allowed to yield in the systems."
-                				.. "\n"
-                				.. "System: "
-                				.. debug.info(s.callback, "n")
-                				.. " has been ejected"
-				            )
-            				continue
-             			end
-             			panic(why)
-                    end
-                    debug.profileend()
-                end
-            end)
-        end
-        return threads
-    end
+						if string.find(why, "thread is not yieldable") then
+							panic(
+								"Not allowed to yield in the systems."
+									.. "\n"
+									.. "System: "
+									.. debug.info(s.callback, "n")
+									.. " has been ejected"
+							)
+							continue
+						end
+						panic(why)
+					end
+					debug.profileend()
+				end
+			end)
+		end
+		return threads
+	end
 
-    local function scheduler_collect_systems_under_phase_recursive(systems, phase)
-        local phase_name = world:get(phase, Name)
-        for _, s in world:query(System):with(pair(DependsOn, phase)) do
-            table.insert(systems, {
-                id = scheduler:register_system({
-                    name = s.name,
-                    phase = phase_name
-                }),
-                callback = s.callback
-            })
-        end
-        for after in world:query(Phase):with(pair(DependsOn, phase)) do
-            scheduler_collect_systems_under_phase_recursive(systems, after)
-        end
-    end
+	local function scheduler_collect_systems_under_phase_recursive(systems, phase)
+		local phase_name = world:get(phase, Name)
+		for _, s in world:query(System):with(pair(DependsOn, phase)) do
+			table.insert(systems, {
+				id = scheduler:register_system({
+					name = s.name,
+					phase = phase_name,
+				}),
+				callback = s.callback,
+			})
+		end
+		for after in world:query(Phase):with(pair(DependsOn, phase)) do
+			scheduler_collect_systems_under_phase_recursive(systems, after)
+		end
+	end
 
-    local function scheduler_collect_systems_under_event(event)
-        local systems = {}
-        scheduler_collect_systems_under_phase_recursive(systems, event)
-        return systems
-    end
+	local function scheduler_collect_systems_under_event(event)
+		local systems = {}
+		scheduler_collect_systems_under_phase_recursive(systems, event)
+		return systems
+	end
 
-    local function scheduler_collect_systems_all()
-        local events = {}
-        for phase, event in world:query(Event):with(Phase) do
-            events[event] = scheduler_collect_systems_under_event(phase)
-        end
-        return events
-    end
+	local function scheduler_collect_systems_all()
+		local events = {}
+		for phase, event in world:query(Event):with(Phase) do
+			events[event] = scheduler_collect_systems_under_event(phase)
+		end
+		return events
+	end
 
-    local function scheduler_phase_new(after)
-        local phase = world:entity()
-        world:add(phase, Phase)
-        local dependency = pair(DependsOn, after)
-        world:add(phase, dependency)
-        return phase
-    end
+	local function scheduler_phase_new(after)
+		local phase = world:entity()
+		world:add(phase, Phase)
+		local dependency = pair(DependsOn, after)
+		world:add(phase, dependency)
+		return phase
+	end
 
-    local function scheduler_systems_new(callback, phase)
-        local system = world:entity()
-        local name = debug.info(callback, "n")
-        world:set(system, System, { callback = callback, name = name })
-        world:add(system, pair(DependsOn, phase))
-        return system
-    end
+	local function scheduler_systems_new(callback, phase)
+		local system = world:entity()
+		local name = debug.info(callback, "n")
+		world:set(system, System, { callback = callback, name = name })
+		world:add(system, pair(DependsOn, phase))
+		return system
+	end
 
-    function scheduler_new(w: World, components: { [string]: Entity })
-        world = w
-        Disabled = world:component()
-        System = world:component()
-        Phase = world:component()
-        DependsOn = world:component()
-        Event = world:component()
+	function scheduler_new(w: World, components: { [string]: Entity })
+		world = w
+		Disabled = world:component()
+		System = world:component()
+		Phase = world:component()
+		DependsOn = world:component()
+		Event = world:component()
 
-        RenderStepped = world:component()
-        Heartbeat = world:component()
-        PreSimulation = world:component()
-        PreAnimation = world:component()
+		RenderStepped = world:component()
+		Heartbeat = world:component()
+		PreSimulation = world:component()
+		PreAnimation = world:component()
 
-        local RunService = game:GetService("RunService")
-        if RunService:IsClient() then
-            world:add(RenderStepped, Phase)
-            world:set(RenderStepped, Event, RunService.RenderStepped)
-        end
+		local RunService = game:GetService("RunService")
+		if RunService:IsClient() then
+			world:add(RenderStepped, Phase)
+			world:set(RenderStepped, Event, RunService.RenderStepped)
+		end
 
-        world:add(Heartbeat, Phase)
-        world:set(Heartbeat, Event, RunService.Heartbeat)
+		world:add(Heartbeat, Phase)
+		world:set(Heartbeat, Event, RunService.Heartbeat)
 
-        world:add(PreSimulation, Phase)
-        world:set(PreSimulation, Event, RunService.PreSimulation)
+		world:add(PreSimulation, Phase)
+		world:set(PreSimulation, Event, RunService.PreSimulation)
 
-        world:add(PreAnimation, Phase)
-        world:set(PreAnimation, Event, RunService.PreAnimation)
+		world:add(PreAnimation, Phase)
+		world:set(PreAnimation, Event, RunService.PreAnimation)
 
-        for name, component in components do
-            world:set(component, Name, name)
-        end
+		for name, component in components do
+			world:set(component, Name, name)
+		end
 
-        table.insert(jabby.public, {
-            class_name = "World",
-            name = "MyWorld",
-            world = world,
-            debug = Name,
-            entities = {}
-        })
+		table.insert(jabby.public, {
+			class_name = "World",
+			name = "MyWorld",
+			world = world,
+			debug = Name,
+			entities = {},
+		})
 
+		jabby.public.updated = true
+		scheduler = jabby.scheduler.create("scheduler")
 
-        jabby.public.updated = true
-        scheduler = jabby.scheduler.create("scheduler")
+		table.insert(jabby.public, scheduler)
 
-        table.insert(jabby.public, scheduler)
+		return {
+			phase = scheduler_phase_new,
 
-        return {
-            phase = scheduler_phase_new,
+			phases = {
+				RenderStepped = RenderStepped,
+				PreSimulation = PreSimulation,
+				Heartbeat = Heartbeat,
+				PreAnimation = PreAnimation,
+			},
 
-            phases = {
-                RenderStepped = RenderStepped,
-                PreSimulation = PreSimulation,
-                Heartbeat = Heartbeat,
-                PreAnimation = PreAnimation
-            },
+			world = world,
 
-            world = world,
+			components = {
+				DependsOn = DependsOn,
+				Disabled = Disabled,
+				Phase = Phase,
+				System = System,
+			},
 
-            components = {
-                DependsOn = DependsOn,
-                Disabled = Disabled,
-                Phase = Phase,
-                System = System,
-            },
+			collect = {
+				under_event = scheduler_collect_systems_under_event,
+				all = scheduler_collect_systems_all,
+			},
 
-            collect = {
-                under_event = scheduler_collect_systems_under_event,
-                all = scheduler_collect_systems_all
-            },
-
-            systems = {
-                new = scheduler_systems_new,
-                begin = begin
-            }
-        }
-    end
+			systems = {
+				new = scheduler_systems_new,
+				begin = begin,
+			},
+		}
+	end
 end
 
 return {
-    new = scheduler_new
+	new = scheduler_new,
 }
