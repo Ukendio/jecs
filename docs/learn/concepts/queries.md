@@ -51,6 +51,8 @@ Jecs currently only supports the `Any` type of wildcards which a single result f
 
 When using the `Any` type wildcard it is undefined which component will be matched, as this can be influenced by other parts of the query. It is guaranteed that iterating the same query twice on the same dataset will produce the same result.
 
+If you want to iterate multiple targets for the same relation on a pair, then use [`world:target`](world.md#target)
+
 Wildcards are particularly useful when used in combination with pairs (next section).
 
 ### Pairs

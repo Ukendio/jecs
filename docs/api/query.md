@@ -4,18 +4,6 @@ A World contains entities which have components. The World is queryable and can 
 
 # Methods
 
-## drain
-This method will impede it from being reset when the query is being iterated.
-```luau
-function query:drain(): Query
-```
-
-## next
-Get the next result in the query. Drain must have been called beforehand or otherwise it will error.
-```luau
-function query:next(): Query
-```
-
 ## with
 Adds components (IDs) to query with, but will not use their data. This is useful for Tags or generally just data you do not care for.
 
@@ -71,41 +59,16 @@ for (const [entity, position] of world.query(Position).without(Velocity)) {
 ```
 :::
 
-## replace
-This function takes a callback which is given the current queried data of each matching entity. The values returned by the callback will be set as the new data for each given ID on the entity.
-```luau
-function query:replace(
-    fn: (entity: Entity, ...: T...) -> U... -- ): () -- The callback that will transform the entities' data
-```
-
-Example:
-
-::: code-group
-```luau [luau]
-world:query(Position, Velocity):replace(function(e, position, velocity)
-    return position + velocity, velocity * 0.9
-end
-```
-
-```ts [typescript]
-world
-    .query(Position, Velocity)
-    .replace((e, position, velocity) =>
-        $tuple(position.add(velocity), velocity.mul(0.9)),
-    );
-```
-:::
-
 ## archetypes
 Returns the matching archetypes of the query.
 ```luau
-function query.archetypes(): { Archetype }
+function query:archetypes(): { Archetype }
 ```
 
 Example:
 
 ```luau [luau]
-for i, archetype in world:query(Position, Velocity).archetypes() do
+for i, archetype in world:query(Position, Velocity):archetypes() do
     local columns = archetype.columns
     local field = archetype.records
 
@@ -121,5 +84,5 @@ end
 ```
 
 :::info
-This function is meant for internal usage. Use this if you want to maximize performance by inlining the iterator.
+This function is meant for people who wants to really customize their query behaviour at the archetype-level
 :::

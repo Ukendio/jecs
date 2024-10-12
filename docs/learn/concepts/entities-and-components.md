@@ -5,8 +5,6 @@ Entities represent things in a game. In a game there may be entities of characte
 
 By itself, an entity is just an unique identifier without any data
 
-### Creation
-
 ## Components
 A component is something that is added to an entity. Components can simply tag an entity ("this entity is an `Npc`"), attach data to an entity ("this entity is at `Position` `Vector3.new(10, 20, 30)`") and create relationships between entities ("bob `Likes` alice") that may also contain data ("bob `Eats` `10` apples").
 
@@ -21,7 +19,7 @@ Operation | Description
 
 ### Components are entities
 
-In an ECS, components need to be uniquely identified. In Jecs this is done by making each component is its own unique entity. If a game has a component Position and Velocity, there will be two entities, one for each component. Component entities can be distinguished from "regular" entities as they have a `Component` component. An example:
+In an ECS, components need to be uniquely identified. In Jecs this is done by making each component its own unique entity. If a game has a component Position and Velocity, there will be two entities, one for each component. Component entities can be distinguished from "regular" entities as they have a `Component` component. An example:
 
 ::: code-group
 
