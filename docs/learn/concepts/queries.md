@@ -9,10 +9,10 @@ Jecs queries can do anything from returning entities that match a simple list of
 This manual contains a full overview of the query features available in Jecs. Some of the features of Jecs queries are:
 
 - Queries have support for relationships pairs which allow for matching against entity graphs without having to build complex data structures for it.
-- Queries support filters such as `query:with(...)` if entities are required to have the components but you don’t actually care about components value. And `query:without(...)` which selects entities without the components.
+- Queries support filters such as [`query:with(...)`](../../api/query.md#with) if entities are required to have the components but you don’t actually care about components value. And [`query:without(...)`](../../api/query.md#without) which selects entities without the components.
 - Queries can be drained or reset on when called, which lets you choose iterator behaviour.
 - Queries can be called with any ID, including entities created dynamically, this is useful for pairs.
-- Queries are already fast but can be futher inlined via `query:archetypes()` for maximum performance to eliminate function call overhead which is roughly 70-80% of the cost for iteration.
+- Queries are already fast but can be futher inlined via [`query:archetypes()`](../../api/query.md#archetypes) for maximum performance to eliminate function call overhead which is roughly 70-80% of the cost for iteration.
 
 ## Creating Queries
 This section explains how to create queries in the different language bindings.
@@ -51,7 +51,7 @@ Jecs currently only supports the `Any` type of wildcards which a single result f
 
 When using the `Any` type wildcard it is undefined which component will be matched, as this can be influenced by other parts of the query. It is guaranteed that iterating the same query twice on the same dataset will produce the same result.
 
-If you want to iterate multiple targets for the same relation on a pair, then use [`world:target`](world.md#target)
+If you want to iterate multiple targets for the same relation on a pair, then use [`world:target`](../../api/world.md#target)
 
 Wildcards are particularly useful when used in combination with pairs (next section).
 
