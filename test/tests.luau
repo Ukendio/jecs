@@ -1365,6 +1365,32 @@ TEST("changetracker:track()", function()
 
 end)
 
+local function create_cache(hook)
+    local columns = setmetatable({}, {
+        __index = function(self, component)
+            local column = {}
+            self[component] = column
+            return column
+        end
+    })
+
+    return function(world, component, fn)
+        local column = columns[component]
+        table.insert(column, fn)
+        world:set(component, hook, function(entity, value)
+            for _, callback in column do
+                callback(entity, value)
+            end
+        end)
+    end
+end
+
+local hooks = {
+    OnSet = create_cache(jecs.OnSet),
+    OnAdd = create_cache(jecs.OnAdd),
+    OnRemove = create_cache(jecs.OnRemove)
+}
+
 TEST("Hooks", function()
     do CASE "OnAdd"
         local world = jecs.World.new()
@@ -1380,8 +1406,15 @@ TEST("Hooks", function()
         local world = jecs.World.new()
         local Number = world:component()
         local e1 = world:entity()
-        world:set(Number, jecs.OnSet, function(entity, data)
-            CHECK(e1 == entity)
+
+        hooks.OnSet(world, Number, function(entity, data)
+	        CHECK(e1 == entity)
+            CHECK(data == world:get(entity, Number))
+            CHECK(data == 1)
+	    end)
+        hooks.OnSet(world, Number, function(entity, data)
+	        CHECK(e1 == entity)
+            CHECK(data == world:get(entity, Number))
             CHECK(data == 1)
         end)
         world:set(e1, Number, 1)
