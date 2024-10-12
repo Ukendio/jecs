@@ -808,23 +808,6 @@ local function world_remove(world: World, entity: i53, id: i53)
 	end
 end
 
-local function world_clear(world: World, entity: i53)
-	--TODO: use sparse_get (stashed)
-	local record = world.entityIndex.sparse[entity]
-	if not record then
-		return
-	end
-
-	local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
-	local archetype = record.archetype
-
-	if archetype == nil or archetype == ROOT_ARCHETYPE then
-		return
-	end
-
-	entity_move(world.entityIndex, entity, record, ROOT_ARCHETYPE)
-end
-
 local function archetype_fast_delete_last(columns: { Column }, column_count: number, types: { i53 }, entity: i53)
 	for i, column in columns do
 		if column ~= NULL_ARRAY then
@@ -840,6 +823,59 @@ local function archetype_fast_delete(columns: { Column }, column_count: number, 
 			column[column_count] = nil
 		end
 	end
+end
+
+local function archetype_delete(world: World, archetype: Archetype, row: number, destruct: boolean?)
+	local entityIndex = world.entityIndex
+	local columns = archetype.columns
+	local types = archetype.types
+	local entities = archetype.entities
+	local column_count = #entities
+	local last = #entities
+	local move = entities[last]
+	local delete = entities[row]
+	entities[row] = move
+	entities[last] = nil
+
+	if row ~= last then
+		-- TODO: should be "entity_index_sparse_get(entityIndex, move)"
+		local record_to_move = entityIndex.sparse[move]
+		if record_to_move then
+			record_to_move.row = row
+		end
+	end
+
+	-- TODO: if last == 0 then deactivate table
+
+	for _, id in types do
+		invoke_hook(world, EcsOnRemove, id, delete)
+	end
+
+	if row == last then
+		archetype_fast_delete_last(columns, column_count, types, delete)
+	else
+		archetype_fast_delete(columns, column_count, row, types, delete)
+	end
+end
+
+local function world_clear(world: World, entity: i53)
+	--TODO: use sparse_get (stashed)
+	local record = world.entityIndex.sparse[entity]
+	if not record then
+		return
+	end
+
+	local archetype = record.archetype
+	local row = record.row
+
+	if archetype then
+		-- In the future should have a destruct mode for
+		-- deleting archetypes themselves. Maybe requires recycling
+		archetype_delete(world, archetype, row)
+	end
+
+	record.archetype = nil
+	record.row = nil
 end
 
 local function archetype_disconnect_edge(edge: GraphEdge)
@@ -936,41 +972,10 @@ local function world_cleanup(world)
 	world.archetypeIndex = new_archetype_map
 end
 
+
+
 local world_delete: (world: World, entity: i53, destruct: boolean?) -> ()
 do
-	local function archetype_delete(world: World, archetype: Archetype, row: number, destruct: boolean?)
-		local entityIndex = world.entityIndex
-		local columns = archetype.columns
-		local types = archetype.types
-		local entities = archetype.entities
-		local column_count = #entities
-		local last = #entities
-		local move = entities[last]
-		local delete = entities[row]
-		entities[row] = move
-		entities[last] = nil
-
-		if row ~= last then
-			-- TODO: should be "entity_index_sparse_get(entityIndex, move)"
-			local record_to_move = entityIndex.sparse[move]
-			if record_to_move then
-				record_to_move.row = row
-			end
-		end
-
-		-- TODO: if last == 0 then deactivate table
-
-		for _, id in types do
-			invoke_hook(world, EcsOnRemove, id, delete)
-		end
-
-		if row == last then
-			archetype_fast_delete_last(columns, column_count, types, delete)
-		else
-			archetype_fast_delete(columns, column_count, row, types, delete)
-		end
-	end
-
 	function world_delete(world: World, entity: i53, destruct: boolean?)
 		local entityIndex = world.entityIndex
 		local sparse_array = entityIndex.sparse

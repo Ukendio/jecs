@@ -827,6 +827,48 @@ TEST("world:clear()", function()
 		CHECK(world:get(e, A) == nil)
 		CHECK(world:get(e, B) == nil)
 	end
+
+	do CASE "should move last record"
+		local world = world_new()
+		local A = world:component()
+
+		local e = world:entity()
+		local e1 = world:entity()
+
+		world:add(e, A)
+		world:add(e1, A)
+
+		local archetype = world.archetypeIndex["1"]
+		local archetype_entities = archetype.entities
+
+		local _e = e :: number
+		local _e1 = e1 :: number
+
+		CHECK(archetype_entities[1] == _e)
+		CHECK(archetype_entities[2] == _e1)
+
+		local sparse_array = world.entityIndex.sparse
+		local e_record = sparse_array[e]
+		local e1_record = sparse_array[e1]
+		CHECK(e_record.archetype == archetype)
+		CHECK(e1_record.archetype == archetype)
+		CHECK(e1_record.row == 2)
+
+		world:clear(e)
+
+		CHECK(e_record.archetype == nil)
+		CHECK(e_record.row == nil)
+		CHECK(e1_record.archetype == archetype)
+		CHECK(e1_record.row == 1)
+
+		CHECK(archetype_entities[1] == _e1)
+		CHECK(archetype_entities[2] == nil)
+
+		CHECK(world:contains(e) == true)
+		CHECK(world:has(e, A) == false)
+		CHECK(world:contains(e1) == true)
+		CHECK(world:has(e1, A) == true)
+	end
 end)
 
 TEST("world:has()", function()
