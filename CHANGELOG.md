@@ -10,6 +10,56 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 
 ## [Unreleased]
 
+- `[query]`:
+	- Fixed bug where `world:clear` did not invoke `jecs.OnRemove` hooks
+	- Changed `query.__iter` to drain on iteration
+		- It will initialize once wherever you left iteration off at last time
+	- Changed `query:iter` to restart the iterator
+	- Removed `query:drain` and `query:next`
+		- If you want to get individual results outside of a for-loop, you need to call `query:iter` to initialize the iterator and then call the iterator function manually
+		```lua
+		local it = world:query(A, B, C):iter()
+		local entity, a, b, c = it()
+		entity, a, b, c = it() -- get next results
+		```
+- `[world`
+	- Fixed a bug with `world:clear` not invoking `jecs.OnRemove` hooks
+- `[typescript]`:
+	- Changed pair to accept generics
+	- Improved handling of Tags
+
+## [0.3.2] - 2024-10-01
+
+- `[world]`:
+	- Changed `world:cleanup` to traverse a header type for graph edges. (Edit)
+	- Fixed a regression that occurred when you call `world:set` following a `world:remove` using the same component
+	- Remove explicit error in JECS_DEBUG for `world:target` when not applying an index parameter
+- `[typescript]` :
+	- Fixed `world.set` with NoInfer<T>
+
+## [0.3.1] - 2024-10-01
+
+- `[world]`:
+	- Added an index parameter to `world:target`
+	- Added a way to change the components limit via `_G.JECS_HI_COMPONENT_ID`
+		- Set it to whatever number you want but try to make it as close to the number of components you will use as possible
+		- Make sure to set this before importing jecs or else it will not work
+	- Added debug mode, enable via setting `_G.JECS_DEBUG` to true
+	    - Make sure to set this before importing jecs or else it will not work
+	- Added `world:cleanup` which is called to cleanup empty archetypes manually
+	- Changed `world:delete` to delete archetypes that are dependent on the passed entity
+	- Changed `world:delete` to delete entity's children before the entity to prevent cycles
+- `[query]`:
+	- Fixed the iterator to not drain by default
+- `[typescript]`
+	- Fixed entry point of the package.json file to be `src` rather than `src/init`
+	- Fixed `query.next` returning a query object whereas it would be expected to return a tuple containing the entity and the corresponding component values
+	- Exported `query.archetypes`
+	- Changed `pair` to return a number instead of an entity
+	    -  Preventing direct usage of a pair as an entity while still allowing it to be used as a component
+	- Exported built-in components `ChildOf` and `Name`
+	- Exported `world.parent`
+
 ## [0.2.10] - 2024-09-07
 
 - `[world]`:
