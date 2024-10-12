@@ -6,10 +6,10 @@
 type i53 = number
 type i24 = number
 
-type Ty = {i53}
+type Ty = { i53 }
 type ArchetypeId = number
 
-type Column = {any}
+type Column = { any }
 
 type Archetype = {
 	id: number,
@@ -21,8 +21,8 @@ type Archetype = {
 	},
 	types: Ty,
 	type: string | number,
-	entities: {number},
-	columns: {Column},
+	entities: { number },
+	columns: { Column },
 	records: {},
 }
 
@@ -31,12 +31,12 @@ type Record = {
 	row: number,
 }
 
-type EntityIndex = {[i24]: Record}
-type ComponentIndex = {[i24]: ArchetypeMap}
+type EntityIndex = { [i24]: Record }
+type ComponentIndex = { [i24]: ArchetypeMap }
 
 type ArchetypeRecord = number
-type ArchetypeMap = {sparse: {[ArchetypeId]: ArchetypeRecord}, size: number}
-type Archetypes = {[ArchetypeId]: Archetype}
+type ArchetypeMap = { sparse: { [ArchetypeId]: ArchetypeRecord }, size: number }
+type Archetypes = { [ArchetypeId]: Archetype }
 
 type ArchetypeDiff = {
 	added: Ty,
@@ -134,7 +134,7 @@ local function createArchetypeRecords(componentIndex: ComponentIndex, to: Archet
 		local archetypesMap = componentIndex[destinationId]
 
 		if not archetypesMap then
-			archetypesMap = {size = 0, sparse = {}}
+			archetypesMap = { size = 0, sparse = {} }
 			componentIndex[destinationId] = archetypesMap
 		end
 
@@ -143,27 +143,27 @@ local function createArchetypeRecords(componentIndex: ComponentIndex, to: Archet
 	end
 end
 
-local function archetypeOf(world: World, types: {i24}, prev: Archetype?): Archetype
+local function archetypeOf(world: World, types: { i24 }, prev: Archetype?): Archetype
 	local ty = hash(types)
 
 	local id = world.nextArchetypeId + 1
 	world.nextArchetypeId = id
 
 	local length = #types
-	local columns = table.create(length) :: {any}
+	local columns = table.create(length) :: { any }
 
 	for index in types do
 		columns[index] = {}
 	end
 
 	local archetype = {
-		columns = columns;
-		edges = {};
-		entities = {};
-		id = id;
-		records = {};
-		type = ty;
-		types = types;
+		columns = columns,
+		edges = {},
+		entities = {},
+		id = id,
+		records = {},
+		type = ty,
+		types = types,
 	}
 	world.archetypeIndex[ty] = archetype
 	world.archetypes[id] = archetype
@@ -178,17 +178,17 @@ local World = {}
 World.__index = World
 function World.new()
 	local self = setmetatable({
-		archetypeIndex = {};
-		archetypes = {};
-		componentIndex = {};
-		entityIndex = {};
+		archetypeIndex = {},
+		archetypes = {},
+		componentIndex = {},
+		entityIndex = {},
 		hooks = {
-			[ON_ADD] = {};
-		};
-		nextArchetypeId = 0;
-		nextComponentId = 0;
-		nextEntityId = 0;
-		ROOT_ARCHETYPE = (nil :: any) :: Archetype;
+			[ON_ADD] = {},
+		},
+		nextArchetypeId = 0,
+		nextComponentId = 0,
+		nextEntityId = 0,
+		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
 	}, World)
 	return self
 end
@@ -197,21 +197,21 @@ local function emit(world, eventDescription)
 	local event = eventDescription.event
 
 	table.insert(world.hooks[event], {
-		archetype = eventDescription.archetype;
-		ids = eventDescription.ids;
-		offset = eventDescription.offset;
-		otherArchetype = eventDescription.otherArchetype;
+		archetype = eventDescription.archetype,
+		ids = eventDescription.ids,
+		offset = eventDescription.offset,
+		otherArchetype = eventDescription.otherArchetype,
 	})
 end
 
 local function onNotifyAdd(world, archetype, otherArchetype, row: number, added: Ty)
 	if #added > 0 then
 		emit(world, {
-			archetype = archetype;
-			event = ON_ADD;
-			ids = added;
-			offset = row;
-			otherArchetype = otherArchetype;
+			archetype = archetype,
+			event = ON_ADD,
+			ids = added,
+			offset = row,
+			otherArchetype = otherArchetype,
 		})
 	end
 end
@@ -232,7 +232,7 @@ local function ensureArchetype(world: World, types, prev)
 	return archetypeOf(world, types, prev)
 end
 
-local function findInsert(types: {i53}, toAdd: i53)
+local function findInsert(types: { i53 }, toAdd: i53)
 	for i, id in types do
 		if id == toAdd then
 			return -1
@@ -326,7 +326,7 @@ function World.set(world: World, entityId: i53, componentId: i53, data: unknown)
 		if #to.types > 0 then
 			-- When there is no previous archetype it should create the archetype
 			newEntity(entityId, record, to)
-			onNotifyAdd(world, to, from, record.row, {componentId})
+			onNotifyAdd(world, to, from, record.row, { componentId })
 		end
 	end
 
@@ -401,8 +401,8 @@ local function noop(_self: Query, ...: i53): () -> (number, ...any)
 end
 
 local EmptyQuery = {
-	__iter = noop;
-	without = noop;
+	__iter = noop,
+	without = noop,
 }
 EmptyQuery.__index = EmptyQuery
 setmetatable(EmptyQuery, EmptyQuery)
@@ -418,7 +418,7 @@ function World.query(world: World, ...: i53): Query
 	local compatibleArchetypes = {}
 	local length = 0
 
-	local components = {...}
+	local components = { ... }
 	local archetypes = world.archetypes
 	local queryLength = #components
 
@@ -456,7 +456,7 @@ function World.query(world: World, ...: i53): Query
 		end
 
 		length += 1
-		compatibleArchetypes[length] = {archetype, indices}
+		compatibleArchetypes[length] = { archetype, indices }
 	end
 
 	local lastArchetype, compatibleArchetype = next(compatibleArchetypes)
@@ -468,7 +468,7 @@ function World.query(world: World, ...: i53): Query
 	preparedQuery.__index = preparedQuery
 
 	function preparedQuery:without(...)
-		local withoutComponents = {...}
+		local withoutComponents = { ... }
 		for i = #compatibleArchetypes, 1, -1 do
 			local archetype = compatibleArchetypes[i][1]
 			local records = archetype.records
@@ -599,7 +599,7 @@ function World.delete(world: World, entityId: i53)
 end
 
 function World.observer(world: World, ...)
-	local componentIds = {...}
+	local componentIds = { ... }
 	local idsCount = #componentIds
 	local hooks = world.hooks
 
@@ -647,13 +647,13 @@ function World.observer(world: World, ...)
 
 				return archetype.entities[row], unpack(queryOutput, 1, idsCount)
 			end
-		end;
+		end,
 	}
 end
 
 return table.freeze({
-	World = World;
-	ON_ADD = ON_ADD;
-	ON_REMOVE = ON_REMOVE;
-	ON_SET = ON_SET;
+	World = World,
+	ON_ADD = ON_ADD,
+	ON_REMOVE = ON_REMOVE,
+	ON_SET = ON_SET,
 })

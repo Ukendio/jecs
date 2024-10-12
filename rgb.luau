@@ -16,7 +16,7 @@ return {
 	end,
 
 	yellow = function(s: any)
-		return `\27[33;1m{s}\27[0m`  
+		return `\27[33;1m{s}\27[0m`
 	end,
 
 	red_highlight = function(s: any)

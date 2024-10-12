@@ -14,25 +14,25 @@ return {
 		local registry2 = ecr.registry()
 
 		return registry2
-	end;
+	end,
 
 	Functions = {
 		Matter = function()
 			for i = 1, 1000 do
 				newWorld:spawn()
 			end
-		end;
+		end,
 
 		ECR = function(_, registry2)
 			for i = 1, 1000 do
 				registry2.create()
 			end
-		end;
+		end,
 
 		Jecs = function()
 			for i = 1, 1000 do
 				ecs:entity()
 			end
-		end;
-	};
+		end,
+	},
 }

@@ -11,23 +11,24 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 if not RunService:IsServer() then
-    error("Server network module can only be required from the server.")
+	error("Server network module can only be required from the server.")
 end
 
 local Reliable: RemoteEvent = ReplicatedStorage:FindFirstChild("BLINK_RELIABLE_REMOTE") :: RemoteEvent
 if not Reliable then
-    local RemoteEvent = Instance.new("RemoteEvent")
-    RemoteEvent.Name = "BLINK_RELIABLE_REMOTE"
-    RemoteEvent.Parent = ReplicatedStorage
-    Reliable = RemoteEvent
+	local RemoteEvent = Instance.new("RemoteEvent")
+	RemoteEvent.Name = "BLINK_RELIABLE_REMOTE"
+	RemoteEvent.Parent = ReplicatedStorage
+	Reliable = RemoteEvent
 end
 
-local Unreliable: UnreliableRemoteEvent = ReplicatedStorage:FindFirstChild("BLINK_UNRELIABLE_REMOTE") :: UnreliableRemoteEvent
+local Unreliable: UnreliableRemoteEvent =
+	ReplicatedStorage:FindFirstChild("BLINK_UNRELIABLE_REMOTE") :: UnreliableRemoteEvent
 if not Unreliable then
-    local UnreliableRemoteEvent = Instance.new("UnreliableRemoteEvent")
-    UnreliableRemoteEvent.Name = "BLINK_UNRELIABLE_REMOTE"
-    UnreliableRemoteEvent.Parent = ReplicatedStorage
-    Unreliable = UnreliableRemoteEvent
+	local UnreliableRemoteEvent = Instance.new("UnreliableRemoteEvent")
+	UnreliableRemoteEvent.Name = "BLINK_UNRELIABLE_REMOTE"
+	UnreliableRemoteEvent.Parent = ReplicatedStorage
+	Unreliable = UnreliableRemoteEvent
 end
 
 local Invocations = 0
@@ -45,130 +46,129 @@ local RecieveInstances = {}
 local RecieveInstanceCursor = 0
 
 type Entry = {
-    value: any,
-    next: Entry?
+	value: any,
+	next: Entry?,
 }
 
 type Queue = {
-    head: Entry?,
-    tail: Entry?
+	head: Entry?,
+	tail: Entry?,
 }
 
 type BufferSave = {
-    Size: number, 
-    Cursor: number, 
-    Buffer: buffer, 
-    Instances: {Instance}
+	Size: number,
+	Cursor: number,
+	Buffer: buffer,
+	Instances: { Instance },
 }
 
 local function Read(Bytes: number)
-    local Offset = RecieveCursor
-    RecieveCursor += Bytes
-    return Offset
+	local Offset = RecieveCursor
+	RecieveCursor += Bytes
+	return Offset
 end
 
 local function Save(): BufferSave
-    return {
-        Size = SendSize,
-        Cursor = SendCursor,
-        Buffer = SendBuffer,
-        Instances = SendInstances
-    }
+	return {
+		Size = SendSize,
+		Cursor = SendCursor,
+		Buffer = SendBuffer,
+		Instances = SendInstances,
+	}
 end
 
 local function Load(Save: BufferSave?)
-    if Save then
-        SendSize = Save.Size
-        SendCursor = Save.Cursor
-        SendOffset = Save.Cursor
-        SendBuffer = Save.Buffer
-        SendInstances = Save.Instances
-        return
-    end
+	if Save then
+		SendSize = Save.Size
+		SendCursor = Save.Cursor
+		SendOffset = Save.Cursor
+		SendBuffer = Save.Buffer
+		SendInstances = Save.Instances
+		return
+	end
 
-    SendSize = 64
-    SendCursor = 0
-    SendOffset = 0
-    SendBuffer = buffer.create(64)
-    SendInstances = {}
+	SendSize = 64
+	SendCursor = 0
+	SendOffset = 0
+	SendBuffer = buffer.create(64)
+	SendInstances = {}
 end
 
 local function Invoke()
-    if Invocations == 255 then
-        Invocations = 0
-    end
+	if Invocations == 255 then
+		Invocations = 0
+	end
 
-    local Invocation = Invocations
-    Invocations += 1
-    return Invocation
+	local Invocation = Invocations
+	Invocations += 1
+	return Invocation
 end
 
 local function Allocate(Bytes: number)
-    local InUse = (SendCursor + Bytes)
-    if InUse > SendSize then
-        --> Avoid resizing the buffer for every write
-        while InUse > SendSize do
-            SendSize *= 1.5
-        end
+	local InUse = (SendCursor + Bytes)
+	if InUse > SendSize then
+		--> Avoid resizing the buffer for every write
+		while InUse > SendSize do
+			SendSize *= 1.5
+		end
 
-        local Buffer = buffer.create(SendSize)
-        buffer.copy(Buffer, 0, SendBuffer, 0, SendCursor)
-        SendBuffer = Buffer
-    end
+		local Buffer = buffer.create(SendSize)
+		buffer.copy(Buffer, 0, SendBuffer, 0, SendCursor)
+		SendBuffer = Buffer
+	end
 
-    SendOffset = SendCursor
-    SendCursor += Bytes
-    
-    return SendOffset
+	SendOffset = SendCursor
+	SendCursor += Bytes
+
+	return SendOffset
 end
 
 local function CreateQueue(): Queue
-    return {
-        head = nil,
-        tail = nil
-    }
+	return {
+		head = nil,
+		tail = nil,
+	}
 end
 
 local function Pop(queue: Queue): any
-    local head = queue.head
-    if head == nil then
-        return
-    end
+	local head = queue.head
+	if head == nil then
+		return
+	end
 
-    queue.head = head.next
-    return head.value
+	queue.head = head.next
+	return head.value
 end
 
 local function Push(queue: Queue, value: any)
-    local entry: Entry = {
-        value = value,
-        next = nil
-    }
+	local entry: Entry = {
+		value = value,
+		next = nil,
+	}
 
-    if queue.tail ~= nil then
-        queue.tail.next = entry
-    end
+	if queue.tail ~= nil then
+		queue.tail.next = entry
+	end
 
-    queue.tail = entry
+	queue.tail = entry
 
-    if queue.head == nil then
-        queue.head = entry
-    end
+	if queue.head == nil then
+		queue.head = entry
+	end
 end
 
 local Types = {}
 local Calls = table.create(256)
 
 local Events: any = {
-    Reliable = table.create(256),
-    Unreliable = table.create(256)
+	Reliable = table.create(256),
+	Unreliable = table.create(256),
 }
 
 local Queue: any = {
-    Reliable = table.create(256),
-    Unreliable = table.create(256)
+	Reliable = table.create(256),
+	Unreliable = table.create(256),
 }
-
 
 function Types.ReadEVENT_UpdateTransform(): (number, CFrame)
 	-- Read BLOCK: 32 bytes
@@ -232,52 +232,51 @@ function Types.WriteEVENT_SpawnMob(Value1: number, Value2: CFrame, Value3: numbe
 	buffer.writeu8(SendBuffer, BLOCK_START + 33, Value3)
 end
 
-
-local PlayersMap: {[Player]: BufferSave} = {}
+local PlayersMap: { [Player]: BufferSave } = {}
 
 Players.PlayerRemoving:Connect(function(Player)
-    PlayersMap[Player] = nil
+	PlayersMap[Player] = nil
 end)
 
 local function StepReplication()
-    for Player, Send in PlayersMap do
-        if Send.Cursor <= 0 then
-            continue
-        end
+	for Player, Send in PlayersMap do
+		if Send.Cursor <= 0 then
+			continue
+		end
 
-        local Buffer = buffer.create(Send.Cursor)
-        buffer.copy(Buffer, 0, Send.Buffer, 0, Send.Cursor)
-        Reliable:FireClient(Player, Buffer, Send.Instances)
+		local Buffer = buffer.create(Send.Cursor)
+		buffer.copy(Buffer, 0, Send.Buffer, 0, Send.Cursor)
+		Reliable:FireClient(Player, Buffer, Send.Instances)
 
-        Send.Size = 64
-        Send.Cursor = 0
-        Send.Buffer = buffer.create(64)
-        table.clear(Send.Instances)
-    end
+		Send.Size = 64
+		Send.Cursor = 0
+		Send.Buffer = buffer.create(64)
+		table.clear(Send.Instances)
+	end
 end
 
 RunService.Heartbeat:Connect(StepReplication)
 
-Reliable.OnServerEvent:Connect(function(Player: Player, Buffer: buffer, Instances: {Instance})
+Reliable.OnServerEvent:Connect(function(Player: Player, Buffer: buffer, Instances: { Instance })
 	RecieveCursor = 0
 	RecieveBuffer = Buffer
 	RecieveInstances = Instances
 	RecieveInstanceCursor = 0
 	local Size = buffer.len(RecieveBuffer)
-	while (RecieveCursor < Size) do
+	while RecieveCursor < Size do
 		-- Read BLOCK: 1 bytes
 		local BLOCK_START = Read(1)
 		local Index = buffer.readu8(RecieveBuffer, BLOCK_START + 0)
 	end
 end)
 
-Unreliable.OnServerEvent:Connect(function(Player: Player, Buffer: buffer, Instances: {Instance})
+Unreliable.OnServerEvent:Connect(function(Player: Player, Buffer: buffer, Instances: { Instance })
 	RecieveCursor = 0
 	RecieveBuffer = Buffer
 	RecieveInstances = Instances
 	RecieveInstanceCursor = 0
 	local Size = buffer.len(RecieveBuffer)
-	while (RecieveCursor < Size) do
+	while RecieveCursor < Size do
 		-- Read BLOCK: 1 bytes
 		local BLOCK_START = Read(1)
 		local Index = buffer.readu8(RecieveBuffer, BLOCK_START + 0)
@@ -302,7 +301,7 @@ return {
 			buffer.copy(Buffer, 0, SendBuffer, 0, SendCursor)
 			Unreliable:FireAllClients(Buffer, SendInstances)
 		end,
-		FireList = function(List: {Player}, Value1: number, Value2: CFrame): ()
+		FireList = function(List: { Player }, Value1: number, Value2: CFrame): ()
 			Load()
 			Types.WriteEVENT_UpdateTransform(Value1, Value2)
 			local Buffer = buffer.create(SendCursor)
@@ -342,7 +341,7 @@ return {
 				PlayersMap[Player] = Save()
 			end
 		end,
-		FireList = function(List: {Player}, Value1: number, Value2: CFrame, Value3: number): ()
+		FireList = function(List: { Player }, Value1: number, Value2: CFrame, Value3: number): ()
 			Load()
 			Types.WriteEVENT_SpawnMob(Value1, Value2, Value3)
 			local Buffer, Size, Instances = SendBuffer, SendCursor, SendInstances
@@ -370,5 +369,4 @@ return {
 			end
 		end,
 	},
-
 }

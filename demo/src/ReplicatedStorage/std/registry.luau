@@ -1,8 +1,8 @@
 local reserved = 0
 
 local function reserve()
-    reserved += 1
-    return reserved
+	reserved += 1
+	return reserved
 end
 
 -- If you don't like passing around a world singleton
@@ -19,13 +19,13 @@ end
     world:set(e, components.Transform, CFrame)
 ]]
 local function register(world)
-    for _ = 1, reserved do
-        world:component()
-    end
-    return world
+	for _ = 1, reserved do
+		world:component()
+	end
+	return world
 end
 
 return {
-    reserve = reserve,
-    register = register,
+	reserve = reserve,
+	register = register,
 }

@@ -23,20 +23,18 @@ print(`\{{pos.X}, {pos.Y}, {pos.Z}\}`)
 -- Overwrite the value of the Position component
 world:set(bob, Position, Vector3.new(40, 50, 60))
 
-
 local alice = world:entity()
 -- Create another named entity
 world:set(alice, Name, "Alice")
 world:set(alice, Position, Vector3.new(10, 20, 30))
 world:add(alice, Walking)
 
-
 -- Remove tag
 world:remove(alice, Walking)
 
 -- Iterate all entities with Position
 for entity, p in world:query(Position) do
-    print(`{entity}: \{{p.X}, {p.Y}, {p.Z}\}`)
+	print(`{entity}: \{{p.X}, {p.Y}, {p.Z}\}`)
 end
 
 -- Output:
