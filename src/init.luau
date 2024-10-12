@@ -1681,7 +1681,7 @@ type Query<T...> = typeof(setmetatable({}, {
 	with: (self: Query<T...>, ...i53) -> Query<T...>,
 	without: (self: Query<T...>, ...i53) -> Query<T...>,
 	replace: (self: Query<T...>, <U...>(T...) -> U...) -> (),
-	archetypes: () -> { Archetype },
+	archetypes: (self: Query<T...>) -> { Archetype },
 }
 
 export type World = {
