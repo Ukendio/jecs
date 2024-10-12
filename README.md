@@ -5,15 +5,15 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache-blue.svg?style=for-the-badge)](LICENSE-APACHE) [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs)
 
-jecs is Just a stupidly fast Entity Component System
+Just a stupidly fast Entity Component System
 
-- Entity Relationships as first class citizens
-- Iterate 800,000 entities at 60 frames per second
-- Type-safe [Luau](https://luau-lang.org/) API
-- Zero-dependency package
-- Optimized for column-major operations
-- Cache friendly archetype/SoA storage
-- Unit tested for stability
+* [Entity Relationships](https://ajmmertens.medium.com/building-games-in-ecs-with-entity-relationships-657275ba2c6c) as first class citizens
+* Iterate 800,000 entities at 60 frames per second
+* Type-safe [Luau](https://luau-lang.org/) API
+* Zero-dependency package
+* Optimized for column-major operations
+* Cache friendly [archetype/SoA](https://ajmmertens.medium.com/building-an-ecs-2-archetypes-and-vectorization-fe21690805f9) storage
+* Rigorously [unit tested](https://github.com/Ukendio/jecs/actions/workflows/ci.yaml) for stability
 
 ### Example
 
@@ -21,6 +21,8 @@ jecs is Just a stupidly fast Entity Component System
 local world = jecs.World.new()
 local pair = jecs.pair
 
+-- These components and functions are actually already builtin
+-- but have been illustrated for demonstration purposes
 local ChildOf = world:component()
 local Name = world:component()
 
