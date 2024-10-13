@@ -136,7 +136,7 @@ print(world:has(Entity, Ragdolled))
 
 ```ts [typescript]
 const IsMoving = world.component();
-const Ragdolled = world.entity(); -- This is a tag, meaning it won't contain data
+const Ragdolled = world.entity(); // This is a tag, meaning it won't contain data
 const Health = world.component<number>();
 
 const Entity = world.entity();
