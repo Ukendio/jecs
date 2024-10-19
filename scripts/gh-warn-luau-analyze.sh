@@ -1,6 +1,8 @@
 # Parse the output and generate GitHub Actions warnings
 while IFS="" read -r line || [ -n "$line" ]; do
 
+    echo "$line"
+
     # Check if the line contains the error format
     if [[ "$line" == *"TypeError:"* ]]; then
         # Extract the file name and line number using string manipulation
