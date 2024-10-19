@@ -1,4 +1,4 @@
-name: Stylua
+name: Styling
 
 on: [push, pull_request, workflow_dispatch]
 
