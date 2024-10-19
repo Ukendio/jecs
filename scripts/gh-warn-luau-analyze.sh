@@ -1,4 +1,3 @@
-# Parse the output and generate GitHub Actions warnings
 while IFS="" read -r line || [ -n "$line" ]; do
 
     echo "$line"

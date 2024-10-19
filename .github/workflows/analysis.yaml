@@ -16,5 +16,5 @@ jobs:
         
       - name: Analyze
         run: |
-          output=$(luau-analyze src || true) # Suppress errors for now.
-          bash scripts/gh-warn-luau-analyze.sh "$output"
+          (luau-analyze src || true) > analyze-log.txt # Suppress errors for now.
+          cat analyze-log.txt | ./scripts/gh-warn-luau-analyze.sh
