@@ -17,20 +17,3 @@ jobs:
       - name: Analyze
         run: |
           output=$(luau-analyze src || true) # Suppress errors for now.
-          
-          # Parse the output and generate GitHub Actions warnings
-          echo "$output" | while IFS= read -r line; do
-            # Check if the line contains the error format
-            if [[ "$line" == *"TypeError:"* ]]; then
-
-              file_line="${line%%:*}"             # Get the part before the first colon
-              message="${line#*: TypeError: }"    # Get the message after "TypeError: "
-
-              file="${file_line%(*}"               # Get the file name (everything before the '(')
-              location="${file_line#*()}";         # Get the part inside parentheses (line and column)
-              line_number="${location%%,*}";       # Extract the line number
-              column_number="${location#*,}";      # Extract the column number
-
-              echo "::warning file=${file},line=${line_number},col=${column_number}::${message}"
-            fi
-          done
