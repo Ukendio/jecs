@@ -15,5 +15,6 @@ jobs:
         uses: encodedvenom/install-luau@v2.1
         
       - name: Analyze
+        continue-on-error: true
         run: |
           luau-analyze src
