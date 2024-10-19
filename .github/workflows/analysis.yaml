@@ -20,10 +20,17 @@ jobs:
           
           # Parse the output and generate GitHub Actions warnings
           echo "$output" | while IFS= read -r line; do
-              if [[ $line =~ (.+)\(([0-9]+),([0-9]+)\):\ (.*) ]]; then
-                  file="${BASH_REMATCH[1]}"
-                  line_number="${BASH_REMATCH[2]}"
-                  message="${BASH_REMATCH[4]#TypeError: }"
-                  echo "::warning file=$file,line=$line_number,col=0::$message"
-              fi
+            # Check if the line contains the error format
+            if [[ "$line" == *"TypeError:"* ]]; then
+
+              file_line="${line%%:*}"             # Get the part before the first colon
+              message="${line#*: TypeError: }"    # Get the message after "TypeError: "
+
+              file="${file_line%(*}"               # Get the file name (everything before the '(')
+              location="${file_line#*()}";         # Get the part inside parentheses (line and column)
+              line_number="${location%%,*}";       # Extract the line number
+              column_number="${location#*,}";      # Extract the column number
+
+              echo "::warning file=${file},line=${line_number},col=${column_number}::${message}"
+            fi
           done
