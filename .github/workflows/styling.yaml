@@ -1,9 +1,9 @@
-name: Lint
+name: Styling
 
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
-  style:
+  run:
     name: Run Stylua
     runs-on: ubuntu-latest
 
@@ -18,18 +18,3 @@ jobs:
           version: latest # NOTE: we recommend pinning to a specific version in case of formatting changes
           # CLI arguments
           args: --check ./src
-
-  analyze:
-    name: Run Luau Analyze
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout Project
-        uses: actions/checkout@v4
-        
-      - name: Install Luau
-        uses: encodedvenom/install-luau@v2.1
-        
-      - name: Analyze
-        run: |
-          luau-analyze src
