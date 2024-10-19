@@ -15,9 +15,8 @@ jobs:
         uses: encodedvenom/install-luau@v2.1
         
       - name: Analyze
-        continue-on-error: true
         run: |
-          output=$(luau-analyze src)
+          output=$(luau-analyze src || true) # Suppress errors for now.
           
           # Parse the output and generate GitHub Actions warnings
           echo "$output" | while IFS= read -r line; do
