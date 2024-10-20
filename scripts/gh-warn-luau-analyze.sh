@@ -1,6 +1,4 @@
-while IFS="" read -r line || [ -n "$line" ]; do
-
-    echo "$line"
+cat $1 | while IFS="" read -r line || [ -n "$line" ]; do
 
     # Check if the line contains the error format
     if [[ "$line" == *"TypeError:"* ]]; then
