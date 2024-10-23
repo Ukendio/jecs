@@ -462,6 +462,11 @@ local function id_record_ensure(world: World, id: number): IdRecord
 			size = 0,
 			cache = {},
 			flags = flags,
+			hooks = {
+				on_add = on_add,
+				on_set = on_set,
+				on_remove = on_remove
+			}
 		} :: IdRecord
 		componentIndex[id] = idr
 	end
@@ -688,11 +693,8 @@ local function archetype_traverse_remove(world: World, id: i53, from: Archetype)
 	return to :: Archetype
 end
 
-local function invoke_hook(world: World, hook_id: number, id: i53, entity: i53, data: any?)
-	local hook = world_get_one_inline(world, id, hook_id)
-	if hook then
-		hook(entity, data)
-	end
+local function invoke_hook(action, entity, data)
+	action(entity, data)
 end
 
 local function world_add(world: World, entity: i53, id: i53): ()
@@ -712,10 +714,10 @@ local function world_add(world: World, entity: i53, id: i53): ()
 	end
 
 	local idr = world.componentIndex[id]
-	local has_on_add = bit32.band(idr.flags, ECS_ID_HAS_ON_ADD) ~= 0
+	local on_add = idr.hooks.on_add
 
-	if has_on_add then
-		invoke_hook(world, EcsOnAdd, id, entity)
+	if on_add then
+		invoke_hook(on_add, entity)
 	end
 end
 
@@ -727,7 +729,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 	local idr = world.componentIndex[id]
 	local flags = idr.flags
 	local is_tag = bit32.band(flags, ECS_ID_IS_TAG) ~= 0
-	local has_on_set = bit32.band(flags, ECS_ID_HAS_ON_SET) ~= 0
+	local idr_hooks = idr.hooks
 
 	if from == to then
 		if is_tag then
@@ -737,8 +739,9 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 		-- and just set the data directly.
 		local tr = to.records[id]
 		from.columns[tr.column][record.row] = data
-		if has_on_set then
-			invoke_hook(world, EcsOnSet, id, entity, data)
+		local on_set = idr_hooks.on_set
+		if on_set then
+			invoke_hook(on_set, entity, data)
 		end
 
 		return
@@ -754,10 +757,9 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 		end
 	end
 
-	local has_on_add = bit32.band(flags, ECS_ID_HAS_ON_ADD) ~= 0
-
-	if has_on_add then
-		invoke_hook(world, EcsOnAdd, id, entity)
+	local on_add = idr_hooks.on_add
+	if on_add then
+		invoke_hook(on_add, entity)
 	end
 
 	if is_tag then
@@ -769,8 +771,9 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 
 	column[record.row] = data
 
-	if has_on_set then
-		invoke_hook(world, EcsOnSet, id, entity, data)
+	local on_set = idr_hooks.on_set
+	if on_set then
+		invoke_hook(on_set, entity, data)
 	end
 end
 
@@ -798,10 +801,9 @@ local function world_remove(world: World, entity: i53, id: i53)
 
 	if from and not (from == to) then
 		local idr = world.componentIndex[id]
-		local flags = idr.flags
-		local has_on_remove = bit32.band(flags, ECS_ID_HAS_ON_REMOVE) ~= 0
-		if has_on_remove then
-			invoke_hook(world, EcsOnRemove, id, entity)
+		local on_remove = idr.hooks.on_remove
+		if on_remove then
+			invoke_hook(on_remove, entity)
 		end
 
 		entity_move(entity_index, entity, record, to)
@@ -848,7 +850,10 @@ local function archetype_delete(world: World, archetype: Archetype, row: number,
 	-- TODO: if last == 0 then deactivate table
 
 	for _, id in types do
-		invoke_hook(world, EcsOnRemove, id, delete)
+		local on_remove = world_get_one_inline(world, id, EcsOnRemove)
+		if on_remove then
+			on_remove(delete)
+		end
 	end
 
 	if row == last then
@@ -1534,14 +1539,6 @@ if _G.__JECS_DEBUG then
 		return not world_has_one_inline(world, ECS_ENTITY_T_HI(id), EcsComponent)
 	end
 
-	local original_invoke_hook = invoke_hook
-	local invoked_hook = false
-	invoke_hook = function(...)
-		invoked_hook = true
-		original_invoke_hook(...)
-		invoked_hook = false
-	end
-
 	World.query = function(world: World, ...)
 		ASSERT((...), "Requires at least a single component")
 		return world_query(world, ...)
@@ -1566,17 +1563,6 @@ if _G.__JECS_DEBUG then
 			return
 		end
 
-		if world_has_one_inline(world, entity, id) then
-			if invoked_hook then
-				local file, line = debug.info(2, "sl")
-				local hook_fn = `{file}::{line}`
-				local why = `cannot call world:set inside {hook_fn} because it adds the component {get_name(world, id)}`
-				why ..= `\n[jecs note]: consider handling this logic inside of a system`
-				throw(why)
-				return
-			end
-		end
-
 		world_set(world, entity, id, value)
 	end
 
@@ -1588,10 +1574,6 @@ if _G.__JECS_DEBUG then
 			return
 		end
 
-		if invoked_hook then
-			local hook_fn = debug.info(2, "sl")
-			throw(`Cannot call world:add when the hook {hook_fn} is in process`)
-		end
 		world_add(world, entity, id)
 	end
 
