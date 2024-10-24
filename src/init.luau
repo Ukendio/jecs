@@ -465,8 +465,8 @@ local function id_record_ensure(world: World, id: number): IdRecord
 			hooks = {
 				on_add = on_add,
 				on_set = on_set,
-				on_remove = on_remove
-			}
+				on_remove = on_remove,
+			},
 		} :: IdRecord
 		componentIndex[id] = idr
 	end
