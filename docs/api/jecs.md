@@ -40,7 +40,7 @@ jecs.Rest: Entity
 function jecs.pair(
     first: Entity, -- The first element of the pair, referred to as the relationship of the relationship pair.
     object: Entity, -- The second element of the pair, referred to as the target of the relationship pair.
-): number -- Returns the Id with those two elements
+): number -- Returns the ID with those two elements
 
 ```
 ::: info
