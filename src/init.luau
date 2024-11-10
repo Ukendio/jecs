@@ -61,8 +61,8 @@ type IdRecord = {
 	hooks: {
 		on_add: ((entity: i53) -> ())?,
 		on_set: ((entity: i53, data: any) -> ())?,
-		on_remove: ((entity: i53) -> ())?
-	}
+		on_remove: ((entity: i53) -> ())?,
+	},
 }
 
 type ComponentIndex = Map<i53, IdRecord>
@@ -75,32 +75,32 @@ type ArchetypeDiff = {
 }
 
 local HI_COMPONENT_ID = _G.__JECS_HI_COMPONENT_ID or 256
+-- stylua: ignore start
+local EcsOnAdd =          HI_COMPONENT_ID +  1
+local EcsOnRemove =       HI_COMPONENT_ID +  2
+local EcsOnSet =          HI_COMPONENT_ID +  3
+local EcsWildcard =       HI_COMPONENT_ID +  4
+local EcsChildOf =        HI_COMPONENT_ID +  5
+local EcsComponent =      HI_COMPONENT_ID +  6
+local EcsOnDelete =       HI_COMPONENT_ID +  7
+local EcsOnDeleteTarget = HI_COMPONENT_ID +  8
+local EcsDelete =         HI_COMPONENT_ID +  9
+local EcsRemove =         HI_COMPONENT_ID + 10
+local EcsName =           HI_COMPONENT_ID + 11
+local EcsRest =           HI_COMPONENT_ID + 12
 
-local EcsOnAdd = HI_COMPONENT_ID + 1
-local EcsOnRemove = HI_COMPONENT_ID + 2
-local EcsOnSet = HI_COMPONENT_ID + 3
-local EcsWildcard = HI_COMPONENT_ID + 4
-local EcsChildOf = HI_COMPONENT_ID + 5
-local EcsComponent = HI_COMPONENT_ID + 6
-local EcsOnDelete = HI_COMPONENT_ID + 7
-local EcsOnDeleteTarget = HI_COMPONENT_ID + 8
-local EcsDelete = HI_COMPONENT_ID + 9
-local EcsRemove = HI_COMPONENT_ID + 10
-local EcsName = HI_COMPONENT_ID + 11
-local EcsRest = HI_COMPONENT_ID + 12
-
-local ECS_PAIR_FLAG = 0x8
-local ECS_ID_FLAGS_MASK = 0x10
-local ECS_ENTITY_MASK = bit32.lshift(1, 24)
+local ECS_PAIR_FLAG =                      0x8
+local ECS_ID_FLAGS_MASK =                 0x10
+local ECS_ENTITY_MASK =     bit32.lshift(1, 24)
 local ECS_GENERATION_MASK = bit32.lshift(1, 16)
 
-local ECS_ID_DELETE = 0b0000_0001
-local ECS_ID_IS_TAG = 0b0000_0010
-local ECS_ID_HAS_ON_ADD = 0b0000_0100
-local ECS_ID_HAS_ON_SET = 0b0000_1000
-local ECS_ID_HAS_ON_REMOVE = 0b0001_0000
-local ECS_ID_MASK = 0b0000_0000
-
+local ECS_ID_DELETE =              0b0000_0001
+local ECS_ID_IS_TAG =              0b0000_0010
+local ECS_ID_HAS_ON_ADD =          0b0000_0100
+local ECS_ID_HAS_ON_SET =          0b0000_1000
+local ECS_ID_HAS_ON_REMOVE =       0b0001_0000
+local ECS_ID_MASK =                0b0000_0000
+-- stylua: ignore end
 local NULL_ARRAY = table.freeze({}) :: Column
 
 local function FLAGS_ADD(is_pair: boolean): number
@@ -293,7 +293,7 @@ local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?
 do
 	-- Keeping the function as small as possible to enable inlining
 	local records: { ArchetypeRecord }
-	local columns: {{ any }}
+	local columns: { { any } }
 	local row: number
 
 	local function fetch(id): any
@@ -394,7 +394,7 @@ local function world_has(world: World, entity: number, ...: i53): boolean
 end
 
 local function world_target(world: World, entity: i53, relation: i24, index: number?): i24?
-	local nth  = index or 0
+	local nth = index or 0
 	local record = world.entityIndex.sparse[entity]
 	local archetype = record.archetype
 	if not archetype then
@@ -642,8 +642,7 @@ local function init_edge_for_add(world, archetype, edge: GraphEdge, id, to)
 	end
 end
 
-local function init_edge_for_remove(world: World, archetype: Archetype,
-	edge: GraphEdge, id: number, to: Archetype)
+local function init_edge_for_remove(world: World, archetype: Archetype, edge: GraphEdge, id: number, to: Archetype)
 	archetype_init_edge(archetype, edge, id, to)
 	archetype_ensure_edge(world, archetype.node.remove, id)
 	if archetype ~= to then
@@ -789,15 +788,15 @@ local function world_component(world: World): i53
 		error("Too many components, consider using world:entity() instead to create components.")
 	end
 	world.nextComponentId = componentId
-	local id = entity_index_new_id(world.entityIndex, componentId)
-	world_add(world, id, EcsComponent)
-	return id
+
+	return componentId
 end
 
 local function world_remove(world: World, entity: i53, id: i53)
 	local entity_index = world.entityIndex
 	local record = entity_index.sparse[entity]
 	local from = record.archetype
+
 	if not from then
 		return
 	end
@@ -1610,14 +1609,15 @@ if _G.__JECS_DEBUG then
 end
 
 function World.new()
+	local entity_index: EntityIndex = {
+		dense = {} :: { [i24]: i53 },
+		sparse = {} :: { [i53]: Record },
+	}
 	local self = setmetatable({
 		archetypeIndex = {} :: { [string]: Archetype },
 		archetypes = {} :: Archetypes,
 		componentIndex = {} :: ComponentIndex,
-		entityIndex = {
-			dense = {} :: { [i24]: i53 },
-			sparse = {} :: { [i53]: Record },
-		} :: EntityIndex,
+		entityIndex = entity_index,
 		nextArchetypeId = 0 :: number,
 		nextComponentId = 0 :: number,
 		nextEntityId = 0 :: number,
@@ -1625,6 +1625,11 @@ function World.new()
 	}, World) :: any
 
 	self.ROOT_ARCHETYPE = archetype_create(self, {}, "")
+
+	for i = 1, HI_COMPONENT_ID do
+		local e = entity_index_new_id(self.entityIndex, i)
+		world_add(self, e, EcsComponent)
+	end
 
 	for i = HI_COMPONENT_ID + 1, EcsRest do
 		-- Initialize built-in components
@@ -1659,7 +1664,7 @@ end
 export type Id<T = nil> = Entity<T> | Pair<Entity<T>, Entity<unknown>>
 
 export type Pair<First, Second> = number & {
-	__relation: First
+	__relation: First,
 }
 
 -- type function _Pair(first, second)
@@ -1672,12 +1677,11 @@ export type Pair<First, Second> = number & {
 -- 	end
 -- end
 
-
--- type TestPair = _Pair<Entity<nil>, Entity<Vector3>>
+-- type TestPair = _Pair<Entity<number>, Entity<Vector3>>
 
 type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 
-export type Entity<T = nil> = number & { read __T: T }
+export type Entity<T = nil> = number & { __T: T }
 
 type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 
