@@ -74,7 +74,7 @@ type EntityIndex = {
 	sparse_array: Map<i53, Record>,
 	sparse_count: number,
 	alive_count: number,
-	max_id: number
+	max_id: number,
 }
 
 local HI_COMPONENT_ID = _G.__JECS_HI_COMPONENT_ID or 256
@@ -172,9 +172,6 @@ local function ECS_PAIR(pred: i53, obj: i53): i53
 	return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + FLAGS_ADD(--[[isPair]] true) :: i53
 end
 
-local ERROR_ENTITY_NOT_ALIVE = "Entity is not alive"
-local ERROR_GENERATION_INVALID = "INVALID GENERATION"
-
 local function entity_index_try_get_any(entity_index: EntityIndex, entity: number): Record?
 	local r = entity_index.sparse_array[ECS_ENTITY_T_LO(entity)]
 	if not r then
@@ -210,7 +207,6 @@ local function entity_index_get_alive(index: EntityIndex, e: i24): i53
 	error("Invalid entity")
 end
 
-
 local function entity_index_is_alive(entity_index: EntityIndex, entity: number)
 	return entity_index_try_get(entity_index, entity) ~= nil
 end
@@ -226,8 +222,7 @@ local function entity_index_remove(entity_index: EntityIndex, entity: number)
 	entity_index.alive_count -= 1
 
 	local last_alive_entity = dense_array[last_entity_alive_at_index]
-	local r_swap = entity_index_try_get_any(
-		entity_index, last_alive_entity) :: Record
+	local r_swap = entity_index_try_get_any(entity_index, last_alive_entity) :: Record
 	r_swap.dense = index_of_deleted_entity
 	r.archetype = nil :: any
 	r.row = nil :: any
@@ -237,13 +232,6 @@ local function entity_index_remove(entity_index: EntityIndex, entity: number)
 	dense_array[last_entity_alive_at_index] = ECS_GENERATION_INC(entity)
 end
 
-
-local function record_create(entity_index: EntityIndex, id: number, count: number )
-	entity_index.sparse_array[id] = { dense = count } :: Record
-	entity_index.sparse_count += 1
-end
-
-
 local function entity_index_new_id(entity_index: EntityIndex, data): i53
 	local dense_array = entity_index.dense_array
 	if entity_index.alive_count ~= #dense_array then
@@ -251,7 +239,7 @@ local function entity_index_new_id(entity_index: EntityIndex, data): i53
 		local id = dense_array[entity_index.alive_count]
 		return id
 	end
-	entity_index.max_id +=1
+	entity_index.max_id += 1
 	local id = entity_index.max_id
 	entity_index.alive_count += 1
 
@@ -259,8 +247,6 @@ local function entity_index_new_id(entity_index: EntityIndex, data): i53
 	entity_index.sparse_array[id] = {
 		dense = entity_index.alive_count,
 	} :: Record
-
-	entity_index.sparse_count += 1
 
 	return id
 end
@@ -420,7 +406,6 @@ local function world_get_one_inline(world: World, entity: i53, id: i53): any
 	end
 	return archetype.columns[tr.column][record.row]
 end
-
 
 local function world_has_one_inline(world: World, entity: number, id: i53): boolean
 	local record = entity_index_try_get(world.entity_index, entity)
@@ -948,7 +933,7 @@ end
 
 local function world_clear(world: World, entity: i53)
 	--TODO: use sparse_get (stashed)
-	local record = entity_index_try_get(world.entity_index,  entity)
+	local record = entity_index_try_get(world.entity_index, entity)
 	if not record then
 		return
 	end
@@ -1038,7 +1023,6 @@ local function archetype_destroy(world: World, archetype: Archetype)
 		end
 	end
 end
-
 
 local function world_cleanup(world: World)
 	local archetypes = world.archetypes
@@ -1150,12 +1134,9 @@ do
 	end
 end
 
-
-
 local function world_contains(world: World, entity): boolean
 	return entity_index_is_alive(world.entity_index, entity)
 end
-
 
 local function NOOP() end
 
@@ -1912,5 +1893,5 @@ return {
 
 	entity_index_try_get = entity_index_try_get,
 	entity_index_try_get_any = entity_index_try_get_any,
-	entity_index_is_alive = entity_index_is_alive
+	entity_index_is_alive = entity_index_is_alive,
 }
