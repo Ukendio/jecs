@@ -1,0 +1,21 @@
+name = "ukendio/jecs"
+authors = ["jecs authors"]
+description = "A fast, portable Entity Component System for Luau"
+includes = [
+    "src",
+    "pesde.toml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    ".luaurc",
+]
+license = "MIT"
+repository = "https://github.com/Ukendio/jecs"
+version = "0.3.2"
+
+[indices]
+default = "https://github.com/daimond113/pesde-index"
+
+[target]
+environment = "luau"
+lib = "init.luau"
