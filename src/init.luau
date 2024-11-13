@@ -72,7 +72,6 @@ type ArchetypeDiff = {
 type EntityIndex = {
 	dense_array: Map<i24, i53>,
 	sparse_array: Map<i53, Record>,
-	sparse_count: number,
 	alive_count: number,
 	max_id: number,
 }
@@ -1674,7 +1673,6 @@ function World.new()
 	local entity_index: EntityIndex = {
 		dense_array = {} :: { [i24]: i53 },
 		sparse_array = {} :: { [i53]: Record },
-		sparse_count = 0,
 		alive_count = 0,
 		max_id = 0,
 	}
