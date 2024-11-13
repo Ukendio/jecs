@@ -450,6 +450,7 @@ local function world_target(world: World, entity: i53, relation: i24, index: num
 	if not record then
 		return nil
 	end
+
 	local archetype = record.archetype
 	if not archetype then
 		return nil
