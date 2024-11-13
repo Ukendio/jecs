@@ -203,7 +203,7 @@ local function entity_index_get_alive(index: EntityIndex, e: i24): i53
 	if r then
 		return index.dense_array[r.dense]
 	end
-	error("Invalid entity")
+	return 0
 end
 
 local function entity_index_is_alive(entity_index: EntityIndex, entity: number)
