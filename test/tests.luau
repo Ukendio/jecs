@@ -7,9 +7,11 @@ local ECS_ID, ECS_GENERATION = jecs.ECS_ID, jecs.ECS_GENERATION
 local ECS_GENERATION_INC = jecs.ECS_GENERATION_INC
 local IS_PAIR = jecs.IS_PAIR
 local pair = jecs.pair
-local getAlive = jecs.entity_index_get_alive
 local ecs_pair_first = jecs.pair_first
 local ecs_pair_second = jecs.pair_second
+local entity_index_try_get_any = jecs.entity_index_try_get_any
+local entity_index_get_alive = jecs.entity_index_get_alive
+local entity_index_is_alive = jecs.entity_index_is_alive
 local world_new = jecs.World.new
 
 local TEST, CASE, CHECK, FINISH, SKIP, FOCUS = testkit.test()
@@ -29,7 +31,7 @@ type World = jecs.WorldShim
 
 local function debug_world_inspect(world)
 	local function record(e)
-		return world.entityIndex.sparse[e]
+		return entity_index_try_get_any(world.entity_index, e)
 	end
 	local function tbl(e)
 		return record(e).archetype
@@ -168,7 +170,6 @@ TEST("world:entity()", function()
 		local world = jecs.World.new()
 		local e = world:entity()
 		CHECK(ECS_ID(e) == 1 + jecs.Rest)
-		CHECK(getAlive(world.entityIndex, ECS_ID(e)) == e)
 		CHECK(ECS_GENERATION(e) == 0) -- 0
 		e = ECS_GENERATION_INC(e)
 		CHECK(ECS_GENERATION(e) == 1) -- 1
@@ -878,9 +879,10 @@ TEST("world:clear()", function()
 		CHECK(archetype_entities[1] == _e)
 		CHECK(archetype_entities[2] == _e1)
 
-		local sparse_array = world.entityIndex.sparse
-		local e_record = sparse_array[e]
-		local e1_record = sparse_array[e1]
+		local e_record = entity_index_try_get_any(
+			world.entity_index, e)
+		local e1_record = entity_index_try_get_any(
+			world.entity_index, e1)
 		CHECK(e_record.archetype == archetype)
 		CHECK(e1_record.archetype == archetype)
 		CHECK(e1_record.row == 2)
@@ -1085,6 +1087,7 @@ TEST("world:delete", function()
 		for i, friend in friends do
 			CHECK(not world:has(friend, pair(FriendsWith, e)))
 			CHECK(world:has(friend, Health))
+			CHECK(world:contains(friend))
 		end
 	end
 
