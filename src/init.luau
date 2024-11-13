@@ -210,10 +210,6 @@ local function entity_index_is_alive(entity_index: EntityIndex, entity: number)
 	return entity_index_try_get(entity_index, entity) ~= nil
 end
 
-local function entity_index_record_insert(entity_index: EntityIndex, alive_count, id)
-	entity_index.sparse_array[id] = { dense = alive_count } :: Record
-end
-
 local function entity_index_new_id(entity_index: EntityIndex, data): i53
 	local dense_array = entity_index.dense_array
 	local alive_count = entity_index.alive_count
@@ -223,12 +219,13 @@ local function entity_index_new_id(entity_index: EntityIndex, data): i53
 		local id = dense_array[alive_count]
 		return id
 	end
-	entity_index.max_id += 1
-	local id = entity_index.max_id
+
+	local id = entity_index.max_id + 1
+	entity_index.max_id = id
 	alive_count += 1
 	entity_index.alive_count = alive_count
 	dense_array[alive_count] = id
-	entity_index_record_insert(entity_index, alive_count, id)
+	entity_index.sparse_array[id] = { dense = alive_count } :: Record
 
 	return id
 end
