@@ -1087,6 +1087,7 @@ TEST("world:delete", function()
 		for i, friend in friends do
 			CHECK(not world:has(friend, pair(FriendsWith, e)))
 			CHECK(world:has(friend, Health))
+			CHECK(world:contains(friend))
 		end
 	end
 
