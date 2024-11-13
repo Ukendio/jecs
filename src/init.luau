@@ -210,42 +210,25 @@ local function entity_index_is_alive(entity_index: EntityIndex, entity: number)
 	return entity_index_try_get(entity_index, entity) ~= nil
 end
 
-local function entity_index_remove(entity_index: EntityIndex, entity: number)
-	local r = entity_index_try_get(entity_index, entity)
-	if not r then
-		return
-	end
-	local dense_array = entity_index.dense_array
-	local index_of_deleted_entity = r.dense
-	local last_entity_alive_at_index = entity_index.alive_count
-	entity_index.alive_count -= 1
-
-	local last_alive_entity = dense_array[last_entity_alive_at_index]
-	local r_swap = entity_index_try_get_any(entity_index, last_alive_entity) :: Record
-	r_swap.dense = index_of_deleted_entity
-	r.archetype = nil :: any
-	r.row = nil :: any
-	r.dense = last_entity_alive_at_index
-
-	dense_array[index_of_deleted_entity] = last_alive_entity
-	dense_array[last_entity_alive_at_index] = ECS_GENERATION_INC(entity)
+local function entity_index_record_insert(entity_index: EntityIndex, alive_count, id)
+	entity_index.sparse_array[id] = { dense = alive_count } :: Record
 end
 
 local function entity_index_new_id(entity_index: EntityIndex, data): i53
 	local dense_array = entity_index.dense_array
-	if entity_index.alive_count ~= #dense_array then
-		entity_index.alive_count += 1
-		local id = dense_array[entity_index.alive_count]
+	local alive_count = entity_index.alive_count
+	if alive_count ~= #dense_array then
+		alive_count += 1
+		entity_index.alive_count = alive_count
+		local id = dense_array[alive_count]
 		return id
 	end
 	entity_index.max_id += 1
 	local id = entity_index.max_id
-	entity_index.alive_count += 1
-
-	dense_array[entity_index.alive_count] = id
-	entity_index.sparse_array[id] = {
-		dense = entity_index.alive_count,
-	} :: Record
+	alive_count += 1
+	entity_index.alive_count = alive_count
+	dense_array[alive_count] = id
+	entity_index_record_insert(entity_index, alive_count, id)
 
 	return id
 end
@@ -290,7 +273,6 @@ local function archetype_move(entity_index: EntityIndex, to: Archetype, dst_row:
 		column[last] = nil
 	end
 
-	local sparse_array = entity_index.sparse_array
 	local moved = #src_entities
 
 	-- Move the entity from the source to the destination archetype.
@@ -1130,7 +1112,20 @@ do
 			end
 		end
 
-		entity_index_remove(entity_index, delete)
+		local dense_array = entity_index.dense_array
+		local index_of_deleted_entity = record.dense
+		local index_of_last_alive_entity = entity_index.alive_count
+		entity_index.alive_count = index_of_last_alive_entity - 1
+
+		local last_alive_entity = dense_array[index_of_last_alive_entity]
+		local r_swap = entity_index_try_get_any(entity_index, last_alive_entity) :: Record
+		r_swap.dense = index_of_deleted_entity
+		record.archetype = nil :: any
+		record.row = nil :: any
+		record.dense = index_of_last_alive_entity
+
+		dense_array[index_of_deleted_entity] = last_alive_entity
+		dense_array[index_of_last_alive_entity] = ECS_GENERATION_INC(entity)
 	end
 end
 
