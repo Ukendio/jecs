@@ -3,6 +3,7 @@ name = "ukendio/jecs"
 version = "0.3.2"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
+license = "MIT"
 include = [
     "default.project.json",
     "src/**",
@@ -10,5 +11,6 @@ include = [
     "wally.toml",
     "README.md",
     "CHANGELOG.md",
+    "LICENSE",
 ]
 exclude = ["**"]
