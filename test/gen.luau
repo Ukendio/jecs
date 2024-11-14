@@ -72,13 +72,8 @@ local function ECS_GENERATION_INC(e: i53)
 		local flags = e // ECS_ID_FLAGS_MASK
 		local id = flags // ECS_ENTITY_MASK
 		local generation = flags % ECS_GENERATION_MASK
-
-		local next_gen = generation + 1
-		if next_gen > ECS_GENERATION_MASK then
-			return id
-		end
-
-		return ECS_COMBINE(id, next_gen) + flags
+		print(generation)
+		return ECS_COMBINE(id, generation + 1)
 	end
 	return ECS_COMBINE(e, 1)
 end
@@ -146,24 +141,22 @@ local function entity_index_remove(entity_index: EntityIndex, entity: number)
 	dense_array[last_entity_alive_at_index] = ECS_GENERATION_INC(entity)
 end
 
-local function entity_index_new_id(entity_index: EntityIndex, data): i53
+local function entity_index_new_id(entity_index: EntityIndex): i53
 	local dense_array = entity_index.dense_array
 	if entity_index.alive_count ~= #dense_array then
 		entity_index.alive_count += 1
 		local id = dense_array[entity_index.alive_count]
 		return id
 	end
-	entity_index.max_id +=1
+
+	entity_index.max_id += 1
 	local id = entity_index.max_id
 	entity_index.alive_count += 1
 
 	dense_array[entity_index.alive_count] = id
 	entity_index.sparse_array[id] = {
-		dense = entity_index.alive_count,
-		archetype = data
+		dense = entity_index.alive_count
 	} :: Record
-
-	entity_index.sparse_count += 1
 
 	return id
 end
@@ -184,9 +177,15 @@ local e2v0 = entity_index_new_id(eidx, "e2v0")
 local e3v0 = entity_index_new_id(eidx, "e3v0")
 local e4v0 = entity_index_new_id(eidx, "e4v0")
 local e5v0 = entity_index_new_id(eidx, "e5v0")
-local t = require("@testkit")
-local tprint = t.print
-entity_index_remove(eidx, e5v0)
-local e5v1 = entity_index_new_id(eidx, "e5v1")
-entity_index_remove(eidx, e2v0)
-tprint(eidx)
+
+local e6v0 = entity_index_new_id(eidx)
+entity_index_remove(eidx, e6v0)
+local e6v1 = entity_index_new_id(eidx)
+entity_index_remove(eidx, e6v1)
+local e6v2 = entity_index_new_id(eidx)
+print(ECS_ENTITY_T_LO(e6v2), ECS_GENERATION(e6v2))
+
+print("-----")
+local e2 = ECS_GENERATION_INC(ECS_GENERATION_INC(269))
+print("-----")
+print(ECS_ENTITY_T_LO(e2), ECS_GENERATION(e2))
