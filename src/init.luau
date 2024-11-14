@@ -148,7 +148,7 @@ local function ECS_GENERATION_INC(e: i53)
 			return id
 		end
 
-		return ECS_COMBINE(id, next_gen) + flags
+		return ECS_COMBINE(id, next_gen)
 	end
 	return ECS_COMBINE(e, 1)
 end
@@ -1683,13 +1683,13 @@ function World.new()
 	self.ROOT_ARCHETYPE = archetype_create(self, {}, "")
 
 	for i = 1, HI_COMPONENT_ID do
-		local e = entity_index_new_id(entity_index, i)
+		local e = entity_index_new_id(entity_index)
 		world_add(self, e, EcsComponent)
 	end
 
 	for i = HI_COMPONENT_ID + 1, EcsRest do
 		-- Initialize built-in components
-		entity_index_new_id(entity_index, i)
+		entity_index_new_id(entity_index)
 	end
 
 	world_add(self, EcsName, EcsComponent)
@@ -1885,4 +1885,6 @@ return {
 	entity_index_try_get = entity_index_try_get,
 	entity_index_try_get_any = entity_index_try_get_any,
 	entity_index_is_alive = entity_index_is_alive,
+	entity_index_remove = entity_index_remove,
+	entity_index_new_id = entity_index_new_id
 }

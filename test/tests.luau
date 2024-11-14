@@ -191,6 +191,36 @@ TEST("world:entity()", function()
 		CHECK(ecs_pair_first(world, pair) == e2)
 		CHECK(ecs_pair_second(world, pair) == e3)
 	end
+
+	do CASE "Recycling"
+		local world = world_new()
+		local e = world:entity()
+		world:delete(e)
+		local e1 = world:entity()
+		world:delete(e1)
+		local e2 = world:entity()
+		CHECK(ECS_ID(e2) == e)
+		CHECK(ECS_GENERATION(e2) == 2)
+		CHECK(world:contains(e2))
+		CHECK(not world:contains(e1))
+		CHECK(not world:contains(e))
+	end
+
+	do CASE "Recycling max generation"
+		local world = world_new()
+		local pin = jecs.Rest + 1
+		for i = 1, 2^16-1 do
+			local e = world:entity()
+			world:delete(e)
+		end
+		local e = world:entity()
+		CHECK(ECS_ID(e) == pin)
+		CHECK(ECS_GENERATION(e) == 2^16-1)
+		world:delete(e)
+		e = world:entity()
+		CHECK(ECS_ID(e) == pin)
+		CHECK(ECS_GENERATION(e) == 0)
+	end
 end)
 
 TEST("world:set()", function()
