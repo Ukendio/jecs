@@ -1886,5 +1886,5 @@ return {
 	entity_index_try_get_any = entity_index_try_get_any,
 	entity_index_is_alive = entity_index_is_alive,
 	entity_index_remove = entity_index_remove,
-	entity_index_new_id = entity_index_new_id
+	entity_index_new_id = entity_index_new_id,
 }
