@@ -285,9 +285,10 @@ local function archetype_move(entity_index: EntityIndex, to: Archetype, dst_row:
 	src_entities[moved] = nil :: any
 	dst_entities[dst_row] = e1
 
-	local record1 = entity_index_try_get_any(entity_index, e1)
-	local record2 = entity_index_try_get_any(entity_index, e2)
+	local sparse_array = entity_index.sparse_array
 
+	local record1 = sparse_array[ECS_ENTITY_T_LO(e1)]
+	local record2 = sparse_array[ECS_ENTITY_T_LO(e2)]
 	record1.row = dst_row
 	record2.row = src_row
 end
