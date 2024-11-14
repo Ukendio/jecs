@@ -1853,7 +1853,7 @@ return {
 	Name = EcsName :: Entity<string>,
 	Rest = EcsRest :: Entity,
 
-	pair = ECS_PAIR,
+	pair = ECS_PAIR :: <P, O>(first: P, second: O) -> Pair<P, O>,
 
 	-- Inwards facing API for testing
 	ECS_ID = ECS_ENTITY_T_LO,
