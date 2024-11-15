@@ -49,13 +49,12 @@ type EntityIndex = {
 	sparse_array: Map<i53, Record>,
 	sparse_count: number,
 	alive_count: number,
-	max_id: number
+	max_id: number,
 }
 
-
-local ECS_PAIR_FLAG =                      0x8
-local ECS_ID_FLAGS_MASK =                 0x10
-local ECS_ENTITY_MASK =     bit32.lshift(1, 24)
+local ECS_PAIR_FLAG = 0x8
+local ECS_ID_FLAGS_MASK = 0x10
+local ECS_ENTITY_MASK = bit32.lshift(1, 24)
 local ECS_GENERATION_MASK = bit32.lshift(1, 16)
 
 -- HIGH 24 bits LOW 24 bits
@@ -81,12 +80,8 @@ local function ECS_ENTITY_T_LO(e: i53): i24
 	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) // ECS_ENTITY_MASK else e
 end
 
-
 local function entity_index_try_get_any(entity_index: EntityIndex, entity: number): Record?
 	local r = entity_index.sparse_array[ECS_ENTITY_T_LO(entity)]
-	if not r then
-		return nil
-	end
 
 	if not r or r.dense == 0 then
 		return nil
@@ -109,9 +104,7 @@ local function entity_index_try_get(entity_index: EntityIndex, entity: number): 
 	return r
 end
 
-local function entity_index_get_alive(entity_index: EntityIndex,
-	entity: number): number
-
+local function entity_index_get_alive(entity_index: EntityIndex, entity: number): number
 	local r = entity_index_try_get_any(entity_index, entity)
 	if r then
 		return entity_index.dense_array[r.dense]
@@ -130,8 +123,7 @@ local function entity_index_remove(entity_index: EntityIndex, entity: number)
 	entity_index.alive_count -= 1
 
 	local last_alive_entity = dense_array[last_entity_alive_at_index]
-	local r_swap = entity_index_try_get_any(
-		entity_index, last_alive_entity) :: Record
+	local r_swap = entity_index_try_get_any(entity_index, last_alive_entity) :: Record
 	r_swap.dense = index_of_deleted_entity
 	r.archetype = nil :: any
 	r.row = nil :: any
@@ -155,7 +147,7 @@ local function entity_index_new_id(entity_index: EntityIndex): i53
 
 	dense_array[entity_index.alive_count] = id
 	entity_index.sparse_array[id] = {
-		dense = entity_index.alive_count
+		dense = entity_index.alive_count,
 	} :: Record
 
 	return id
@@ -170,7 +162,7 @@ local eidx = {
 	max_id = 0,
 	sparse_array = {} :: { Record },
 	sparse_count = 0,
-	dense_array = {} :: { i53 }
+	dense_array = {} :: { i53 },
 }
 local e1v0 = entity_index_new_id(eidx, "e1v0")
 local e2v0 = entity_index_new_id(eidx, "e2v0")
