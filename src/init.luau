@@ -1598,8 +1598,11 @@ if _G.__JECS_DEBUG then
 		end
 	end
 
-	local function ID_IS_TAG(world, id)
-		return not world_has_one_inline(world, ECS_ENTITY_T_HI(id), EcsComponent)
+	local function ID_IS_TAG(world: World, id)
+		if ECS_IS_PAIR(id) then
+			id = ecs_pair_first(world, id)
+		end
+		return not world_has_one_inline(world, id, EcsComponent)
 	end
 
 	World.query = function(world: World, ...)
@@ -1886,6 +1889,5 @@ return {
 	entity_index_try_get = entity_index_try_get,
 	entity_index_try_get_any = entity_index_try_get_any,
 	entity_index_is_alive = entity_index_is_alive,
-	entity_index_remove = entity_index_remove,
 	entity_index_new_id = entity_index_new_id,
 }
