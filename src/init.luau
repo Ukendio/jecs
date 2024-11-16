@@ -198,6 +198,16 @@ local function entity_index_try_get(entity_index: EntityIndex, entity: number): 
 	return r
 end
 
+local function entity_index_try_get_fast(entity_index: EntityIndex, entity: number): Record?
+	local r = entity_index.sparse_array[ECS_ENTITY_T_LO(entity)]
+	if r then
+		if entity_index.dense_array[r.dense] ~= entity then
+			return nil
+		end
+	end
+	return r
+end
+
 local function entity_index_get_alive(index: EntityIndex, e: i24): i53
 	local r = entity_index_try_get_any(index, e)
 	if r then
@@ -387,7 +397,7 @@ local function world_get_one_inline(world: World, entity: i53, id: i53): any
 end
 
 local function world_has_one_inline(world: World, entity: number, id: i53): boolean
-	local record = entity_index_try_get(world.entity_index, entity)
+	local record = entity_index_try_get_fast(world.entity_index, entity)
 	if not record then
 		return false
 	end
@@ -403,7 +413,7 @@ local function world_has_one_inline(world: World, entity: number, id: i53): bool
 end
 
 local function world_has(world: World, entity: number, ...: i53): boolean
-	local record = entity_index_try_get(world.entity_index, entity)
+	local record = entity_index_try_get_fast(world.entity_index, entity)
 	if not record then
 		return false
 	end
@@ -426,7 +436,7 @@ end
 
 local function world_target(world: World, entity: i53, relation: i24, index: number?): i24?
 	local nth = index or 0
-	local record = entity_index_try_get(world.entity_index, entity)
+	local record = entity_index_try_get_fast(world.entity_index, entity)
 	if not record then
 		return nil
 	end
@@ -735,7 +745,7 @@ end
 
 local function world_add(world: World, entity: i53, id: i53): ()
 	local entity_index = world.entity_index
-	local record = entity_index_try_get(entity_index, entity)
+	local record = entity_index_try_get_fast(entity_index, entity)
 	if not record then
 		return
 	end
@@ -763,7 +773,7 @@ end
 
 local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 	local entity_index = world.entity_index
-	local record = entity_index_try_get(entity_index, entity)
+	local record = entity_index_try_get_fast(entity_index, entity)
 	if not record then
 		return
 	end
@@ -836,7 +846,7 @@ end
 
 local function world_remove(world: World, entity: i53, id: i53)
 	local entity_index = world.entity_index
-	local record = entity_index_try_get(entity_index, entity)
+	local record = entity_index_try_get_fast(entity_index, entity)
 	if not record then
 		return
 	end
