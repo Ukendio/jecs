@@ -44,11 +44,6 @@ type Record = {
 	dense: i24,
 }
 
-type EntityIndex = {
-	dense: Map<i24, i53>,
-	sparse: Map<i53, Record>,
-}
-
 type ArchetypeRecord = {
 	count: number,
 	column: number,
@@ -74,6 +69,13 @@ type ArchetypeDiff = {
 	removed: Ty,
 }
 
+type EntityIndex = {
+	dense_array: Map<i24, i53>,
+	sparse_array: Map<i53, Record>,
+	alive_count: number,
+	max_id: number,
+}
+
 local HI_COMPONENT_ID = _G.__JECS_HI_COMPONENT_ID or 256
 -- stylua: ignore start
 local EcsOnAdd =          HI_COMPONENT_ID +  1
@@ -89,8 +91,8 @@ local EcsRemove =         HI_COMPONENT_ID + 10
 local EcsName =           HI_COMPONENT_ID + 11
 local EcsRest =           HI_COMPONENT_ID + 12
 
-local ECS_PAIR_FLAG =                      0x8
-local ECS_ID_FLAGS_MASK =                 0x10
+local ECS_PAIR_FLAG =                       0x8
+local ECS_ID_FLAGS_MASK =                  0x10
 local ECS_ENTITY_MASK =     bit32.lshift(1, 24)
 local ECS_GENERATION_MASK = bit32.lshift(1, 16)
 
@@ -141,7 +143,12 @@ local function ECS_GENERATION_INC(e: i53)
 		local id = flags // ECS_ENTITY_MASK
 		local generation = flags % ECS_GENERATION_MASK
 
-		return ECS_COMBINE(id, generation + 1) + flags
+		local next_gen = generation + 1
+		if next_gen > ECS_GENERATION_MASK then
+			return id
+		end
+
+		return ECS_COMBINE(id, next_gen)
 	end
 	return ECS_COMBINE(e, 1)
 end
@@ -164,49 +171,83 @@ local function ECS_PAIR(pred: i53, obj: i53): i53
 	return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + FLAGS_ADD(--[[isPair]] true) :: i53
 end
 
-local ERROR_ENTITY_NOT_ALIVE = "Entity is not alive"
-local ERROR_GENERATION_INVALID = "INVALID GENERATION"
-
-local function entity_index_get_alive(index: EntityIndex, e: i24): i53
-	local denseArray = index.dense
-	local id = denseArray[ECS_ENTITY_T_LO(e)]
-
-	if id then
-		local currentGeneration = ECS_GENERATION(id)
-		local gen = ECS_GENERATION(e)
-		if gen == currentGeneration then
-			return id
-		end
-
-		error(ERROR_GENERATION_INVALID)
+local function entity_index_try_get_any(entity_index: EntityIndex, entity: number): Record?
+	local r = entity_index.sparse_array[ECS_ENTITY_T_LO(entity)]
+	if not r then
+		return nil
 	end
 
-	error(ERROR_ENTITY_NOT_ALIVE)
+	if not r or r.dense == 0 then
+		return nil
+	end
+
+	return r
 end
 
-local function _entity_index_sparse_get(entityIndex, id)
-	return entityIndex.sparse[entity_index_get_alive(entityIndex, id)]
+local function entity_index_try_get(entity_index: EntityIndex, entity: number): Record?
+	local r = entity_index_try_get_any(entity_index, entity)
+	if r then
+		local r_dense = r.dense
+		if r_dense > entity_index.alive_count then
+			return nil
+		end
+		if entity_index.dense_array[r_dense] ~= entity then
+			return nil
+		end
+	end
+	return r
+end
+
+local function entity_index_try_get_fast(entity_index: EntityIndex, entity: number): Record?
+	local r = entity_index.sparse_array[ECS_ENTITY_T_LO(entity)]
+	if r then
+		if entity_index.dense_array[r.dense] ~= entity then
+			return nil
+		end
+	end
+	return r
+end
+
+local function entity_index_get_alive(index: EntityIndex, e: i24): i53
+	local r = entity_index_try_get_any(index, e)
+	if r then
+		return index.dense_array[r.dense]
+	end
+	return 0
+end
+
+local function entity_index_is_alive(entity_index: EntityIndex, entity: number)
+	return entity_index_try_get(entity_index, entity) ~= nil
+end
+
+local function entity_index_new_id(entity_index: EntityIndex, data): i53
+	local dense_array = entity_index.dense_array
+	local alive_count = entity_index.alive_count
+	if alive_count ~= #dense_array then
+		alive_count += 1
+		entity_index.alive_count = alive_count
+		local id = dense_array[alive_count]
+		return id
+	end
+
+	local id = entity_index.max_id + 1
+	entity_index.max_id = id
+	alive_count += 1
+	entity_index.alive_count = alive_count
+	dense_array[alive_count] = id
+	entity_index.sparse_array[id] = { dense = alive_count } :: Record
+
+	return id
 end
 
 -- ECS_PAIR_FIRST, gets the relationship target / obj / HIGH bits
 local function ecs_pair_first(world, e)
-	return entity_index_get_alive(world.entityIndex, ECS_ENTITY_T_HI(e))
+	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_HI(e))
 end
 
 -- ECS_PAIR_SECOND gets the relationship / pred / LOW bits
 local function ecs_pair_second(world, e)
-	return entity_index_get_alive(world.entityIndex, ECS_ENTITY_T_LO(e))
-end
-
-local function entity_index_new_id(entityIndex: EntityIndex, index: i24): i53
-	--local id = ECS_COMBINE(index, 0)
-	local id = index
-	entityIndex.sparse[id] = {
-		dense = index,
-	} :: Record
-	entityIndex.dense[index] = id
-
-	return id
+	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_LO(e))
 end
 
 local function archetype_move(entity_index: EntityIndex, to: Archetype, dst_row: i24, from: Archetype, src_row: i24)
@@ -239,7 +280,6 @@ local function archetype_move(entity_index: EntityIndex, to: Archetype, dst_row:
 		column[last] = nil
 	end
 
-	local sparse = entity_index.sparse
 	local moved = #src_entities
 
 	-- Move the entity from the source to the destination archetype.
@@ -255,9 +295,10 @@ local function archetype_move(entity_index: EntityIndex, to: Archetype, dst_row:
 	src_entities[moved] = nil :: any
 	dst_entities[dst_row] = e1
 
-	local record1 = sparse[e1]
-	local record2 = sparse[e2]
+	local sparse_array = entity_index.sparse_array
 
+	local record1 = sparse_array[ECS_ENTITY_T_LO(e1)]
+	local record2 = sparse_array[ECS_ENTITY_T_LO(e2)]
 	record1.row = dst_row
 	record2.row = src_row
 end
@@ -307,7 +348,7 @@ do
 	end
 
 	function world_get(world: World, entity: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
-		local record = world.entityIndex.sparse[entity]
+		local record = entity_index_try_get_fast(world.entity_index, entity)
 		if not record then
 			return nil
 		end
@@ -338,7 +379,7 @@ do
 end
 
 local function world_get_one_inline(world: World, entity: i53, id: i53): any
-	local record = world.entityIndex.sparse[entity]
+	local record = entity_index_try_get_fast(world.entity_index, entity)
 	if not record then
 		return nil
 	end
@@ -356,7 +397,7 @@ local function world_get_one_inline(world: World, entity: i53, id: i53): any
 end
 
 local function world_has_one_inline(world: World, entity: number, id: i53): boolean
-	local record = world.entityIndex.sparse[entity]
+	local record = entity_index_try_get_fast(world.entity_index, entity)
 	if not record then
 		return false
 	end
@@ -372,7 +413,7 @@ local function world_has_one_inline(world: World, entity: number, id: i53): bool
 end
 
 local function world_has(world: World, entity: number, ...: i53): boolean
-	local record = world.entityIndex.sparse[entity]
+	local record = entity_index_try_get_fast(world.entity_index, entity)
 	if not record then
 		return false
 	end
@@ -395,7 +436,11 @@ end
 
 local function world_target(world: World, entity: i53, relation: i24, index: number?): i24?
 	local nth = index or 0
-	local record = world.entityIndex.sparse[entity]
+	local record = entity_index_try_get_fast(world.entity_index, entity)
+	if not record then
+		return nil
+	end
+
 	local archetype = record.archetype
 	if not archetype then
 		return nil
@@ -437,7 +482,10 @@ local function id_record_ensure(world: World, id: number): IdRecord
 
 	if not idr then
 		local flags = ECS_ID_MASK
-		local relation = ECS_ENTITY_T_HI(id)
+		local relation = id
+		if ECS_IS_PAIR(id) then
+			relation = ecs_pair_first(world, id)
+		end
 
 		local cleanup_policy = world_target(world, relation, EcsOnDelete, 0)
 		local cleanup_policy_target = world_target(world, relation, EcsOnDeleteTarget, 0)
@@ -543,9 +591,7 @@ local function archetype_create(world: World, types: { i24 }, ty, prev: i53?): A
 end
 
 local function world_entity(world: World): i53
-	local entityId = (world.nextEntityId :: number) + 1
-	world.nextEntityId = entityId
-	return entity_index_new_id(world.entityIndex, entityId + EcsRest)
+	return entity_index_new_id(world.entity_index)
 end
 
 local function world_parent(world: World, entity: i53)
@@ -701,15 +747,19 @@ local function invoke_hook(action, entity, data)
 end
 
 local function world_add(world: World, entity: i53, id: i53): ()
-	local entityIndex = world.entityIndex
-	local record = entityIndex.sparse[entity]
+	local entity_index = world.entity_index
+	local record = entity_index_try_get_fast(entity_index, entity)
+	if not record then
+		return
+	end
+
 	local from = record.archetype
 	local to = archetype_traverse_add(world, id, from)
 	if from == to then
 		return
 	end
 	if from then
-		entity_move(entityIndex, entity, record, to)
+		entity_move(entity_index, entity, record, to)
 	else
 		if #to.types > 0 then
 			new_entity(entity, record, to)
@@ -725,8 +775,12 @@ local function world_add(world: World, entity: i53, id: i53): ()
 end
 
 local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
-	local entityIndex = world.entityIndex
-	local record = entityIndex.sparse[entity]
+	local entity_index = world.entity_index
+	local record = entity_index_try_get_fast(entity_index, entity)
+	if not record then
+		return
+	end
+
 	local from: Archetype = record.archetype
 	local to: Archetype = archetype_traverse_add(world, id, from)
 	local idr = world.componentIndex[id]
@@ -741,7 +795,8 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 		-- If the archetypes are the same it can avoid moving the entity
 		-- and just set the data directly.
 		local tr = to.records[id]
-		from.columns[tr.column][record.row] = data
+		local column = from.columns[tr.column]
+		column[record.row] = data
 		local on_set = idr_hooks.on_set
 		if on_set then
 			on_set(entity, data)
@@ -752,7 +807,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 
 	if from then
 		-- If there was a previous archetype, then the entity needs to move the archetype
-		entity_move(entityIndex, entity, record, to)
+		entity_move(entity_index, entity, record, to)
 	else
 		if #to.types > 0 then
 			-- When there is no previous archetype it should create the archetype
@@ -788,15 +843,18 @@ local function world_component(world: World): i53
 		error("Too many components, consider using world:entity() instead to create components.")
 	end
 	world.nextComponentId = componentId
-	local id = entity_index_new_id(world.entityIndex, componentId)
-	world_add(world, id, EcsComponent)
-	return id
+
+	return componentId
 end
 
 local function world_remove(world: World, entity: i53, id: i53)
-	local entity_index = world.entityIndex
-	local record = entity_index.sparse[entity]
+	local entity_index = world.entity_index
+	local record = entity_index_try_get_fast(entity_index, entity)
+	if not record then
+		return
+	end
 	local from = record.archetype
+
 	if not from then
 		return
 	end
@@ -831,7 +889,7 @@ local function archetype_fast_delete(columns: { Column }, column_count: number, 
 end
 
 local function archetype_delete(world: World, archetype: Archetype, row: number, destruct: boolean?)
-	local entityIndex = world.entityIndex
+	local entityIndex = world.entity_index
 	local columns = archetype.columns
 	local types = archetype.types
 	local entities = archetype.entities
@@ -844,7 +902,7 @@ local function archetype_delete(world: World, archetype: Archetype, row: number,
 
 	if row ~= last then
 		-- TODO: should be "entity_index_sparse_get(entityIndex, move)"
-		local record_to_move = entityIndex.sparse[move]
+		local record_to_move = entity_index_try_get_any(entityIndex, move)
 		if record_to_move then
 			record_to_move.row = row
 		end
@@ -868,7 +926,7 @@ end
 
 local function world_clear(world: World, entity: i53)
 	--TODO: use sparse_get (stashed)
-	local record = world.entityIndex.sparse[entity]
+	local record = entity_index_try_get(world.entity_index, entity)
 	if not record then
 		return
 	end
@@ -983,10 +1041,8 @@ end
 local world_delete: (world: World, entity: i53, destruct: boolean?) -> ()
 do
 	function world_delete(world: World, entity: i53, destruct: boolean?)
-		local entityIndex = world.entityIndex
-		local sparse_array = entityIndex.sparse
-
-		local record = sparse_array[entity]
+		local entity_index = world.entity_index
+		local record = entity_index_try_get(entity_index, entity)
 		if not record then
 			return
 		end
@@ -1044,7 +1100,7 @@ do
 					if not ECS_IS_PAIR(id) then
 						continue
 					end
-					local object = ECS_ENTITY_T_LO(id)
+					local object = ecs_pair_second(world, id)
 					if object == delete then
 						local id_record = component_index[id]
 						local flags = id_record.flags
@@ -1067,13 +1123,25 @@ do
 			end
 		end
 
+		local dense_array = entity_index.dense_array
+		local index_of_deleted_entity = record.dense
+		local index_of_last_alive_entity = entity_index.alive_count
+		entity_index.alive_count = index_of_last_alive_entity - 1
+
+		local last_alive_entity = dense_array[index_of_last_alive_entity]
+		local r_swap = entity_index_try_get_any(entity_index, last_alive_entity) :: Record
+		r_swap.dense = index_of_deleted_entity
 		record.archetype = nil :: any
-		sparse_array[entity] = nil :: any
+		record.row = nil :: any
+		record.dense = index_of_last_alive_entity
+
+		dense_array[index_of_deleted_entity] = last_alive_entity
+		dense_array[index_of_last_alive_entity] = ECS_GENERATION_INC(entity)
 	end
 end
 
 local function world_contains(world: World, entity): boolean
-	return world.entityIndex.sparse[entity] ~= nil
+	return entity_index_is_alive(world.entity_index, entity)
 end
 
 local function NOOP() end
@@ -1543,8 +1611,11 @@ if _G.__JECS_DEBUG then
 		end
 	end
 
-	local function ID_IS_TAG(world, id)
-		return not world_has_one_inline(world, ECS_ENTITY_T_HI(id), EcsComponent)
+	local function ID_IS_TAG(world: World, id)
+		if ECS_IS_PAIR(id) then
+			id = ecs_pair_first(world, id)
+		end
+		return not world_has_one_inline(world, id, EcsComponent)
 	end
 
 	World.query = function(world: World, ...)
@@ -1555,14 +1626,12 @@ if _G.__JECS_DEBUG then
 	World.set = function(world: World, entity: i53, id: i53, value: any): ()
 		local is_tag = ID_IS_TAG(world, id)
 		if is_tag and value == nil then
-			world_add(world, entity, id)
 			local _1 = get_name(world, entity)
 			local _2 = get_name(world, id)
 			local why = "cannot set component value to nil"
 			throw(why)
 			return
 		elseif value ~= nil and is_tag then
-			world_add(world, entity, id)
 			local _1 = get_name(world, entity)
 			local _2 = get_name(world, id)
 			local why = `cannot set a component value because {_2} is a tag`
@@ -1579,7 +1648,6 @@ if _G.__JECS_DEBUG then
 			local _1 = get_name(world, entity)
 			local _2 = get_name(world, id)
 			throw("You provided a value when none was expected. " .. `Did you mean to use "world:add({_1}, {_2})"`)
-			return
 		end
 
 		world_add(world, entity, id)
@@ -1609,14 +1677,17 @@ if _G.__JECS_DEBUG then
 end
 
 function World.new()
+	local entity_index: EntityIndex = {
+		dense_array = {} :: { [i24]: i53 },
+		sparse_array = {} :: { [i53]: Record },
+		alive_count = 0,
+		max_id = 0,
+	}
 	local self = setmetatable({
 		archetypeIndex = {} :: { [string]: Archetype },
 		archetypes = {} :: Archetypes,
 		componentIndex = {} :: ComponentIndex,
-		entityIndex = {
-			dense = {} :: { [i24]: i53 },
-			sparse = {} :: { [i53]: Record },
-		} :: EntityIndex,
+		entity_index = entity_index,
 		nextArchetypeId = 0 :: number,
 		nextComponentId = 0 :: number,
 		nextEntityId = 0 :: number,
@@ -1625,9 +1696,14 @@ function World.new()
 
 	self.ROOT_ARCHETYPE = archetype_create(self, {}, "")
 
+	for i = 1, HI_COMPONENT_ID do
+		local e = entity_index_new_id(entity_index)
+		world_add(self, e, EcsComponent)
+	end
+
 	for i = HI_COMPONENT_ID + 1, EcsRest do
 		-- Initialize built-in components
-		entity_index_new_id(self.entityIndex, i)
+		entity_index_new_id(entity_index)
 	end
 
 	world_add(self, EcsName, EcsComponent)
@@ -1692,7 +1768,7 @@ export type World = {
 	archetypeIndex: { [string]: Archetype },
 	archetypes: Archetypes,
 	componentIndex: ComponentIndex,
-	entityIndex: EntityIndex,
+	entity_index: EntityIndex,
 	ROOT_ARCHETYPE: Archetype,
 
 	nextComponentId: number,
@@ -1791,7 +1867,7 @@ return {
 	Name = EcsName :: Entity<string>,
 	Rest = EcsRest :: Entity,
 
-	pair = ECS_PAIR,
+	pair = ECS_PAIR :: <P, O>(first: P, second: O) -> Pair<P, O>,
 
 	-- Inwards facing API for testing
 	ECS_ID = ECS_ENTITY_T_LO,
@@ -1819,4 +1895,9 @@ return {
 	create_edge_for_remove = create_edge_for_remove,
 	archetype_traverse_add = archetype_traverse_add,
 	archetype_traverse_remove = archetype_traverse_remove,
+
+	entity_index_try_get = entity_index_try_get,
+	entity_index_try_get_any = entity_index_try_get_any,
+	entity_index_is_alive = entity_index_is_alive,
+	entity_index_new_id = entity_index_new_id,
 }
