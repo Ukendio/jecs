@@ -1,4 +1,4 @@
-local jecs: typeof(require("../jecs/src")) = require("@jecs")
+local jecs = require("@jecs")
 
 local testkit = require("@testkit")
 local BENCH, START = testkit.benchmark()
