@@ -1645,7 +1645,8 @@ if _G.__JECS_DEBUG then
 
 	World.add = function(world: World, entity: i53, id: i53, value: nil)
 		if value ~= nil then
-			local _1 = get_name(world, entity) 			local _2 = get_name(world, id)
+			local _1 = get_name(world, entity)
+			local _2 = get_name(world, id)
 			throw("You provided a value when none was expected. " .. `Did you mean to use "world:add({_1}, {_2})"`)
 		end
 
