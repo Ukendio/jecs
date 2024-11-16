@@ -348,7 +348,7 @@ do
 	end
 
 	function world_get(world: World, entity: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
-		local record = entity_index_try_get(world.entity_index, entity)
+		local record = entity_index_try_get_fast(world.entity_index, entity)
 		if not record then
 			return nil
 		end
@@ -379,7 +379,7 @@ do
 end
 
 local function world_get_one_inline(world: World, entity: i53, id: i53): any
-	local record = entity_index_try_get(world.entity_index, entity)
+	local record = entity_index_try_get_fast(world.entity_index, entity)
 	if not record then
 		return nil
 	end
@@ -482,7 +482,10 @@ local function id_record_ensure(world: World, id: number): IdRecord
 
 	if not idr then
 		local flags = ECS_ID_MASK
-		local relation = ECS_ENTITY_T_HI(id)
+		local relation = id
+		if ECS_IS_PAIR(id) then
+			relation = ecs_pair_first(world, id)
+		end
 
 		local cleanup_policy = world_target(world, relation, EcsOnDelete, 0)
 		local cleanup_policy_target = world_target(world, relation, EcsOnDeleteTarget, 0)
