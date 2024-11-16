@@ -91,8 +91,8 @@ local EcsRemove =         HI_COMPONENT_ID + 10
 local EcsName =           HI_COMPONENT_ID + 11
 local EcsRest =           HI_COMPONENT_ID + 12
 
-local ECS_PAIR_FLAG =                      0x8
-local ECS_ID_FLAGS_MASK =                 0x10
+local ECS_PAIR_FLAG =                       0x8
+local ECS_ID_FLAGS_MASK =                  0x10
 local ECS_ENTITY_MASK =     bit32.lshift(1, 24)
 local ECS_GENERATION_MASK = bit32.lshift(1, 16)
 
@@ -173,6 +173,9 @@ end
 
 local function entity_index_try_get_any(entity_index: EntityIndex, entity: number): Record?
 	local r = entity_index.sparse_array[ECS_ENTITY_T_LO(entity)]
+	if not r then
+		return nil
+	end
 
 	if not r or r.dense == 0 then
 		return nil
@@ -1610,14 +1613,12 @@ if _G.__JECS_DEBUG then
 	World.set = function(world: World, entity: i53, id: i53, value: any): ()
 		local is_tag = ID_IS_TAG(world, id)
 		if is_tag and value == nil then
-			world_add(world, entity, id)
 			local _1 = get_name(world, entity)
 			local _2 = get_name(world, id)
 			local why = "cannot set component value to nil"
 			throw(why)
 			return
 		elseif value ~= nil and is_tag then
-			world_add(world, entity, id)
 			local _1 = get_name(world, entity)
 			local _2 = get_name(world, id)
 			local why = `cannot set a component value because {_2} is a tag`
@@ -1631,10 +1632,8 @@ if _G.__JECS_DEBUG then
 
 	World.add = function(world: World, entity: i53, id: i53, value: nil)
 		if value ~= nil then
-			local _1 = get_name(world, entity)
-			local _2 = get_name(world, id)
+			local _1 = get_name(world, entity) 			local _2 = get_name(world, id)
 			throw("You provided a value when none was expected. " .. `Did you mean to use "world:add({_1}, {_2})"`)
-			return
 		end
 
 		world_add(world, entity, id)
