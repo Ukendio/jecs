@@ -102,7 +102,7 @@ world:add(Archer, pair(jecs.OnDelete, jecs.Delete))
 local e = world:entity()
 world:add(e, Archer)
 
--- This will delete entity e
+-- This will delete entity e because the Archer component has a (OnDelete, Delete) cleanup trait
 world:delete(Archer)
 ```
 
@@ -113,7 +113,7 @@ world.add(Archer, pair(jecs.OnDelete, jecs.Delete))
 const e = world:entity()
 world.add(e, Archer)
 
-// This will delete entity e
+// This will delete entity e because the Archer component has a (OnDelete, Delete) cleanup trait
 world.delete(Archer)
 ```
 
