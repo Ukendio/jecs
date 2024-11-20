@@ -97,23 +97,23 @@ world.delete(Archer)
 
 ```luau [luau]
 local Archer = world:component()
-world:add(Archer, pair(jecs.OnDelete, jecs.Remove))
+world:add(Archer, pair(jecs.OnDelete, jecs.Delete))
 
 local e = world:entity()
 world:add(e, Archer)
 
--- This will remove Archer from e
+-- This will delete entity e because the Archer component has a (OnDelete, Delete) cleanup trait
 world:delete(Archer)
 ```
 
 ```typescript [typescript]
 const Archer = world.component()
-world.add(Archer, pair(jecs.OnDelete, jecs.Remove))
+world.add(Archer, pair(jecs.OnDelete, jecs.Delete))
 
 const e = world:entity()
 world.add(e, Archer)
 
-// This will remove Archer from e
+// This will delete entity e because the Archer component has a (OnDelete, Delete) cleanup trait
 world.delete(Archer)
 ```
 

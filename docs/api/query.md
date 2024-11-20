@@ -84,5 +84,5 @@ end
 ```
 
 :::info
-This function is meant for people who wants to really customize their query behaviour at the archetype-level
+This function is meant for people who want to really customize their query behaviour at the archetype-level
 :::
