@@ -1643,7 +1643,7 @@ if _G.__JECS_DEBUG then
 		world_set(world, entity, id, value)
 	end
 
-	World.add = function(world: World, entity: i53, id: i53, value: nil)
+	World.add = function(world: World, entity: i53, id: i53, value: any)
 		if value ~= nil then
 			local _1 = get_name(world, entity)
 			local _2 = get_name(world, id)
