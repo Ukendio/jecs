@@ -18,14 +18,16 @@ local function start(modules)
 		return true
 	end)
 	if RunService:IsClient() then
+		local player = game:GetService("Players").LocalPlayer
+		local playergui = player:WaitForChild("PlayerGui")
 		local client = jabby.obtain_client()
-		local dtor
 		UserInputService.InputBegan:Connect(function(input)
 			if input.KeyCode == Enum.KeyCode.F4 then
-				if dtor then
-					dtor()
+				local home = playergui:FindFirstChild("Home")
+				if home then
+					home:Destroy()
 				end
-				dtor = client.spawn_app(client.apps.home)
+				client.spawn_app(client.apps.home)
 			end
 		end)
 	end

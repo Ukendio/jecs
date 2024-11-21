@@ -71,14 +71,7 @@ do
 
 	local function run()
 		local id = sys.id
-		local system_data = scheduler.system_data[id]
-		if system_data.paused then
-			return
-		end
-
-		scheduler:mark_system_frame_start(id)
-		sys.callback(dt)
-		scheduler:mark_system_frame_end(id)
+		scheduler:run(id, sys.callback, dt)
 	end
 
 	local function panic(str)
@@ -86,43 +79,40 @@ do
 		task.spawn(error, str)
 	end
 	local function begin(events: { Systems })
-		local threads = {}
+		local connections = {}
 		for event, systems in events do
 			if not event then
 				continue
 			end
 			local event_name = tostring(event)
-			threads[event] = task.spawn(function()
-				while true do
-					dt = event:Wait()
-
-					debug.profilebegin(event_name)
-					for _, s in systems do
-						sys = s
-						local didNotYield, why = xpcall(function()
-							for _ in run do
-								break
-							end
-						end, debug.traceback)
-
-						if didNotYield then
-							continue
+			connections[event] = event:Connect(function(delta)
+				debug.profilebegin(event_name)
+				for _, s in systems do
+					sys = s
+					dt = delta
+					local didNotYield, why = xpcall(function()
+						for _ in run do
+							break
 						end
+					end, debug.traceback)
 
-						if string.find(why, "thread is not yieldable") then
-							panic(
-								"Not allowed to yield in the systems."
-									.. "\n"
-									.. "System: "
-									.. debug.info(s.callback, "n")
-									.. " has been ejected"
-							)
-							continue
-						end
-						panic(why)
+					if didNotYield then
+						continue
 					end
-					debug.profileend()
+
+					if string.find(why, "thread is not yieldable") then
+						panic(
+							"Not allowed to yield in the systems."
+								.. "\n"
+								.. "System: "
+								.. debug.info(s.callback, "n")
+								.. " has been ejected"
+						)
+						continue
+					end
+					panic(why)
 				end
+				debug.profileend()
 			end)
 		end
 		return threads
