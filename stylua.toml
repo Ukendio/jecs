@@ -5,6 +5,7 @@ indent_width = 4
 quote_style = "ForceDouble"
 call_parentheses = "Always"
 collapse_simple_statement = "Never"
+syntax = "Luau"
 
 [sort_requires]
 enabled = true
