@@ -16,9 +16,9 @@ type Map<K, V> = { [K]: V }
 type GraphEdge = {
 	from: Archetype,
 	to: Archetype?,
-	prev: GraphEdge?,
-	next: GraphEdge?,
 	id: number,
+	prev: GraphEdge?,
+	next: GraphEdge?
 }
 
 type GraphEdges = Map<i53, GraphEdge>
@@ -31,13 +31,13 @@ type GraphNode = {
 
 export type Archetype = {
 	id: number,
-	node: GraphNode,
 	types: Ty,
 	type: string,
 	entities: { number },
 	columns: { Column },
 	records: { ArchetypeRecord },
-}
+} & GraphNode
+
 type Record = {
 	archetype: Archetype,
 	row: number,
@@ -576,12 +576,15 @@ local function archetype_create(world: World, types: { i24 }, ty, prev: i53?): A
 
 	local archetype: Archetype = {
 		columns = columns,
-		node = { add = {}, remove = {}, refs = {} :: GraphEdge },
 		entities = {},
 		id = archetype_id,
 		records = records,
 		type = ty,
 		types = types,
+
+	 	add = {},
+		remove = {},
+		refs = {} :: GraphEdge,
 	}
 
 	world.archetypeIndex[ty] = archetype
@@ -671,11 +674,11 @@ local function archetype_ensure_edge(world, edges: GraphEdges, id): GraphEdge
 	return edge
 end
 
-local function init_edge_for_add(world, archetype, edge: GraphEdge, id, to)
+local function init_edge_for_add(world, archetype: Archetype, edge: GraphEdge, id, to: Archetype)
 	archetype_init_edge(archetype, edge, id, to)
-	archetype_ensure_edge(world, archetype.node.add, id)
+	archetype_ensure_edge(world, archetype.add, id)
 	if archetype ~= to then
-		local to_refs = to.node.refs
+		local to_refs = to.refs
 		local next_edge = to_refs.next
 
 		to_refs.next = edge
@@ -690,9 +693,9 @@ end
 
 local function init_edge_for_remove(world: World, archetype: Archetype, edge: GraphEdge, id: number, to: Archetype)
 	archetype_init_edge(archetype, edge, id, to)
-	archetype_ensure_edge(world, archetype.node.remove, id)
+	archetype_ensure_edge(world, archetype.remove, id)
 	if archetype ~= to then
-		local to_refs = to.node.refs
+		local to_refs = to.refs
 		local prev_edge = to_refs.prev
 
 		to_refs.prev = edge
@@ -719,7 +722,7 @@ end
 
 local function archetype_traverse_add(world: World, id: i53, from: Archetype?): Archetype
 	from = from or world.ROOT_ARCHETYPE
-	local edge = archetype_ensure_edge(world, from.node.add, id)
+	local edge = archetype_ensure_edge(world, from.add, id)
 
 	local to = edge.to
 	if not to then
@@ -732,7 +735,7 @@ end
 local function archetype_traverse_remove(world: World, id: i53, from: Archetype): Archetype
 	from = from or world.ROOT_ARCHETYPE
 
-	local edge = archetype_ensure_edge(world, from.node.remove, id)
+	local edge = archetype_ensure_edge(world, from.remove, id)
 
 	local to = edge.to
 	if not to then
@@ -961,10 +964,9 @@ local function archetype_remove_edge(edges: Map<i53, GraphEdge>, id: i53, edge: 
 end
 
 local function archetype_clear_edges(archetype: Archetype)
-	local node: GraphNode = archetype.node
-	local add: GraphEdges = node.add
-	local remove: GraphEdges = node.remove
-	local node_refs: GraphEdge = node.refs
+	local add: GraphEdges = archetype.add
+	local remove: GraphEdges = archetype.remove
+	local node_refs = archetype.refs
 	for id, edge in add do
 		archetype_disconnect_edge(edge)
 		add[id] = nil :: any
@@ -976,9 +978,9 @@ local function archetype_clear_edges(archetype: Archetype)
 
 	local cur = node_refs.next
 	while cur do
-		local edge: GraphEdge = cur
+		local edge = cur :: GraphEdge
 		local next_edge = edge.next
-		archetype_remove_edge(edge.from.node.add, edge.id, edge)
+		archetype_remove_edge(edge.from.add, edge.id, edge)
 		cur = next_edge
 	end
 
@@ -986,7 +988,7 @@ local function archetype_clear_edges(archetype: Archetype)
 	while cur do
 		local edge: GraphEdge = cur
 		local next_edge = edge.prev
-		archetype_remove_edge(edge.from.node.remove, edge.id, edge)
+		archetype_remove_edge(edge.from.remove, edge.id, edge)
 		cur = next_edge
 	end
 
