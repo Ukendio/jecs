@@ -18,7 +18,7 @@ type GraphEdge = {
 	to: Archetype?,
 	id: number,
 	prev: GraphEdge?,
-	next: GraphEdge?
+	next: GraphEdge?,
 }
 
 type GraphEdges = Map<i53, GraphEdge>
