@@ -582,7 +582,7 @@ local function archetype_create(world: World, types: { i24 }, ty, prev: i53?): A
 		type = ty,
 		types = types,
 
-	 	add = {},
+		add = {},
 		remove = {},
 		refs = {} :: GraphEdge,
 	}
