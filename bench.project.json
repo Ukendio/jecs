@@ -12,13 +12,13 @@
 		"ReplicatedStorage": {
 			"$className": "ReplicatedStorage",
 			"Lib": {
-				"$path": "src"
+				"$path": "jecs.luau"
 			},
 			"benches": {
 				"$path": "benches"
 			},
 			"mirror": {
-				"$path": "mirror"
+				"$path": "mirror.luau"
 			},
 			"DevPackages": {
 				"$path": "benches/visual/DevPackages"
