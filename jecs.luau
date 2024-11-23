@@ -330,51 +330,43 @@ local function hash(arr: { number }): string
 	return table.concat(arr, "_")
 end
 
-local world_get: (world: World, entityId: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?) -> ...any
-do
-	-- Keeping the function as small as possible to enable inlining
-	local records: { ArchetypeRecord }
-	local columns: { { any } }
-	local row: number
+local function fetch(id, records: { ArchetypeRecord }, columns: { Column }, row: number): any
+	local tr = records[id]
 
-	local function fetch(id): any
-		local tr = records[id]
-
-		if not tr then
-			return nil
-		end
-
-		return columns[tr.column][row]
+	if not tr then
+		return nil
 	end
 
-	function world_get(world: World, entity: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
-		local record = entity_index_try_get_fast(world.entity_index, entity)
-		if not record then
-			return nil
-		end
+	return columns[tr.column][row]
+end
 
-		local archetype = record.archetype
-		if not archetype then
-			return nil
-		end
+local function world_get(world: World, entity: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
+	local record = entity_index_try_get_fast(world.entity_index, entity)
+	if not record then
+		return nil
+	end
 
-		records = archetype.records
-		columns = archetype.columns
-		row = record.row
+	local archetype = record.archetype
+	if not archetype then
+		return nil
+	end
 
-		local va = fetch(a)
+	local records = archetype.records
+	local columns = archetype.columns
+	local row = record.row
 
-		if not b then
-			return va
-		elseif not c then
-			return va, fetch(b)
-		elseif not d then
-			return va, fetch(b), fetch(c)
-		elseif not e then
-			return va, fetch(b), fetch(c), fetch(d)
-		else
-			error("args exceeded")
-		end
+	local va = fetch(a, records, columns, row)
+
+	if not b then
+		return va
+	elseif not c then
+		return va, fetch(b, records, columns, row)
+	elseif not d then
+		return va, fetch(b, records, columns, row), fetch(c, records, columns, row)
+	elseif not e then
+		return va, fetch(b, records, columns, row), fetch(c, records, columns, row), fetch(d, records, columns, row)
+	else
+		error("args exceeded")
 	end
 end
 
