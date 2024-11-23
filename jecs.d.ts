@@ -2,7 +2,7 @@
  * A unique identifier in the world, entity.
  * The generic type T defines the data type when this entity is used as a component
  */
-export type Entity<T = undefined> = number & { __jecs_value: T };
+export type Entity<T = undefined | unknown> = number & { __jecs_value: T };
 
 /**
  * An entity with no associated data when used as a component
