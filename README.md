@@ -1,19 +1,18 @@
-
 <p align="center">
-  <img src="image-5.png" width=35%/>
+  <img src="assets/image-5.png" width=35%/>
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE) [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs)
 
 Just a stupidly fast Entity Component System
 
-* [Entity Relationships](https://ajmmertens.medium.com/building-games-in-ecs-with-entity-relationships-657275ba2c6c) as first class citizens
-* Iterate 800,000 entities at 60 frames per second
-* Type-safe [Luau](https://luau-lang.org/) API
-* Zero-dependency package
-* Optimized for column-major operations
-* Cache friendly [archetype/SoA](https://ajmmertens.medium.com/building-an-ecs-2-archetypes-and-vectorization-fe21690805f9) storage
-* Rigorously [unit tested](https://github.com/Ukendio/jecs/actions/workflows/ci.yaml) for stability
+-   [Entity Relationships](https://ajmmertens.medium.com/building-games-in-ecs-with-entity-relationships-657275ba2c6c) as first class citizens
+-   Iterate 800,000 entities at 60 frames per second
+-   Type-safe [Luau](https://luau-lang.org/) API
+-   Zero-dependency package
+-   Optimized for column-major operations
+-   Cache friendly [archetype/SoA](https://ajmmertens.medium.com/building-an-ecs-2-archetypes-and-vectorization-fe21690805f9) storage
+-   Rigorously [unit tested](https://github.com/Ukendio/jecs/actions/workflows/ci.yaml) for stability
 
 ### Example
 
@@ -57,9 +56,9 @@ end
 ```
 
 21,000 entities 125 archetypes 4 random components queried.
-![Queries](image-3.png)
+![Queries](assets/image-3.png)
 Can be found under /benches/visual/query.luau
 
 Inserting 8 components to an entity and updating them over 50 times.
-![Insertions](image-4.png)
+![Insertions](assets/image-4.png)
 Can be found under /benches/visual/insertions.luau

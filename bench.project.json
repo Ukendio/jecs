@@ -1,31 +1,28 @@
 {
-    "name": "jecs-test",
-    "tree": {
-        "$className": "DataModel",
-        "StarterPlayer": {
-            "$className": "StarterPlayer",
-            "StarterPlayerScripts": {
-                "$className": "StarterPlayerScripts",
-                "$path": "tests"
-            }
-        },
-        "ReplicatedStorage": {
-            "$className": "ReplicatedStorage",
-            "Lib": {
-                "$path": "src"
-            },
-            "rgb": {
-                "$path": "rgb.luau"
-            },
-            "benches": {
-                "$path": "benches"
-            },
-            "mirror": {
-                "$path": "mirror"
-            },
-            "DevPackages": {
-                "$path": "benches/visual/DevPackages"
-            }
-        }
-    }
+	"name": "jecs-test",
+	"tree": {
+		"$className": "DataModel",
+		"StarterPlayer": {
+			"$className": "StarterPlayer",
+			"StarterPlayerScripts": {
+				"$className": "StarterPlayerScripts",
+				"$path": "tests"
+			}
+		},
+		"ReplicatedStorage": {
+			"$className": "ReplicatedStorage",
+			"Lib": {
+				"$path": "src"
+			},
+			"benches": {
+				"$path": "benches"
+			},
+			"mirror": {
+				"$path": "mirror"
+			},
+			"DevPackages": {
+				"$path": "benches/visual/DevPackages"
+			}
+		}
+	}
 }

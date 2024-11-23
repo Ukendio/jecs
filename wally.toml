@@ -6,8 +6,7 @@ realm = "shared"
 license = "MIT"
 include = [
     "default.project.json",
-    "src/**",
-    "src",
+    "jecs.luau",
     "wally.toml",
     "README.md",
     "CHANGELOG.md",

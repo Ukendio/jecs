@@ -4,7 +4,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Matter = require(ReplicatedStorage.DevPackages["_Index"]["matter-ecs_matter@0.8.1"].matter)
 local ecr = require(ReplicatedStorage.DevPackages["_Index"]["centau_ecr@0.8.0"].ecr)
-local rgb = require(ReplicatedStorage.rgb)
 local newWorld = Matter.World.new()
 
 local jecs = require(ReplicatedStorage.Lib)
@@ -132,13 +131,6 @@ for i = 1, N do
 	archetypes[combination] = true
 end
 print("TEST", hm)
-
-local white = rgb.white
-local yellow = rgb.yellow
-local gray = rgb.gray
-local green = rgb.green
-
-local WALL = gray(" │ ")
 
 local count = 0
 

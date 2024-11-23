@@ -5,7 +5,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Matter = require(ReplicatedStorage.DevPackages.Matter)
 local ecr = require(ReplicatedStorage.DevPackages.ecr)
 local jecs = require(ReplicatedStorage.Lib)
-local rgb = require(ReplicatedStorage.rgb)
 local newWorld = Matter.World.new()
 local ecs = jecs.World.new()
 

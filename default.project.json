@@ -1,6 +1,6 @@
 {
-    "name": "jecs",
-    "tree": {
-      "$path": "src"
-    }
-  }
+	"name": "jecs",
+	"tree": {
+		"$path": "jecs.luau"
+	}
+}
