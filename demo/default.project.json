@@ -6,7 +6,7 @@
             "$className": "ReplicatedStorage",
             "$path": "src/ReplicatedStorage",
             "ecs": {
-                "$path": "../src"
+                "$path": "../jecs.luau"
             },
             "net": {
                 "$path": "net/client.luau"
