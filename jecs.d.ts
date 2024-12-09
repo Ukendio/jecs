@@ -1,40 +1,64 @@
+/*
+ * The base type for entities.
+ * This type indicates that the entity cannot be used to `tag` other entities
+ * and cannot be used used as a component to associate any kind of data with itself.
+ */
+export type Id = number & {
+    readonly __nominal_Id: unique symbol,
+};
+
+/*
+ * An entity with no associated data when used as a component.
+ * This entity however could still be used to 'tag' other entities.
+ *
+ * You could go further and downcast this type to `Id`
+ * indicating that the entity is intended to only store other entities.
+ */
+export type Tag = Id & {
+    readonly __nominal_Tag: unique symbol,
+};
+
 /**
  * A unique identifier in the world, entity.
- * The generic type T defines the data type when this entity is used as a component
+ * This identifier is associated with `TData` data when this entity is used as a component.
  */
-export type Entity<T = undefined | unknown> = number & { __jecs_value: T };
-
-/**
- * An entity with no associated data when used as a component
- */
-export type Tag = Entity<undefined>;
-
-/**
- * A pair of entities
- * P is the type of the predicate, O is the type of the object, and V is the type of the value (defaults to P)
- */
-export type Pair<P = undefined, O = undefined, V = P> = number & {
-	__jecs_pair_pred: P;
-	__jecs_pair_obj: O;
-	__jecs_pair_value: V;
+export type Entity<TData = unknown> = Tag & {
+    readonly __nominal_Entity: unique symbol,
 };
 
 /**
- * Either an Entity or a Pair
+ * A pair of entities.
+ *
+ * `TRelationship` is the type of the predicate, `TTarget` is the type of the object, and `TData` is the type of the value (defaults to `TRelationship`)
  */
-export type Id<T = unknown> = Entity<T> | Pair<unknown, unknown, T>;
+//export type Pair<TRelationship = unknown, TTarget = unknown, TData = TRelationship> = number & {
+//    readonly __nominal_Pair: unique symbol,
+//};
 
-type InferComponent<E> = E extends Id<infer T> ? T : never;
-type FlattenTuple<T extends any[]> = T extends [infer U] ? U : LuaTuple<T>;
-type Nullable<T extends unknown[]> = { [K in keyof T]: T[K] | undefined };
-type InferComponents<A extends Id[]> = {
-	[K in keyof A]: InferComponent<A[K]>;
+/**
+ * Either an Entity or a Pair.
+ *
+ * An id that can be added and removed.
+ */
+//export type Id<TData = unknown> = Entity<TData> | Pair<unknown, unknown, TData>;
+
+type InferComponent<TValue> = TValue extends Entity<infer TData> ? TData : never;
+
+type FlattenTuple<TItems extends any[]> = TItems extends [infer TValue] ? TValue : LuaTuple<TItems>;
+
+type Undefinedable<TItems extends any[]> = {
+    [TKey in keyof TItems]: TItems[TKey] | undefined;
 };
-type TupleForWorldGet = [Id] | [Id, Id] | [Id, Id, Id] | [Id, Id, Id, Id];
 
-type Iter<T extends unknown[]> = IterableFunction<LuaTuple<[Entity, ...T]>>;
+type InferComponents<TComponents extends Entity[]> = {
+	[TKey in keyof TComponents]: InferComponent<TComponents[TKey]>;
+};
 
-export type Query<T extends unknown[]> = {
+type TupleForWorldGet = [Entity] | [Entity, Entity] | [Entity, Entity, Entity] | [Entity, Entity, Entity, Entity];
+
+type Iter<T extends any[]> = IterableFunction<LuaTuple<[Entity, ...T]>>;
+
+export type Query<T extends any[]> = {
 	/**
 	 * Returns an iterator that returns a tuple of an entity and queried components
 	 */
@@ -45,14 +69,14 @@ export type Query<T extends unknown[]> = {
 	 * @param components The components to include
 	 * @returns Modified Query
 	 */
-	with(...components: Id[]): Query<T>;
+	with(...components: Tag[]): Query<T>;
 
 	/**
 	 * Modifies the Query to exclude specified components
 	 * @param components The components to exclude
 	 * @returns Modified Query
 	 */
-	without(...components: Id[]): Query<T>;
+	without(...components: Tag[]): Query<T>;
 } & Iter<T>;
 
 export class World {
@@ -62,26 +86,31 @@ export class World {
 	constructor();
 
 	/**
-	 * Creates a new entity
+	 * Creates a new entity.
+     *
+     * If your intention is to use this entity as a component associated with some data
+     * then you should provide the type parameter.
+     *
 	 * @returns Entity
 	 */
-	entity(): Tag;
+	entity<TData = never>(): [TData] extends [never] ? Id : Entity<TData>;
 
 	/**
 	 * Creates a new entity located in the first 256 ids.
+     *
 	 * These should be used for static components for fast access.
-	 * @returns Entity<T>
+	 * @returns Entity<TData>
 	 */
-	component<T = unknown>(): Entity<T>;
+	component<TData = unknown>(): Entity<TData>;
 
 	/**
 	 * Gets the target of a relationship. For example, when a user calls
-	 * `world.target(entity, ChildOf(parent))`, you will obtain the parent entity.
+	 * `world.target(entity, ChildOf)`, you will obtain the parent entity.
 	 * @param entity Entity
 	 * @param relation The Relationship
 	 * @returns The Parent Entity if it exists
 	 */
-	target(entity: Entity, relation: Entity): Entity | undefined;
+	target(entity: Id, relation: Entity): Entity | undefined;
 
 	/**
 	 * Gets the target of a relationship at a specific index.
@@ -95,23 +124,24 @@ export class World {
 	target(entity: Entity, relation: Entity, index: number): Entity | undefined;
 
 	/**
-	 * Clears an entity from the world
+	 * Clears an entity from the world.
 	 * @param entity Entity to be cleared
 	 */
-	clear(entity: Entity): void;
+	clear(entity: Id): void;
 
 	/**
-	 * Deletes an entity and all its related components and relationships
+	 * Deletes an entity and all its related components and relationships.
 	 * @param entity Entity to be destroyed
 	 */
-	delete(entity: Entity): void;
+	delete(entity: Id): void;
 
 	/**
-	 * Adds a component to the entity with no value
+	 * Adds a component to the entity with no value.
+     *
 	 * @param entity Target Entity
-	 * @param component Component
+	 * @param tag Tag
 	 */
-	add(entity: Entity, component: Id): void;
+	add(entity: Id, tag: Tag): void;
 
 	/**
 	 * Assigns a value to a component on the given entity
@@ -119,40 +149,41 @@ export class World {
 	 * @param component Target Component
 	 * @param value Component Value
 	 */
-	set<E extends Id<unknown>>(entity: Entity, component: E, value: InferComponent<E>): void;
+	set<TData = unknown>(entity: Id, component: Entity<TData>, value: TData): void;
 
 	/**
 	 * Removes a component from the given entity
 	 * @param entity Target Entity
 	 * @param component Target Component
 	 */
-	remove(entity: Entity, component: Id): void;
+	remove(entity: Id, component: Tag): void;
 
 	/**
 	 * Retrieves the values of specified components for an entity.
 	 * Some values may not exist when called.
 	 * A maximum of 4 components are allowed at a time.
-	 * @param id Target Entity
+	 * @param entity Target Entity
 	 * @param components Target Components
 	 * @returns Data associated with target components if it exists.
 	 */
-	get<T extends TupleForWorldGet>(id: Entity, ...components: T): FlattenTuple<Nullable<InferComponents<T>>>;
+	get<TComponents extends TupleForWorldGet>(entity: Id, ...components: TComponents): FlattenTuple<Undefinedable<InferComponents<TComponents>>>;
 
 	/**
 	 * Returns whether the entity has the specified components.
 	 * A maximum of 4 components are allowed at a time.
+     *
 	 * @param entity Target Entity
 	 * @param components Target Components
 	 * @returns If the entity contains the components
 	 */
-	has(entity: Entity, ...components: Id[]): boolean;
+	has(entity: Entity, ...components: Tag[]): boolean;
 
 	/**
 	 * Checks if an entity exists in the world
 	 * @param entity Entity to check
 	 * @returns Whether the entity exists in the world
 	 */
-	contains(entity: Entity): boolean;
+	contains(entity: Id): boolean;
 
 	/**
 	 * Get parent (target of ChildOf relationship) for entity.
@@ -167,41 +198,44 @@ export class World {
 	 * @param components Queried Components
 	 * @returns Query
 	 */
-	query<T extends Id[]>(...components: T): Query<InferComponents<T>>;
+	query<TComponents extends Entity[]>(...components: TComponents): Query<InferComponents<TComponents>>;
 }
 
 /**
- * Creates a composite key (pair)
+ * Creates a composite key (pair).
+ *
  * @param pred The first entity (predicate)
  * @param obj The second entity (object)
  * @returns The composite key (pair)
  */
-export function pair<P, O, V = P>(pred: Entity<P>, obj: Entity<O>): Pair<P, O, V>;
+export function pair<TPredicate, TObject>(pred: Entity<TPredicate>, obj: Entity<TObject>): Entity<TPredicate>;
 
 /**
  * Checks if the entity is a composite key (pair)
  * @param value The entity to check
  * @returns If the entity is a pair
  */
-export function IS_PAIR(value: Id): value is Pair;
+export function IS_PAIR(value: Id): value is Entity;
 
 /**
  * Gets the first entity (predicate) of a pair
  * @param pair The pair to get the first entity from
  * @returns The first entity (predicate) of the pair
  */
-export function pair_first<P, O, V = P>(pair: Pair<P, O, V>): Entity<P>;
+export function pair_first(world: World, pair: Entity): Entity;
 
 /**
  * Gets the second entity (object) of a pair
  * @param pair The pair to get the second entity from
  * @returns The second entity (object) of the pair
  */
-export function pair_second<P, O, V = P>(pair: Pair<P, O, V>): Entity<O>;
+export function pair_second(world: World, pair: Entity): Entity;
 
-export const OnAdd: Entity<(e: Entity) => void>;
-export const OnRemove: Entity<(e: Entity) => void>;
-export const OnSet: Entity<(e: Entity, value: unknown) => void>;
+export const Component: Entity;
+
+export const OnAdd: Entity<(entity: Entity) => void>;
+export const OnRemove: Entity<(entity: Entity) => void>;
+export const OnSet: Entity<(entity: Entity, value: unknown) => void>;
 export const ChildOf: Entity;
 export const Wildcard: Entity;
 export const w: Entity;
