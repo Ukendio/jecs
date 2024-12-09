@@ -121,7 +121,7 @@ export class World {
 	 * @param index Target index
 	 * @returns The Parent Entity if it exists
 	 */
-	target(entity: Entity, relation: Entity, index: number): Entity | undefined;
+	target(entity: Id, relation: Entity, index: number): Entity | undefined;
 
 	/**
 	 * Clears an entity from the world.
@@ -149,7 +149,7 @@ export class World {
 	 * @param component Target Component
 	 * @param value Component Value
 	 */
-	set<TData = unknown>(entity: Id, component: Entity<TData>, value: TData): void;
+	set(entity: Id, component: Entity, value: InferComponent<typeof component>): void;
 
 	/**
 	 * Removes a component from the given entity
@@ -176,7 +176,7 @@ export class World {
 	 * @param components Target Components
 	 * @returns If the entity contains the components
 	 */
-	has(entity: Entity, ...components: Tag[]): boolean;
+	has(entity: Id, ...components: Tag[]): boolean;
 
 	/**
 	 * Checks if an entity exists in the world
@@ -191,7 +191,7 @@ export class World {
 	 * @param entity Target Entity
 	 * @returns Parent Entity or undefined
 	 */
-	parent(entity: Entity): Entity | undefined;
+	parent(entity: Id): Entity | undefined;
 
 	/**
 	 * Searches the world for entities that match a given query
