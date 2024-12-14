@@ -134,7 +134,7 @@ export class World {
 	 * @param component Target Component
 	 * @param value Component Value
 	 */
-	set<TData>(entity: Id, component: Entity<TData>, value: NoInfer<TData>): void;
+	set<TData>(entity: Id, component: Entity<TData>, value: TData): void;
 
 	/**
 	 * Removes a component from the given entity
