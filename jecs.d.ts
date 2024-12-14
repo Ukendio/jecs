@@ -15,7 +15,7 @@ export type Id = number & {
  * indicating that the entity is intended to only store other entities.
  */
 export type Tag = Id & {
-    readonly __nominal_Tag: unique symbol,
+    readonly __nominal_Tag: unique symbol;
 };
 
 /**
@@ -23,24 +23,8 @@ export type Tag = Id & {
  * This identifier is associated with `TData` data when this entity is used as a component.
  */
 export type Entity<TData = unknown> = Tag & {
-    readonly __nominal_Entity: unique symbol,
+    readonly __nominal_Entity: unique symbol;
 };
-
-/**
- * A pair of entities.
- *
- * `TRelationship` is the type of the predicate, `TTarget` is the type of the object, and `TData` is the type of the value (defaults to `TRelationship`)
- */
-//export type Pair<TRelationship = unknown, TTarget = unknown, TData = TRelationship> = number & {
-//    readonly __nominal_Pair: unique symbol,
-//};
-
-/**
- * Either an Entity or a Pair.
- *
- * An id that can be added and removed.
- */
-//export type Id<TData = unknown> = Entity<TData> | Pair<unknown, unknown, TData>;
 
 type InferComponent<TValue> = TValue extends Entity<infer TData> ? TData : never;
 
