@@ -4,7 +4,7 @@
  * and cannot be used used as a component to associate any kind of data with itself.
  */
 export type Id = number & {
-    readonly __nominal_Id: unique symbol,
+    readonly __nominal_Id: unique symbol;
 };
 
 /*
@@ -24,6 +24,7 @@ export type Tag = Id & {
  */
 export type Entity<TData = unknown> = Tag & {
     readonly __nominal_Entity: unique symbol;
+    readonly __type_TData: TData;
 };
 
 type InferComponent<TValue> = TValue extends Entity<infer TData> ? TData : never;
@@ -133,7 +134,7 @@ export class World {
 	 * @param component Target Component
 	 * @param value Component Value
 	 */
-	set<TComponent extends Entity>(entity: Id, component: TComponent, value: InferComponent<NoInfer<TComponent>>): void;
+	set<TData>(entity: Id, component: Entity<TData>, value: NoInfer<TData>): void;
 
 	/**
 	 * Removes a component from the given entity
