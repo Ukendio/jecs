@@ -1733,7 +1733,7 @@ end
 
 export type Id<T = unknown> = Entity<T>
 
-type function _Pair(first, second)
+export type function Pair(first, second)
     local thing = first:components()[2]
 
 	if thing:readproperty(types.singleton("__T")):is("nil") then
@@ -1742,8 +1742,6 @@ type function _Pair(first, second)
 		return first
 	end
 end
-
-export type Pair<T, U> = _Pair<T, U>
 
 type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 
