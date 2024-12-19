@@ -1934,4 +1934,10 @@ return {
 	entity_index_try_get_fast = entity_index_try_get_fast,
 	entity_index_is_alive = entity_index_is_alive,
 	entity_index_new_id = entity_index_new_id,
+
+	query_iter = query_iter,
+	query_iter_init = query_iter_init,
+	query_with = query_with,
+	query_without = query_without,
+	query_archetypes = query_archetypes
 }
