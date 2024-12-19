@@ -38,7 +38,7 @@ export type Archetype = {
 	records: { ArchetypeRecord },
 } & GraphNode
 
-type Record = {
+export type Record = {
 	archetype: Archetype,
 	row: number,
 	dense: i24,
@@ -1548,6 +1548,39 @@ local function world_query(world: World, ...)
 	return q
 end
 
+local function world_each(world: World, id): () -> ()
+	local idr = world.componentIndex[id]
+	if not idr then
+		return NOOP
+	end
+
+	local idr_cache = idr.cache
+	local archetypes = world.archetypes
+	local archetype_id = next(idr_cache, nil) :: number
+	local archetype = archetypes[archetype_id]
+	if not archetype then
+		return NOOP
+	end
+
+	local last = 0
+	return function(): any
+		last += 1
+		local entity = archetype.entities[last]
+		while not entity do
+			archetype_id = next(idr_cache, archetype_id)
+			if not archetype_id then
+				return
+			end
+			archetype = archetypes[archetype_id]
+		end
+		return entity
+	end
+end
+
+local function world_children(world, parent)
+	return world_each(world, ECS_PAIR(EcsChildOf, parent))
+end
+
 local World = {}
 World.__index = World
 
@@ -1565,6 +1598,8 @@ World.target = world_target
 World.parent = world_parent
 World.contains = world_contains
 World.cleanup = world_cleanup
+World.each = world_each
+World.children = world_children
 
 if _G.__JECS_DEBUG then
 	-- taken from https://github.com/centau/ecr/blob/main/src/ecr.luau
@@ -1725,7 +1760,7 @@ function World.new()
 	return self
 end
 
-export type Id<T = nil> = Entity<T> | Pair<Entity<T>, Entity<unknown>>
+export type Id<T = unknown> = Entity<T> | Pair<Entity<T>, Entity<unknown>>
 
 export type Pair<First, Second> = number & {
 	__relation: First,
@@ -1745,7 +1780,7 @@ export type Pair<First, Second> = number & {
 
 type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 
-export type Entity<T = nil> = number & { __T: T }
+export type Entity<T = unknown> = number & { __T: T }
 
 type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 
@@ -1804,6 +1839,10 @@ export type World = {
 
 	--- Checks if the world contains the given entity
 	contains: (self: World, entity: Entity) -> boolean,
+
+	each: (self: World, id: Id) -> () -> (Entity),
+
+	children: (self: World, id: Id) -> () -> (Entity),
 
 	--- Searches the world for entities that match a given query
 	query: (<A>(self: World, Id<A>) -> Query<A>)
