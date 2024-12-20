@@ -12,26 +12,19 @@ local ecs_pair_second = jecs.pair_second
 local entity_index_try_get_any = jecs.entity_index_try_get_any
 local entity_index_get_alive = jecs.entity_index_get_alive
 local entity_index_is_alive = jecs.entity_index_is_alive
+local ChildOf = jecs.ChildOf
 local world_new = jecs.World.new
 
 local TEST, CASE, CHECK, FINISH, SKIP, FOCUS = testkit.test()
-local function CHECK_NO_ERR<T...>(s: string, fn: (T...) -> (), ...: T...)
-	local ok, err: string? = pcall(fn, ...)
 
-	if not CHECK(not ok, 2) then
-		local i = string.find(err :: string, " ")
-		assert(i)
-		local msg = string.sub(err :: string, i + 1)
-		CHECK(msg == s, 2)
-	end
-end
 local N = 2 ^ 8
 
-type World = jecs.WorldShim
+type World = jecs.World
+type Entity<T=nil> = jecs.Entity<T>
 
-local function debug_world_inspect(world)
-	local function record(e)
-		return entity_index_try_get_any(world.entity_index, e)
+local function debug_world_inspect(world: World)
+	local function record(e): jecs.Record
+		return entity_index_try_get_any(world.entity_index, e) :: any
 	end
 	local function tbl(e)
 		return record(e).archetype
@@ -67,10 +60,6 @@ local function debug_world_inspect(world)
 		row = row,
 		tuple = tuple,
 	}
-end
-
-local function name(world, e)
-	return world:get(e, jecs.Name)
 end
 
 TEST("archetype", function()
@@ -117,6 +106,7 @@ TEST("world:cleanup()", function()
 	world:set(e2, A, true)
 	world:set(e2, B, true)
 
+
 	world:set(e3, A, true)
 	world:set(e3, B, true)
 	world:set(e3, C, true)
@@ -135,19 +125,19 @@ TEST("world:cleanup()", function()
 
 	archetypeIndex = world.archetypeIndex
 
-	CHECK(archetypeIndex["1"] == nil)
-	CHECK(archetypeIndex["1_2"] == nil)
-	CHECK(archetypeIndex["1_2_3"] == nil)
+	CHECK((archetypeIndex["1"] :: jecs.Archetype?) == nil)
+	CHECK((archetypeIndex["1_2"] :: jecs.Archetype?) == nil)
+	CHECK((archetypeIndex["1_2_3"] :: jecs.Archetype?) == nil)
 
 	local e4 = world:entity()
 	world:set(e4, A, true)
 	CHECK(#archetypeIndex["1"].entities == 1)
-	CHECK(archetypeIndex["1_2"] == nil)
-	CHECK(archetypeIndex["1_2_3"] == nil)
+	CHECK((archetypeIndex["1_2"] :: jecs.Archetype?) == nil)
+	CHECK((archetypeIndex["1_2_3"] :: jecs.Archetype?) == nil)
 	world:set(e4, B, true)
 	CHECK(#archetypeIndex["1"].entities == 0)
 	CHECK(#archetypeIndex["1_2"].entities == 1)
-	CHECK(archetypeIndex["1_2_3"] == nil)
+	CHECK((archetypeIndex["1_2_3"] :: jecs.Archetype?) == nil)
 	world:set(e4, C, true)
 	CHECK(#archetypeIndex["1"].entities == 0)
 	CHECK(#archetypeIndex["1_2"].entities == 0)
@@ -169,7 +159,7 @@ TEST("world:entity()", function()
 		CASE("generations")
 		local world = jecs.World.new()
 		local e = world:entity()
-		CHECK(ECS_ID(e) == 1 + jecs.Rest)
+		CHECK(ECS_ID(e) == 1 + jecs.Rest :: number)
 		CHECK(ECS_GENERATION(e) == 0) -- 0
 		e = ECS_GENERATION_INC(e)
 		CHECK(ECS_GENERATION(e) == 1) -- 1
@@ -208,7 +198,7 @@ TEST("world:entity()", function()
 
 	do CASE "Recycling max generation"
 		local world = world_new()
-		local pin = jecs.Rest + 1
+		local pin = jecs.Rest::number + 1
 		for i = 1, 2^16-1 do
 			local e = world:entity()
 			world:delete(e)
@@ -363,13 +353,12 @@ TEST("world:add()", function()
 end)
 
 TEST("world:query()", function()
-	do
-		CASE("multiple iter")
+	do CASE("multiple iter")
 		local world = jecs.World.new()
 		local A = world:component()
 		local B = world:component()
 		local e = world:entity()
-		world:add(e, A, "a")
+		world:add(e, A)
 		world:add(e, B)
 		local q = world:query(A, B)
 		local counter = 0
@@ -869,6 +858,52 @@ TEST("world:query()", function()
 	end
 end)
 
+TEST("world:each", function()
+	local world = world_new()
+	local A = world:component()
+	local B = world:component()
+	local C = world:component()
+
+	local e1 = world:entity()
+	local e2 = world:entity()
+	local e3 = world:entity()
+
+	world:set(e1, A, true)
+
+	world:set(e2, A, true)
+	world:set(e2, B, true)
+
+	world:set(e3, A, true)
+	world:set(e3, B, true)
+	world:set(e3, C, true)
+
+	for entity in world:each(A) do
+		if entity == e1 or entity == e2 or entity == e3 then
+			CHECK(true)
+			continue
+		end
+		CHECK(false)
+	end
+end)
+
+TEST("world:children", function()
+	local world = world_new()
+	local e1 = world:entity()
+	local e2 = world:entity()
+	local e3 = world:entity()
+
+	world:add(e2, pair(ChildOf, e1))
+	world:add(e3, pair(ChildOf, e1))
+
+	for entity in world:children(pair(ChildOf, e1)) do
+		if entity == e2 or entity == e3 then
+			CHECK(true)
+			continue
+		end
+		CHECK(false)
+	end
+end)
+
 TEST("world:clear()", function()
 	do
 		CASE("should remove its components")
@@ -909,18 +944,18 @@ TEST("world:clear()", function()
 		CHECK(archetype_entities[1] == _e)
 		CHECK(archetype_entities[2] == _e1)
 
-		local e_record = entity_index_try_get_any(
-			world.entity_index, e)
-		local e1_record = entity_index_try_get_any(
-			world.entity_index, e1)
+		local e_record: jecs.Record = entity_index_try_get_any(
+			world.entity_index, e) :: any
+		local e1_record: jecs.Record = entity_index_try_get_any(
+			world.entity_index, e1) :: any
 		CHECK(e_record.archetype == archetype)
 		CHECK(e1_record.archetype == archetype)
 		CHECK(e1_record.row == 2)
 
 		world:clear(e)
 
-		CHECK(e_record.archetype == nil)
-		CHECK(e_record.row == nil)
+		CHECK((e_record.archetype :: jecs.Archetype?) == nil)
+		CHECK((e_record.row :: number?) == nil)
 		CHECK(e1_record.archetype == archetype)
 		CHECK(e1_record.row == 1)
 
@@ -976,15 +1011,14 @@ TEST("world:component()", function()
 		CHECK(not world:has(e, jecs.Component))
 	end
 
-	do
-		CASE("tag")
+	do CASE("tag")
 		local world = jecs.World.new() :: World
 		local A = world:component()
 		local B = world:entity()
 		local C = world:entity()
 		local e = world:entity()
 		world:set(e, A, "test")
-		world:add(e, B, "test")
+		world:add(e, B)
 		world:set(e, C, 11)
 
 		CHECK(world:has(e, A))
@@ -1248,276 +1282,9 @@ TEST("world:contains", function()
 		CHECK(not world:contains(id))
 	end
 end)
-type Tracker<T> = {
-	track: (
-		world: World,
-		fn: (
-			changes: {
-				added: () -> () -> (number, T),
-				removed: () -> () -> number,
-				changed: () -> () -> (number, T, T),
-			}
-		) -> ()
-	) -> (),
-}
-
-type Entity<T = any> = number & { __nominal_type_dont_use: T }
-
-local function diff(a, b)
-	local size = 0
-	for k, v in a do
-		if b[k] ~= v then
-			return true
-		end
-		size += 1
-	end
-	for k, v in b do
-		size -= 1
-	end
-
-	if size ~= 0 then
-		return true
-	end
-
-	return false
-end
-
-local function ChangeTracker<T>(world, T: Entity<T>): Tracker<T>
-	local PreviousT = jecs.pair(jecs.Rest, T)
-	local add = {}
-	local added
-	local removed
-	local is_trivial
-
-	local function changes_added()
-		added = true
-		local it = world:query(T):without(PreviousT):iter()
-		return function()
-			local id, data = it()
-			if not id then
-				return nil
-			end
-
-			is_trivial = typeof(data) ~= "table"
-
-			add[id] = data
-
-			return id, data
-		end
-	end
-
-	local function changes_changed()
-		local it = world:query(T, PreviousT):iter()
-
-		return function()
-			local id, new, old = it()
-			while true do
-				if not id then
-					return nil
-				end
-
-				if not is_trivial then
-					if diff(new, old) then
-						break
-					end
-				elseif new ~= old then
-					break
-				end
-
-				id, new, old = it()
-			end
-
-			add[id] = new
-
-			return id, old, new
-		end
-	end
-
-	local function changes_removed()
-		removed = true
-
-		local it = world:query(PreviousT):without(T):iter()
-		return function()
-			local id = it()
-			if id then
-				world:remove(id, PreviousT)
-			end
-			return id
-		end
-	end
-
-	local changes = {
-		added = changes_added,
-		changed = changes_changed,
-		removed = changes_removed,
-	}
-
-	local function track(fn)
-		added = false
-		removed = false
-
-		fn(changes)
-
-		if not added then
-			for _ in changes_added() do
-			end
-		end
-
-		if not removed then
-			for _ in changes_removed() do
-			end
-		end
-
-		for e, data in add do
-			world:set(e, PreviousT, if is_trivial then data else table.clone(data))
-		end
-	end
-
-	local tracker = { track = track }
-
-	return tracker
-end
-TEST("changetracker:track()", function()
-	local world = jecs.World.new()
-
-	do
-		CASE("added")
-		local Test = world:component() :: Entity<{ foo: number }>
-		local TestTracker = ChangeTracker(world, Test)
-
-		local e1 = world:entity()
-		local data = { foo = 11 }
-		world:set(e1, Test, data)
-
-		TestTracker.track(function(changes)
-			local added = 0
-			for e, test in changes.added() do
-				added += 1
-				CHECK(test == data)
-			end
-			for e, old, new in changes.changed() do
-				CHECK(false)
-			end
-			for e in changes.removed() do
-				CHECK(false)
-			end
-			CHECK(added == 1)
-		end)
-	end
-	do
-		CASE("changed")
-		local Test = world:component() :: Entity<{ foo: number }>
-		local TestTracker = ChangeTracker(world, Test)
-
-		local data = { foo = 11 }
-		local e1 = world:entity()
-		world:set(e1, Test, data)
-
-		TestTracker.track(function(changes) end)
-
-		data.foo += 1
-
-		TestTracker.track(function(changes)
-			for _ in changes.added() do
-				CHECK(false)
-			end
-			local changed = 0
-			for e, old, new in changes.changed() do
-				CHECK(e == e1)
-				CHECK(new == data)
-				CHECK(old ~= new)
-				CHECK(diff(new, old))
-				changed += 1
-			end
-			CHECK(changed == 1)
-		end)
-	end
-	do
-		CASE("removed")
-		local Test = world:component() :: Entity<{ foo: number }>
-		local TestTracker = ChangeTracker(world, Test)
-
-		local data = { foo = 11 }
-		local e1 = world:entity()
-		world:set(e1, Test, data)
-
-		TestTracker.track(function(changes) end)
-
-		world:remove(e1, Test)
-
-		TestTracker.track(function(changes)
-			for _ in changes.added() do
-				CHECK(false)
-			end
-			for _ in changes.changed() do
-				CHECK(false)
-			end
-			local removed = 0
-			for e in changes.removed() do
-				removed += 1
-				CHECK(e == e1)
-			end
-			CHECK(removed == 1)
-		end)
-	end
-
-	do
-		CASE("multiple change trackers")
-		local A = world:component()
-		local B = world:component()
-		local trackerA = ChangeTracker(world, A)
-		local trackerB = ChangeTracker(world, B)
-
-		local e1 = world:entity()
-		world:set(e1, A, "a1")
-		local e2 = world:entity()
-		world:set(e2, B, "b1")
-
-		trackerA.track(function() end)
-		trackerB.track(function() end)
-
-		world:set(e2, B, "b2")
-		trackerA.track(function(changes)
-			for _, old, new in changes.changed() do
-			end
-		end)
-		trackerB.track(function(changes)
-			for _, old, new in changes.changed() do
-				CHECK(new == "b2")
-			end
-		end)
-	end
-end)
-
-local function create_cache(hook)
-	local columns = setmetatable({}, {
-		__index = function(self, component)
-			local column = {}
-			self[component] = column
-			return column
-		end,
-	})
-
-	return function(world, component, fn)
-		local column = columns[component]
-		table.insert(column, fn)
-		world:set(component, hook, function(entity, value)
-			for _, callback in column do
-				callback(entity, value)
-			end
-		end)
-	end
-end
-
-local hooks = {
-	OnSet = create_cache(jecs.OnSet),
-	OnAdd = create_cache(jecs.OnAdd),
-	OnRemove = create_cache(jecs.OnRemove),
-}
 
 TEST("Hooks", function()
-	do
-		CASE("OnAdd")
+	do CASE "OnAdd"
 		local world = jecs.World.new()
 		local Transform = world:component()
 		local e1 = world:entity()
@@ -1527,18 +1294,12 @@ TEST("Hooks", function()
 		world:add(e1, Transform)
 	end
 
-	do
-		CASE("OnSet")
+	do CASE "OnSet"
 		local world = jecs.World.new()
 		local Number = world:component()
 		local e1 = world:entity()
 
-		hooks.OnSet(world, Number, function(entity, data)
-			CHECK(e1 == entity)
-			CHECK(data == world:get(entity, Number))
-			CHECK(data == 1)
-		end)
-		hooks.OnSet(world, Number, function(entity, data)
+		world:set(Number, jecs.OnSet, function(entity, data)
 			CHECK(e1 == entity)
 			CHECK(data == world:get(entity, Number))
 			CHECK(data == 1)
@@ -1546,8 +1307,7 @@ TEST("Hooks", function()
 		world:set(e1, Number, 1)
 	end
 
-	do
-		CASE("OnRemove")
+	do CASE("OnRemove")
 		do
 			-- basic
 			local world = jecs.World.new()
@@ -1580,9 +1340,41 @@ TEST("Hooks", function()
 			CHECK(not world:get(e, B))
 		end
 	end
+end)
 
-	do
-		CASE("the filip incident")
+TEST("repro", function()
+	do CASE "#1"
+		local world = world_new()
+		local reproEntity = world:component()
+		local components = { Cooldown = world:component() :: jecs.Id<number> }
+		world:set(reproEntity, components.Cooldown, 2)
+
+		local function updateCooldowns(dt: number)
+			local toRemove = {}
+
+			for id, cooldown in world:query(components.Cooldown):iter() do
+				cooldown -= dt
+
+				if cooldown <= 0 then
+					table.insert(toRemove, id)
+					print("removing")
+					-- world:remove(id, components.Cooldown)
+				else
+					world:set(id, components.Cooldown, cooldown)
+				end
+			end
+
+			for _, id in toRemove do
+				world:remove(id, components.Cooldown)
+				CHECK(not world:get(id, components.Cooldown))
+			end
+		end
+
+		updateCooldowns(1.5)
+		updateCooldowns(1.5)
+	end
+
+	do CASE "#2"
 		local world = jecs.World.new()
 
 		export type Iterator<T> = () -> (Entity, T?, T?)
@@ -1629,7 +1421,7 @@ TEST("Hooks", function()
 			return cachedChangeSets[component]
 		end
 
-		local function ChangeTracker<T>(component): (Iterator<T>, Destructor)
+		local function ChangeTracker<T>(component: jecs.Id): (Iterator<T>, Destructor)
 			local values: ValuesMap<T> = {}
 			local changeSet: ChangeSet = {}
 
@@ -1642,7 +1434,7 @@ TEST("Hooks", function()
 			changeSets.Changed[changeSet] = true
 			changeSets.Removed[changeSet] = true
 
-			local id: Entity? = nil
+			local id: jecs.Id? = nil
 			local iter: Iterator<T> = function()
 				id = next(changeSet)
 				if id then
@@ -1680,288 +1472,6 @@ TEST("Hooks", function()
 			counter += 1
 		end
 		CHECK(counter == 1)
-	end
-end)
-
-TEST("scheduler", function()
-	type System = {
-		callback: (world: World) -> (),
-	}
-	type Systems = { System }
-
-	type Events = {
-		RenderStepped: Systems,
-		Heartbeat: Systems,
-	}
-
-	local scheduler_new: (
-		w: World
-	) -> {
-		components: {
-			Disabled: Entity,
-			System: Entity<System>,
-			Phase: Entity,
-			DependsOn: Entity,
-		},
-
-		collect: {
-			under_event: (event: Entity) -> Systems,
-			all: () -> Events,
-		},
-
-		systems: {
-			run: (events: Events) -> (),
-			new: (callback: (world: World) -> (), phase: Entity) -> Entity,
-		},
-
-		phases: {
-			RenderStepped: Entity,
-			Heartbeat: Entity,
-		},
-
-		phase: (after: Entity) -> Entity,
-	}
-
-	do
-		local world
-		local Disabled
-		local System
-		local DependsOn
-		local Phase
-		local Event
-		local RenderStepped
-		local Heartbeat
-		local Name
-
-		local function scheduler_systems_run(events)
-			for _, system in events[RenderStepped] do
-				system.callback()
-			end
-			for _, system in events[Heartbeat] do
-				system.callback()
-			end
-		end
-
-		local function scheduler_collect_systems_under_phase_recursive(systems, phase)
-			for _, system in world:query(System):with(pair(DependsOn, phase)) do
-				table.insert(systems, system)
-			end
-			for dependant in world:query(Phase):with(pair(DependsOn, phase)) do
-				scheduler_collect_systems_under_phase_recursive(systems, dependant)
-			end
-		end
-
-		local function scheduler_collect_systems_under_event(event)
-			local systems = {}
-			scheduler_collect_systems_under_phase_recursive(systems, event)
-			return systems
-		end
-
-		local function scheduler_collect_systems_all()
-			local systems = {}
-			for phase in world:query(Phase, Event) do
-				systems[phase] = scheduler_collect_systems_under_event(phase)
-			end
-			return systems
-		end
-
-		local function scheduler_phase_new(after)
-			local phase = world:entity()
-			world:add(phase, Phase)
-			local dependency = pair(DependsOn, after)
-			world:add(phase, dependency)
-			return phase
-		end
-
-		local function scheduler_systems_new(callback, phase)
-			local system = world:entity()
-			world:set(system, System, { callback = callback })
-			world:add(system, pair(DependsOn, phase))
-			return system
-		end
-
-		function scheduler_new(w)
-			world = w
-			Disabled = world:component()
-			System = world:component()
-			Phase = world:component()
-			DependsOn = world:component()
-			Event = world:component()
-
-			RenderStepped = world:component()
-			Heartbeat = world:component()
-
-			world:add(RenderStepped, Phase)
-			world:add(RenderStepped, Event)
-			world:add(Heartbeat, Phase)
-			world:add(Heartbeat, Event)
-
-			return {
-				phase = scheduler_phase_new,
-
-				phases = {
-					RenderStepped = RenderStepped,
-					Heartbeat = Heartbeat,
-				},
-
-				world = world,
-
-				components = {
-					DependsOn = DependsOn,
-					Disabled = Disabled,
-					Heartbeat = Heartbeat,
-					Phase = Phase,
-					RenderStepped = RenderStepped,
-					System = System,
-				},
-
-				collect = {
-					under_event = scheduler_collect_systems_under_event,
-					all = scheduler_collect_systems_all,
-				},
-
-				systems = {
-					new = scheduler_systems_new,
-					run = scheduler_systems_run,
-				},
-			}
-		end
-	end
-
-	do
-		CASE("event dependant phase")
-
-		local world = jecs.World.new()
-		local scheduler = scheduler_new(world)
-		local components = scheduler.components
-		local phases = scheduler.phases
-		local Heartbeat = phases.Heartbeat
-		local DependsOn = components.DependsOn
-
-		local Physics = scheduler.phase(Heartbeat)
-		CHECK(world:target(Physics, DependsOn, 0) == Heartbeat)
-	end
-
-	do
-		CASE("user-defined sub phases")
-		local world = jecs.World.new()
-		local scheduler = scheduler_new(world)
-		local components = scheduler.components
-		local phases = scheduler.phases
-		local DependsOn = components.DependsOn
-
-		local A = scheduler.phase(phases.Heartbeat)
-		local B = scheduler.phase(A)
-
-		CHECK(world:target(B, DependsOn, 0) == A)
-	end
-
-	do
-		CASE("phase order")
-		local world = jecs.World.new()
-		local scheduler = scheduler_new(world)
-
-		local phases = scheduler.phases
-		local Physics = scheduler.phase(phases.Heartbeat)
-		local Collisions = scheduler.phase(Physics)
-
-		local order = "BEGIN"
-
-		local function move()
-			order ..= "->move"
-		end
-
-		local function hit()
-			order ..= "->hit"
-		end
-
-		local createSystem = scheduler.systems.new
-
-		createSystem(hit, Collisions)
-		createSystem(move, Physics)
-
-		local events = scheduler.collect.all()
-		scheduler.systems.run(events)
-
-		order ..= "->END"
-
-		CHECK(order == "BEGIN->move->hit->END")
-	end
-
-	do
-		CASE("collect only systems under phase recursive")
-		local world = jecs.World.new()
-		local scheduler = scheduler_new(world)
-		local phases = scheduler.phases
-		local Heartbeat = phases.Heartbeat
-		local RenderStepped = phases.RenderStepped
-		local Render = scheduler.phase(RenderStepped)
-		local Physics = scheduler.phase(Heartbeat)
-		local Collisions = scheduler.phase(Physics)
-
-		local function move() end
-
-		local function hit() end
-
-		local function camera() end
-
-		local createSystem = scheduler.systems.new
-
-		createSystem(hit, Collisions)
-		createSystem(move, Physics)
-		createSystem(camera, Render)
-
-		local systems = scheduler.collect.under_event(Collisions)
-
-		CHECK(#systems == 1)
-		CHECK(systems[1].callback == hit)
-
-		systems = scheduler.collect.under_event(Physics)
-
-		CHECK(#systems == 2)
-
-		systems = scheduler.collect.under_event(Heartbeat)
-
-		CHECK(#systems == 2)
-
-		systems = scheduler.collect.under_event(Render)
-
-		CHECK(#systems == 1)
-		CHECK(systems[1].callback == camera)
-	end
-end)
-
-TEST("repro", function()
-	do
-		CASE("")
-		local world = world_new()
-		local reproEntity = world:component()
-		local components = { Cooldown = world:component() }
-		world:set(reproEntity, components.Cooldown, 2)
-
-		local function updateCooldowns(dt: number)
-			local toRemove = {}
-
-			for id, cooldown in world:query(components.Cooldown):iter() do
-				cooldown -= dt
-
-				if cooldown <= 0 then
-					table.insert(toRemove, id)
-					print("removing")
-					-- world:remove(id, components.Cooldown)
-				else
-					world:set(id, components.Cooldown, cooldown)
-				end
-			end
-
-			for _, id in toRemove do
-				world:remove(id, components.Cooldown)
-				CHECK(not world:get(id, components.Cooldown))
-			end
-		end
-
-		updateCooldowns(1.5)
-		updateCooldowns(1.5)
 	end
 end)
 FINISH()
