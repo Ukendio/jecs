@@ -1840,9 +1840,9 @@ export type World = {
 	--- Checks if the world contains the given entity
 	contains: (self: World, entity: Entity) -> boolean,
 
-	each: (self: World, id: Id) -> () -> (Entity),
+	each: (self: World, id: Id) -> () -> Entity,
 
-	children: (self: World, id: Id) -> () -> (Entity),
+	children: (self: World, id: Id) -> () -> Entity,
 
 	--- Searches the world for entities that match a given query
 	query: (<A>(self: World, Id<A>) -> Query<A>)
@@ -1939,5 +1939,5 @@ return {
 	query_iter_init = query_iter_init,
 	query_with = query_with,
 	query_without = query_without,
-	query_archetypes = query_archetypes
+	query_archetypes = query_archetypes,
 }
