@@ -1562,17 +1562,21 @@ local function world_each(world: World, id): () -> ()
 		return NOOP
 	end
 
-	local last = 0
+	local entities = archetype.entities
+	local row = #entities
+
 	return function(): any
-		last += 1
-		local entity = archetype.entities[last]
+		local entity = entities[row]
 		while not entity do
 			archetype_id = next(idr_cache, archetype_id)
 			if not archetype_id then
 				return
 			end
 			archetype = archetypes[archetype_id]
+			entities = archetype.entities
+			row = #entities
 		end
+		row -= 1
 		return entity
 	end
 end
