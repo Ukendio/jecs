@@ -1606,13 +1606,15 @@ World.each = world_each
 World.children = world_children
 
 if _G.__JECS_DEBUG then
-	-- taken from https://github.com/centau/ecr/blob/main/src/ecr.luau
-	-- error but stack trace always starts at first callsite outside of this file
+	local function dbg_info(n: number): any
+		return debug.info(n, "s")
+	end
 	local function throw(msg: string)
 		local s = 1
+		local root = dbg_info(1)
 		repeat
 			s += 1
-		until debug.info(s, "s") ~= debug.info(1, "s")
+		until dbg_info(s) ~= root
 		if warn then
 			error(msg, s)
 		else
@@ -1627,15 +1629,18 @@ if _G.__JECS_DEBUG then
 		throw(msg)
 	end
 
-	local function get_name(world, id): string
-		local name: string | nil
+	local function get_name(world, id)
+		return world_get_one_inline(world, id, EcsName)
+	end
+
+	local function bname(world: World, id): string
+		local name: string
 		if ECS_IS_PAIR(id) then
-			name = `pair({get_name(world, ECS_ENTITY_T_HI(id))}, {get_name(world, ECS_ENTITY_T_LO(id))})`
+			local first = get_name(world, ecs_pair_first(world, id))
+			local second = get_name(world, ecs_pair_second(world, id))
+			name = `pair({first}, {second})`
 		else
-			local _1 = world_get_one_inline(world, id, EcsName)
-			if _1 then
-				name = `${_1}`
-			end
+			return get_name(world, id)
 		end
 		if name then
 			return name
@@ -1659,14 +1664,14 @@ if _G.__JECS_DEBUG then
 	World.set = function(world: World, entity: i53, id: i53, value: any): ()
 		local is_tag = ID_IS_TAG(world, id)
 		if is_tag and value == nil then
-			local _1 = get_name(world, entity)
-			local _2 = get_name(world, id)
+			local _1 = bname(world, entity)
+			local _2 = bname(world, id)
 			local why = "cannot set component value to nil"
 			throw(why)
 			return
 		elseif value ~= nil and is_tag then
-			local _1 = get_name(world, entity)
-			local _2 = get_name(world, id)
+			local _1 = bname(world, entity)
+			local _2 = bname(world, id)
 			local why = `cannot set a component value because {_2} is a tag`
 			why ..= `\n[jecs] note: consider using "world:add({_1}, {_2})" instead`
 			throw(why)
@@ -1678,8 +1683,8 @@ if _G.__JECS_DEBUG then
 
 	World.add = function(world: World, entity: i53, id: i53, value: any)
 		if value ~= nil then
-			local _1 = get_name(world, entity)
-			local _2 = get_name(world, id)
+			local _1 = bname(world, entity)
+			local _2 = bname(world, id)
 			throw("You provided a value when none was expected. " .. `Did you mean to use "world:add({_1}, {_2})"`)
 		end
 
