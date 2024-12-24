@@ -585,7 +585,9 @@ local function archetype_append_to_records(
 	end
 end
 
-local function create_observer_uni(world: World, component: number, event)
+
+
+local function create_observer_uni(world: World, component: number, event): ecs_partial_t<Observer>
 	local map = world.observerable[event]
 	if not map then
 		map = {}
@@ -602,7 +604,7 @@ local function create_observer_uni(world: World, component: number, event)
 
 	table.insert(observer_list, observer)
 
-	return observer
+	return observer :: any
 end
 
 local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?): Archetype
@@ -1494,12 +1496,12 @@ local function query_iter(query): () -> (number, ...any)
 	return query_next
 end
 
-local function query_without(query: { compatible_archetypes: { Archetype } }, ...)
-	local filters = query.filters
+local function query_without(query: QueryInner, ...: i53)
+	local filters: { without: { i53 } } = query.filters :: any
 	local without = { ... }
 	if not filters then
 		filters = {}
-		query.filters = filters
+		query.filters = filters :: any
 	end
 	filters.without = without
 	local compatible_archetypes = query.compatible_archetypes
@@ -1529,13 +1531,13 @@ local function query_without(query: { compatible_archetypes: { Archetype } }, ..
 	return query :: any
 end
 
-local function query_with(query: { compatible_archetypes: { Archetype } }, ...)
+local function query_with(query: QueryInner, ...)
 	local compatible_archetypes = query.compatible_archetypes
-	local filters = query.filters
+	local filters: { with: { i53 } } = query.filters :: any
 	local with = { ... }
 	if not filters then
 		filters = {}
-		query.filters = filters
+		query.filters = filters :: any
 	end
 	filters.with = with
 	for i = #compatible_archetypes, 1, -1 do
@@ -1571,14 +1573,15 @@ local function query_archetypes(query)
 	return query.compatible_archetypes
 end
 
-local function query_cached(query)
+local function query_cached(query: QueryInner)
 	local archetypes = query.compatible_archetypes
-	local observer_1 = create_observer_uni(query.world, query.ids[1], EcsArchetypeCreate)
+	local world = query.world :: World
+	local observer_1 = create_observer_uni(world, query.ids[1], EcsArchetypeCreate)
 	observer_1.query = query
 	observer_1.callback = function(archetype)
 		table.insert(archetypes, archetype)
 	end
-	local observer_2 = create_observer_uni(query.world, query.ids[1], EcsArchetypeDelete)
+	local observer_2 = create_observer_uni(world, query.ids[1], EcsArchetypeDelete)
 	observer_2.query = query
 	observer_2.callback = function(archetype)
 		local i = table.find(archetypes, archetype)
@@ -1913,6 +1916,29 @@ export type Query<T...> = typeof(setmetatable({}, {
 	archetypes: (self: Query<T...>) -> { Archetype },
 	cached: (self: Query<T...>) -> Query<T...>,
 }
+
+type QueryInner = {
+	compatible_archetypes: { Archetype },
+	filters: {
+		without: { i53 }?,
+		with: { i53 }?,
+	}?,
+	ids: { i53 },
+	world: {} -- Downcasted to be serializable by the analyzer
+}
+
+type Observer = {
+ 	callback: (archetype: Archetype) -> (),
+   	query: QueryInner,
+}
+
+type function ecs_partial_t(ty)
+	local output = types.newtable()
+	for k, v in ty:properties() do
+		output:setproperty(k, types.unionof(v.write, types.singleton(nil)))
+	end
+	return output
+end
 
 export type World = {
 	archetypeIndex: { [string]: Archetype },
