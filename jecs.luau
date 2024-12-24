@@ -252,17 +252,34 @@ local function ecs_pair_second(world, e)
 end
 
 local function query_match(query, archetype)
-	local matches = true
-
 	local records = archetype.records
 	for _, id in query.ids do
 		if not records[id] then
-			matches = false
-			break
+			return false
 		end
 	end
 
-	return matches
+	local filters = query.filters
+	if filters then
+		local without = filters.without
+		if without then
+			for _, id in filters.without do
+				if records[id] then
+					return false
+				end
+			end
+		end
+		local with = filters.with
+		if with then
+			for _, id in filters.without do
+				if not records[id] then
+					return false
+				end
+			end
+		end
+	end
+
+	return true
 end
 
 local function observer_invoke(observer, event)
@@ -1470,32 +1487,35 @@ local function query_iter(query): () -> (number, ...any)
 end
 
 local function query_without(query: { compatible_archetypes: { Archetype } }, ...)
+	local filters = query.filters
+	local without = { ... }
+	if not filters then
+		filters = {}
+		query.filters = filters
+	end
+	filters.without = without
 	local compatible_archetypes = query.compatible_archetypes
-	local N = select("#", ...)
 	for i = #compatible_archetypes, 1, -1 do
 		local archetype = compatible_archetypes[i]
 		local records = archetype.records
-		local shouldRemove = false
+		local matches = true
 
-		for j = 1, N do
-			local id = select(j, ...)
+		for _, id in without do
 			if records[id] then
-				shouldRemove = true
+				matches = false
 				break
 			end
 		end
 
-		if shouldRemove then
-			local last = #compatible_archetypes
-			if last ~= i then
-				compatible_archetypes[i] = compatible_archetypes[last]
-			end
-			compatible_archetypes[last] = nil :: any
+		if matches then
+			continue
 		end
-	end
 
-	if #compatible_archetypes == 0 then
-		return EMPTY_QUERY
+		local last = #compatible_archetypes
+		if last ~= i then
+			compatible_archetypes[i] = compatible_archetypes[last]
+		end
+		compatible_archetypes[last] = nil :: any
 	end
 
 	return query :: any
@@ -1503,31 +1523,36 @@ end
 
 local function query_with(query: { compatible_archetypes: { Archetype } }, ...)
 	local compatible_archetypes = query.compatible_archetypes
-	local N = select("#", ...)
+	local filters = query.filters
+	local with = { ... }
+	if not filters then
+		filters = {}
+		query.filters = filters
+	end
+	filters.with = with
 	for i = #compatible_archetypes, 1, -1 do
 		local archetype = compatible_archetypes[i]
 		local records = archetype.records
-		local shouldRemove = false
+		local matches = true
 
-		for j = 1, N do
-			local id = select(j, ...)
+		for _, id in with do
 			if not records[id] then
-				shouldRemove = true
+				matches = false
 				break
 			end
 		end
 
-		if shouldRemove then
-			local last = #compatible_archetypes
-			if last ~= i then
-				compatible_archetypes[i] = compatible_archetypes[last]
-			end
-			compatible_archetypes[last] = nil :: any
+		if matches then
+			continue
 		end
+
+		local last = #compatible_archetypes
+		if last ~= i then
+			compatible_archetypes[i] = compatible_archetypes[last]
+		end
+		compatible_archetypes[last] = nil :: any
 	end
-	if #compatible_archetypes == 0 then
-		return EMPTY_QUERY
-	end
+
 	return query :: any
 end
 
