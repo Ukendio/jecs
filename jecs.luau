@@ -38,7 +38,7 @@ export type Archetype = {
 	records: { ArchetypeRecord },
 } & GraphNode
 
-type Record = {
+export type Record = {
 	archetype: Archetype,
 	row: number,
 	dense: i24,
@@ -1554,6 +1554,43 @@ local function world_query(world: World, ...)
 	return q
 end
 
+local function world_each(world: World, id): () -> ()
+	local idr = world.componentIndex[id]
+	if not idr then
+		return NOOP
+	end
+
+	local idr_cache = idr.cache
+	local archetypes = world.archetypes
+	local archetype_id = next(idr_cache, nil) :: number
+	local archetype = archetypes[archetype_id]
+	if not archetype then
+		return NOOP
+	end
+
+	local entities = archetype.entities
+	local row = #entities
+
+	return function(): any
+		local entity = entities[row]
+		while not entity do
+			archetype_id = next(idr_cache, archetype_id)
+			if not archetype_id then
+				return
+			end
+			archetype = archetypes[archetype_id]
+			entities = archetype.entities
+			row = #entities
+		end
+		row -= 1
+		return entity
+	end
+end
+
+local function world_children(world, parent)
+	return world_each(world, ECS_PAIR(EcsChildOf, parent))
+end
+
 local World = {}
 World.__index = World
 
@@ -1571,15 +1608,19 @@ World.target = world_target
 World.parent = world_parent
 World.contains = world_contains
 World.cleanup = world_cleanup
+World.each = world_each
+World.children = world_children
 
 if _G.__JECS_DEBUG then
-	-- taken from https://github.com/centau/ecr/blob/main/src/ecr.luau
-	-- error but stack trace always starts at first callsite outside of this file
+	local function dbg_info(n: number): any
+		return debug.info(n, "s")
+	end
 	local function throw(msg: string)
 		local s = 1
+		local root = dbg_info(1)
 		repeat
 			s += 1
-		until debug.info(s, "s") ~= debug.info(1, "s")
+		until dbg_info(s) ~= root
 		if warn then
 			error(msg, s)
 		else
@@ -1594,15 +1635,18 @@ if _G.__JECS_DEBUG then
 		throw(msg)
 	end
 
-	local function get_name(world, id): string
-		local name: string | nil
+	local function get_name(world, id)
+		return world_get_one_inline(world, id, EcsName)
+	end
+
+	local function bname(world: World, id): string
+		local name: string
 		if ECS_IS_PAIR(id) then
-			name = `pair({get_name(world, ECS_ENTITY_T_HI(id))}, {get_name(world, ECS_ENTITY_T_LO(id))})`
+			local first = get_name(world, ecs_pair_first(world, id))
+			local second = get_name(world, ecs_pair_second(world, id))
+			name = `pair({first}, {second})`
 		else
-			local _1 = world_get_one_inline(world, id, EcsName)
-			if _1 then
-				name = `${_1}`
-			end
+			return get_name(world, id)
 		end
 		if name then
 			return name
@@ -1626,14 +1670,14 @@ if _G.__JECS_DEBUG then
 	World.set = function(world: World, entity: i53, id: i53, value: any): ()
 		local is_tag = ID_IS_TAG(world, id)
 		if is_tag and value == nil then
-			local _1 = get_name(world, entity)
-			local _2 = get_name(world, id)
+			local _1 = bname(world, entity)
+			local _2 = bname(world, id)
 			local why = "cannot set component value to nil"
 			throw(why)
 			return
 		elseif value ~= nil and is_tag then
-			local _1 = get_name(world, entity)
-			local _2 = get_name(world, id)
+			local _1 = bname(world, entity)
+			local _2 = bname(world, id)
 			local why = `cannot set a component value because {_2} is a tag`
 			why ..= `\n[jecs] note: consider using "world:add({_1}, {_2})" instead`
 			throw(why)
@@ -1645,8 +1689,8 @@ if _G.__JECS_DEBUG then
 
 	World.add = function(world: World, entity: i53, id: i53, value: any)
 		if value ~= nil then
-			local _1 = get_name(world, entity)
-			local _2 = get_name(world, id)
+			local _1 = bname(world, entity)
+			local _2 = bname(world, id)
 			throw("You provided a value when none was expected. " .. `Did you mean to use "world:add({_1}, {_2})"`)
 		end
 
@@ -1747,7 +1791,7 @@ export type Pair<T, U> = _Pair<T, U>
 
 type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 
-export type Entity<T = nil> = number & { __T: T }
+export type Entity<T = unknown> = number & { __T: T }
 
 type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 
@@ -1806,6 +1850,10 @@ export type World = {
 
 	--- Checks if the world contains the given entity
 	contains: (self: World, entity: Entity) -> boolean,
+
+	each: (self: World, id: Id) -> () -> Entity,
+
+	children: (self: World, id: Id) -> () -> Entity,
 
 	--- Searches the world for entities that match a given query
 	query: (<A>(self: World, Id<A>) -> Query<A>)
@@ -1897,4 +1945,10 @@ return {
 	entity_index_try_get_fast = entity_index_try_get_fast,
 	entity_index_is_alive = entity_index_is_alive,
 	entity_index_new_id = entity_index_new_id,
+
+	query_iter = query_iter,
+	query_iter_init = query_iter_init,
+	query_with = query_with,
+	query_without = query_without,
+	query_archetypes = query_archetypes,
 }
