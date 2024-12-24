@@ -307,7 +307,7 @@ local function archetype_move(entity_index: EntityIndex, to: Archetype, dst_row:
 	local src_entities = from.entities
 
 	local last = #src_entities
-	local types = from.types
+	local id_types = from.types
 	local records = to.records
 
 	for i, column in src_columns do
@@ -316,12 +316,13 @@ local function archetype_move(entity_index: EntityIndex, to: Archetype, dst_row:
 		end
 		-- Retrieves the new column index from the source archetype's record from each component
 		-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
-		local tr = records[types[i]]
+		local tr = records[id_types[i]]
 
 		-- Sometimes target column may not exist, e.g. when you remove a component.
 		if tr then
 			dst_columns[tr.column][dst_row] = column[src_row]
 		end
+
 		-- If the entity is the last row in the archetype then swapping it would be meaningless.
 		if src_row ~= last then
 			-- Swap rempves columns to ensure there are no holes in the archetype.
@@ -525,7 +526,8 @@ local function id_record_ensure(world: World, id: number): IdRecord
 	if not idr then
 		local flags = ECS_ID_MASK
 		local relation = id
-		if ECS_IS_PAIR(id) then
+		local is_pair = ECS_IS_PAIR(id)
+		if is_pair then
 			relation = ecs_pair_first(world, id)
 		end
 
@@ -541,6 +543,10 @@ local function id_record_ensure(world: World, id: number): IdRecord
 		local on_add, on_set, on_remove = world_get(world, relation, EcsOnAdd, EcsOnSet, EcsOnRemove)
 
 		local is_tag = not world_has_one_inline(world, relation, EcsComponent)
+
+		if is_tag and is_pair then
+			is_tag = not world_has_one_inline(world, ecs_pair_second(world, id), EcsComponent)
+		end
 
 		flags = bit32.bor(
 			flags,
@@ -584,8 +590,6 @@ local function archetype_append_to_records(
 		tr.count += 1
 	end
 end
-
-
 
 local function create_observer_uni(world: World, component: number, event): ecs_partial_t<Observer>
 	local map = world.observerable[event]
@@ -670,18 +674,18 @@ local function world_parent(world: World, entity: i53)
 	return world_target(world, entity, EcsChildOf, 0)
 end
 
-local function archetype_ensure(world: World, types): Archetype
-	if #types < 1 then
+local function archetype_ensure(world: World, id_types): Archetype
+	if #id_types < 1 then
 		return world.ROOT_ARCHETYPE
 	end
 
-	local ty = hash(types)
+	local ty = hash(id_types)
 	local archetype = world.archetypeIndex[ty]
 	if archetype then
 		return archetype
 	end
 
-	return archetype_create(world, types, ty)
+	return archetype_create(world, id_types, ty)
 end
 
 local function find_insert(id_types: { i53 }, toAdd: i53): number
@@ -963,7 +967,7 @@ end
 local function archetype_delete(world: World, archetype: Archetype, row: number, destruct: boolean?)
 	local entityIndex = world.entity_index
 	local columns = archetype.columns
-	local types = archetype.types
+	local id_types = archetype.types
 	local entities = archetype.entities
 	local column_count = #entities
 	local last = #entities
@@ -982,7 +986,7 @@ local function archetype_delete(world: World, archetype: Archetype, row: number,
 
 	-- TODO: if last == 0 then deactivate table
 
-	for _, id in types do
+	for _, id in id_types do
 		local on_remove: (entity: i53) -> () = world_get_one_inline(world, id, EcsOnRemove)
 		if on_remove then
 			on_remove(delete)
@@ -990,9 +994,9 @@ local function archetype_delete(world: World, archetype: Archetype, row: number,
 	end
 
 	if row == last then
-		archetype_fast_delete_last(columns, column_count, types, delete)
+		archetype_fast_delete_last(columns, column_count, id_types, delete)
 	else
-		archetype_fast_delete(columns, column_count, row, types, delete)
+		archetype_fast_delete(columns, column_count, row, id_types, delete)
 	end
 end
 
@@ -1886,23 +1890,21 @@ function World.new()
 	return self
 end
 
-export type Id<T = unknown> = Entity<T> | Pair<Entity<T>, Entity<unknown>>
+export type Id<T = unknown> = Entity<T>
 
-export type Pair<First, Second> = number & {
-	__relation: First,
-}
+type function ecs_entity_t(entity)
+	return entity:components()[2]:readproperty(types.singleton("__T"))
+end
 
--- type function _Pair(first, second)
---     local thing = first:components()[2]
+export type function Pair(first, second)
+    local thing = first:components()[2]
 
--- 	if thing:readproperty(types.singleton("__T")):is("nil") then
--- 		return second
--- 	else
--- 		return first
--- 	end
--- end
-
--- type TestPair = _Pair<Entity<number>, Entity<Vector3>>
+	if thing:readproperty(types.singleton("__T")):is("nil") then
+		return second
+	else
+		return first
+	end
+end
 
 type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 
@@ -1997,7 +1999,14 @@ export type World = {
 	children: (self: World, id: Id) -> () -> Entity,
 
 	--- Searches the world for entities that match a given query
-	query: <A>(self: World, a: { __T: A }) -> Query<A>,
+	query: (<A>(World, A) -> Query<ecs_entity_t<A>>)
+        & (<A, B>(World, A, B) -> Query<ecs_entity_t<A>, ecs_entity_t<B>>)
+        & (<A, B, C>(World, A, B, C) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>>)
+        & (<A, B, C, D>(World, A, B, C, D) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>>)
+        & (<A, B, C, D, E>(World, A, B, C, D, E) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>, ecs_entity_t<E>>)
+        & (<A, B, C, D, E, F>(World, A, B, C, D, E, F) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>, ecs_entity_t<E>, ecs_entity_t<F>>)
+        & (<A, B, C, D, E, F, G>(World, A, B, C, D, E, F, G) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>, ecs_entity_t<E>, ecs_entity_t<F>, ecs_entity_t<G>>)
+        & (<A, B, C, D, E, F, G, H>(World, A, B, C, D, E, F, G, H) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>, ecs_entity_t<E>, ecs_entity_t<F>, ecs_entity_t<G>, ecs_entity_t<H>>)
 }
 
 return {
