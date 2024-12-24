@@ -89,7 +89,8 @@ local EcsOnDeleteTarget = HI_COMPONENT_ID +  8
 local EcsDelete =         HI_COMPONENT_ID +  9
 local EcsRemove =         HI_COMPONENT_ID + 10
 local EcsName =           HI_COMPONENT_ID + 11
-local EcsRest =           HI_COMPONENT_ID + 12
+local EcsTableCreate =    HI_COMPONENT_ID + 12
+local EcsRest =           HI_COMPONENT_ID + 13
 
 local ECS_PAIR_FLAG =                       0x8
 local ECS_ID_FLAGS_MASK =                  0x10
@@ -248,6 +249,40 @@ end
 -- ECS_PAIR_SECOND gets the relationship / pred / LOW bits
 local function ecs_pair_second(world, e)
 	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_LO(e))
+end
+
+local function query_match(query, archetype)
+	local matches = true
+
+	local records = archetype.records
+	for _, id in query.ids do
+		if not records[id] then
+			matches = false
+			break
+		end
+	end
+
+	return matches
+end
+
+local function observer_invoke(observer, event)
+	table.insert(observer.query.compatible_archetypes, event.archetype)
+end
+
+local function emit(world: World, event)
+	local map = world.observerable[event.id]
+	if not map then
+		return
+	end
+	local observer_list: {[string]: any} = map[event.component]
+	if not observer_list then
+		return
+	end
+	for _, observer in observer_list do
+		if query_match(observer.query, event.archetype) then
+			observer_invoke(observer, event)
+		end
+	end
 end
 
 local function archetype_move(entity_index: EntityIndex, to: Archetype, dst_row: i24, from: Archetype, src_row: i24)
@@ -535,15 +570,49 @@ local function archetype_append_to_records(
 	end
 end
 
-local function archetype_create(world: World, types: { i24 }, ty, prev: i53?): Archetype
+local function create_observer_uni(world: World, component: number, event)
+	local map = world.observerable[event]
+	if not map then
+		map = {}
+		world.observerable[event] = map
+	end
+
+	local observer_list = map[component]
+	if not observer_list then
+		observer_list = {}
+		map[component] = observer_list
+	end
+
+	local observer = {}
+
+	table.insert(observer_list, observer)
+
+	return observer
+end
+
+local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?): Archetype
 	local archetype_id = (world.nextArchetypeId :: number) + 1
 	world.nextArchetypeId = archetype_id
 
-	local length = #types
+	local length = #id_types
 	local columns = (table.create(length) :: any) :: { Column }
 
 	local records: { ArchetypeRecord } = {}
-	for i, componentId in types do
+
+	local archetype: Archetype = {
+		columns = columns,
+		entities = {},
+		id = archetype_id,
+		records = records,
+		type = ty,
+		types = id_types,
+
+		add = {},
+		remove = {},
+		refs = {} :: GraphEdge,
+	}
+
+	for i, componentId in id_types do
 		local idr = id_record_ensure(world, componentId)
 		archetype_append_to_records(idr, archetype_id, records, componentId, i)
 
@@ -564,20 +633,9 @@ local function archetype_create(world: World, types: { i24 }, ty, prev: i53?): A
 		else
 			columns[i] = NULL_ARRAY
 		end
+
+		emit(world, { id = EcsTableCreate, component = componentId, archetype = archetype})
 	end
-
-	local archetype: Archetype = {
-		columns = columns,
-		entities = {},
-		id = archetype_id,
-		records = records,
-		type = ty,
-		types = types,
-
-		add = {},
-		remove = {},
-		refs = {} :: GraphEdge,
-	}
 
 	world.archetypeIndex[ty] = archetype
 	world.archetypes[archetype_id] = archetype
@@ -1477,6 +1535,15 @@ local function query_archetypes(query)
 	return query.compatible_archetypes
 end
 
+local function query_cached(query)
+	for _, component in query.ids do
+		local observer = create_observer_uni(query.world, component, EcsTableCreate)
+		observer.query = query
+	end
+
+	return query
+end
+
 local Query = {}
 Query.__index = Query
 Query.__iter = query_iter
@@ -1484,6 +1551,7 @@ Query.iter = query_iter_init
 Query.without = query_without
 Query.with = query_with
 Query.archetypes = query_archetypes
+Query.cached = query_cached
 
 local function world_query(world: World, ...)
 	local compatible_archetypes = {}
@@ -1496,10 +1564,16 @@ local function world_query(world: World, ...)
 	local idr: IdRecord?
 	local componentIndex = world.componentIndex
 
+	local q = setmetatable({
+		ids = ids,
+		compatible_archetypes = compatible_archetypes,
+		world = world,
+	}, Query)
+
 	for _, id in ids do
 		local map = componentIndex[id]
 		if not map then
-			return EMPTY_QUERY
+			return q
 		end
 
 		if idr == nil or map.size < idr.size then
@@ -1508,7 +1582,7 @@ local function world_query(world: World, ...)
 	end
 
 	if not idr then
-		return EMPTY_QUERY
+		return q
 	end
 
 	for archetype_id in idr.cache do
@@ -1535,15 +1609,6 @@ local function world_query(world: World, ...)
 		length += 1
 		compatible_archetypes[length] = compatibleArchetype
 	end
-
-	if length == 0 then
-		return EMPTY_QUERY
-	end
-
-	local q = setmetatable({
-		compatible_archetypes = compatible_archetypes,
-		ids = ids,
-	}, Query) :: any
 
 	return q
 end
@@ -1730,6 +1795,7 @@ function World.new()
 		nextComponentId = 0 :: number,
 		nextEntityId = 0 :: number,
 		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
+		observerable = {}
 	}, World) :: any
 
 	self.ROOT_ARCHETYPE = archetype_create(self, {}, "")
@@ -1793,13 +1859,14 @@ export type Entity<T = unknown> = number & { __T: T }
 
 type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 
-type Query<T...> = typeof(setmetatable({}, {
+export type Query<T...> = typeof(setmetatable({}, {
 	__iter = (nil :: any) :: Iter<T...>,
 })) & {
 	iter: Iter<T...>,
-	with: (self: Query<T...>, ...i53) -> Query<T...>,
-	without: (self: Query<T...>, ...i53) -> Query<T...>,
+	with: (self: Query<T...>, ...Id) -> Query<T...>,
+	without: (self: Query<T...>, ...Id) -> Query<T...>,
 	archetypes: (self: Query<T...>) -> { Archetype },
+	cached: (self: Query<T...>) -> Query<T...>
 }
 
 export type World = {
@@ -1812,6 +1879,8 @@ export type World = {
 	nextComponentId: number,
 	nextEntityId: number,
 	nextArchetypeId: number,
+
+	observerable: { [string]: { [Id]: { query: Query<i53> } } }
 } & {
 	--- Creates a new entity
 	entity: (self: World) -> Entity,
@@ -1854,42 +1923,7 @@ export type World = {
 	children: (self: World, id: Id) -> () -> Entity,
 
 	--- Searches the world for entities that match a given query
-	query: (<A>(self: World, Id<A>) -> Query<A>)
-		& (<A, B>(self: World, Id<A>, Id<B>) -> Query<A, B>)
-		& (<A, B, C>(self: World, Id<A>, Id<B>, Id<C>) -> Query<A, B, C>)
-		& (<A, B, C, D>(self: World, Id<A>, Id<B>, Id<C>, Id<D>) -> Query<A, B, C, D>)
-		& (<A, B, C, D, E>(self: World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>) -> Query<A, B, C, D, E>)
-		& (<A, B, C, D, E, F>(
-			self: World,
-			Id<A>,
-			Id<B>,
-			Id<C>,
-			Id<D>,
-			Id<E>,
-			Id<F>
-		) -> Query<A, B, C, D, E, F>)
-		& (<A, B, C, D, E, F, G>(
-			self: World,
-			Id<A>,
-			Id<B>,
-			Id<C>,
-			Id<D>,
-			Id<E>,
-			Id<F>,
-			Id<G>
-		) -> Query<A, B, C, D, E, F, G>)
-		& (<A, B, C, D, E, F, G, H>(
-			self: World,
-			Id<A>,
-			Id<B>,
-			Id<C>,
-			Id<D>,
-			Id<E>,
-			Id<F>,
-			Id<G>,
-			Id<H>,
-			...Id<any>
-		) -> Query<A, B, C, D, E, F, G, H>),
+	query: (<A>(self: World, a: { __T: A }) -> Query<A>)
 }
 
 return {
