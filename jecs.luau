@@ -684,8 +684,8 @@ local function archetype_ensure(world: World, types): Archetype
 	return archetype_create(world, types, ty)
 end
 
-local function find_insert(types: { i53 }, toAdd: i53): number
-	for i, id in types do
+local function find_insert(id_types: { i53 }, toAdd: i53): number
+	for i, id in id_types do
 		if id == toAdd then
 			return -1
 		end
@@ -693,17 +693,17 @@ local function find_insert(types: { i53 }, toAdd: i53): number
 			return i
 		end
 	end
-	return #types + 1
+	return #id_types + 1
 end
 
 local function find_archetype_with(world: World, node: Archetype, id: i53): Archetype
-	local types = node.types
+	local id_types = node.types
 	-- Component IDs are added incrementally, so inserting and sorting
 	-- them each time would be expensive. Instead this insertion sort can find the insertion
 	-- point in the types array.
 
 	local dst = table.clone(node.types) :: { i53 }
-	local at = find_insert(types, id)
+	local at = find_insert(id_types, id)
 	if at == -1 then
 		-- If it finds a duplicate, it just means it is the same archetype so it can return it
 		-- directly instead of needing to hash types for a lookup to the archetype.
@@ -715,13 +715,13 @@ local function find_archetype_with(world: World, node: Archetype, id: i53): Arch
 end
 
 local function find_archetype_without(world: World, node: Archetype, id: i53): Archetype
-	local types = node.types
-	local at = table.find(types, id)
+	local id_types = node.types
+	local at = table.find(id_types, id)
 	if at == nil then
 		return node
 	end
 
-	local dst = table.clone(types)
+	local dst = table.clone(id_types)
 	table.remove(dst, at)
 
 	return archetype_ensure(world, dst)
@@ -1576,15 +1576,18 @@ end
 local function query_cached(query: QueryInner)
 	local archetypes = query.compatible_archetypes
 	local world = query.world :: World
-	local observer_1 = create_observer_uni(world, query.ids[1], EcsArchetypeCreate)
-	observer_1.query = query
-	observer_1.callback = function(archetype)
+	-- Only need one observer for EcsArchetypeCreate and EcsArchetypeDelete respectively
+	-- because the event will be emitted for all components of that Archetype.
+	local first = query.ids[1]
+	local observer_for_create = create_observer_uni(world, first, EcsArchetypeCreate)
+	observer_for_create.query = query
+	observer_for_create.callback = function(archetype)
 		table.insert(archetypes, archetype)
 	end
-	local observer_2 = create_observer_uni(world, query.ids[1], EcsArchetypeDelete)
-	observer_2.query = query
-	observer_2.callback = function(archetype)
-		local i = table.find(archetypes, archetype)
+	local observer_for_delete = create_observer_uni(world, first, EcsArchetypeDelete)
+	observer_for_delete.query = query
+	observer_for_delete.callback = function(archetype)
+		local i = table.find(archetypes, archetype)  :: number
 		local n = #archetypes
 		archetypes[i] = archetypes[n]
 		archetypes[n] = nil
