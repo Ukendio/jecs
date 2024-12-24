@@ -372,6 +372,9 @@ TEST("world:query()", function()
 		end
 		CHECK(#q:archetypes() == 1)
 		CHECK(not table.find(q:archetypes(), world.archetypes[table.concat({Foo, Bar, Baz}, "_")]))
+		world:delete(Foo)
+		print(#q:archetypes())
+		CHECK(#q:archetypes() == 0)
 	end
 	do CASE("multiple iter")
 		local world = jecs.World.new()

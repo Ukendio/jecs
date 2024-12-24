@@ -78,31 +78,32 @@ type EntityIndex = {
 
 local HI_COMPONENT_ID = _G.__JECS_HI_COMPONENT_ID or 256
 -- stylua: ignore start
-local EcsOnAdd =          HI_COMPONENT_ID +  1
-local EcsOnRemove =       HI_COMPONENT_ID +  2
-local EcsOnSet =          HI_COMPONENT_ID +  3
-local EcsWildcard =       HI_COMPONENT_ID +  4
-local EcsChildOf =        HI_COMPONENT_ID +  5
-local EcsComponent =      HI_COMPONENT_ID +  6
-local EcsOnDelete =       HI_COMPONENT_ID +  7
-local EcsOnDeleteTarget = HI_COMPONENT_ID +  8
-local EcsDelete =         HI_COMPONENT_ID +  9
-local EcsRemove =         HI_COMPONENT_ID + 10
-local EcsName =           HI_COMPONENT_ID + 11
-local EcsTableCreate =    HI_COMPONENT_ID + 12
-local EcsRest =           HI_COMPONENT_ID + 13
+local EcsOnAdd =           HI_COMPONENT_ID +  1
+local EcsOnRemove =        HI_COMPONENT_ID +  2
+local EcsOnSet =           HI_COMPONENT_ID +  3
+local EcsWildcard =        HI_COMPONENT_ID +  4
+local EcsChildOf =         HI_COMPONENT_ID +  5
+local EcsComponent =       HI_COMPONENT_ID +  6
+local EcsOnDelete =        HI_COMPONENT_ID +  7
+local EcsOnDeleteTarget =  HI_COMPONENT_ID +  8
+local EcsDelete =          HI_COMPONENT_ID +  9
+local EcsRemove =          HI_COMPONENT_ID + 10
+local EcsName =            HI_COMPONENT_ID + 11
+local EcsArchetypeCreate = HI_COMPONENT_ID + 12
+local EcsArchetypeDelete = HI_COMPONENT_ID + 13
+local EcsRest =            HI_COMPONENT_ID + 14
 
 local ECS_PAIR_FLAG =                       0x8
 local ECS_ID_FLAGS_MASK =                  0x10
 local ECS_ENTITY_MASK =     bit32.lshift(1, 24)
 local ECS_GENERATION_MASK = bit32.lshift(1, 16)
 
-local ECS_ID_DELETE =              0b0000_0001
-local ECS_ID_IS_TAG =              0b0000_0010
-local ECS_ID_HAS_ON_ADD =          0b0000_0100
-local ECS_ID_HAS_ON_SET =          0b0000_1000
-local ECS_ID_HAS_ON_REMOVE =       0b0001_0000
-local ECS_ID_MASK =                0b0000_0000
+local ECS_ID_DELETE =               0b0000_0001
+local ECS_ID_IS_TAG =               0b0000_0010
+local ECS_ID_HAS_ON_ADD =           0b0000_0100
+local ECS_ID_HAS_ON_SET =           0b0000_1000
+local ECS_ID_HAS_ON_REMOVE =        0b0001_0000
+local ECS_ID_MASK =                 0b0000_0000
 -- stylua: ignore end
 local NULL_ARRAY = table.freeze({}) :: Column
 
@@ -251,7 +252,7 @@ local function ecs_pair_second(world, e)
 	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_LO(e))
 end
 
-local function query_match(query, archetype)
+local function query_match(query: any, archetype: Archetype)
 	local records = archetype.records
 	for _, id in query.ids do
 		if not records[id] then
@@ -282,22 +283,19 @@ local function query_match(query, archetype)
 	return true
 end
 
-local function observer_invoke(observer, event)
-	table.insert(observer.query.compatible_archetypes, event.archetype)
-end
-
-local function emit(world: World, event)
-	local map = world.observerable[event.id]
-	if not map then
+local function emit(world: World, event, component, archetype: Archetype)
+	local cache = world.observerable[event]
+	if not cache then
 		return
 	end
-	local observer_list: {[string]: any} = map[event.component]
+	local observer_list = cache[component]
 	if not observer_list then
 		return
 	end
+
 	for _, observer in observer_list do
-		if query_match(observer.query, event.archetype) then
-			observer_invoke(observer, event)
+		if query_match(observer.query, archetype) then
+			observer.callback(archetype)
 		end
 	end
 end
@@ -650,11 +648,10 @@ local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?)
 		else
 			columns[i] = NULL_ARRAY
 		end
-
 	end
 
 	for _, id in id_types do
-		emit(world, { id = EcsTableCreate, component = id, archetype = archetype})
+		emit(world, EcsArchetypeCreate, id, archetype)
 	end
 
 	world.archetypeIndex[ty] = archetype
@@ -1079,6 +1076,10 @@ local function archetype_destroy(world: World, archetype: Archetype)
 	local records = archetype.records
 
 	for id in records do
+		emit(world, EcsArchetypeDelete, id, archetype)
+	end
+
+	for id in records do
 		local idr = component_index[id]
 		idr.cache[archetype_id] = nil :: any
 		idr.size -= 1
@@ -1136,23 +1137,30 @@ do
 		local idr = component_index[delete]
 
 		if idr then
-			local children = {}
-			for archetype_id in idr.cache do
-				local idr_archetype = archetypes[archetype_id]
-
-				for i, child in idr_archetype.entities do
-					table.insert(children, child)
-				end
-			end
 			local flags = idr.flags
 			if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
-				for _, child in children do
-					-- Cascade deletion to children
-					world_delete(world, child)
+				for archetype_id in idr.cache do
+					local idr_archetype = archetypes[archetype_id]
+
+					local entities = idr_archetype.entities
+					local n = #entities
+					for i = n, 1, -1 do
+						world_delete(world, entities[i])
+					end
 				end
 			else
-				for _, child in children do
-					world_remove(world, child, delete)
+				for archetype_id in idr.cache do
+					local idr_archetype = archetypes[archetype_id]
+					local entities = idr_archetype.entities
+					local n = #entities
+					for i = n, 1, -1 do
+						world_remove(world, entities[i], delete)
+					end
+				end
+
+				for archetype_id in idr.cache do
+					local idr_archetype = archetypes[archetype_id]
+					archetype_destroy(world, idr_archetype)
 				end
 			end
 		end
@@ -1564,8 +1572,20 @@ local function query_archetypes(query)
 end
 
 local function query_cached(query)
-	local observer = create_observer_uni(query.world, query.ids[1], EcsTableCreate)
-	observer.query = query
+	local archetypes = query.compatible_archetypes
+	local observer_1 = create_observer_uni(query.world, query.ids[1], EcsArchetypeCreate)
+	observer_1.query = query
+	observer_1.callback = function(archetype)
+		table.insert(archetypes, archetype)
+	end
+	local observer_2 = create_observer_uni(query.world, query.ids[1], EcsArchetypeDelete)
+	observer_2.query = query
+	observer_2.callback = function(archetype)
+		local i = table.find(archetypes, archetype)
+		local n = #archetypes
+		archetypes[i] = archetypes[n]
+		archetypes[n] = nil
+	end
 	return query
 end
 
@@ -1820,7 +1840,7 @@ function World.new()
 		nextComponentId = 0 :: number,
 		nextEntityId = 0 :: number,
 		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
-		observerable = {}
+		observerable = {},
 	}, World) :: any
 
 	self.ROOT_ARCHETYPE = archetype_create(self, {}, "")
@@ -1891,7 +1911,7 @@ export type Query<T...> = typeof(setmetatable({}, {
 	with: (self: Query<T...>, ...Id) -> Query<T...>,
 	without: (self: Query<T...>, ...Id) -> Query<T...>,
 	archetypes: (self: Query<T...>) -> { Archetype },
-	cached: (self: Query<T...>) -> Query<T...>
+	cached: (self: Query<T...>) -> Query<T...>,
 }
 
 export type World = {
@@ -1905,7 +1925,7 @@ export type World = {
 	nextEntityId: number,
 	nextArchetypeId: number,
 
-	observerable: { [string]: { [Id]: { query: Query<i53> } } }
+	observerable: { [i53]: { [i53]: { { query: Query<i53> } } } },
 } & {
 	--- Creates a new entity
 	entity: (self: World) -> Entity,
@@ -1948,7 +1968,7 @@ export type World = {
 	children: (self: World, id: Id) -> () -> Entity,
 
 	--- Searches the world for entities that match a given query
-	query: (<A>(self: World, a: { __T: A }) -> Query<A>)
+	query: <A>(self: World, a: { __T: A }) -> Query<A>,
 }
 
 return {
