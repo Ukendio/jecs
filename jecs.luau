@@ -634,7 +634,10 @@ local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?)
 			columns[i] = NULL_ARRAY
 		end
 
-		emit(world, { id = EcsTableCreate, component = componentId, archetype = archetype})
+	end
+
+	for _, id in id_types do
+		emit(world, { id = EcsTableCreate, component = id, archetype = archetype})
 	end
 
 	world.archetypeIndex[ty] = archetype
@@ -1536,11 +1539,8 @@ local function query_archetypes(query)
 end
 
 local function query_cached(query)
-	for _, component in query.ids do
-		local observer = create_observer_uni(query.world, component, EcsTableCreate)
-		observer.query = query
-	end
-
+	local observer = create_observer_uni(query.world, query.ids[1], EcsTableCreate)
+	observer.query = query
 	return query
 end
 
