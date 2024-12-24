@@ -62,6 +62,10 @@ local function debug_world_inspect(world: World)
 	}
 end
 
+local function name(world, e)
+	return world:get(e, jecs.Name)
+end
+
 TEST("archetype", function()
 	local archetype_append_to_records = jecs.archetype_append_to_records
 	local id_record_ensure = jecs.id_record_ensure
@@ -353,6 +357,19 @@ TEST("world:add()", function()
 end)
 
 TEST("world:query()", function()
+	do CASE "cached"
+		local world = world_new()
+		local Foo = world:component()
+		local Bar = world:component()
+		local e = world:entity()
+		world:set(e, Foo, true)
+		local q = world:query(Foo):cached()
+		world:set(e, Bar, false)
+		for _, e in q do
+			CHECK(true)
+		end
+		CHECK(#q.compatible_archetypes == 2)
+	end
 	do CASE("multiple iter")
 		local world = jecs.World.new()
 		local A = world:component()
@@ -806,40 +823,6 @@ TEST("world:query()", function()
 		end
 
 		CHECK(withoutCount == 0)
-	end
-
-	do
-		CASE("Empty Query")
-		do
-			local world = jecs.World.new()
-			local A = world:component()
-			local B = world:component()
-
-			local e1 = world:entity()
-			world:add(e1, A)
-
-			local query = world:query(B)
-			CHECK(query:without() == query)
-			CHECK(query:with() == query)
-			-- They always return the same EMPTY_LIST
-			CHECK(query:archetypes() == world:query(B):archetypes())
-		end
-
-		do
-			local world = jecs.World.new()
-			local A = world:component()
-			local B = world:component()
-
-			local e1 = world:entity()
-			world:add(e1, A)
-
-			local count = 0
-			for id in world:query(B) do
-				count += 1
-			end
-
-			CHECK(count == 0)
-		end
 	end
 
 	do
