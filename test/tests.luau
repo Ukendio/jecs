@@ -165,8 +165,7 @@ TEST("world:entity()", function()
 		CHECK(ECS_GENERATION(e) == 1) -- 1
 	end
 
-	do
-		CASE("pairs")
+	do CASE("pairs")
 		local world = jecs.World.new()
 		local _e = world:entity()
 		local e2 = world:entity()
@@ -175,11 +174,17 @@ TEST("world:entity()", function()
 		-- Incomplete pair, must have a bit flag that notes it is a pair
 		CHECK(IS_PAIR(world:entity()) == false)
 
-		local pair = pair(e2, e3)
-		CHECK(IS_PAIR(pair) == true)
+		local p = pair(e2, e3)
+		CHECK(IS_PAIR(p) == true)
 
-		CHECK(ecs_pair_first(world, pair) == e2)
-		CHECK(ecs_pair_second(world, pair) == e3)
+		CHECK(ecs_pair_first(world, p) == e2)
+		CHECK(ecs_pair_second(world, p) == e3)
+
+		world:delete(e2)
+		local e2v2 = world:entity()
+		CHECK(IS_PAIR(e2v2) == false)
+
+		CHECK(IS_PAIR(pair(e2v2, e3)) == true)
 	end
 
 	do CASE "Recycling"
@@ -281,7 +286,7 @@ TEST("world:set()", function()
 
 		CHECK(world:get(e, pair(C1, C2)))
 		CHECK(world:get(e, pair(C1, T1)))
-		CHECK(not world:get(e, pair(T1, C1)))
+		CHECK(world:get(e, pair(T1, C1)))
 		CHECK(not world:get(e, pair(T1, T2)))
 
 		local e2 = world:entity()
@@ -399,7 +404,7 @@ TEST("world:query()", function()
 		for id, a, b, c, d in world:query(pair(C1, C2), pair(C1, T1), pair(T1, C1), pair(T1, T2)) do
 			CHECK(a == true)
 			CHECK(b == true)
-			CHECK(c == nil)
+			CHECK(c == true)
 			CHECK(d == nil)
 		end
 	end
