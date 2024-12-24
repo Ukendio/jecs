@@ -252,52 +252,60 @@ local function ecs_pair_second(world, e)
 	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_LO(e))
 end
 
-local function query_match(query: any, archetype: Archetype)
-	local records = archetype.records
-	for _, id in query.ids do
+local function query_match_filter_with(records: { ArchetypeRecord }, with)
+	if not with then
+		return true
+	end
+
+	for _, id in with do
 		if not records[id] then
 			return false
 		end
 	end
+	return true
+end
+
+local function query_match_filter_without(records: { ArchetypeRecord }, without)
+	if not without then
+		return true
+	end
+
+	for _, id in without do
+		if records[id] then
+			return false
+		end
+	end
+	return true
+end
+local function query_match(query: any, archetype: Archetype)
+	local records = archetype.records
+	if not query_match_filter_with(records, query.ids) then
+		return false
+	end
 
 	local filters = query.filters
 	if filters then
-		local without = filters.without
-		if without then
-			for _, id in filters.without do
-				if records[id] then
-					return false
-				end
-			end
+		local matched_without = query_match_filter_without(
+			records, filters.without)
+		if not matched_without then
+			return false
 		end
-		local with = filters.with
-		if with then
-			for _, id in filters.without do
-				if not records[id] then
-					return false
-				end
-			end
+		local matched_with = query_match_filter_with(
+			records, filters.with)
+		if not matched_with then
+			return false
 		end
 	end
 
 	return true
 end
 
-local function emit(world: World, event, component, archetype: Archetype)
+local function find_observers(world: World, event, component): { Observer }?
 	local cache = world.observerable[event]
 	if not cache then
-		return
+		return nil
 	end
-	local observer_list = cache[component]
-	if not observer_list then
-		return
-	end
-
-	for _, observer in observer_list do
-		if query_match(observer.query, archetype) then
-			observer.callback(archetype)
-		end
-	end
+	return cache[component] :: any
 end
 
 local function archetype_move(entity_index: EntityIndex, to: Archetype, dst_row: i24, from: Archetype, src_row: i24)
@@ -591,26 +599,6 @@ local function archetype_append_to_records(
 	end
 end
 
-local function create_observer_uni(world: World, component: number, event): ecs_partial_t<Observer>
-	local map = world.observerable[event]
-	if not map then
-		map = {}
-		world.observerable[event] = map
-	end
-
-	local observer_list = map[component]
-	if not observer_list then
-		observer_list = {}
-		map[component] = observer_list
-	end
-
-	local observer = {}
-
-	table.insert(observer_list, observer)
-
-	return observer :: any
-end
-
 local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?): Archetype
 	local archetype_id = (world.nextArchetypeId :: number) + 1
 	world.nextArchetypeId = archetype_id
@@ -657,7 +645,15 @@ local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?)
 	end
 
 	for _, id in id_types do
-		emit(world, EcsArchetypeCreate, id, archetype)
+		local observer_list = find_observers(world, EcsArchetypeCreate, id)
+		if not observer_list then
+			continue
+		end
+		for _, observer in observer_list do
+			if query_match(observer.query, archetype) then
+				observer.callback(archetype)
+			end
+		end
 	end
 
 	world.archetypeIndex[ty] = archetype
@@ -1082,7 +1078,15 @@ local function archetype_destroy(world: World, archetype: Archetype)
 	local records = archetype.records
 
 	for id in records do
-		emit(world, EcsArchetypeDelete, id, archetype)
+		local observer_list = find_observers(world, EcsArchetypeDelete, id)
+		if not observer_list then
+			continue
+		end
+		for _, observer in observer_list do
+			if query_match(observer.query, archetype) then
+				observer.callback(archetype)
+			end
+		end
 	end
 
 	for id in records do
@@ -1583,19 +1587,46 @@ local function query_cached(query: QueryInner)
 	-- Only need one observer for EcsArchetypeCreate and EcsArchetypeDelete respectively
 	-- because the event will be emitted for all components of that Archetype.
 	local first = query.ids[1]
-	local observer_for_create = create_observer_uni(world, first, EcsArchetypeCreate)
-	observer_for_create.query = query
-	observer_for_create.callback = function(archetype)
+	local observerable = world.observerable
+	local on_create_action = observerable[EcsArchetypeCreate]
+	if not on_create_action then
+		on_create_action = {}
+		observerable[EcsArchetypeCreate] = on_create_action
+	end
+	local query_cache_on_create = on_create_action[first]
+	if not query_cache_on_create then
+		query_cache_on_create = {}
+		on_create_action[first] = query_cache_on_create
+	end
+
+	local on_delete_action = observerable[EcsArchetypeDelete]
+	if not on_delete_action then
+		on_delete_action = {}
+		observerable[EcsArchetypeDelete] = on_delete_action
+	end
+	local query_cache_on_delete = on_delete_action[first]
+	if not query_cache_on_delete then
+		query_cache_on_delete = {}
+		on_delete_action[first] = query_cache_on_delete
+	end
+
+	local function on_create_callback(archetype)
 		table.insert(archetypes, archetype)
 	end
-	local observer_for_delete = create_observer_uni(world, first, EcsArchetypeDelete)
-	observer_for_delete.query = query
-	observer_for_delete.callback = function(archetype)
+
+	local function on_delete_callback(archetype)
 		local i = table.find(archetypes, archetype)  :: number
 		local n = #archetypes
 		archetypes[i] = archetypes[n]
 		archetypes[n] = nil
 	end
+
+	local observer_for_create = { query = query, callback = on_create_callback }
+	local observer_for_delete = { query = query, callback = on_delete_callback }
+
+	table.insert(query_cache_on_create, observer_for_create)
+	table.insert(query_cache_on_delete, observer_for_delete)
+
 	return query
 end
 
@@ -1896,7 +1927,7 @@ type function ecs_entity_t(entity)
 	return entity:components()[2]:readproperty(types.singleton("__T"))
 end
 
-export type function Pair(first, second)
+type function Pair(first, second)
     local thing = first:components()[2]
 
 	if thing:readproperty(types.singleton("__T")):is("nil") then
