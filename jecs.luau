@@ -1733,6 +1733,10 @@ end
 
 export type Id<T = unknown> = Entity<T>
 
+type function ecs_entity_t(entity)
+	return entity:components()[2]:readproperty(types.singleton("__T"))
+end
+
 export type function Pair(first, second)
     local thing = first:components()[2]
 
@@ -1806,42 +1810,14 @@ export type World = {
 	contains: (self: World, entity: Entity) -> boolean,
 
 	--- Searches the world for entities that match a given query
-	query: (<A>(self: World, Id<A>) -> Query<A>)
-		& (<A, B>(self: World, Id<A>, Id<B>) -> Query<A, B>)
-		& (<A, B, C>(self: World, Id<A>, Id<B>, Id<C>) -> Query<A, B, C>)
-		& (<A, B, C, D>(self: World, Id<A>, Id<B>, Id<C>, Id<D>) -> Query<A, B, C, D>)
-		& (<A, B, C, D, E>(self: World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>) -> Query<A, B, C, D, E>)
-		& (<A, B, C, D, E, F>(
-			self: World,
-			Id<A>,
-			Id<B>,
-			Id<C>,
-			Id<D>,
-			Id<E>,
-			Id<F>
-		) -> Query<A, B, C, D, E, F>)
-		& (<A, B, C, D, E, F, G>(
-			self: World,
-			Id<A>,
-			Id<B>,
-			Id<C>,
-			Id<D>,
-			Id<E>,
-			Id<F>,
-			Id<G>
-		) -> Query<A, B, C, D, E, F, G>)
-		& (<A, B, C, D, E, F, G, H>(
-			self: World,
-			Id<A>,
-			Id<B>,
-			Id<C>,
-			Id<D>,
-			Id<E>,
-			Id<F>,
-			Id<G>,
-			Id<H>,
-			...Id<any>
-		) -> Query<A, B, C, D, E, F, G, H>),
+	query: (<A>(World, A) -> Query<ecs_entity_t<A>>)
+        & (<A, B>(World, A, B) -> Query<ecs_entity_t<A>, ecs_entity_t<B>>)
+        & (<A, B, C>(World, A, B, C) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>>)
+        & (<A, B, C, D>(World, A, B, C, D) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>>)
+        & (<A, B, C, D, E>(World, A, B, C, D, E) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>, ecs_entity_t<E>>)
+        & (<A, B, C, D, E, F>(World, A, B, C, D, E, F) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>, ecs_entity_t<E>, ecs_entity_t<F>>)
+        & (<A, B, C, D, E, F, G>(World, A, B, C, D, E, F, G) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>, ecs_entity_t<E>, ecs_entity_t<F>, ecs_entity_t<G>>)
+        & (<A, B, C, D, E, F, G, H>(World, A, B, C, D, E, F, G, H) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>, ecs_entity_t<E>, ecs_entity_t<F>, ecs_entity_t<G>, ecs_entity_t<H>>)
 }
 
 return {
