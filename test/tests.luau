@@ -371,10 +371,25 @@ TEST("world:query()", function()
 		local q = world:query(Foo, Bar):without(Baz):cached()
 		world:set(e, Foo, true)
 		world:set(e, Bar, false)
-		world:set(e, Baz, true)
-		for _, e in q do
-			CHECK(true)
+		local i = 0
+
+		for _, e in q:iter() do
+			i=1
 		end
+		CHECK(i == 1)
+		for _, e in q:iter() do
+			i=2
+		end
+		CHECK(i == 2)
+		for _, e in q do
+			i=3
+		end
+		CHECK(i == 3)
+		for _, e in q do
+			i=4
+		end
+		CHECK(i == 4)
+
 		CHECK(#q:archetypes() == 1)
 		CHECK(not table.find(q:archetypes(), world.archetypes[table.concat({Foo, Bar, Baz}, "_")]))
 		world:delete(Foo)

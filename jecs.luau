@@ -252,15 +252,22 @@ local function ecs_pair_second(world, e)
 	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_LO(e))
 end
 
-local function query_match(terms: { {i53 }}, archetype: Archetype)
+local function query_match(query, archetype: Archetype)
 	local records = archetype.records
+	local with = query.filter_with
 
-	for _, term in terms do
-		local id = term[1]
-		local out = term[2]
-		local has = records[id] ~= nil
-		if has ~= not out then
+	for _, id in with do
+		if not records[id] then
 			return false
+		end
+	end
+
+	local without = query.filter_without
+	if not without then
+		for _, id in without do
+			if records[id] then
+				return false
+			end
 		end
 	end
 
@@ -617,7 +624,7 @@ local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?)
 			continue
 		end
 		for _, observer in observer_list do
-			if query_match(observer.terms, archetype) then
+			if query_match(observer.query, archetype) then
 				observer.callback(archetype)
 			end
 		end
@@ -1050,7 +1057,7 @@ local function archetype_destroy(world: World, archetype: Archetype)
 			continue
 		end
 		for _, observer in observer_list do
-			if query_match(observer.terms, archetype) then
+			if query_match(observer.query, archetype) then
 				observer.callback(archetype)
 			end
 		end
@@ -1224,7 +1231,7 @@ local EMPTY_QUERY = {
 
 setmetatable(EMPTY_QUERY, EMPTY_QUERY)
 
-local function query_iter_init(query): () -> (number, ...any)
+local function query_iter_init(query: QueryInner): () -> (number, ...any)
 	local world_query_iter_next
 
 	local compatible_archetypes = query.compatible_archetypes
@@ -1303,7 +1310,326 @@ local function query_iter_init(query): () -> (number, ...any)
 				i = #entities
 				entityId = entities[i]
 				columns = archetype.columns
-				local records = archetype.records
+				records = archetype.records
+				a = columns[records[A].column]
+			end
+
+			local row = i
+			i -= 1
+
+			return entityId, a[row]
+		end
+	elseif not C then
+		function world_query_iter_next(): any
+			local entityId = entities[i]
+			while entityId == nil do
+				lastArchetype += 1
+				archetype = compatible_archetypes[lastArchetype]
+				if not archetype then
+					return nil
+				end
+
+				entities = archetype.entities
+				i = #entities
+				entityId = entities[i]
+				columns = archetype.columns
+				records = archetype.records
+				a = columns[records[A].column]
+				b = columns[records[B].column]
+			end
+
+			local row = i
+			i -= 1
+
+			return entityId, a[row], b[row]
+		end
+	elseif not D then
+		function world_query_iter_next(): any
+			local entityId = entities[i]
+			while entityId == nil do
+				lastArchetype += 1
+				archetype = compatible_archetypes[lastArchetype]
+				if not archetype then
+					return nil
+				end
+
+				entities = archetype.entities
+				i = #entities
+				entityId = entities[i]
+				columns = archetype.columns
+				records = archetype.records
+				a = columns[records[A].column]
+				b = columns[records[B].column]
+				c = columns[records[C].column]
+			end
+
+			local row = i
+			i -= 1
+
+			return entityId, a[row], b[row], c[row]
+		end
+	elseif not E then
+		function world_query_iter_next(): any
+			local entityId = entities[i]
+			while entityId == nil do
+				lastArchetype += 1
+				archetype = compatible_archetypes[lastArchetype]
+				if not archetype then
+					return nil
+				end
+
+				entities = archetype.entities
+				i = #entities
+				entityId = entities[i]
+				columns = archetype.columns
+				records = archetype.records
+				a = columns[records[A].column]
+				b = columns[records[B].column]
+				c = columns[records[C].column]
+				d = columns[records[D].column]
+			end
+
+			local row = i
+			i -= 1
+
+			return entityId, a[row], b[row], c[row], d[row]
+		end
+	else
+		local queryOutput = {}
+		function world_query_iter_next(): any
+			local entityId = entities[i]
+			while entityId == nil do
+				lastArchetype += 1
+				archetype = compatible_archetypes[lastArchetype]
+				if not archetype then
+					return nil
+				end
+
+				entities = archetype.entities
+				i = #entities
+				entityId = entities[i]
+				columns = archetype.columns
+				records = archetype.records
+
+				if not F then
+					a = columns[records[A].column]
+					b = columns[records[B].column]
+					c = columns[records[C].column]
+					d = columns[records[D].column]
+					e = columns[records[E].column]
+				elseif not G then
+					a = columns[records[A].column]
+					b = columns[records[B].column]
+					c = columns[records[C].column]
+					d = columns[records[D].column]
+					e = columns[records[E].column]
+					f = columns[records[F].column]
+				elseif not H then
+					a = columns[records[A].column]
+					b = columns[records[B].column]
+					c = columns[records[C].column]
+					d = columns[records[D].column]
+					e = columns[records[E].column]
+					f = columns[records[F].column]
+					g = columns[records[G].column]
+				elseif not I then
+					a = columns[records[A].column]
+					b = columns[records[B].column]
+					c = columns[records[C].column]
+					d = columns[records[D].column]
+					e = columns[records[E].column]
+					f = columns[records[F].column]
+					g = columns[records[G].column]
+					h = columns[records[H].column]
+				end
+			end
+
+			local row = i
+			i -= 1
+
+			if not F then
+				return entityId, a[row], b[row], c[row], d[row], e[row]
+			elseif not G then
+				return entityId, a[row], b[row], c[row], d[row], e[row], f[row]
+			elseif not H then
+				return entityId, a[row], b[row], c[row], d[row], e[row], f[row], g[row]
+			elseif not I then
+				return entityId, a[row], b[row], c[row], d[row], e[row], f[row], g[row], h[row]
+			end
+
+			local records = archetype.records
+			for j, id in ids do
+				queryOutput[j] = columns[records[id].column][row]
+			end
+
+			return entityId, unpack(queryOutput)
+		end
+	end
+
+	query.next = world_query_iter_next
+	return world_query_iter_next
+end
+
+local function query_iter(query): () -> (number, ...any)
+	local query_next = query.next
+	if not query_next then
+		query_next = query_iter_init(query)
+	end
+	return query_next
+end
+
+local function query_without(query: QueryInner, ...: i53)
+	local without = { ... }
+	query.filter_without = without
+	local compatible_archetypes = query.compatible_archetypes
+	for i = #compatible_archetypes, 1, -1 do
+		local archetype = compatible_archetypes[i]
+		local records = archetype.records
+		local matches = true
+
+		for _, id in without do
+			if records[id] then
+				matches = false
+				break
+			end
+		end
+
+		if matches then
+			continue
+		end
+
+		local last = #compatible_archetypes
+		if last ~= i then
+			compatible_archetypes[i] = compatible_archetypes[last]
+		end
+		compatible_archetypes[last] = nil :: any
+	end
+
+	return query :: any
+end
+
+local function query_with(query: QueryInner, ...: i53)
+	local compatible_archetypes = query.compatible_archetypes
+	local with = { ... }
+	query.filter_with = with
+
+	for i = #compatible_archetypes, 1, -1 do
+		local archetype = compatible_archetypes[i]
+		local records = archetype.records
+		local matches = true
+
+		for _, id in with do
+			if not records[id] then
+				matches = false
+				break
+			end
+		end
+
+		if matches then
+			continue
+		end
+
+		local last = #compatible_archetypes
+		if last ~= i then
+			compatible_archetypes[i] = compatible_archetypes[last]
+		end
+		compatible_archetypes[last] = nil :: any
+	end
+
+	return query :: any
+end
+
+-- Meant for directly iterating over archetypes to minimize
+-- function call overhead. Should not be used unless iterating over
+-- hundreds of thousands of entities in bulk.
+local function query_archetypes(query)
+	return query.compatible_archetypes
+end
+
+local function query_cached(query: QueryInner)
+	local archetypes = query.compatible_archetypes
+	local world = query.world :: World
+	-- Only need one observer for EcsArchetypeCreate and EcsArchetypeDelete respectively
+	-- because the event will be emitted for all components of that Archetype.
+	local first = query.ids[1]
+	local observerable = world.observerable
+	local on_create_action = observerable[EcsArchetypeCreate]
+	if not on_create_action then
+		on_create_action = {}
+		observerable[EcsArchetypeCreate] = on_create_action
+	end
+	local query_cache_on_create = on_create_action[first]
+	if not query_cache_on_create then
+		query_cache_on_create = {}
+		on_create_action[first] = query_cache_on_create
+	end
+
+	local on_delete_action = observerable[EcsArchetypeDelete]
+	if not on_delete_action then
+		on_delete_action = {}
+		observerable[EcsArchetypeDelete] = on_delete_action
+	end
+	local query_cache_on_delete = on_delete_action[first]
+	if not query_cache_on_delete then
+		query_cache_on_delete = {}
+		on_delete_action[first] = query_cache_on_delete
+	end
+
+	local function on_create_callback(archetype)
+		table.insert(archetypes, archetype)
+	end
+
+	local function on_delete_callback(archetype)
+		local i = table.find(archetypes, archetype)  :: number
+		local n = #archetypes
+		archetypes[i] = archetypes[n]
+		archetypes[n] = nil
+	end
+
+	local with = query.filter_with
+	local ids = query.ids
+	if with then
+		table.move(ids, 1, #ids, #with, with)
+	else
+		query.filter_with = ids
+	end
+
+	local observer_for_create = { query = query, callback = on_create_callback }
+	local observer_for_delete = { query = query, callback = on_delete_callback }
+
+	table.insert(query_cache_on_create, observer_for_create)
+	table.insert(query_cache_on_delete, observer_for_delete)
+
+	local compatible_archetypes = query.compatible_archetypes
+	local lastArchetype = 1
+
+	local ids = query.ids
+	local A, B, C, D, E, F, G, H, I = unpack(ids)
+	local a: Column, b: Column, c: Column, d: Column
+	local e: Column, f: Column, g: Column, h: Column
+
+	local world_query_iter_next
+	local columns: { Column }
+	local entities: { i53 }
+	local i: number
+	local archetype: Archetype
+	local records: { ArchetypeRecord }
+
+	if not B then
+		function world_query_iter_next(): any
+			local entityId = entities[i]
+			while entityId == nil do
+				lastArchetype += 1
+				archetype = compatible_archetypes[lastArchetype]
+				if not archetype then
+					return nil
+				end
+
+				entities = archetype.entities
+				i = #entities
+				entityId = entities[i]
+				columns = archetype.columns
+				records = archetype.records
 				a = columns[records[A].column]
 			end
 
@@ -1459,163 +1785,72 @@ local function query_iter_init(query): () -> (number, ...any)
 		end
 	end
 
-	query.next = world_query_iter_next
-	return world_query_iter_next
-end
-
-local function query_iter(query): () -> (number, ...any)
-	local query_next = query.next
-	if not query_next then
-		query_next = query_iter_init(query)
-	end
-	return query_next
-end
-
-local function query_without(query: QueryInner, ...: i53)
-	local filters: { without: { i53 } } = query.filters :: any
-	local without = { ... }
-	if not filters then
-		filters = {}
-		query.filters = filters :: any
-	end
-	filters.without = without
-	local compatible_archetypes = query.compatible_archetypes
-	for i = #compatible_archetypes, 1, -1 do
-		local archetype = compatible_archetypes[i]
-		local records = archetype.records
-		local matches = true
-
-		for _, id in without do
-			if records[id] then
-				matches = false
-				break
-			end
+	local function cached_query_iter()
+		lastArchetype = 1
+		archetype = compatible_archetypes[lastArchetype]
+		if not archetype then
+			return NOOP
+		end
+		entities = archetype.entities
+		i = #entities
+		records = archetype.records
+		columns = archetype.columns
+		if not B then
+			a = columns[records[A].column]
+		elseif not C then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+		elseif not D then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+			c = columns[records[C].column]
+		elseif not E then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+			c = columns[records[C].column]
+			d = columns[records[D].column]
+		elseif not F then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+			c = columns[records[C].column]
+			d = columns[records[D].column]
+			e = columns[records[E].column]
+		elseif not G then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+			c = columns[records[C].column]
+			d = columns[records[D].column]
+			e = columns[records[E].column]
+			f = columns[records[F].column]
+		elseif not H then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+			c = columns[records[C].column]
+			d = columns[records[D].column]
+			e = columns[records[E].column]
+			f = columns[records[F].column]
+			g = columns[records[G].column]
+		elseif not I then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+			c = columns[records[C].column]
+			d = columns[records[D].column]
+			e = columns[records[E].column]
+			f = columns[records[F].column]
+			g = columns[records[G].column]
+			h = columns[records[H].column]
 		end
 
-		if matches then
-			continue
-		end
-
-		local last = #compatible_archetypes
-		if last ~= i then
-			compatible_archetypes[i] = compatible_archetypes[last]
-		end
-		compatible_archetypes[last] = nil :: any
+		return world_query_iter_next
 	end
 
-	return query :: any
-end
-
-local function query_with(query: QueryInner, ...)
-	local compatible_archetypes = query.compatible_archetypes
-	local filters: { with: { i53 } } = query.filters :: any
-	local with = { ... }
-	if not filters then
-		filters = {}
-		query.filters = filters :: any
-	end
-	filters.with = with
-	for i = #compatible_archetypes, 1, -1 do
-		local archetype = compatible_archetypes[i]
-		local records = archetype.records
-		local matches = true
-
-		for _, id in with do
-			if not records[id] then
-				matches = false
-				break
-			end
-		end
-
-		if matches then
-			continue
-		end
-
-		local last = #compatible_archetypes
-		if last ~= i then
-			compatible_archetypes[i] = compatible_archetypes[last]
-		end
-		compatible_archetypes[last] = nil :: any
-	end
-
-	return query :: any
-end
-
--- Meant for directly iterating over archetypes to minimize
--- function call overhead. Should not be used unless iterating over
--- hundreds of thousands of entities in bulk.
-local function query_archetypes(query)
-	return query.compatible_archetypes
-end
-
-local function query_cached(query: QueryInner)
-	local archetypes = query.compatible_archetypes
-	local world = query.world :: World
-	-- Only need one observer for EcsArchetypeCreate and EcsArchetypeDelete respectively
-	-- because the event will be emitted for all components of that Archetype.
-	local first = query.ids[1]
-	local observerable = world.observerable
-	local on_create_action = observerable[EcsArchetypeCreate]
-	if not on_create_action then
-		on_create_action = {}
-		observerable[EcsArchetypeCreate] = on_create_action
-	end
-	local query_cache_on_create = on_create_action[first]
-	if not query_cache_on_create then
-		query_cache_on_create = {}
-		on_create_action[first] = query_cache_on_create
-	end
-
-	local on_delete_action = observerable[EcsArchetypeDelete]
-	if not on_delete_action then
-		on_delete_action = {}
-		observerable[EcsArchetypeDelete] = on_delete_action
-	end
-	local query_cache_on_delete = on_delete_action[first]
-	if not query_cache_on_delete then
-		query_cache_on_delete = {}
-		on_delete_action[first] = query_cache_on_delete
-	end
-
-	local function on_create_callback(archetype)
-		table.insert(archetypes, archetype)
-	end
-
-	local function on_delete_callback(archetype)
-		local i = table.find(archetypes, archetype)  :: number
-		local n = #archetypes
-		archetypes[i] = archetypes[n]
-		archetypes[n] = nil
-	end
-
-	local terms = {}
-
-	for _, id in query.ids do
-		table.insert(terms, { id })
-	end
-	local filters = query.filters
-	if filters then
-		local with = filters.with
-		if with then
-			for _, id in with do
-				table.insert(terms, { id })
-			end
-		end
-		local without = filters.without
-		if without then
-			for _, id in without do
-				table.insert(terms, { id, true })
-			end
-		end
-	end
-
-	local observer_for_create = { query = query, callback = on_create_callback, terms = terms }
-	local observer_for_delete = { query = query, callback = on_delete_callback, terms = terms }
-
-	table.insert(query_cache_on_create, observer_for_create)
-	table.insert(query_cache_on_delete, observer_for_delete)
-
-	return query
+	return setmetatable(query, {
+		__index = {
+			archetypes = query_archetypes,
+			__iter = cached_query_iter,
+			iter = cached_query_iter
+		}
+	})
 end
 
 local Query = {}
@@ -1943,12 +2178,11 @@ export type Query<T...> = typeof(setmetatable({}, {
 
 type QueryInner = {
 	compatible_archetypes: { Archetype },
-	filters: {
-		without: { i53 }?,
-		with: { i53 }?,
-	}?,
+	filter_with: { i53 }?,
+	filter_without: { i53 }?,
 	ids: { i53 },
-	world: {} -- Downcasted to be serializable by the analyzer
+	world: {}, -- Downcasted to be serializable by the analyzer
+	next: () -> Item<any>
 }
 
 type Observer = {
