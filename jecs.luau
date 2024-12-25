@@ -252,47 +252,14 @@ local function ecs_pair_second(world, e)
 	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_LO(e))
 end
 
-local function query_match_filter_with(records: { ArchetypeRecord }, with)
-	if not with then
-		return true
-	end
-
-	for _, id in with do
-		if not records[id] then
-			return false
-		end
-	end
-	return true
-end
-
-local function query_match_filter_without(records: { ArchetypeRecord }, without)
-	if not without then
-		return true
-	end
-
-	for _, id in without do
-		if records[id] then
-			return false
-		end
-	end
-	return true
-end
-local function query_match(query: any, archetype: Archetype)
+local function query_match(terms: { {i53 }}, archetype: Archetype)
 	local records = archetype.records
-	if not query_match_filter_with(records, query.ids) then
-		return false
-	end
 
-	local filters = query.filters
-	if filters then
-		local matched_without = query_match_filter_without(
-			records, filters.without)
-		if not matched_without then
-			return false
-		end
-		local matched_with = query_match_filter_with(
-			records, filters.with)
-		if not matched_with then
+	for _, term in terms do
+		local id = term[1]
+		local out = term[2]
+		local has = records[id] ~= nil
+		if has ~= not out then
 			return false
 		end
 	end
@@ -650,7 +617,7 @@ local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?)
 			continue
 		end
 		for _, observer in observer_list do
-			if query_match(observer.query, archetype) then
+			if query_match(observer.terms, archetype) then
 				observer.callback(archetype)
 			end
 		end
@@ -1083,7 +1050,7 @@ local function archetype_destroy(world: World, archetype: Archetype)
 			continue
 		end
 		for _, observer in observer_list do
-			if query_match(observer.query, archetype) then
+			if query_match(observer.terms, archetype) then
 				observer.callback(archetype)
 			end
 		end
@@ -1621,8 +1588,29 @@ local function query_cached(query: QueryInner)
 		archetypes[n] = nil
 	end
 
-	local observer_for_create = { query = query, callback = on_create_callback }
-	local observer_for_delete = { query = query, callback = on_delete_callback }
+	local terms = {}
+
+	for _, id in query.ids do
+		table.insert(terms, { id })
+	end
+	local filters = query.filters
+	if filters then
+		local with = filters.with
+		if with then
+			for _, id in with do
+				table.insert(terms, { id })
+			end
+		end
+		local without = filters.without
+		if without then
+			for _, id in without do
+				table.insert(terms, { id, true })
+			end
+		end
+	end
+
+	local observer_for_create = { query = query, callback = on_create_callback, terms = terms }
+	local observer_for_delete = { query = query, callback = on_delete_callback, terms = terms }
 
 	table.insert(query_cache_on_create, observer_for_create)
 	table.insert(query_cache_on_delete, observer_for_delete)
