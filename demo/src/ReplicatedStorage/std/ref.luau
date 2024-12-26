@@ -1,16 +1,18 @@
-local handle = require(script.Parent.handle)
 local world = require(script.Parent.world)
-local refs = {}
+local jecs = require(game:GetService("ReplicatedStorage").ecs)
+local refs: {[any]: jecs.Entity} = {}
 
-local function fini(key)
+local function fini(key): () -> ()
 	return function()
 		refs[key] = nil
 	end
 end
 
-local function ref(key): (handle.Handle, (() -> ())?)
+local function noop() end
+
+local function ref(key): (jecs.Entity, () -> ())
 	if not key then
-		return handle(world:entity())
+		return world:entity(), noop
 	end
 	local e = refs[key]
 	if not e then
@@ -18,7 +20,7 @@ local function ref(key): (handle.Handle, (() -> ())?)
 		refs[key] = e
 	end
 	-- Cannot cache handles because they will get invalidated
-	return handle(e), fini(key)
+	return e, fini(key)
 end
 
 return ref
