@@ -170,7 +170,7 @@ local function _STRIP_GENERATION(e: i53): i24
 end
 
 local function ECS_PAIR(pred: i53, obj: i53): i53
-	return ECS_COMBINE(ECS_ENTITY_T_LO(obj), ECS_ENTITY_T_LO(pred)) + FLAGS_ADD(--[[isPair]] true) :: i53
+	return ECS_COMBINE(ECS_ENTITY_T_LO(pred), ECS_ENTITY_T_LO(obj)) + FLAGS_ADD(--[[isPair]] true) :: i53
 end
 
 local function entity_index_try_get_any(entity_index: EntityIndex, entity: number): Record?
@@ -244,12 +244,12 @@ end
 
 -- ECS_PAIR_FIRST, gets the relationship target / obj / HIGH bits
 local function ecs_pair_first(world, e)
-	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_HI(e))
+	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_LO(e))
 end
 
 -- ECS_PAIR_SECOND gets the relationship / pred / LOW bits
 local function ecs_pair_second(world, e)
-	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_LO(e))
+	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_HI(e))
 end
 
 local function query_match(query, archetype: Archetype)
