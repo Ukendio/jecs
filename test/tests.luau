@@ -59,6 +59,7 @@ local function debug_world_inspect(world: World)
 		records = records,
 		row = row,
 		tuple = tuple,
+		columns = columns
 	}
 end
 
@@ -1205,25 +1206,38 @@ TEST("world:delete", function()
 end)
 
 TEST("world:target", function()
-	do
-		CASE("nth index")
+	do CASE("nth index")
 		local world = world_new()
 		local A = world:component()
+		world:set(A, jecs.Name, "A")
 		local B = world:component()
+		world:set(B, jecs.Name, "B")
 		local C = world:component()
+		world:set(C, jecs.Name, "C")
 		local D = world:component()
+		world:set(D, jecs.Name, "D")
+		local E = world:component()
+		world:set(E, jecs.Name, "E")
 		local e = world:entity()
 
 		world:add(e, pair(A, B))
 		world:add(e, pair(A, C))
+		world:add(e, pair(A, D))
+		world:add(e, pair(A, E))
 		world:add(e, pair(B, C))
 		world:add(e, pair(B, D))
 		world:add(e, pair(C, D))
 
 		CHECK(pair(A, B) < pair(A, C))
+		CHECK(pair(A, E) < pair(B, C))
 
+		local records = debug_world_inspect(world).records(e)
+		CHECK(jecs.pair_first(world, pair(B, C)) == B)
+		CHECK(records[pair(B, C)].column > records[pair(A, E)].column)
 		CHECK(world:target(e, A, 0) == B)
 		CHECK(world:target(e, A, 1) == C)
+		CHECK(world:target(e, A, 2) == D)
+		CHECK(world:target(e, A, 3) == E)
 		CHECK(world:target(e, B, 0) == C)
 		CHECK(world:target(e, B, 1) == D)
 		CHECK(world:target(e, C, 0) == D)
