@@ -263,7 +263,7 @@ local function query_match(query, archetype: Archetype)
 	end
 
 	local without = query.filter_without
-	if not without then
+	if without then
 		for _, id in without do
 			if records[id] then
 				return false
