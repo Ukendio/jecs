@@ -1603,7 +1603,6 @@ local function query_cached(query: QueryInner)
 	local compatible_archetypes = query.compatible_archetypes
 	local lastArchetype = 1
 
-	local ids = query.ids
 	local A, B, C, D, E, F, G, H, I = unpack(ids)
 	local a: Column, b: Column, c: Column, d: Column
 	local e: Column, f: Column, g: Column, h: Column
