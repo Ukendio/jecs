@@ -11,7 +11,7 @@ local Transform = cts.Transform
 
 local moving_models = world:query(Transform, Model):cached()
 local function move(dt: number)
-	for _, transform, model in moving_models:iter() do
+	for _, transform, model in moving_models do
 		local cf = transform.new
 		if cf ~= transform.old then
 			local part = model.PrimaryPart :: BasePart

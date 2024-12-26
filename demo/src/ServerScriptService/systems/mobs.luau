@@ -34,11 +34,11 @@ local moving_mobs = world
 local function mobsMove(dt: number)
 	local targets = {}
 
-	for _, character in characters:iter() do
+	for _, character in characters do
 		table.insert(targets, (character.PrimaryPart :: Part).Position)
 	end
 
-	for mob, transform, v in moving_mobs:iter() do
+	for mob, transform, v in moving_mobs do
 		local cf = transform.new
 		local p = cf.Position
 

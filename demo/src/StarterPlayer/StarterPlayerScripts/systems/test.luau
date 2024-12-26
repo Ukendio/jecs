@@ -34,7 +34,7 @@ end
 
 local q = world:query(A, B, C, D):cached()
 local function cached() 
-    for _ in q:iter() do 
+    for _ in q do 
     end
 end
 
