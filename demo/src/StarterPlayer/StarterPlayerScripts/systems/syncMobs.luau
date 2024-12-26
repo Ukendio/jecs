@@ -1,9 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local blink = require(ReplicatedStorage.net)
-local std = require(ReplicatedStorage.std)
-local ref = std.ref
-local world = std.world
-local cts = std.components
+local std = ReplicatedStorage.std
+local ref = require(std.ref)
+local world = require(std.world)
+local cts = require(std.components)
 
 local function syncMobs()
 	for _, id, cf, vel in blink.SpawnMob.Iter() do
@@ -16,16 +16,16 @@ local function syncMobs()
 		part.Parent = model
 		model.Parent = workspace
 
-		ref("server-" .. id)
-			:set(cts.Transform, { new = cf, old = cf })
-			:set(cts.Velocity, vel)
-			:set(cts.Model, model)
-			:add(cts.Mob)
+		local e = ref("server-" .. tostring(id))
+		world:set(e, cts.Transform, { new = cf, old = cf })
+		world:set(e, cts.Velocity, vel)
+		world:set(e, cts.Model, model)
+		world:add(e, cts.Mob)
 	end
 end
 
-return function(scheduler: std.Scheduler)
-	local phases = scheduler.phases
-	local system_new = scheduler.systems.new
-	system_new(syncMobs, phases.RenderStepped)
-end
+local scheduler = require(std.scheduler)
+scheduler.SYSTEM(syncMobs)
+
+return 0
+

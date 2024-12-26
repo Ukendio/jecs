@@ -6,13 +6,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local blink = require(game:GetService("ServerScriptService").net)
 local jecs = require(ReplicatedStorage.ecs)
 local __ = jecs.Wildcard
+local std = ReplicatedStorage.std
+local ref = require(std.ref)
+local interval = require(std.interval)
 
-local std = require(ReplicatedStorage.std)
-local ref = std.ref
-local interval = std.interval
-
-local world: std.World = std.world
-local cts = std.components
+local world = require(std.world)
+local cts = require(std.components)
 
 local Mob = cts.Mob
 local Transform = cts.Transform
@@ -20,13 +19,26 @@ local Velocity = cts.Velocity
 local Player = cts.Player
 local Character = cts.Character
 
+local characters = world
+	:query(Character)
+	:with(Player)
+	:cached()
+
+
+local moving_mobs = world
+	:query(Transform, Velocity)
+	:with(Mob)
+	:cached()
+	
+
 local function mobsMove(dt: number)
 	local targets = {}
-	for _, character in world:query(Character):with(Player):iter() do
+
+	for _, character in characters:iter() do
 		table.insert(targets, (character.PrimaryPart :: Part).Position)
 	end
 
-	for mob, transform, v in world:query(Transform, Velocity):with(Mob):iter() do
+	for mob, transform, v in moving_mobs:iter() do
 		local cf = transform.new
 		local p = cf.Position
 
@@ -53,21 +65,24 @@ end
 
 local throttle = interval(5)
 
-local function spawnMobs()
+local function spawnMobs() 
 	if throttle() then
 		local p = Vector3.new(0, 5, 0)
 		local cf = CFrame.new(p)
 		local v = 5
 
-		local id = ref():set(Velocity, v):set(Transform, { new = cf }):add(Mob).id()
+		local e = world:entity()
+		world:set(e, Velocity, v)
+		world:set(e, Transform, { new = cf })
+		world:add(e, Mob)
 
-		blink.SpawnMob.FireAll(id, cf, v)
+		blink.SpawnMob.FireAll(e, cf, v)
 	end
 end
 
-return function(scheduler: std.Scheduler)
-	local phases = scheduler.phases
-	local system_new = scheduler.systems.new
-	system_new(mobsMove, phases.Heartbeat)
-	system_new(spawnMobs, phases.Heartbeat)
-end
+local scheduler = require(std.scheduler)
+
+scheduler.SYSTEM(spawnMobs)
+scheduler.SYSTEM(mobsMove)
+
+return 0

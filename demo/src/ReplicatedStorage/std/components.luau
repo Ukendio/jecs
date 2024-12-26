@@ -8,7 +8,7 @@ local components: {
 	Model: Entity<Model>,
 	Player: Entity,
 	Target: Entity,
-	Transform: Entity<CFrame>,
+	Transform: Entity<{ new: CFrame, old: CFrame }>,
 	Velocity: Entity<number>,
 	Previous: Entity,
 } =
@@ -22,5 +22,9 @@ local components: {
 		Velocity = world:component(),
 		Previous = world:component(),
 	}
+
+for name, component in components :: {[string]: jecs.Entity} do 
+	world:set(component, jecs.Name, name)
+end
 
 return table.freeze(components)

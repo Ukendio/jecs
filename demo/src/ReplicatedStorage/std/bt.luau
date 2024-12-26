@@ -3,15 +3,15 @@
 
 -- original author @centau
 
-local SUCCESS = 0
-local FAILURE = 1
-local RUNNING = 2
+local FAILURE = -1 
+local RUNNING = 0 
+local SUCCESS = 1 
 
 local function SEQUENCE(nodes)
 	return function(...)
 		for _, node in nodes do
 			local status = node(...)
-			if status == FAILURE or status == RUNNING then
+			if status <= RUNNING  then
 				return status
 			end
 		end
@@ -23,7 +23,7 @@ local function FALLBACK(nodes)
 	return function(...)
 		for _, node in nodes do
 			local status = node(...)
-			if status == SUCCESS or status == RUNNING then
+			if status > FAILURE then
 				return status
 			end
 		end
