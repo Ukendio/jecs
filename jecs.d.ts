@@ -13,24 +13,32 @@ export type Tag = Entity<undefined>;
  * A pair of entities
  * P is the type of the predicate, O is the type of the object, and V is the type of the value (defaults to P)
  */
-export type Pair<P = undefined, O = undefined, V = P> = number & {
+export type Pair<P = Entity, O = Entity> = number & {
 	__jecs_pair_pred: P;
 	__jecs_pair_obj: O;
-	__jecs_pair_value: V;
+	__jecs_pair_value: P extends Entity<undefined> 
+		? O extends Entity<infer V> 
+			? V 
+			: never
+		: P extends Entity<infer V> ? V : never
 };
 
 /**
  * Either an Entity or a Pair
  */
-export type Id<T = unknown> = Entity<T> | Pair<unknown, unknown, T>;
+export type Id<T = unknown> = Entity<T> | Pair<Entity<T>, Entity<T>>;
 
-type InferComponent<E> = E extends Id<infer T> ? T : never;
+type InferComponent<E> = E extends Entity<infer T> 
+	? T 
+	: E extends Pair 
+		? E["__jecs_pair_value"] 
+		: never;
+
 type FlattenTuple<T extends any[]> = T extends [infer U] ? U : LuaTuple<T>;
 type Nullable<T extends unknown[]> = { [K in keyof T]: T[K] | undefined };
 type InferComponents<A extends Id[]> = {
 	[K in keyof A]: InferComponent<A[K]>;
 };
-type TupleForWorldGet = [Id] | [Id, Id] | [Id, Id, Id] | [Id, Id, Id, Id];
 
 type Iter<T extends unknown[]> = IterableFunction<LuaTuple<[Entity, ...T]>>;
 
@@ -136,7 +144,7 @@ export class World {
 	 * @param components Target Components
 	 * @returns Data associated with target components if it exists.
 	 */
-	get<T extends TupleForWorldGet>(id: Entity, ...components: T): FlattenTuple<Nullable<InferComponents<T>>>;
+	get<T extends [Id] | [Id, Id] | [Id, Id, Id] | [Id, Id, Id, Id]>(id: Entity, ...components: T): FlattenTuple<Nullable<InferComponents<T>>>;
 
 	/**
 	 * Returns whether the entity has the specified components.
@@ -176,7 +184,7 @@ export class World {
  * @param obj The second entity (object)
  * @returns The composite key (pair)
  */
-export function pair<P, O, V = P>(pred: Entity<P>, obj: Entity<O>): Pair<P, O, V>;
+export function pair<P, O>(pred: Entity<P>, obj: Entity<O>): Pair<Entity<P>, Entity<O>>;
 
 /**
  * Checks if the entity is a composite key (pair)
@@ -190,14 +198,14 @@ export function IS_PAIR(value: Id): value is Pair;
  * @param pair The pair to get the first entity from
  * @returns The first entity (predicate) of the pair
  */
-export function pair_first<P, O, V = P>(pair: Pair<P, O, V>): Entity<P>;
+export function pair_first<P, O>(pair: Pair<P, O>): Entity<P>;
 
 /**
  * Gets the second entity (object) of a pair
  * @param pair The pair to get the second entity from
  * @returns The second entity (object) of the pair
  */
-export function pair_second<P, O, V = P>(pair: Pair<P, O, V>): Entity<O>;
+export function pair_second<P, O>(pair: Pair<P, O>): Entity<O>;
 
 export const OnAdd: Entity<(e: Entity) => void>;
 export const OnRemove: Entity<(e: Entity) => void>;
