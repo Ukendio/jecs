@@ -1843,13 +1843,12 @@ local function query_cached(query: QueryInner)
 		return world_query_iter_next
 	end
 
-	return setmetatable(query, {
-		__index = {
-			archetypes = query_archetypes,
-			__iter = cached_query_iter,
-			iter = cached_query_iter
-		}
-	})
+	local cached_query = query :: any
+	cached_query.archetypes = query_archetypes
+	cached_query.__iter = cached_query_iter
+	cached_query.iter = cached_query_iter
+	setmetatable(cached_query, cached_query)
+	return cached_query
 end
 
 local Query = {}
