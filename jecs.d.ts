@@ -61,6 +61,10 @@ export type Query<T extends unknown[]> = {
 	 * @returns Modified Query
 	 */
 	without(...components: Id[]): Query<T>;
+	/**
+ 	 * Caches the query
+   	 */
+	cached(): Query<T>;
 } & Iter<T>;
 
 export class World {
