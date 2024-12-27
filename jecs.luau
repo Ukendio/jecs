@@ -78,32 +78,32 @@ type EntityIndex = {
 
 local HI_COMPONENT_ID = _G.__JECS_HI_COMPONENT_ID or 256
 -- stylua: ignore start
-local EcsOnAdd =           HI_COMPONENT_ID +  1
-local EcsOnRemove =        HI_COMPONENT_ID +  2
-local EcsOnSet =           HI_COMPONENT_ID +  3
-local EcsWildcard =        HI_COMPONENT_ID +  4
-local EcsChildOf =         HI_COMPONENT_ID +  5
-local EcsComponent =       HI_COMPONENT_ID +  6
-local EcsOnDelete =        HI_COMPONENT_ID +  7
-local EcsOnDeleteTarget =  HI_COMPONENT_ID +  8
-local EcsDelete =          HI_COMPONENT_ID +  9
-local EcsRemove =          HI_COMPONENT_ID + 10
-local EcsName =            HI_COMPONENT_ID + 11
-local EcsArchetypeCreate = HI_COMPONENT_ID + 12
-local EcsArchetypeDelete = HI_COMPONENT_ID + 13
-local EcsRest =            HI_COMPONENT_ID + 14
+local EcsOnAdd =                    HI_COMPONENT_ID +  1
+local EcsOnRemove =                 HI_COMPONENT_ID +  2
+local EcsOnSet =                    HI_COMPONENT_ID +  3
+local EcsWildcard =                 HI_COMPONENT_ID +  4
+local EcsChildOf =                  HI_COMPONENT_ID +  5
+local EcsComponent =                HI_COMPONENT_ID +  6
+local EcsOnDelete =                 HI_COMPONENT_ID +  7
+local EcsOnDeleteTarget =           HI_COMPONENT_ID +  8
+local EcsDelete =                   HI_COMPONENT_ID +  9
+local EcsRemove =                   HI_COMPONENT_ID + 10
+local EcsName =                     HI_COMPONENT_ID + 11
+local EcsOnArchetypeCreate =        HI_COMPONENT_ID + 12
+local EcsOnArchetypeDelete =        HI_COMPONENT_ID + 13
+local EcsRest =                     HI_COMPONENT_ID + 14
 
-local ECS_PAIR_FLAG =                       0x8
-local ECS_ID_FLAGS_MASK =                  0x10
-local ECS_ENTITY_MASK =     bit32.lshift(1, 24)
-local ECS_GENERATION_MASK = bit32.lshift(1, 16)
+local ECS_PAIR_FLAG =                                0x8
+local ECS_ID_FLAGS_MASK =                           0x10
+local ECS_ENTITY_MASK =              bit32.lshift(1, 24)
+local ECS_GENERATION_MASK =          bit32.lshift(1, 16)
 
-local ECS_ID_DELETE =               0b0000_0001
-local ECS_ID_IS_TAG =               0b0000_0010
-local ECS_ID_HAS_ON_ADD =           0b0000_0100
-local ECS_ID_HAS_ON_SET =           0b0000_1000
-local ECS_ID_HAS_ON_REMOVE =        0b0001_0000
-local ECS_ID_MASK =                 0b0000_0000
+local ECS_ID_DELETE =                        0b0000_0001
+local ECS_ID_IS_TAG =                        0b0000_0010
+local ECS_ID_HAS_ON_ADD =                    0b0000_0100
+local ECS_ID_HAS_ON_SET =                    0b0000_1000
+local ECS_ID_HAS_ON_REMOVE =                 0b0001_0000
+local ECS_ID_MASK =                          0b0000_0000
 -- stylua: ignore end
 local NULL_ARRAY = table.freeze({}) :: Column
 
@@ -611,6 +611,7 @@ local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?)
 			local idr_t = id_record_ensure(world, t)
 			archetype_append_to_records(idr_t, archetype_id, records, t, i)
 		end
+
 		if bit32.band(idr.flags, ECS_ID_IS_TAG) == 0 then
 			columns[i] = {}
 		else
@@ -619,7 +620,7 @@ local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?)
 	end
 
 	for _, id in id_types do
-		local observer_list = find_observers(world, EcsArchetypeCreate, id)
+		local observer_list = find_observers(world, EcsOnArchetypeCreate, id)
 		if not observer_list then
 			continue
 		end
@@ -1052,7 +1053,7 @@ local function archetype_destroy(world: World, archetype: Archetype)
 	local records = archetype.records
 
 	for id in records do
-		local observer_list = find_observers(world, EcsArchetypeDelete, id)
+		local observer_list = find_observers(world, EcsOnArchetypeDelete, id)
 		if not observer_list then
 			continue
 		end
@@ -1457,7 +1458,6 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 				return entityId, a[row], b[row], c[row], d[row], e[row], f[row], g[row], h[row]
 			end
 
-			local records = archetype.records
 			for j, id in ids do
 				queryOutput[j] = columns[records[id].column][row]
 			end
@@ -1553,10 +1553,10 @@ local function query_cached(query: QueryInner)
 	-- because the event will be emitted for all components of that Archetype.
 	local first = query.ids[1]
 	local observerable = world.observerable
-	local on_create_action = observerable[EcsArchetypeCreate]
+	local on_create_action = observerable[EcsOnArchetypeCreate]
 	if not on_create_action then
 		on_create_action = {}
-		observerable[EcsArchetypeCreate] = on_create_action
+		observerable[EcsOnArchetypeCreate] = on_create_action
 	end
 	local query_cache_on_create = on_create_action[first]
 	if not query_cache_on_create then
@@ -1564,10 +1564,10 @@ local function query_cached(query: QueryInner)
 		on_create_action[first] = query_cache_on_create
 	end
 
-	local on_delete_action = observerable[EcsArchetypeDelete]
+	local on_delete_action = observerable[EcsOnArchetypeDelete]
 	if not on_delete_action then
 		on_delete_action = {}
-		observerable[EcsArchetypeDelete] = on_delete_action
+		observerable[EcsOnArchetypeDelete] = on_delete_action
 	end
 	local query_cache_on_delete = on_delete_action[first]
 	if not query_cache_on_delete then
@@ -1609,10 +1609,69 @@ local function query_cached(query: QueryInner)
 
 	local world_query_iter_next
 	local columns: { Column }
-	local entities: { i53 }
+	local entities: { number }
 	local i: number
 	local archetype: Archetype
 	local records: { ArchetypeRecord }
+
+	local function cached_query_iter()
+		lastArchetype = 1
+		archetype = compatible_archetypes[lastArchetype]
+		if not archetype then
+			return NOOP
+		end
+		entities = archetype.entities
+		i = #entities
+		records = archetype.records
+		columns = archetype.columns
+		if not B then
+			a = columns[records[A].column]
+		elseif not C then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+		elseif not D then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+			c = columns[records[C].column]
+		elseif not E then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+			c = columns[records[C].column]
+			d = columns[records[D].column]
+		elseif not F then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+			c = columns[records[C].column]
+			d = columns[records[D].column]
+			e = columns[records[E].column]
+		elseif not G then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+			c = columns[records[C].column]
+			d = columns[records[D].column]
+			e = columns[records[E].column]
+			f = columns[records[F].column]
+		elseif not H then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+			c = columns[records[C].column]
+			d = columns[records[D].column]
+			e = columns[records[E].column]
+			f = columns[records[F].column]
+			g = columns[records[G].column]
+		elseif not I then
+			a = columns[records[A].column]
+			b = columns[records[B].column]
+			c = columns[records[C].column]
+			d = columns[records[D].column]
+			e = columns[records[E].column]
+			f = columns[records[F].column]
+			g = columns[records[G].column]
+			h = columns[records[H].column]
+		end
+
+		return world_query_iter_next
+	end
 
 	if not B then
 		function world_query_iter_next(): any
@@ -1775,72 +1834,12 @@ local function query_cached(query: QueryInner)
 				return entityId, a[row], b[row], c[row], d[row], e[row], f[row], g[row], h[row]
 			end
 
-			local records = archetype.records
 			for j, id in ids do
 				queryOutput[j] = columns[records[id].column][row]
 			end
 
 			return entityId, unpack(queryOutput)
 		end
-	end
-
-	local function cached_query_iter()
-		lastArchetype = 1
-		archetype = compatible_archetypes[lastArchetype]
-		if not archetype then
-			return NOOP
-		end
-		entities = archetype.entities
-		i = #entities
-		records = archetype.records
-		columns = archetype.columns
-		if not B then
-			a = columns[records[A].column]
-		elseif not C then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-		elseif not D then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-		elseif not E then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-		elseif not F then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-			e = columns[records[E].column]
-		elseif not G then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-			e = columns[records[E].column]
-			f = columns[records[F].column]
-		elseif not H then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-			e = columns[records[E].column]
-			f = columns[records[F].column]
-			g = columns[records[G].column]
-		elseif not I then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-			e = columns[records[E].column]
-			f = columns[records[F].column]
-			g = columns[records[G].column]
-			h = columns[records[H].column]
-		end
-
-		return world_query_iter_next
 	end
 
 	local cached_query = query :: any
@@ -2197,14 +2196,6 @@ type Observer = {
  	callback: (archetype: Archetype) -> (),
    	query: QueryInner,
 }
-
-type function ecs_partial_t(ty)
-	local output = types.newtable()
-	for k, v in ty:properties() do
-		output:setproperty(k, types.unionof(v.write, types.singleton(nil)))
-	end
-	return output
-end
 
 export type World = {
 	archetypeIndex: { [string]: Archetype },
