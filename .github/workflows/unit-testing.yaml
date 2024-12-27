@@ -15,6 +15,7 @@ jobs:
       - name: Install Luau
         uses: encodedvenom/install-luau@v4.2
         with:
+          version: 'latest'
           verbose: 'true'
 
       - name: Run Unit Tests
