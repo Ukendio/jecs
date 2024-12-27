@@ -2257,7 +2257,7 @@ export type World = {
 		& (<A, B, C, D>(World, A, B, C, D) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>>)
 		& (<A, B, C, D, E>(World, A, B, C, D, E) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>, ecs_id_t<E>>)
 		& (<A, B, C, D, E, F>(World, A, B, C, D, E, F) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>, ecs_id_t<E>, ecs_id_t<F>>)
-		& (<A, B, C, D, E, F, G>(World, A, B, C, D, E, F, G) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_entity_t<C>, ecs_id_t<D>, ecs_id_t<E>, ecs_id_t<F>, ecs_id_t<G>>)
+		& (<A, B, C, D, E, F, G>(World, A, B, C, D, E, F, G) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>, ecs_id_t<E>, ecs_id_t<F>, ecs_id_t<G>>)
 		& (<A, B, C, D, E, F, G, H>(World, A, B, C, D, E, F, G, H) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>, ecs_id_t<E>, ecs_id_t<F>, ecs_id_t<G>, ecs_id_t<H>>)
 }
 
