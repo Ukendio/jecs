@@ -1651,7 +1651,7 @@ local function query_cached(query: QueryInner)
 				i = #entities
 				entityId = entities[i]
 				columns = archetype.columns
-				local records = archetype.records
+				records = archetype.records
 				a = columns[records[A].column]
 				b = columns[records[B].column]
 			end
@@ -1675,7 +1675,7 @@ local function query_cached(query: QueryInner)
 				i = #entities
 				entityId = entities[i]
 				columns = archetype.columns
-				local records = archetype.records
+				 records = archetype.records
 				a = columns[records[A].column]
 				b = columns[records[B].column]
 				c = columns[records[C].column]
@@ -1700,7 +1700,7 @@ local function query_cached(query: QueryInner)
 				i = #entities
 				entityId = entities[i]
 				columns = archetype.columns
-				local records = archetype.records
+				records = archetype.records
 				a = columns[records[A].column]
 				b = columns[records[B].column]
 				c = columns[records[C].column]
@@ -1727,7 +1727,7 @@ local function query_cached(query: QueryInner)
 				i = #entities
 				entityId = entities[i]
 				columns = archetype.columns
-				local records = archetype.records
+				records = archetype.records
 
 				if not F then
 					a = columns[records[A].column]
@@ -2142,16 +2142,26 @@ function World.new()
 	return self
 end
 
-export type Id<T = unknown> = Entity<T>
+type Id<T = unknown> =
+	| (number & { __jecs_pair_value: T })
+	| (number & { __T: T })
 
-type function ecs_entity_t(entity)
-	return entity:components()[2]:readproperty(types.singleton("__T"))
+export type Pair<P = Entity, O = Entity> = number & {
+	__jecs_pair_value: ecs_id_t<ecs_pair_t<P, O>>
+}
+
+type function ecs_id_t(entity)
+	local ty = entity:components()[2]
+	local __T = ty:readproperty(types.singleton("__T"))
+	if not __T then
+		return ty:readproperty(types.singleton("__jecs_pair_value"))
+	end
+	return __T
 end
 
-type function Pair(first, second)
-    local thing = first:components()[2]
-
-	if thing:readproperty(types.singleton("__T")):is("nil") then
+type function ecs_pair_t(first, second)
+	local ty = first:components()[2]
+	if ty:readproperty(types.singleton("__T")):is("nil") then
 		return second
 	else
 		return first
@@ -2160,7 +2170,7 @@ end
 
 type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 
-export type Entity<T = unknown> = number & { __T: T }
+export type Entity<T = nil> =  number & { __T: T }
 
 type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 
@@ -2250,14 +2260,14 @@ export type World = {
 	children: (self: World, id: Id) -> () -> Entity,
 
 	--- Searches the world for entities that match a given query
-	query: (<A>(World, A) -> Query<ecs_entity_t<A>>)
-        & (<A, B>(World, A, B) -> Query<ecs_entity_t<A>, ecs_entity_t<B>>)
-        & (<A, B, C>(World, A, B, C) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>>)
-        & (<A, B, C, D>(World, A, B, C, D) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>>)
-        & (<A, B, C, D, E>(World, A, B, C, D, E) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>, ecs_entity_t<E>>)
-        & (<A, B, C, D, E, F>(World, A, B, C, D, E, F) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>, ecs_entity_t<E>, ecs_entity_t<F>>)
-        & (<A, B, C, D, E, F, G>(World, A, B, C, D, E, F, G) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>, ecs_entity_t<E>, ecs_entity_t<F>, ecs_entity_t<G>>)
-        & (<A, B, C, D, E, F, G, H>(World, A, B, C, D, E, F, G, H) -> Query<ecs_entity_t<A>, ecs_entity_t<B>, ecs_entity_t<C>, ecs_entity_t<D>, ecs_entity_t<E>, ecs_entity_t<F>, ecs_entity_t<G>, ecs_entity_t<H>>)
+	query: (<A>(World, A) -> Query<ecs_id_t<A>>)
+		& (<A, B>(World, A, B) -> Query<ecs_id_t<A>, ecs_id_t<B>>)
+		& (<A, B, C>(World, A, B, C) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>>)
+		& (<A, B, C, D>(World, A, B, C, D) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>>)
+		& (<A, B, C, D, E>(World, A, B, C, D, E) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>, ecs_id_t<E>>)
+		& (<A, B, C, D, E, F>(World, A, B, C, D, E, F) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>, ecs_id_t<E>, ecs_id_t<F>>)
+		& (<A, B, C, D, E, F, G>(World, A, B, C, D, E, F, G) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_entity_t<C>, ecs_id_t<D>, ecs_id_t<E>, ecs_id_t<F>, ecs_id_t<G>>)
+		& (<A, B, C, D, E, F, G, H>(World, A, B, C, D, E, F, G, H) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>, ecs_id_t<E>, ecs_id_t<F>, ecs_id_t<G>, ecs_id_t<H>>)
 }
 
 return {
