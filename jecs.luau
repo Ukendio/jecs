@@ -1589,7 +1589,7 @@ local function query_cached(query: QueryInner)
 	local with = query.filter_with
 	local ids = query.ids
 	if with then
-		table.move(ids, 1, #ids, #with, with)
+		table.move(ids, 1, #ids, #with + 1, with)
 	else
 		query.filter_with = ids
 	end
