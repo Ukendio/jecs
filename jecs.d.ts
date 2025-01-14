@@ -2,7 +2,10 @@
  * A unique identifier in the world, entity.
  * The generic type T defines the data type when this entity is used as a component
  */
-export type Entity<T = undefined | unknown> = number & { __jecs_value: T };
+export type Entity<TData = unknown> = number & {
+	readonly __nominal_Entity: unique symbol;
+	readonly __type_TData: TData;
+};
 
 /**
  * An entity with no associated data when used as a component
@@ -10,172 +13,193 @@ export type Entity<T = undefined | unknown> = number & { __jecs_value: T };
 export type Tag = Entity<undefined>;
 
 /**
- * A pair of entities
- * P is the type of the predicate, O is the type of the object, and V is the type of the value (defaults to P)
+ * A pair of entities:
+ * - `pred` is the type of the "predicate" entity.
+ * - `obj` is the type of the "object" entity.
  */
-export type Pair<P = Entity, O = Entity> = number & {
-	__jecs_pair_pred: P;
-	__jecs_pair_obj: O;
-	__jecs_pair_value: P extends Entity<undefined> 
-		? O extends Entity<infer V> 
-			? V 
-			: never
-		: P extends Entity<infer V> ? V : never
+export type Pair<P = unknown, O = unknown> = number & {
+	readonly __nominal_Pair: unique symbol;
+	readonly __pred: P;
+	readonly __obj: O;
 };
-
 /**
- * Either an Entity or a Pair
+ * An `Id` can be either a single Entity or a Pair of Entities.
+ * By providing `TData`, you can specifically require an Id that yields that type.
  */
-export type Id<T = unknown> = Entity<T> | Pair<Entity<T>, Entity<T>>;
+export type Id<TData = unknown> = Entity<TData> | Pair<TData, unknown> | Pair<undefined, TData>;
 
-type InferComponent<E> = E extends Entity<infer T> 
-	? T 
-	: E extends Pair 
-		? E["__jecs_pair_value"] 
+export type InferComponent<E> = E extends Entity<infer D>
+	? D
+	: E extends Pair<infer P, infer O>
+		? P extends undefined
+			? O
+			: P
 		: never;
 
-type FlattenTuple<T extends any[]> = T extends [infer U] ? U : LuaTuple<T>;
+type FlattenTuple<T extends unknown[]> = T extends [infer U] ? U : LuaTuple<T>;
 type Nullable<T extends unknown[]> = { [K in keyof T]: T[K] | undefined };
-type InferComponents<A extends Id[]> = {
-	[K in keyof A]: InferComponent<A[K]>;
-};
+type InferComponents<A extends Id[]> = { [K in keyof A]: InferComponent<A[K]> };
 
 type Iter<T extends unknown[]> = IterableFunction<LuaTuple<[Entity, ...T]>>;
 
+export type CachedQuery<T extends unknown[]> = {
+	/**
+	 * Returns an iterator that produces a tuple of [Entity, ...queriedComponents].
+	 */
+	iter(): Iter<T>;
+} & Iter<T>;
+
 export type Query<T extends unknown[]> = {
 	/**
-	 * Returns an iterator that returns a tuple of an entity and queried components
+	 * Returns an iterator that produces a tuple of [Entity, ...queriedComponents].
 	 */
 	iter(): Iter<T>;
 
 	/**
-	 * Modifies the query to include specified components
-	 * @param components The components to include
-	 * @returns Modified Query
+	 * Creates and returns a cached version of this query for efficient reuse.
+	 * Call refinement methods (with/without) on the query before caching.
+	 * @returns A cached query
+	 */
+	cached(): CachedQuery<T>;
+
+	/**
+	 * Modifies the query to include specified components.
+	 * @param components The components to include.
+	 * @returns A new Query with the inclusion applied.
 	 */
 	with(...components: Id[]): Query<T>;
 
 	/**
-	 * Modifies the Query to exclude specified components
-	 * @param components The components to exclude
-	 * @returns Modified Query
+	 * Modifies the Query to exclude specified components.
+	 * @param components The components to exclude.
+	 * @returns A new Query with the exclusion applied.
 	 */
 	without(...components: Id[]): Query<T>;
 } & Iter<T>;
 
 export class World {
 	/**
-	 * Creates a new World
+	 * Creates a new World.
 	 */
 	constructor();
 
 	/**
-	 * Creates a new entity
-	 * @returns Entity
+	 * Creates a new entity.
+	 * @returns An entity (Tag) with no data.
 	 */
 	entity(): Tag;
 
 	/**
-	 * Creates a new entity located in the first 256 ids.
-	 * These should be used for static components for fast access.
-	 * @returns Entity<T>
+	 * Creates a new entity in the first 256 IDs, typically used for static
+	 * components that need fast access.
+	 * @returns A typed Entity with `TData`.
 	 */
-	component<T = unknown>(): Entity<T>;
+	component<TData = unknown>(): Entity<TData>;
 
 	/**
-	 * Gets the target of a relationship. For example, when a user calls
-	 * `world.target(entity, ChildOf(parent))`, you will obtain the parent entity.
-	 * @param entity Entity
-	 * @param relation The Relationship
-	 * @returns The Parent Entity if it exists
+	 * Gets the target of a relationship. For example, if we say
+	 * `world.target(entity, ChildOf)`, this returns the parent entity.
+	 * @param entity The entity using a relationship pair.
+	 * @param relation The "relationship" component/tag (e.g., ChildOf).
+	 * @param index If multiple targets exist, specify an index. Defaults to 0.
 	 */
-	target(entity: Entity, relation: Entity): Entity | undefined;
+	target(entity: Entity, relation: Entity, index?: number): Entity | undefined;
 
 	/**
-	 * Gets the target of a relationship at a specific index.
-	 * For example, when a user calls `world.target(entity, ChildOf(parent), 0)`,
-	 * you will obtain the parent entity.
-	 * @param entity Entity
-	 * @param relation The Relationship
-	 * @param index Target index
-	 * @returns The Parent Entity if it exists
+	 * Cleans up the world by removing empty archetypes and rebuilding the archetype collections.
+	 * This helps maintain memory efficiency by removing unused archetype definitions.
 	 */
-	target(entity: Entity, relation: Entity, index: number): Entity | undefined;
+	cleanup(): void;
 
 	/**
-	 * Clears an entity from the world
-	 * @param entity Entity to be cleared
+	 * Clears all components and relationships from the given entity, but
+	 * does not delete the entity from the world.
+	 * @param entity The entity to clear.
 	 */
 	clear(entity: Entity): void;
 
 	/**
-	 * Deletes an entity and all its related components and relationships
-	 * @param entity Entity to be destroyed
+	 * Deletes an entity (and its components/relationships) from the world entirely.
+	 * @param entity The entity to delete.
 	 */
 	delete(entity: Entity): void;
 
 	/**
-	 * Adds a component to the entity with no value
-	 * @param entity Target Entity
-	 * @param component Component
+	 * Adds a component (with no value) to the entity.
+	 * @param entity The target entity.
+	 * @param component The component (or tag) to add.
 	 */
-	add(entity: Entity, component: Id): void;
+	add(entity: Entity, component: Id<undefined>): void;
 
 	/**
-	 * Assigns a value to a component on the given entity
-	 * @param entity Target Entity
-	 * @param component Target Component
-	 * @param value Component Value
+	 * Assigns a value to a component on the given entity.
+	 * @param entity The target entity.
+	 * @param component The component definition (could be a Pair or Entity).
+	 * @param value The value to store with that component.
 	 */
 	set<E extends Id<unknown>>(entity: Entity, component: E, value: InferComponent<E>): void;
 
 	/**
-	 * Removes a component from the given entity
-	 * @param entity Target Entity
-	 * @param component Target Component
+	 * Removes a component from the given entity.
+	 * @param entity The target entity.
+	 * @param component The component to remove.
 	 */
 	remove(entity: Entity, component: Id): void;
 
 	/**
-	 * Retrieves the values of specified components for an entity.
-	 * Some values may not exist when called.
-	 * A maximum of 4 components are allowed at a time.
-	 * @param id Target Entity
-	 * @param components Target Components
-	 * @returns Data associated with target components if it exists.
+	 * Retrieves the values of up to 4 components on a given entity. Missing
+	 * components will return `undefined`.
+	 * @param entity The entity to query.
+	 * @param components Up to 4 components/tags to retrieve.
+	 * @returns A tuple of data (or a single value), each possibly undefined.
 	 */
-	get<T extends [Id] | [Id, Id] | [Id, Id, Id] | [Id, Id, Id, Id]>(id: Entity, ...components: T): FlattenTuple<Nullable<InferComponents<T>>>;
+	get<T extends [Id] | [Id, Id] | [Id, Id, Id] | [Id, Id, Id, Id]>(
+		entity: Entity,
+		...components: T
+	): FlattenTuple<Nullable<InferComponents<T>>>;
 
 	/**
-	 * Returns whether the entity has the specified components.
-	 * A maximum of 4 components are allowed at a time.
-	 * @param entity Target Entity
-	 * @param components Target Components
-	 * @returns If the entity contains the components
+	 * Returns `true` if the given entity has all of the specified components.
+	 * A maximum of 4 components can be checked at once.
+	 * @param entity The entity to check.
+	 * @param components Upto 4 components to check for.
 	 */
 	has(entity: Entity, ...components: Id[]): boolean;
 
 	/**
-	 * Checks if an entity exists in the world
-	 * @param entity Entity to check
-	 * @returns Whether the entity exists in the world
+	 * Checks if an entity exists in the world.
+	 * @param entity The entity to verify.
 	 */
 	contains(entity: Entity): boolean;
 
 	/**
-	 * Get parent (target of ChildOf relationship) for entity.
-	 * If there is no ChildOf relationship pair, it will return undefined.
-	 * @param entity Target Entity
-	 * @returns Parent Entity or undefined
+	 * Gets the parent (the target of a `ChildOf` relationship) for an entity,
+	 * if such a relationship exists.
+	 * @param entity The entity whose parent is queried.
 	 */
 	parent(entity: Entity): Entity | undefined;
 
 	/**
-	 * Searches the world for entities that match a given query
-	 * @param components Queried Components
-	 * @returns Query
+	 * Searches the world for entities that match specified components.
+	 * @param components The list of components to query.
+	 * @returns A Query object to iterate over results.
 	 */
 	query<T extends Id[]>(...components: T): Query<InferComponents<T>>;
+
+	/**
+	 * Returns an iterator that yields all entities that have the specified component or relationship.
+	 * @param id The component or relationship ID to search for
+	 * @returns An iterator function that yields entities
+	 */
+	each(id: Id): IterableFunction<Entity>;
+
+	/**
+	 * Returns an iterator that yields all child entities of the specified parent entity.
+	 * Uses the ChildOf relationship internally.
+	 * @param parent The parent entity to get children for
+	 * @returns An iterator function that yields child entities
+	 */
+	children(parent: Entity): IterableFunction<Entity>;
 }
 
 /**
@@ -184,7 +208,7 @@ export class World {
  * @param obj The second entity (object)
  * @returns The composite key (pair)
  */
-export function pair<P, O>(pred: Entity<P>, obj: Entity<O>): Pair<Entity<P>, Entity<O>>;
+export function pair<P, O>(pred: Entity<P>, obj: Entity<O>): Pair<P, O>;
 
 /**
  * Checks if the entity is a composite key (pair)
@@ -198,24 +222,24 @@ export function IS_PAIR(value: Id): value is Pair;
  * @param pair The pair to get the first entity from
  * @returns The first entity (predicate) of the pair
  */
-export function pair_first<P, O>(pair: Pair<P, O>): Entity<P>;
+export function pair_first<P, O>(world: World, p: Pair<P, O>): Entity<P>;
 
 /**
  * Gets the second entity (object) of a pair
  * @param pair The pair to get the second entity from
  * @returns The second entity (object) of the pair
  */
-export function pair_second<P, O>(pair: Pair<P, O>): Entity<O>;
+export function pair_second<P, O>(world: World, p: Pair<P, O>): Entity<O>;
 
-export const OnAdd: Entity<(e: Entity) => void>;
-export const OnRemove: Entity<(e: Entity) => void>;
-export const OnSet: Entity<(e: Entity, value: unknown) => void>;
-export const ChildOf: Entity;
-export const Wildcard: Entity;
-export const w: Entity;
-export const OnDelete: Entity;
-export const OnDeleteTarget: Entity;
-export const Delete: Entity;
-export const Remove: Entity;
-export const Name: Entity<string>;
-export const Rest: Entity;
+export declare const OnAdd: Entity<(e: Entity) => void>;
+export declare const OnRemove: Entity<(e: Entity) => void>;
+export declare const OnSet: Entity<(e: Entity, value: unknown) => void>;
+export declare const ChildOf: Entity;
+export declare const Wildcard: Entity;
+export declare const w: Entity;
+export declare const OnDelete: Entity;
+export declare const OnDeleteTarget: Entity;
+export declare const Delete: Entity;
+export declare const Remove: Entity;
+export declare const Name: Entity<string>;
+export declare const Rest: Entity;

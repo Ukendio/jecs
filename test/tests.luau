@@ -1557,5 +1557,22 @@ TEST("repro", function()
 		end
 		CHECK(counter == 1)
 	end
+
+	do CASE "#3" -- ISSUE #171
+		local world = world_new()
+		local component1 = world:component()
+		local tag1 = world:entity()
+		
+		local query = world:query(component1):with(tag1):cached()
+		
+		local entity = world:entity()
+		world:set(entity, component1, "some data")
+
+		local counter = 0
+		for x in query:iter() do
+			counter += 1
+		end
+		CHECK(counter == 0)
+	end
 end)
 FINISH()
