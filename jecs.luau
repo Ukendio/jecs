@@ -764,7 +764,7 @@ local function create_edge_for_remove(world: World, node: Archetype, edge: Graph
 	return to
 end
 
-local function archetype_traverse_add(world: World, id: i53, from: Archetype?): Archetype
+local function archetype_traverse_add(world: World, id: i53, from: Archetype): Archetype
 	from = from or world.ROOT_ARCHETYPE
 	local edge = archetype_ensure_edge(world, from.add, id)
 
@@ -1156,6 +1156,7 @@ do
 				local idr_t_archetype = archetypes[archetype_id]
 
 				local idr_t_types = idr_t_archetype.types
+				local on_remove = idr_t.hooks.on_remove
 
 				for _, child in idr_t_archetype.entities do
 					table.insert(children, child)
@@ -1177,8 +1178,18 @@ do
 							end
 							break
 						else
-							for _, child in children do
-								world_remove(world, child, id)
+							local to = archetype_traverse_remove(world, id, idr_t_archetype)
+							if on_remove then
+								for _, child in children do
+									on_remove(child)
+									local r = entity_index_try_get_fast(entity_index, child) :: Record
+									entity_move(entity_index, child, r, to)
+								end
+							else
+								for _, child in children do
+									local r = entity_index_try_get_fast(entity_index, child) :: Record
+									entity_move(entity_index, child, r, to)
+								end
 							end
 						end
 					end
