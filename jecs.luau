@@ -222,7 +222,7 @@ local function entity_index_is_alive(entity_index: EntityIndex, entity: number)
 	return entity_index_try_get(entity_index, entity) ~= nil
 end
 
-local function entity_index_new_id(entity_index: EntityIndex, data): i53
+local function entity_index_new_id(entity_index: EntityIndex): i53
 	local dense_array = entity_index.dense_array
 	local alive_count = entity_index.alive_count
 	if alive_count ~= #dense_array then
@@ -1116,7 +1116,7 @@ do
 
 		local delete = entity
 		local component_index = world.componentIndex
-		local archetypes = world.archetypes
+		local archetypes: Archetypes = world.archetypes
 		local tgt = ECS_PAIR(EcsWildcard, delete)
 		local idr_t = component_index[tgt]
 		local idr = component_index[delete]
@@ -1232,6 +1232,15 @@ local EMPTY_QUERY = {
 
 setmetatable(EMPTY_QUERY, EMPTY_QUERY)
 
+type QueryInner = {
+	compatible_archetypes: { Archetype },
+	ids: { i53 },
+	filter_with: { i53 },
+	filter_without: { i53 },
+	next: () -> (number, ...any),
+	world: World,
+}
+
 local function query_iter_init(query: QueryInner): () -> (number, ...any)
 	local world_query_iter_next
 
@@ -1309,6 +1318,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
@@ -1332,6 +1344,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
@@ -1356,6 +1371,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
@@ -1381,6 +1399,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
@@ -1408,6 +1429,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
@@ -1547,45 +1571,6 @@ local function query_archetypes(query)
 end
 
 local function query_cached(query: QueryInner)
-	local archetypes = query.compatible_archetypes
-	local world = query.world :: World
-	-- Only need one observer for EcsArchetypeCreate and EcsArchetypeDelete respectively
-	-- because the event will be emitted for all components of that Archetype.
-	local first = query.ids[1]
-	local observerable = world.observerable
-	local on_create_action = observerable[EcsOnArchetypeCreate]
-	if not on_create_action then
-		on_create_action = {}
-		observerable[EcsOnArchetypeCreate] = on_create_action
-	end
-	local query_cache_on_create = on_create_action[first]
-	if not query_cache_on_create then
-		query_cache_on_create = {}
-		on_create_action[first] = query_cache_on_create
-	end
-
-	local on_delete_action = observerable[EcsOnArchetypeDelete]
-	if not on_delete_action then
-		on_delete_action = {}
-		observerable[EcsOnArchetypeDelete] = on_delete_action
-	end
-	local query_cache_on_delete = on_delete_action[first]
-	if not query_cache_on_delete then
-		query_cache_on_delete = {}
-		on_delete_action[first] = query_cache_on_delete
-	end
-
-	local function on_create_callback(archetype)
-		table.insert(archetypes, archetype)
-	end
-
-	local function on_delete_callback(archetype)
-		local i = table.find(archetypes, archetype)  :: number
-		local n = #archetypes
-		archetypes[i] = archetypes[n]
-		archetypes[n] = nil
-	end
-
 	local with = query.filter_with
 	local ids = query.ids
 	if with then
@@ -1593,12 +1578,6 @@ local function query_cached(query: QueryInner)
 	else
 		query.filter_with = ids
 	end
-
-	local observer_for_create = { query = query, callback = on_create_callback }
-	local observer_for_delete = { query = query, callback = on_delete_callback }
-
-	table.insert(query_cache_on_create, observer_for_create)
-	table.insert(query_cache_on_delete, observer_for_delete)
 
 	local compatible_archetypes = query.compatible_archetypes
 	local lastArchetype = 1
@@ -1613,6 +1592,50 @@ local function query_cached(query: QueryInner)
 	local i: number
 	local archetype: Archetype
 	local records: { ArchetypeRecord }
+	local archetypes = query.compatible_archetypes
+
+	local world = query.world :: World
+	-- Only need one observer for EcsArchetypeCreate and EcsArchetypeDelete respectively
+	-- because the event will be emitted for all components of that Archetype.
+	local observerable = world.observerable
+	local on_create_action = observerable[EcsOnArchetypeCreate]
+	if not on_create_action then
+		on_create_action = {}
+		observerable[EcsOnArchetypeCreate] = on_create_action
+	end
+	local query_cache_on_create = on_create_action[A]
+	if not query_cache_on_create then
+		query_cache_on_create = {}
+		on_create_action[A] = query_cache_on_create
+	end
+
+	local on_delete_action = observerable[EcsOnArchetypeDelete]
+	if not on_delete_action then
+		on_delete_action = {}
+		observerable[EcsOnArchetypeDelete] = on_delete_action
+	end
+	local query_cache_on_delete = on_delete_action[A]
+	if not query_cache_on_delete then
+		query_cache_on_delete = {}
+		on_delete_action[A] = query_cache_on_delete
+	end
+
+	local function on_create_callback(archetype)
+		table.insert(archetypes, archetype)
+	end
+
+	local function on_delete_callback(archetype)
+		local i = table.find(archetypes, archetype)  :: number
+		local n = #archetypes
+		archetypes[i] = archetypes[n]
+		archetypes[n] = nil
+	end
+
+	local observer_for_create = { query = query, callback = on_create_callback }
+	local observer_for_delete = { query = query, callback = on_delete_callback }
+
+	table.insert(query_cache_on_create, observer_for_create)
+	table.insert(query_cache_on_delete, observer_for_delete)
 
 	local function cached_query_iter()
 		lastArchetype = 1
@@ -1685,6 +1708,9 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
@@ -1708,6 +1734,9 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
@@ -1732,9 +1761,12 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entityId = entities[i]
 				columns = archetype.columns
-				 records = archetype.records
+				records = archetype.records
 				a = columns[records[A].column]
 				b = columns[records[B].column]
 				c = columns[records[C].column]
@@ -1757,6 +1789,9 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
@@ -1784,6 +1819,9 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
@@ -1939,7 +1977,7 @@ local function world_each(world: World, id): () -> ()
 	return function(): any
 		local entity = entities[row]
 		while not entity do
-			archetype_id = next(idr_cache, archetype_id)
+			archetype_id = next(idr_cache, archetype_id) :: number
 			if not archetype_id then
 				return
 			end
@@ -2141,35 +2179,37 @@ function World.new()
 	return self
 end
 
-type Id<T = unknown> =
-	| (number & { __jecs_pair_value: T })
-	| (number & { __T: T })
+export type Id<T = nil> =
+    | Entity<T>
+    | Pair<Entity<T>, Entity>
+    | Pair<Entity, Entity<T>>
+    | Pair<Entity<T>, Entity<unknown>>
 
-export type Pair<P = Entity, O = Entity> = number & {
-	__jecs_pair_value: ecs_id_t<ecs_pair_t<P, O>>
+export type Pair<P, O> = number & {
+    __P: P,
+    __O: O,
 }
 
-type function ecs_id_t(entity)
-	local ty = entity:components()[2]
-	local __T = ty:readproperty(types.singleton("__T"))
-	if not __T then
-		return ty:readproperty(types.singleton("__jecs_pair_value"))
-	end
-	return __T
-end
+-- type function ecs_id_t(entity)
+-- 	local ty = entity:components()[2]
+-- 	local __T = ty:readproperty(types.singleton("__T"))
+-- 	if not __T then
+-- 		return ty:readproperty(types.singleton("__jecs_pair_value"))
+-- 	end
+-- 	return __T
+-- end
 
-type function ecs_pair_t(first, second)
-	local ty = first:components()[2]
-	if ty:readproperty(types.singleton("__T")):is("nil") then
-		return second
-	else
-		return first
-	end
-end
+-- type function ecs_pair_t(first, second)
+-- 	if ecs_id_t(first):is("nil") then
+-- 		return second
+-- 	else
+-- 		return first
+-- 	end
+-- end
 
 type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 
-export type Entity<T = nil> =  number & { __T: T }
+export type Entity<T = nil> = number & { __T: T }
 
 type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 
@@ -2181,15 +2221,6 @@ export type Query<T...> = typeof(setmetatable({}, {
 	without: (self: Query<T...>, ...Id) -> Query<T...>,
 	archetypes: (self: Query<T...>) -> { Archetype },
 	cached: (self: Query<T...>) -> Query<T...>,
-}
-
-type QueryInner = {
-	compatible_archetypes: { Archetype },
-	filter_with: { i53 }?,
-	filter_without: { i53 }?,
-	ids: { i53 },
-	world: {}, -- Downcasted to be serializable by the analyzer
-	next: () -> Item<any>
 }
 
 type Observer = {
@@ -2208,7 +2239,13 @@ export type World = {
 	nextEntityId: number,
 	nextArchetypeId: number,
 
-	observerable: { [i53]: { [i53]: { { query: Query<i53> } } } },
+	observerable: {
+		[i53]: {
+			[i53]: {
+				{ query: QueryInner, callback: (Archetype) -> () }
+			}
+		}
+	},
 } & {
 	--- Creates a new entity
 	entity: (self: World) -> Entity,
@@ -2251,18 +2288,18 @@ export type World = {
 	children: (self: World, id: Id) -> () -> Entity,
 
 	--- Searches the world for entities that match a given query
-	query: (<A>(World, A) -> Query<ecs_id_t<A>>)
-		& (<A, B>(World, A, B) -> Query<ecs_id_t<A>, ecs_id_t<B>>)
-		& (<A, B, C>(World, A, B, C) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>>)
-		& (<A, B, C, D>(World, A, B, C, D) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>>)
-		& (<A, B, C, D, E>(World, A, B, C, D, E) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>, ecs_id_t<E>>)
-		& (<A, B, C, D, E, F>(World, A, B, C, D, E, F) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>, ecs_id_t<E>, ecs_id_t<F>>)
-		& (<A, B, C, D, E, F, G>(World, A, B, C, D, E, F, G) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>, ecs_id_t<E>, ecs_id_t<F>, ecs_id_t<G>>)
-		& (<A, B, C, D, E, F, G, H>(World, A, B, C, D, E, F, G, H) -> Query<ecs_id_t<A>, ecs_id_t<B>, ecs_id_t<C>, ecs_id_t<D>, ecs_id_t<E>, ecs_id_t<F>, ecs_id_t<G>, ecs_id_t<H>>)
+	query: (<A>(World, Id<A>) -> Query<A>)
+		& (<A, B>(World, Id<A>, Id<B>) -> Query<A, B>)
+		& (<A, B, C>(World, Id<A>, Id<B>, Id<C>) -> Query<A, B, C>)
+		& (<A, B, C, D>(World, Id<A>, Id<B>, Id<C>, Id<D>) -> Query<A, B, C, D>)
+		& (<A, B, C, D, E>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>) -> Query<A, B, C, D, E>)
+		& (<A, B, C, D, E, F>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>, Id<F>) -> Query<A, B, C, D, E, F>)
+		& (<A, B, C, D, E, F, G>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>, Id<F>, Id<G>) -> Query<A, B, C, D, E, F, G>)
+		& (<A, B, C, D, E, F, G, H>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>, Id<F>, Id<G>, Id<H>, ...Id<any>) -> Query<A, B, C, D, E, F, G, H>)
 }
 
 return {
-	World = World :: { new: () -> World },
+	World = World,
 
 	OnAdd = EcsOnAdd :: Entity<(entity: Entity) -> ()>,
 	OnRemove = EcsOnRemove :: Entity<(entity: Entity) -> ()>,

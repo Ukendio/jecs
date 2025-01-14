@@ -374,9 +374,12 @@ TEST("world:query()", function()
 		world:set(e, Bar, false)
 		local i = 0
 
+		local iter = 0
 		for _, e in q:iter() do
+			iter += 1
 			i=1
 		end
+		CHECK (iter == 1)
 		CHECK(i == 1)
 		for _, e in q:iter() do
 			i=2
@@ -1362,6 +1365,65 @@ TEST("Hooks", function()
 			CHECK(not world:get(e, B))
 		end
 	end
+end)
+
+TEST("change tracking", function()
+	CASE "#1" do
+		local world = world_new()
+		local Foo = world:component()
+		local Previous = jecs.Rest
+
+		local q1 = world
+			:query(Foo)
+			:without(pair(Previous, Foo))
+			:cached()
+
+		local e1 = world:entity()
+		world:set(e1, Foo, 1)
+		local e2 = world:entity()
+		world:set(e2, Foo, 2)
+
+		local i = 0
+		for e, new in q1 do
+			i += 1
+			world:set(e, pair(Previous, Foo), new)
+		end
+
+		CHECK(i == 2)
+		local j = 0
+		for e, new in q1 do
+			j += 1
+			world:set(e, pair(Previous, Foo), new)
+		end
+
+		CHECK(j == 0)
+	end
+
+	CASE "#2" do
+		local world = world_new()
+		local component = world:component()
+		local tag = world:entity()
+		local previous = jecs.Rest
+
+		local q1 = world:query(component):without(pair(previous, component), tag):cached()
+
+		local testEntity = world:entity()
+
+		world:set(testEntity, component, 10)
+
+		local i = 0
+		for entity, number in q1 do
+			i += 1
+		    world:add(testEntity, tag)
+		end
+
+		CHECK(i == 1)
+
+		for e, n in q1 do
+		    world:set(e, pair(previous, component), n)
+		end
+	end
+
 end)
 
 TEST("repro", function()
