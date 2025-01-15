@@ -900,52 +900,39 @@ end)
 
 TEST("world:children", function()
 	local world = world_new()
-	local e1 = world:entity()
-	local e2 = world:entity()
-	local e3 = world:entity()
+	local C = world:component()
+	local T = world:entity()
 
+	local e1 = world:entity()
+	world:set(e1, C, true)
+
+	local e2 = world:entity()
+
+	world:add(e2, T)
 	world:add(e2, pair(ChildOf, e1))
+
+	local e3 = world:entity()
 	world:add(e3, pair(ChildOf, e1))
 
-	for entity in world:children(pair(ChildOf, e1)) do
+	local count = 0
+	for entity in world:children(e1) do
+		count += 1
 		if entity == e2 or entity == e3 then
 			CHECK(true)
 			continue
 		end
 		CHECK(false)
 	end
-	-- Check query, with tags and children being added inside the query
-	local parent = world:entity()
-	local c1 = world:component()
-	local t1 = world:entity()
-	local t2 = world:entity()
-	world:set(parent, c1, true)
-	local count = 0
-	for entity in world:query(c1) do 
-		world:add(entity, t1)
-		local child = world:entity()
-		world:add(child, pair(ChildOf, entity))
-		world:add(child, t2)
-		for child in world:children(entity) do
-			count += 1
-		end
-	end
-	CHECK(count == 0)
-	-- Check child still exists outside of query
+	CHECK(count == 2)
+
+	world:remove(e2, pair(ChildOf, e1))
+
 	count = 0
-	for entity in world:children(parent) do
+	for entity in world:children(e1) do
 		count += 1
 	end
-	CHECK(count == 0)
-	-- Check removing child
-	local child = world:entity()
-	world:add(child, pair(ChildOf, parent))
-	world:remove(child, pair(ChildOf, parent))
-	count = 0
-	for entity in world:children(parent) do
-		count += 1
-	end
-	CHECK(count == 0)
+
+	CHECK(count == 1)
 end)
 
 TEST("world:clear()", function()
@@ -1594,9 +1581,9 @@ TEST("repro", function()
 		local world = world_new()
 		local component1 = world:component()
 		local tag1 = world:entity()
-		
+
 		local query = world:query(component1):with(tag1):cached()
-		
+
 		local entity = world:entity()
 		world:set(entity, component1, "some data")
 
