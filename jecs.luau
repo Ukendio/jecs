@@ -1995,6 +1995,7 @@ local function world_each(world: World, id): () -> ()
 			archetype = archetypes[archetype_id]
 			entities = archetype.entities
 			row = #entities
+			entity = entities[row]
 		end
 		row -= 1
 		return entity
