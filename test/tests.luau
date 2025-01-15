@@ -914,6 +914,38 @@ TEST("world:children", function()
 		end
 		CHECK(false)
 	end
+	-- Check query, with tags and children being added inside the query
+	local parent = world:entity()
+	local c1 = world:component()
+	local t1 = world:entity()
+	local t2 = world:entity()
+	world:set(parent, c1, true)
+	local count = 0
+	for entity in world:query(c1) do 
+		world:add(entity, t1)
+		local child = world:entity()
+		world:add(child, pair(ChildOf, entity))
+		world:add(child, t2)
+		for child in world:children(entity) do
+			count += 1
+		end
+	end
+	CHECK(count == 0)
+	-- Check child still exists outside of query
+	count = 0
+	for entity in world:children(parent) do
+		count += 1
+	end
+	CHECK(count == 0)
+	-- Check removing child
+	local child = world:entity()
+	world:add(child, pair(ChildOf, parent))
+	world:remove(child, pair(ChildOf, parent))
+	count = 0
+	for entity in world:children(parent) do
+		count += 1
+	end
+	CHECK(count == 0)
 end)
 
 TEST("world:clear()", function()
