@@ -1,19 +1,19 @@
-name: Analysis
+name: analysis
 
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
-  run:
-    name: Run Luau Analyze
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout Project
-        uses: actions/checkout@v4
-        
-      - name: Install Luau
-        uses: encodedvenom/install-luau@v2.1
-        
-      - name: Analyze
-        run: |
-          output=$(luau-analyze src || true) # Suppress errors for now.
+    run:
+        name: Run Luau Analyze
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Project
+              uses: actions/checkout@v4
+
+            - name: Install Luau
+              uses: encodedvenom/install-luau@v2.1
+
+            - name: Analyze
+              run: |
+                  output=$(luau-analyze src || true) # Suppress errors for now.

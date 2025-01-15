@@ -1,71 +1,71 @@
-name: Release
+name: release
 
 on:
-  push:
-    tags: ["v*"]
+    push:
+        tags: ["v*"]
 
 jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Project
-        uses: actions/checkout@v4
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Project
+              uses: actions/checkout@v4
 
-      - name: Install Rokit
-        uses: CompeyDev/setup-rokit@v0.1.2
+            - name: Install Rokit
+              uses: CompeyDev/setup-rokit@v0.1.2
 
-      - name: Install Dependencies
-        run: wally install
+            - name: Install Dependencies
+              run: wally install
 
-      - name: Build
-        run: rojo build --output build.rbxm default.project.json
+            - name: Build
+              run: rojo build --output build.rbxm default.project.json
 
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: build
-          path: build.rbxm
+            - name: Upload Build Artifact
+              uses: actions/upload-artifact@v3
+              with:
+                  name: build
+                  path: build.rbxm
 
-  release:
-    name: Release
-    needs: [build]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout Project
-        uses: actions/checkout@v4
+    release:
+        name: Release
+        needs: [build]
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout Project
+              uses: actions/checkout@v4
 
-      - name: Download Jecs Build
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: build
+            - name: Download Jecs Build
+              uses: actions/download-artifact@v3
+              with:
+                  name: build
+                  path: build
 
-      - name: Rename Build
-        run: mv build/build.rbxm jecs.rbxm
+            - name: Rename Build
+              run: mv build/build.rbxm jecs.rbxm
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: Jecs ${{ github.ref_name }}
-          files: |
-            jecs.rbxm
+            - name: Create Release
+              uses: softprops/action-gh-release@v1
+              with:
+                  name: Jecs ${{ github.ref_name }}
+                  files: |
+                      jecs.rbxm
 
-  publish:
-    name: Publish
-    needs: [release]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Project
-        uses: actions/checkout@v4
+    publish:
+        name: Publish
+        needs: [release]
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Project
+              uses: actions/checkout@v4
 
-      - name: Install Rokit
-        uses: CompeyDev/setup-rokit@v0.1.2
+            - name: Install Rokit
+              uses: CompeyDev/setup-rokit@v0.1.2
 
-      - name: Wally Login
-        run: wally login --token ${{ secrets.WALLY_AUTH_TOKEN }}
+            - name: Wally Login
+              run: wally login --token ${{ secrets.WALLY_AUTH_TOKEN }}
 
-      - name: Publish
-        run: wally publish
+            - name: Publish
+              run: wally publish

@@ -1,31 +1,31 @@
-name: Unit Testing
+name: unit-testing
 
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
-  run:
-    name: Run Luau Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
+    run:
+        name: Run Luau Tests
+        runs-on: ubuntu-latest
+        timeout-minutes: 2
 
-    steps:
-      - name: Checkout Project
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout Project
+              uses: actions/checkout@v4
 
-      - name: Install Luau
-        uses: encodedvenom/install-luau@v4.3
-        with:
-          version: 'latest'
-          verbose: 'true'
+            - name: Install Luau
+              uses: encodedvenom/install-luau@v4.3
+              with:
+                  version: "latest"
+                  verbose: "true"
 
-      - name: Run Unit Tests
-        id: run_tests
-        run: |
-          output=$(luau test/tests.luau)
-          echo "$output"
-          if [[ "$output" == *"0 fails"* ]]; then
-            echo "Unit Tests Passed"
-          else
-            echo "Error: One or More Unit Tests Failed."
-            exit 1
-          fi
+            - name: Run Unit Tests
+              id: run_tests
+              run: |
+                  output=$(luau test/tests.luau)
+                  echo "$output"
+                  if [[ "$output" == *"0 fails"* ]]; then
+                    echo "Unit Tests Passed"
+                  else
+                    echo "Error: One or More Unit Tests Failed."
+                    exit 1
+                  fi
