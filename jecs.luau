@@ -2311,7 +2311,7 @@ export type World = {
 }
 
 return {
-	World = World,
+	World = World :: { new: () -> World },
 
 	OnAdd = EcsOnAdd :: Entity<(entity: Entity) -> ()>,
 	OnRemove = EcsOnRemove :: Entity<(entity: Entity) -> ()>,
