@@ -1697,7 +1697,7 @@ TEST("world:delete() invokes OnRemove hook", function()
 		world:add(entity, B)
 		world:add(entity, pair(Relation, A))
 		
-		world:remove(entity, B)
+		world:delete(B)
 
 		CHECK(called)
 	end
