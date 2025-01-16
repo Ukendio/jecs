@@ -1433,13 +1433,13 @@ TEST("change tracking", function()
 		local i = 0
 		for entity, number in q1 do
 			i += 1
-		    world:add(testEntity, tag)
+			world:add(testEntity, tag)
 		end
 
 		CHECK(i == 1)
 
 		for e, n in q1 do
-		    world:set(e, pair(previous, component), n)
+			world:set(e, pair(previous, component), n)
 		end
 	end
 
@@ -1592,6 +1592,71 @@ TEST("repro", function()
 			counter += 1
 		end
 		CHECK(counter == 0)
+	end
+end)
+
+TEST("wildcard query", function()
+	do CASE "#1"
+		local world = world_new()
+		local pair = jecs.pair
+
+		local Relation = world:entity()
+		local Wildcard = jecs.Wildcard
+		local A = world:entity()
+
+		local relationship = pair(Relation, Wildcard)
+		local query = world:query(relationship):cached()
+
+		local entity = world:entity()
+
+		world:add(entity, pair(Relation, A))
+
+		local counter = 0
+		for e in query:iter() do
+			counter += 1
+		end
+		CHECK(counter == 1)
+	end
+	do CASE "#2"
+		local world = world_new()
+		local pair = jecs.pair
+
+		local Relation = world:entity()
+		local Wildcard = jecs.Wildcard
+		local A = world:entity()
+
+		local relationship = pair(Relation, Wildcard)
+
+		local entity = world:entity()
+
+		world:add(entity, pair(Relation, A))
+
+		local counter = 0
+		for e in world:query(relationship):iter() do
+			counter += 1
+		end
+		CHECK(counter == 1)
+	end
+	do CASE "#3"
+		local world = world_new()
+		local pair = jecs.pair
+
+		local Relation = world:entity()
+		local Wildcard = jecs.Wildcard
+		local A = world:entity()
+
+		local entity = world:entity()
+
+		world:add(entity, pair(Relation, A))
+
+		local relationship = pair(Relation, Wildcard)
+		local query = world:query(relationship):cached()
+
+		local counter = 0
+		for e in query:iter() do
+			counter += 1
+		end
+		CHECK(counter == 1)
 	end
 end)
 FINISH()

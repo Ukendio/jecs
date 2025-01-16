@@ -619,7 +619,7 @@ local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?)
 		end
 	end
 
-	for _, id in id_types do
+	for id in records do
 		local observer_list = find_observers(world, EcsOnArchetypeCreate, id)
 		if not observer_list then
 			continue
