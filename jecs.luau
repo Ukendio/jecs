@@ -960,7 +960,7 @@ local function archetype_delete(world: World, archetype: Archetype, row: number,
 	local component_index = world.componentIndex
 	for _, id in id_types do
 		local idr = component_index[id]
-		local on_remove: idr.hooks.on_remove
+		local on_remove = idr.hooks.on_remove
 		if on_remove then
 			on_remove(delete)
 		end
