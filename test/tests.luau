@@ -1659,4 +1659,47 @@ TEST("wildcard query", function()
 		CHECK(counter == 1)
 	end
 end)
+
+TEST("world:delete() invokes OnRemove hook", function()
+	do CASE "#1"
+		local world = world_new()
+		
+		local A = world:entity()
+		local entity = world:entity()
+
+		local called = false
+		world:set(A, jecs.OnRemove, function(e)
+			called = true
+		end)
+
+		world:add(entity, A)
+		world:delete()
+
+		CHECK(called)
+	end
+	do CASE "#2"
+		local world = world_new()
+		local pair = jecs.pair
+
+		local Relation = world:entity()
+		local A = world:entity()
+		local B = world:entity()
+
+		world:add(B, pair(jecs.OnDelete, jecs.Delete))
+
+		local entity = world:entity()
+
+		local called = false
+		world:set(A, jecs.OnRemove, function(e)
+			called = true
+		end)
+
+		world:add(entity, A)
+		world:add(entity, pair(Relation, B))
+		
+		world:remove(entity, B)
+
+		CHECK(called)
+	end
+end)
 FINISH()
