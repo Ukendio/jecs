@@ -1685,7 +1685,7 @@ TEST("world:delete() invokes OnRemove hook", function()
 		local A = world:entity()
 		local B = world:entity()
 
-		world:add(B, pair(jecs.OnDelete, jecs.Delete))
+		world:add(Relation, pair(jecs.OnDelete, jecs.Delete))
 
 		local entity = world:entity()
 
@@ -1694,8 +1694,8 @@ TEST("world:delete() invokes OnRemove hook", function()
 			called = true
 		end)
 
-		world:add(entity, B)
-		world:add(entity, pair(Relation, A))
+		world:add(entity, A)
+		world:add(entity, pair(Relation, B))
 		
 		world:delete(B)
 
