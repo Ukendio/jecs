@@ -1158,7 +1158,7 @@ do
 				local idr_t_archetype = archetypes[archetype_id]
 
 				local idr_t_types = idr_t_archetype.types
-				local on_remove = idr_t.hooks.on_remove
+				
 
 				for _, child in idr_t_archetype.entities do
 					table.insert(children, child)
@@ -1180,6 +1180,7 @@ do
 							end
 							break
 						else
+							local on_remove = id_record.hooks.on_remove
 							local to = archetype_traverse_remove(world, id, idr_t_archetype)
 							if on_remove then
 								for _, child in children do
