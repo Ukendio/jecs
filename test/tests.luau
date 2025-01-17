@@ -1701,5 +1701,24 @@ TEST("world:delete() invokes OnRemove hook", function()
 
 		CHECK(called)
 	end
+	do CASE "#3"
+		local world = world_new()
+		local pair = jecs.pair
+
+		local viewingContainer = world:entity()
+		local character = world:entity()
+		local container = world:entity()
+
+		local called = false
+		world:set(viewingContainer, jecs.OnRemove, function(e)
+			called = true
+		end)
+
+		world:add(character, pair(viewingContainer, container))
+
+		world:delete(container)
+
+		CHECK(called)
+	end
 end)
 FINISH()
