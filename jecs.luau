@@ -503,7 +503,7 @@ end
 
 local function id_record_ensure(world: World, id: number): IdRecord
 	local componentIndex = world.componentIndex
-	local idr = componentIndex[id]
+	local idr: IdRecord = componentIndex[id]
 
 	if not idr then
 		local flags = ECS_ID_MASK
@@ -548,7 +548,8 @@ local function id_record_ensure(world: World, id: number): IdRecord
 				on_set = on_set,
 				on_remove = on_remove,
 			},
-		} :: IdRecord
+		}
+
 		componentIndex[id] = idr
 	end
 
