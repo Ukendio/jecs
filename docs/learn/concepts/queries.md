@@ -17,14 +17,14 @@ This manual contains a full overview of the query features available in Jecs. So
 ## Performance and Caching
 
 Understanding the basic architecture of queries helps to make the right tradeoffs when using queries in games.
-
 The biggest impact on query performance is whether a query is cached or not.
-
 This section goes over what caching is, how it can be used and when it makes sense to use it.
 
 ### Caching: what is it?
 
-Jecs is an archetype ECS, which means that entities with exactly the same components are grouped together in an "archetype". Archetypes are created on the fly whenever a new component combination is created in the ECS. For example:
+Jecs is an archetype ECS, which means that entities with exactly the same components are
+grouped together in an "archetype". Archetypes are created on the fly
+whenever a new component combination is created in the ECS. For example:
 
 :::code-group
 

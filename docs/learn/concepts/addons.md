@@ -1,7 +1,6 @@
-# Assets
+# Addons
 A collection of third-party jecs assets made by the community. If you would like to share what you're working on, [submit a pull request](https://github.com/Ukendio/jecs)!
 
-# Debuggers
 ## [jabby](https://github.com/alicesaidhi/jabby)
 A jecs debugger with a string-based query language and entity editing capabilities.
 
