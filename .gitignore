@@ -64,5 +64,4 @@ drafts/
 .vitepress/dist
 
 # Luau tools
-/tools
 profile.*

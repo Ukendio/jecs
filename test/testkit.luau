@@ -180,6 +180,24 @@ local function CASE(name: string)
 	table.insert(test.cases, case)
 end
 
+local function CHECK_EXPECT_ERR(fn, ...)
+	assert(test, "no active test")
+	local case = test.case
+	if not case then
+		CASE("")
+		case = test.case
+	end
+	assert(case, "no active case")
+	if case.result ~= FAIL then
+		local ok, err = pcall(fn, ...)
+		case.result = if ok then FAIL else PASS
+		if skip then
+			case.result = SKIPPED
+		end
+		case.line = debug.info(stack and stack + 1 or 2, "l")
+	end
+end
+
 local function CHECK<T>(value: T, stack: number?): T?
 	assert(test, "no active test")
 
@@ -509,7 +527,15 @@ end
 
 return {
 	test = function()
-		return TEST, CASE, CHECK, FINISH, SKIP, FOCUS
+		return {
+			TEST = TEST,
+			CASE = CASE,
+			CHECK = CHECK,
+			FINISH = FINISH,
+			SKIP = SKIP,
+			FOCUS = FOCUS,
+			CHECK_EXPECT_ERR = CHECK_EXPECT_ERR
+		}
 	end,
 
 	benchmark = function()

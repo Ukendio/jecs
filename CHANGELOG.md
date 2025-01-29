@@ -165,7 +165,7 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 
 -   Separates ranges for components and entity IDs.
 
-    -   IDs created with `world:component()` will promote array lookups rather than map lookups in the `componentIndex` which is a significant boost
+    -   IDs created with `world:component()` will promote array lookups rather than map lookups in the `component_index` which is a significant boost
 
 -   No longer caches the column pointers directly and instead the column indices which stay persistent even when data is reallocated during swap-removals
     -   This was an issue with the iterator being invalidated when you move an entity to a different archetype.

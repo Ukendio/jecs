@@ -123,6 +123,7 @@ local function remove(entity)
 	r.dense = last_entity_alive_at_index
 	dense[index_of_deleted_entity] = last_alive_entity
 	dense[last_entity_alive_at_index] = ECS_GENERATION_INC(entity)
+	print("*dellocated", pe(id))
 end
 
 local function alive(e)
