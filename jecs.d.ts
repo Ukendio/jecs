@@ -40,6 +40,26 @@ type FlattenTuple<T extends unknown[]> = T extends [infer U] ? U : LuaTuple<T>;
 type Nullable<T extends unknown[]> = { [K in keyof T]: T[K] | undefined };
 type InferComponents<A extends Id[]> = { [K in keyof A]: InferComponent<A[K]> };
 
+type i53 = number
+type i24 = number
+type Ty =  i53[];
+type ArchetypeId = number
+type Column = unknown[];
+
+type ArchetypeRecord = {
+    count: number;
+    column: number;
+}
+
+export type Archetype = {
+    id: number;
+    types: Ty;
+    type: string;
+    entities: number[];
+    columns: Column[];
+    records: ArchetypeRecord[];
+}
+
 type Iter<T extends unknown[]> = IterableFunction<LuaTuple<[Entity, ...T]>>;
 
 export type CachedQuery<T extends unknown[]> = {
@@ -47,6 +67,12 @@ export type CachedQuery<T extends unknown[]> = {
 	 * Returns an iterator that produces a tuple of [Entity, ...queriedComponents].
 	 */
 	iter(): Iter<T>;
+
+	/**
+	 * Returns the archetype of the query
+	 * @returns An array of archetype of the query
+	 */
+	archetypes(): Archetype[];
 } & Iter<T>;
 
 export type Query<T extends unknown[]> = {
@@ -75,6 +101,12 @@ export type Query<T extends unknown[]> = {
 	 * @returns A new Query with the exclusion applied.
 	 */
 	without(...components: Id[]): Query<T>;
+
+	/**
+	 * Returns the archetype of the query
+	 * @returns An array of archetype of the query
+	 */
+	archetypes(): Archetype[];
 } & Iter<T>;
 
 export class World {
