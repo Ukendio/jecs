@@ -69,8 +69,8 @@ export type CachedQuery<T extends unknown[]> = {
 	iter(): Iter<T>;
 
 	/**
-	 * Returns the archetype of the query
-	 * @returns An array of archetype of the query
+	 * Returns the matched archetypes of the query
+	 * @returns An array of archetypes of the query
 	 */
 	archetypes(): Archetype[];
 } & Iter<T>;
@@ -103,8 +103,8 @@ export type Query<T extends unknown[]> = {
 	without(...components: Id[]): Query<T>;
 
 	/**
-	 * Returns the archetype of the query
-	 * @returns An array of archetype of the query
+	 * Returns the matched archetypes of the query
+	 * @returns An array of archetypes of the query
 	 */
 	archetypes(): Archetype[];
 } & Iter<T>;
