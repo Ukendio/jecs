@@ -40,9 +40,6 @@ type FlattenTuple<T extends unknown[]> = T extends [infer U] ? U : LuaTuple<T>;
 type Nullable<T extends unknown[]> = { [K in keyof T]: T[K] | undefined };
 type InferComponents<A extends Id[]> = { [K in keyof A]: InferComponent<A[K]> };
 
-type i53 = number
-type i24 = number
-type Ty =  i53[];
 type ArchetypeId = number
 type Column = unknown[];
 
@@ -53,7 +50,7 @@ type ArchetypeRecord = {
 
 export type Archetype = {
     id: number;
-    types: Ty;
+    types: number[];
     type: string;
     entities: number[];
     columns: Column[];
