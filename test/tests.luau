@@ -1045,6 +1045,21 @@ TEST("world:component()", function()
 end)
 
 TEST("world:delete", function()
+	do CASE "delete recycled entity id used as component"
+		local world = world_new()
+		local id = world:entity()
+		world:add(id, jecs.Component)
+
+		local e = world:entity()
+		world:set(e, id, 1)
+		CHECK(world:get(e, id) == 1)
+		world:delete(id)
+		local recycled = world:entity()
+		world:add(recycled, jecs.Component)
+		world:set(e, recycled, 1)
+		CHECK(world:has(recycled, jecs.Component))
+		CHECK(world:get(e, recycled) == 1)
+	end
 	do
 		CASE("bug: Empty entity does not respect cleanup policy")
 		local world = world_new()

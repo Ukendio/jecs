@@ -1144,6 +1144,9 @@ do
 			end
 		end
 
+		local sparse_array = entity_index.sparse_array
+		local dense_array = entity_index.dense_array
+
 		if idr_t then
 			for archetype_id in idr_t.cache do
 				local children = {}
@@ -1174,24 +1177,14 @@ do
 						else
 							local on_remove = id_record.hooks.on_remove
 							local to = archetype_traverse_remove(world, id, idr_t_archetype)
-							if on_remove then
-								if to then
-									for i = n, 1, -1 do
-										local child = children[i]
-										on_remove(children[i])
-										local r = entity_index_try_get_fast(entity_index, child) :: Record
-										entity_move(entity_index, child, r, to)
-									end
-								else
-									for i = n, 1, -1 do
-										local child = children[i]
-										on_remove(child)
-									end
+							local empty = #to.types == 0
+							for i = n, 1, -1 do
+								local child = children[i]
+								if on_remove then
+									on_remove(child)
 								end
-							elseif to then
-								for i = n, 1, -1 do
-									local child = children[i]
-									local r = entity_index_try_get_fast(entity_index, child) :: Record
+								local r = sparse_array[ECS_ENTITY_T_LO(child)]
+								if not empty then
 									entity_move(entity_index, child, r, to)
 								end
 							end
@@ -1203,7 +1196,6 @@ do
 			end
 		end
 
-		local dense_array = entity_index.dense_array
 		local index_of_deleted_entity = record.dense
 		local index_of_last_alive_entity = entity_index.alive_count
 		entity_index.alive_count = index_of_last_alive_entity - 1
@@ -2361,6 +2353,8 @@ return {
 	create_edge_for_remove = create_edge_for_remove,
 	archetype_traverse_add = archetype_traverse_add,
 	archetype_traverse_remove = archetype_traverse_remove,
+
+	entity_move = entity_move,
 
 	entity_index_try_get = entity_index_try_get,
 	entity_index_try_get_any = entity_index_try_get_any,

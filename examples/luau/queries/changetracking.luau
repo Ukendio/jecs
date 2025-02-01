@@ -1,4 +1,5 @@
 local jecs = require("@jecs")
+local pair = jecs.pair
 
 local world = jecs.World.new()
 local Name = world:component()
@@ -12,39 +13,36 @@ local function name(e)
 	return world:get(e, Name)
 end
 
-local Position = named(world.component, "Position") :: jecs.Entity<Vector3>
+local Position = named(world.component, "Position") :: jecs.Entity<vector>
 local Previous = jecs.Rest
-local PreviousPosition = jecs.pair(Previous, Position)
 
 local added = world
 	:query(Position)
-	:without(PreviousPosition)
+	:without(pair(Previous, Position))
 	:cached()
 local changed = world
-	:query(Position, PreviousPosition)
+	:query(Position, pair(Previous, Position))
 	:cached()
 local removed = world
-	:query(PreviousPosition)
+	:query(pair(Previous, Position))
 	:without(Position)
 	:cached()
 
 local e1 = named(world.entity, "e1")
-world:set(e1, Position, Vector3.new(10, 20, 30))
-
+world:set(e1, Position, vector.create(10, 20, 30))
 local e2 = named(world.entity, "e2")
-world:set(e2, Position, Vector3.new(10, 20, 30))
-
-for e, p in added:iter() do
-	print(`Added {e}: \{{p.X}, {p.Y}, {p.Z}}`)
-	world:set(e, PreviousPosition, p)
+world:set(e2, Position, vector.create(10, 20, 30))
+for entity, p in added do
+	print(`Added {name(entity)}: \{{p.x}, {p.y}, {p.z}}`)
+	world:set(entity, pair(Previous, Position), p)
 end
 
-world:set(e1, Position, "")
+world:set(e1, Position, vector.create(999, 999, 1998))
 
-for e, new, old in changed:iter() do
+for e, new, old in changed do
 	if new ~= old then
-		print(`{name(new)}'s Position changed from \{{old.X}, {old.Y}, {old.Z}\} to \{{new.X}, {new.Y}, {new.Z}\}`)
-		world:set(e, PreviousPosition, new)
+		print(`{name(e)}'s Position changed from \{{old.x}, {old.y}, {old.z}\} to \{{new.x}, {new.y}, {new.z}\}`)
+		world:set(e, pair(Previous, Position), new)
 	end
 end
 
@@ -52,6 +50,7 @@ world:remove(e2, Position)
 
 for e in removed:iter() do
 	print(`Position was removed from {name(e)}`)
+	world:remove(e, pair(Previous, Position))
 end
 
 -- Output:
