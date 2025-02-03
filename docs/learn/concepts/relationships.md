@@ -47,21 +47,9 @@ Get parent for entity
 world:parent(bob)
 ```
 ```typescript [typescript]
-world.parent(bob, pair(Eats, jecs.Wildcard)
+world.parent(bob)
 ```
 :::
-
-Find first target of a relationship for entity
-
-:::code-group
-```luau [luau]
-world:target(bob, Eats)
-```
-```typescript [typescript]
-world.target(bob, Eats)
-```
-:::
-
 
 Find first target of a relationship for entity
 
