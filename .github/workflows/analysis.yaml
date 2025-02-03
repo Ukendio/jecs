@@ -12,7 +12,7 @@ jobs:
               uses: actions/checkout@v4
 
             - name: Install Luau
-              uses: encodedvenom/install-luau@v2.1
+              uses: encodedvenom/install-luau@v4.3
 
             - name: Analyze
               run: |
