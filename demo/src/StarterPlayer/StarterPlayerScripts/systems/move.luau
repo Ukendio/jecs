@@ -9,15 +9,23 @@ local cts = require(std.components)
 local Model = cts.Model
 local Transform = cts.Transform
 
-local moving_models = world:query(Transform, Model):cached()
+local moved_models = world:query(Model, Transform):cached()
+local updated_models = {}
+local i = 0
+local function processed(n)
+	i += 1
+	if i > n then
+		i = 0
+		return true
+	end
+	return false
+end
+
 local function move(dt: number)
-	for _, transform, model in moving_models do
-		local cf = transform.new
-		if cf ~= transform.old then
-			local part = model.PrimaryPart :: BasePart
-			local origo = part.CFrame
-			part.CFrame = origo:Lerp(cf, 1)
-			transform.old = cf
+	for entity, model in moved_models do
+		if updated_models[entity] then
+			updated_models[entity] = nil
+			model.PrimaryPart.CFrame = transform
 		end
 	end
 end
@@ -25,11 +33,8 @@ end
 local function syncTransforms()
 	for _, id, cf in blink.UpdateTransform.Iter() do
 		local e = ref("server-" .. tostring(id))
-		local transform = world:get(e, Transform)
-		if not transform then
-			continue
-		end
-		transform.new = cf
+		world:set(e, Transform, cf)
+		moved_models[e] = true
 	end
 end
 

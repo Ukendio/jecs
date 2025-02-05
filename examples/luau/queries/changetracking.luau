@@ -28,6 +28,7 @@ local removed = world
 	:without(Position)
 	:cached()
 
+
 local e1 = named(world.entity, "e1")
 world:set(e1, Position, vector.create(10, 20, 30))
 local e2 = named(world.entity, "e2")
@@ -39,7 +40,7 @@ end
 
 world:set(e1, Position, vector.create(999, 999, 1998))
 
-for e, new, old in changed do
+for _, archetype in changed:archetypes() do
 	if new ~= old then
 		print(`{name(e)}'s Position changed from \{{old.x}, {old.y}, {old.z}\} to \{{new.x}, {new.y}, {new.z}\}`)
 		world:set(e, pair(Previous, Position), new)
