@@ -21,3 +21,8 @@ An ergonomic, runtime agnostic scheduler for Jecs
 ## [jam](https://github.com/revvy02/Jam)
 
 Provides hooks and a scheduler that implements jabby and a topographical runtime
+
+## [planck](https://github.com/YetAnotherClown/planck)
+
+An agnostic scheduler inspired by Bevy and Flecs, with core features including phases, pipelines, run conditions, and startup systems.
+Planck also provides plugins for Jabby, Matter Hooks, and more.
