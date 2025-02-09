@@ -2196,7 +2196,7 @@ function World.new()
 	return self
 end
 
-export type Entity<T = nil> = T
+export type Entity<T = unknown> = T
 
 export type Id<T = nil> =
     | Entity<T>
