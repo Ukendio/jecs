@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 
 -   `[world]`:
     -   16% faster `world:get`
+    -   `world:has` no longer typechecks components after the 8th one.
 -   `[typescript]`
 
     -   Fixed Entity type to default to `undefined | unknown` instead of just `undefined`
