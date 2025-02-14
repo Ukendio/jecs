@@ -2190,7 +2190,7 @@ end
 
 export type Entity<T = unknown> = {__T: T}
 
-export type Id<T = nil> =
+export type Id<T = unknown> =
     | Entity<T>
     | Pair<Entity<T>, Entity>
     | Pair<Entity, Entity<T>>
@@ -2248,38 +2248,45 @@ export type World = {
 	component: <T>(self: World) -> Entity<T>,
 	--- Gets the target of an relationship. For example, when a user calls
 	--- `world:target(id, ChildOf(parent), 0)`, you will obtain the parent entity.
-	target: (self: World, id: Entity, relation: Entity, index: number?) -> Entity?,
+	target: <T, U>(self: World, id: Entity<T>, relation: Entity<U>, index: number?) -> Entity?,
 	--- Deletes an entity and all it's related components and relationships.
-	delete: (self: World, id: Entity) -> (),
+	delete: <T>(self: World, id: Entity<T>) -> (),
 
 	--- Adds a component to the entity with no value
-	add: <T>(self: World, id: Entity, component: Id<T>) -> (),
+	add: <T, U>(self: World, id: Entity<T>, component: Id<U>) -> (),
 	--- Assigns a value to a component on the given entity
-	set: <T>(self: World, id: Entity, component: Id<T>, data: T) -> (),
+	set: <T, U>(self: World, id: Entity<T>, component: Id<U>, data: U) -> (),
 
 	cleanup: (self: World) -> (),
 	-- Clears an entity from the world
-	clear: (self: World, id: Entity) -> (),
+	clear: <T>(self: World, id: Entity<T>) -> (),
 	--- Removes a component from the given entity
-	remove: (self: World, id: Entity, component: Id) -> (),
+	remove: <T, U>(self: World, id: Entity<T>, component: Id<U>) -> (),
 	--- Retrieves the value of up to 4 components. These values may be nil.
-	get: (<A>(self: World, id: any, Id<A>) -> A?)
-		& (<A, B>(self: World, id: Entity, Id<A>, Id<B>) -> (A?, B?))
-		& (<A, B, C>(self: World, id: Entity, Id<A>, Id<B>, Id<C>) -> (A?, B?, C?))
-		& <A, B, C, D>(self: World, id: Entity, Id<A>, Id<B>, Id<C>, Id<D>) -> (A?, B?, C?, D?),
+	get: (<T, A>(self: World, id: Entity<T>, Id<A>) -> A?)
+		& (<T, A, B>(self: World, id: Entity<T>, Id<A>, Id<B>) -> (A?, B?))
+		& (<T, A, B, C>(self: World, id: Entity<T>, Id<A>, Id<B>, Id<C>) -> (A?, B?, C?))
+		& <T, A, B, C, D>(self: World, id: Entity<T>, Id<A>, Id<B>, Id<C>, Id<D>) -> (A?, B?, C?, D?),
 
 	--- Returns whether the entity has the ID.
-	has: (self: World, entity: Entity, ...Id) -> boolean,
+	has: (<T, U>(self: World, entity: Entity<T>, ...Id<U>) -> boolean)
+		& (<T, U, V>(self: World, entity: Entity<T>, Id<U>, Id<V>) -> boolean)
+		& (<T, U, V, W>(self: World, entity: Entity<T>, Id<U>, Id<V>, Id<W>) -> boolean)
+		& (<T, U, V, W, X>(self: World, entity: Entity<T>, Id<U>, Id<V>, Id<W>, Id<X>) -> boolean)
+		& (<T, U, V, W, X, Y>(self: World, entity: Entity<T>, Id<U>, Id<V>, Id<W>, Id<X>, Id<Y>) -> boolean)
+		& (<T, U, V, W, X, Y, Z>(self: World, entity: Entity<T>, Id<U>, Id<V>, Id<W>, Id<X>, Id<Y>, Id<Z>) -> boolean)
+		& (<T, U, V, W, X, Y, Z, A>(self: World, entity: Entity<T>, Id<U>, Id<V>, Id<W>, Id<X>, Id<Y>, Id<Z>, Id<A>) -> boolean)
+		& (<T, U, V, W, X, Y, Z, A>(self: World, entity: Entity<T>, Id<U>, Id<V>, Id<W>, Id<X>, Id<Y>, Id<Z>, Id<A>, ...unknown) -> boolean),
 
 	--- Get parent (target of ChildOf relationship) for entity. If there is no ChildOf relationship pair, it will return nil.
-	parent: (self: World, entity: Entity) -> Entity,
+	parent: <T>(self: World, entity: Entity<T>) -> Entity,
 
 	--- Checks if the world contains the given entity
-	contains: (self: World, entity: Entity) -> boolean,
+	contains: <T>(self: World, entity: Entity<T>) -> boolean,
 
-	each: (self: World, id: Id) -> () -> Entity,
+	each: <T>(self: World, id: Id<T>) -> () -> Entity,
 
-	children: (self: World, id: Id) -> () -> Entity,
+	children: <T>(self: World, id: Id<T>) -> () -> Entity,
 
 	--- Searches the world for entities that match a given query
 	query: (<A>(World, Id<A>) -> Query<A>)
