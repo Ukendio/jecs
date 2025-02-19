@@ -11,19 +11,19 @@ A high-performance Entity Component System (ECS) for Roblox games, supporting bo
 
 ## Features
 
-* **Blazing Fast:** Iterate over hundreds of thousands of entities at 60 frames per second. Benchmark results are available in the documentation.
+* **Blazing Fast:**  Iterate over hundreds of thousands of entities at 60 frames per second.  Benchmark results are available in the documentation.
 * **Entity Relationships:** First-class support for defining and querying relationships between entities.
 * **Type Safety:** Fully typed API for both Luau and TypeScript, enhancing code maintainability and reducing errors.
 * **Zero Dependencies:** No external dependencies required, simplifying integration into your project.
 * **Optimized Storage:** Cache-friendly archetype/SoA (Structure of Arrays) storage for optimal performance.
 * **Battle-tested:** Rigorously unit tested for stability and reliability.
-* **Comprehensive Documentation:** Detailed documentation guides you through installation, usage, and advanced concepts.
+* **Comprehensive Documentation:**  Detailed documentation guides you through installation, usage, and advanced concepts.
 
 
 ## Documentation
 
 * [Getting Started](docs/learn/overview/get-started.md)
-* [API Reference](docs/api/jecs.md)  (Note: This link may need updating to reflect the actual location of the API docs if they are generated separately)
+* [API Reference](docs/api/jecs.md)  (Note:  This link may need updating to reflect the actual location of the API docs if they are generated separately)
 * [Concepts](docs/learn/concepts/)
     * Entities and Components
     * Queries
@@ -73,7 +73,7 @@ for (const [id, position, velocity] of world.query(Position, Velocity)) {
 
 ## Performance
 
-Benchmark results demonstrating Jecs' performance are available in the documentation. These include query and insertion performance tests.
+Benchmark results demonstrating Jecs' performance are available in the documentation.  These include query and insertion performance tests.
 
 ## Installation
 
@@ -117,4 +117,6 @@ We welcome contributions! Please see our [contribution guidelines](docs/contribu
 ## License
 
 Jecs is [MIT licensed](LICENSE).
+
+```
 
