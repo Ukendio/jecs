@@ -1,15 +1,32 @@
 <p align="center">
   <img src="assets/image-5.png" width=35%/>
 </p>
+<div align="center">
+  <img src="assets/image-5.png" width="240" alt="Jecs Logo"/>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE) [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs)
+  # Jecs
+  ### Just a Stupidly Fast ECS for Roblox
 
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+  [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs)
 
 # Jecs - Just a Stupidly Fast ECS
+  A high-performance Entity Component System (ECS) for Roblox games, with first-class support for both Luau and TypeScript.
+</div>
 
 A high-performance Entity Component System (ECS) for Roblox games, supporting both Luau and TypeScript.
+## ✨ Features
 
 ## Features
+- 🚀 **Blazing Fast:** Iterate over hundreds of thousands of entities at 60 FPS
+- 🔗 **Entity Relationships:** First-class support for entity relationships
+- 🏷️ **Component Traits:** Add metadata and behavior to components
+- 📝 **Type Safety:** Fully typed API for both Luau and TypeScript
+- 🎯 **Zero Dependencies:** Simple integration with no external dependencies
+- ⚡ **Optimized Storage:** Cache-friendly archetype/SoA storage
+- ✅ **Battle-tested:** Comprehensive test coverage
+- 📚 **Well Documented:** Clear, thorough documentation and examples
 
 * **Blazing Fast:**  Iterate over hundreds of thousands of entities at 60 frames per second.  Benchmark results are available in the documentation.
 * **Entity Relationships:** First-class support for defining and querying relationships between entities.
@@ -18,7 +35,9 @@ A high-performance Entity Component System (ECS) for Roblox games, supporting bo
 * **Optimized Storage:** Cache-friendly archetype/SoA (Structure of Arrays) storage for optimal performance.
 * **Battle-tested:** Rigorously unit tested for stability and reliability.
 * **Comprehensive Documentation:**  Detailed documentation guides you through installation, usage, and advanced concepts.
+## 🚀 Quick Start
 
+### Installation
 
 ## Documentation
 
@@ -81,6 +100,7 @@ Benchmark results demonstrating Jecs' performance are available in the documenta
 
 Add Jecs to your `wally.toml`:
 
+Using Wally (recommended):
 ```toml
 [dependencies]
 jecs = "ukendio/jecs@0.2.3"
@@ -120,3 +140,5 @@ Jecs is [MIT licensed](LICENSE).
 
 ```
 
+Jecs = "ukendio/jecs@VERSION"
+```
