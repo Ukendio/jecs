@@ -1,10 +1,10 @@
 <div align="center">
   <img src="assets/image-5.png" width="240" alt="Jecs Logo"/>
-  
+
   # Jecs
   ### Just a Stupidly Fast Entity Component System
-  
-  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE) 
+
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
   [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs)
 </div>
 
@@ -22,14 +22,22 @@
 ```lua
 local world = jecs.World.new()
 local pair = jecs.pair
+local Position = world:component() :: jecs.Id<Vector3>
+local Velocity = world:component() :: jecs.Id<Vector3>
 
 -- These components and functions are actually already builtin
 -- but have been illustrated for demonstration purposes
 local ChildOf = world:component()
 local Name = world:component()
+local entity = world:entity()
+world:set(entity, Position, Vector3.new(0, 0, 0))
+world:set(entity, Velocity, Vector3.new(1, 0, 0))
 
 local function parent(entity)
     return world:target(entity, ChildOf)
+-- Update system (example)
+for id, position, velocity in world:query(Position, Velocity) do
+    world:set(id, Position, position + velocity)
 end
 
 local function getName(entity)
@@ -89,3 +97,4 @@ Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting pul
 ## 📄 License
 
 Jecs is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```
