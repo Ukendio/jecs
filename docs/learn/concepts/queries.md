@@ -1,5 +1,147 @@
 # Queries
 
+Queries are the primary way to find and iterate over entities with specific components in Jecs. They provide an efficient way to process only the entities you care about.
+
+## Basic Queries
+
+A basic query finds all entities that have a specific set of components:
+
+::: code-group
+```lua [luau]
+local Position = world:component() :: jecs.Entity<Vector3>
+local Velocity = world:component() :: jecs.Entity<Vector3>
+
+-- Find all entities with both Position and Velocity
+for id, position, velocity in world:query(Position, Velocity) do
+    -- Update position based on velocity
+    world:set(id, Position, position + velocity)
+end
+```
+```typescript [typescript]
+const Position = world.component<Vector3>();
+const Velocity = world.component<Vector3>();
+
+// Find all entities with both Position and Velocity
+for (const [id, position, velocity] of world.query(Position, Velocity)) {
+    // Update position based on velocity
+    world.set(id, Position, position.add(velocity));
+}
+```
+:::
+
+## Query Filters
+
+Queries can be refined using filters to be more specific about what entities you want:
+
+### with()
+Find entities that have additional components, but don't need their values:
+
+```lua
+-- Find entities with Position that also have IsEnemy
+for id, position in world:query(Position):with(IsEnemy) do
+    -- Process enemy positions
+end
+```
+
+### without()
+Exclude entities that have specific components:
+
+```lua
+-- Find entities with Position that don't have IsDestroyed
+for id, position in world:query(Position):without(IsDestroyed) do
+    -- Process active entities
+end
+```
+
+## Query Performance
+
+Queries in Jecs are optimized for performance:
+
+1. **Archetype-based**: Entities are grouped by their component combinations
+2. **Cache-friendly**: Components are stored in contiguous memory
+3. **Zero Allocation**: Iteration doesn't allocate memory
+
+### Query Caching
+
+For frequently used queries, you can cache them to avoid rebuilding the query:
+
+```lua
+-- Cache a commonly used query
+local movementQuery = world:query(Position, Velocity):cached()
+
+-- Use the cached query
+for id, position, velocity in movementQuery:iter() do
+    -- Process movement
+end
+```
+
+## Advanced Query Features
+
+### Relationship Queries
+Query entities based on their relationships:
+
+```lua
+local ChildOf = world:component()
+
+-- Find all children of a parent
+for child in world:query(pair(ChildOf, parent)) do
+    -- Process child entities
+end
+
+-- Find entities with any parent
+for child in world:query(pair(ChildOf, jecs.Wildcard)) do
+    local parent = world:target(child, ChildOf)
+    -- Process parent-child relationship
+end
+```
+
+### Component Trait Queries
+Find components with specific traits:
+
+```lua
+-- Find all networked components
+for component in world:query(jecs.Component):with(Networked) do
+    -- Process networked components
+end
+```
+
+## Best Practices
+
+1. **Query Organization**
+   - Keep queries focused on related components
+   - Cache frequently used queries
+   - Consider splitting complex queries into simpler ones
+
+2. **Performance Optimization**
+   - Use `with()` for components you don't need values from
+   - Consider component order (most restrictive first)
+   - Cache queries used in hot paths
+
+3. **Query Design**
+   - Query only the components you need
+   - Use relationships for hierarchical queries
+   - Consider using tags for efficient filtering
+
+4. **Common Patterns**
+   ```lua
+   -- Movement system
+   for id, pos, vel in world:query(Position, Velocity):without(Frozen) do
+       world:set(id, Position, pos + vel)
+   end
+
+   -- Damage system
+   for id, health in world:query(Health):with(TakingDamage) do
+       if health <= 0 then
+           world:add(id, IsDead)
+       end
+   end
+
+   -- Cleanup system
+   for id in world:query(IsDead) do
+       world:delete(id)
+   end
+   ```
+
 ## Introductiuon
 
 Queries enable games to quickly find entities that satifies provided conditions.
@@ -9,7 +151,7 @@ Jecs queries can do anything from returning entities that match a simple list of
 This manual contains a full overview of the query features available in Jecs. Some of the features of Jecs queries are:
 
 -   Queries have support for relationships pairs which allow for matching against entity graphs without having to build complex data structures for it.
--   Queries support filters such as [`query:with(...)`](../../api/query.md#with) if entities are required to have the components but you don’t actually care about components value. And [`query:without(...)`](../../api/query.md#without) which selects entities without the components.
+-   Queries support filters such as [`query:with(...)`](../../api/query.md#with) if entities are required to have the components but you don't actually care about components value. And [`query:without(...)`](../../api/query.md#without) which selects entities without the components.
 -   Queries can be drained or reset on when called, which lets you choose iterator behaviour.
 -   Queries can be called with any ID, including entities created dynamically, this is useful for pairs.
 -   Queries are already fast but can be futher inlined via [`query:archetypes()`](../../api/query.md#archetypes) for maximum performance to eliminate function call overhead which is roughly 70-80% of the cost for iteration.

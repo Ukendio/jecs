@@ -1,6 +1,111 @@
 # Component Traits
 
-Component traits are IDs and pairs that can be added to components to modify their behavior. Although it is possible to create custom traits, this manual only contains an overview of all builtin component traits supported by Jecs.
+Component traits in Jecs allow you to modify component behavior through special IDs and pairs. They provide a way to configure how components interact with entities and the world.
+
+## Built-in Traits
+
+### Component
+```lua
+jecs.Component
+```
+Identifies an ID as a component. Every component created with `world:component()` automatically has this trait.
+
+### Tag
+```lua
+jecs.Tag
+```
+Marks a component as a tag that never contains data. This improves performance for structural changes.
+
+## Cleanup Traits
+
+Cleanup traits define what happens when entities used as components or relationship targets are deleted.
+
+### OnDelete
+Specifies what happens when a component or relationship is deleted:
+
+::: code-group
+```lua [luau]
+local Archer = world:component()
+world:add(Archer, pair(jecs.OnDelete, jecs.Remove))
+
+local entity = world:entity()
+world:add(entity, Archer)
+
+-- This will remove Archer from entity
+world:delete(Archer)
+```
+```typescript [typescript]
+const Archer = world.component();
+world.add(Archer, pair(jecs.OnDelete, jecs.Remove));
+
+const entity = world.entity();
+world.add(entity, Archer);
+
+// This will remove Archer from entity
+world.delete(Archer);
+```
+:::
+
+### OnDeleteTarget
+Specifies what happens when a relationship target is deleted:
+
+```lua
+local OwnedBy = world:component()
+world:add(OwnedBy, pair(jecs.OnDeleteTarget, jecs.Remove))
+
+local item = world:entity()
+local player = world:entity()
+world:add(item, pair(OwnedBy, player))
+
+-- This will remove (OwnedBy, player) from item
+world:delete(player)
+```
+
+## Cleanup Actions
+
+Two cleanup actions are available:
+
+1. **Remove**: Removes instances of the specified component/relationship (default)
+2. **Delete**: Deletes all entities with the specified component/relationship
+
+## Example Usage
+
+### Tag Components
+```lua
+local IsEnemy = world:component()
+world:add(IsEnemy, jecs.Tag)
+
+-- More efficient than storing a boolean
+world:add(entity, IsEnemy)
+```
+
+### Cleanup Configuration
+```lua
+-- Delete children when parent is deleted
+local ChildOf = world:component()
+world:add(ChildOf, pair(jecs.OnDeleteTarget, jecs.Delete))
+
+-- Remove ownership when owner is deleted
+local OwnedBy = world:component()
+world:add(OwnedBy, pair(jecs.OnDeleteTarget, jecs.Remove))
+```
+
+## Best Practices
+
+1. **Use Tags Appropriately**
+   - Use tags for boolean-like components
+   - Configure tags early in component setup
+   - Document tag usage
+
+2. **Cleanup Configuration**
+   - Consider cleanup behavior during design
+   - Document cleanup policies
+   - Test cleanup behavior
+
+3. **Performance Considerations**
+   - Use tags for better performance
+   - Configure cleanup for efficient entity management
+   - Consider relationship cleanup impact
 
 # Component
 

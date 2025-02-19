@@ -4,61 +4,84 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE) [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs)
 
-Just a stupidly fast Entity Component System
+# Jecs - Just a Stupidly Fast ECS
 
--   [Entity Relationships](https://ajmmertens.medium.com/building-games-in-ecs-with-entity-relationships-657275ba2c6c) as first class citizens
--   Iterate 800,000 entities at 60 frames per second
--   Type-safe [Luau](https://luau-lang.org/) API
--   Zero-dependency package
--   Optimized for column-major operations
--   Cache friendly [archetype/SoA](https://ajmmertens.medium.com/building-an-ecs-2-archetypes-and-vectorization-fe21690805f9) storage
--   Rigorously [unit tested](https://github.com/Ukendio/jecs/actions/workflows/ci.yaml) for stability
+A high-performance Entity Component System (ECS) for Roblox games.
 
-### Example
+## Features
+
+- 🚀 **Blazing Fast**: Iterate over 800,000 entities at 60 frames per second
+- 🔗 **Entity Relationships**: First-class support for [entity relationships](docs/learn/concepts/relationships.md)
+- 🔒 **Type Safety**: Fully typed API for both [Luau](https://luau-lang.org/) and TypeScript
+- 📦 **Zero Dependencies**: No external dependencies required
+- ⚡ **Optimized Storage**: Cache-friendly [archetype/SoA](https://ajmmertens.medium.com/building-an-ecs-2-archetypes-and-vectorization-fe21690805f9) storage
+- ✅ **Battle-tested**: Rigorously [unit tested](https://github.com/Ukendio/jecs/actions/workflows/ci.yaml) for stability
+
+## Documentation
+
+- [Getting Started](docs/learn/overview/get-started.md)
+- [API Reference](docs/api/jecs.md)
+- [Concepts](docs/learn/concepts/)
+- [Examples](examples/)
+- [FAQ](docs/learn/faq/common-issues.md)
+
+## Quick Example
 
 ```lua
 local world = jecs.World.new()
 local pair = jecs.pair
 
--- These components and functions are actually already builtin
--- but have been illustrated for demonstration purposes
-local ChildOf = world:component()
-local Name = world:component()
+-- Define components
+local Position = world:component() :: jecs.Entity<Vector3>
+local Velocity = world:component() :: jecs.Entity<Vector3>
 
-local function parent(entity)
-    return world:target(entity, ChildOf)
+-- Create an entity
+local entity = world:entity()
+world:set(entity, Position, Vector3.new(0, 0, 0))
+world:set(entity, Velocity, Vector3.new(1, 0, 0))
+
+-- Update system
+for id, position, velocity in world:query(Position, Velocity) do
+    world:set(id, Position, position + velocity)
 end
-local function getName(entity)
-    return world:get(entity, Name)
-end
-
-local alice = world:entity()
-world:set(alice, Name, "alice")
-
-local bob = world:entity()
-world:add(bob, pair(ChildOf, alice))
-world:set(bob, Name, "bob")
-
-local sara = world:entity()
-world:add(sara, pair(ChildOf, alice))
-world:set(sara, Name, "sara")
-
-print(getName(parent(sara)))
-
-for e in world:query(pair(ChildOf, alice)) do
-    print(getName(e), "is the child of alice")
-end
-
--- Output
--- "alice"
--- bob is the child of alice
--- sara is the child of alice
 ```
 
-21,000 entities 125 archetypes 4 random components queried.
-![Queries](assets/image-3.png)
-Can be found under /benches/visual/query.luau
+## Performance
 
-Inserting 8 components to an entity and updating them over 50 times.
+### Query Performance
+21,000 entities, 125 archetypes, 4 random components queried:
+![Queries](assets/image-3.png)
+
+### Insertion Performance
+Inserting 8 components to an entity and updating them over 50 times:
 ![Insertions](assets/image-4.png)
-Can be found under /benches/visual/insertions.luau
+
+## Installation
+
+### Using Wally
+```toml
+[dependencies]
+jecs = "ukendio/jecs@0.2.3"
+```
+
+### Using npm (roblox-ts)
+```bash
+npm i @rbxts/jecs
+```
+
+### Standalone
+Download `jecs.rbxm` from our [releases page](https://github.com/Ukendio/jecs/releases).
+
+## Contributing
+
+We welcome contributions! Please see our [contribution guidelines](docs/contributing/guidelines.md) for details.
+
+## Community & Support
+
+- [Discord Community](https://discord.gg/h2NV8PqhAD)
+- [GitHub Issues](https://github.com/ukendio/jecs/issues)
+- [API Documentation](https://ukendio.github.io/jecs/)
+
+## License
+
+Jecs is [MIT licensed](LICENSE).

@@ -1,9 +1,114 @@
 # Relationships
-Relationships makes it possible to describe entity graphs natively in ECS.
 
-Adding/removing relationships is similar to adding/removing regular components, with as difference that instead of a single component id, a relationship adds a pair of two things to an entity. In this pair, the first element represents the relationship (e.g. "Eats"), and the second element represents the relationship target (e.g. "Apples").
+Relationships in Jecs allow you to create connections between entities using pairs. This enables modeling hierarchies, ownership, and other entity associations.
 
-Relationships can be used to describe many things, from hierarchies to inventory systems to trade relationships between players in a game. The following sections go over how to use relationships, and what features they support.
+## Basic Relationships
+
+A relationship is created using pairs:
+
+::: code-group
+```lua [luau]
+local world = jecs.World.new()
+local ChildOf = world:component()
+
+local parent = world:entity()
+local child = world:entity()
+
+-- Create parent-child relationship
+world:add(child, pair(ChildOf, parent))
+```
+```typescript [typescript]
+const world = new World();
+const ChildOf = world.component();
+
+const parent = world.entity();
+const child = world.entity();
+
+// Create parent-child relationship
+world.add(child, pair(ChildOf, parent));
+```
+:::
+
+## Relationship Types
+
+Jecs supports several types of relationships:
+
+### Parent-Child
+Built-in `ChildOf` relationship for hierarchies:
+```lua
+-- Using built-in ChildOf
+world:add(child, pair(jecs.ChildOf, parent))
+
+-- Get parent
+local parent = world:parent(child)
+```
+
+### Custom Relationships
+Create your own relationship types:
+```lua
+local OwnedBy = world:component()
+local Likes = world:component()
+
+-- Create relationships
+world:add(item, pair(OwnedBy, player))
+world:add(bob, pair(Likes, alice))
+```
+
+## Querying Relationships
+
+Find entities with specific relationships:
+
+```lua
+-- Find all children of a parent
+for child in world:query(pair(ChildOf, parent)) do
+    -- Process child
+end
+
+-- Find entities with any parent
+for child in world:query(pair(ChildOf, jecs.Wildcard)) do
+    local parent = world:target(child, ChildOf)
+    -- Process child and parent
+end
+```
+
+## Relationship Data
+
+Relationships can store data:
+
+```lua
+local Damage = world:component()
+
+-- Store damage amount in relationship
+world:set(weapon, pair(Damage, target), 50)
+
+-- Get damage amount
+local damage = world:get(weapon, pair(Damage, target))
+```
+
+## Best Practices
+
+1. **Relationship Design**
+   - Use clear relationship names
+   - Consider relationship directionality
+   - Document relationship semantics
+
+2. **Performance**
+   - Cache frequently used relationship queries
+   - Be mindful of relationship complexity
+   - Use built-in relationships when possible
+
+3. **Common Patterns**
+   ```lua
+   -- Hierarchy traversal
+   for child in world:children(parent) do
+       -- Process children
+   end
+
+   -- Relationship queries
+   for entity, damage in world:query(pair(Damage, target)) do
+       -- Process damage
+   end
+   ```
 
 ## Definitions
 

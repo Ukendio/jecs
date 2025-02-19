@@ -1,87 +1,94 @@
-# Query
+# Query API
 
-A World contains entities which have components. The World is queryable and can be used to get entities with a specific set of components.
+Queries allow you to efficiently find and iterate over entities that have a specific set of components.
 
-# Methods
+## Methods
 
-## iter
-
-Returns an iterator that can be used to iterate over the query.
-
+### iter()
 ```luau
 function Query:iter(): () -> (Entity, ...)
 ```
 
-## with
-
-Adds components (IDs) to query with, but will not use their data. This is useful for Tags or generally just data you do not care for.
-
-```luau
-function Query:with(
-    ...: Entity -- The IDs to query with
-): Query
-```
+Returns an iterator that yields matching entities and their component values.
 
 Example:
 ::: code-group
-
 ```luau [luau]
+for id, position, velocity in world:query(Position, Velocity):iter() do
+    -- Do something with position and velocity
+end
+```
+```typescript [typescript]
+for (const [id, position, velocity] of world.query(Position, Velocity)) {
+    // Do something with position and velocity
+}
+```
+:::
+
+### with()
+```luau
+function Query:with(...: Entity): Query
+```
+
+Adds components to filter by, but doesn't return their values in iteration. Useful for filtering by tags.
+
+Example:
+::: code-group
+```luau [luau]
+-- Only get position for entities that also have Velocity
 for id, position in world:query(Position):with(Velocity) do
-    -- Do something
+    -- Do something with position
 end
 ```
-
-```ts [typescript]
+```typescript [typescript]
 for (const [id, position] of world.query(Position).with(Velocity)) {
-	// Do something
+    // Do something with position
 }
 ```
-
 :::
 
-:::info
-Put the IDs inside of `world:query()` instead if you need the data.
-:::
-
-## without
-
-Removes entities with the provided components from the query.
-
+### without()
 ```luau
-function Query:without(
-    ...: Entity -- The IDs to filter against.
-): Query -- Returns the Query
+function Query:without(...: Entity): Query
 ```
+
+Excludes entities that have any of the specified components.
 
 Example:
-
 ::: code-group
-
 ```luau [luau]
-for entity, position in world:query(Position):without(Velocity) do
-    -- Do something
+-- Get position for entities that don't have Velocity
+for id, position in world:query(Position):without(Velocity) do
+    -- Do something with position
 end
 ```
-
-```ts [typescript]
-for (const [entity, position] of world.query(Position).without(Velocity)) {
-	// Do something
+```typescript [typescript]
+for (const [id, position] of world.query(Position).without(Velocity)) {
+    // Do something with position
 }
 ```
-
 :::
 
-## archetypes
+### cached()
+```luau
+function Query:cached(): Query
+```
 
-Returns the matching archetypes of the query.
+Returns a cached version of the query for better performance when using the same query multiple times.
 
+### archetypes()
 ```luau
 function Query:archetypes(): { Archetype }
 ```
 
-Example:
+Returns the matching archetypes for low-level query customization.
 
-```luau [luau]
+:::info
+This method is for advanced users who need fine-grained control over query behavior at the archetype level.
+:::
+
+Example:
+```luau
 for i, archetype in world:query(Position, Velocity):archetypes() do
     local columns = archetype.columns
     local field = archetype.records
@@ -95,16 +102,4 @@ for i, archetype in world:query(Position, Velocity):archetypes() do
         -- Do something
     end
 end
-```
-
-:::info
-This function is meant for people who want to really customize their query behaviour at the archetype-level
-:::
-
-## cached
-
-Returns a cached version of the query. This is useful if you want to iterate over the same query multiple times.
-
-```luau
-function Query:cached(): Query -- Returns the cached Query
 ```

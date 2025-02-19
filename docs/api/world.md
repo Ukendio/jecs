@@ -1,34 +1,136 @@
-# World
+# World API
 
 A World contains entities which have components. The World is queryable and can be used to get entities with a specific set of components and to perform different kinds of operations on them.
 
-# Functions
+## Constructor
 
-## new
-
-`World` utilizes a class, meaning JECS allows you to create multiple worlds.
-
+### new()
 ```luau
 function World.new(): World
 ```
 
+Creates a new World instance. Multiple worlds can exist simultaneously, but component IDs may conflict between worlds.
+
 Example:
-
 ::: code-group
-
 ```luau [luau]
 local world = jecs.World.new()
-local myOtherWorld = jecs.World.new()
+local otherWorld = jecs.World.new() 
 ```
-
-```ts [typescript]
-import { World } from "@rbxts/jecs";
-
+```typescript [typescript]
 const world = new World();
-const myOtherWorld = new World();
+const otherWorld = new World();
+```
+:::
+
+## Entity Operations
+
+### entity()
+```luau
+function World:entity(): Entity
 ```
 
+Creates a new entity with no components.
+
+Example:
+::: code-group
+```luau [luau]
+local entity = world:entity()
+```
+```typescript [typescript]
+const entity = world.entity();
+```
 :::
+
+### component()
+```luau
+function World:component<T>(): Entity<T>
+```
+
+Creates a new component type. Components are entities that can have other components added to them.
+
+Example:
+::: code-group
+```luau [luau]
+local Health = world:component() :: jecs.Entity<number>
+local Position = world:component() :: jecs.Entity<Vector3>
+```
+```typescript [typescript]
+const Health = world.component<number>();
+const Position = world.component<Vector3>();
+```
+:::
+
+### delete()
+```luau
+function World:delete<T>(id: Entity<T>)
+```
+
+Deletes an entity and all its components/relationships.
+
+## Component Operations
+
+### add()
+```luau
+function World:add<T, U>(id: Entity<T>, component: Id<U>)
+```
+
+Adds a component to an entity without setting a value. Useful for tags or components with default values.
+
+### set()
+```luau
+function World:set<T, U>(id: Entity<T>, component: Id<U>, value: U)
+```
+
+Sets a component's value on an entity. Will add the component if it doesn't exist.
+
+### get()
+```luau
+function World:get<T>(entity: Entity, id: Entity<T>): T?
+```
+
+Gets the value of a component on an entity. Returns nil if the component doesn't exist.
+
+### remove()
+```luau
+function World:remove<T, U>(id: Entity<T>, component: Id<U>)
+```
+
+Removes a component from an entity.
+
+### clear()
+```luau
+function World:clear<T>(id: Entity<T>)
+```
+
+Removes all components from an entity without deleting the entity.
+
+## Relationship Operations
+
+### target()
+```luau
+function World:target<T, U>(id: Entity<T>, relation: Entity<U>, index?: number): Entity?
+```
+
+Gets the target entity of a relationship. For example, getting the parent entity in a ChildOf relationship.
+
+## Query Operations
+
+### query()
+```luau
+function World:query(...: Entity): Query
+```
+
+Creates a new Query to find entities with specific components. See [Query API](query.md) for details.
+
+## Maintenance
+
+### cleanup()
+```luau
+function World:cleanup()
+```
+
+Cleans up the world by removing empty archetypes and rebuilding archetype collections. Helps maintain memory efficiency.
 
 # Methods
 

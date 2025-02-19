@@ -1,119 +1,138 @@
 # Entities and Components
 
-## Entities
+## What are Entities?
 
-Entities represent things in a game. In a game there may be entities of characters, buildings, projectiles, particle effects etc.
+Entities are the fundamental building blocks in Jecs. An entity represents any object in your game - a character, a building, a projectile, or even abstract concepts like game rules or spawn points.
 
-By itself, an entity is just an unique identifier without any data
+By itself, an entity is just a unique identifier (a number) without any data. Entities become useful when you add components to them.
 
-## Components
+## What are Components?
 
-A component is something that is added to an entity. Components can simply tag an entity ("this entity is an `Npc`"), attach data to an entity ("this entity is at `Position` `Vector3.new(10, 20, 30)`") and create relationships between entities ("bob `Likes` alice") that may also contain data ("bob `Eats` `10` apples").
+Components are reusable pieces of data that can be attached to entities. They serve three main purposes:
 
-## Operations
+1. **Data Storage**: Hold data for an entity (e.g., Position, Health)
+2. **Tagging**: Mark an entity as having certain properties (e.g., IsPlayer, IsEnemy)
+3. **Relationships**: Create connections between entities (e.g., ChildOf, Owns)
 
-| Operation | Description                                                                                    |
-| --------- | ---------------------------------------------------------------------------------------------- |
-| `get`     | Get a specific component or set of components from an entity.                                  |
-| `add`     | Adds component to an entity. If entity already has the component, `add` does nothing.          |
-| `set`     | Sets the value of a component for an entity. `set` behaves as a combination of `add` and `get` |
-| `remove`  | Removes component from entity. If entity doesn't have the component, `remove` does nothing.    |
-| `clear`   | Remove all components from an entity. Clearing is more efficient than removing one by one.     |
-
-## Components are entities
-
-In an ECS, components need to be uniquely identified. In Jecs this is done by making each component its own unique entity. If a game has a component Position and Velocity, there will be two entities, one for each component. Component entities can be distinguished from "regular" entities as they have a `Component` component. An example:
-
-::: code-group
-
-```luau [luau]
+### Example Components
+```lua
+-- Data component
 local Position = world:component() :: jecs.Entity<Vector3>
-print(world:has(Position, jecs.Component))
+local Health = world:component() :: jecs.Entity<number>
+
+-- Tag component
+local IsEnemy = world:component()
+
+-- Relationship component
+local ChildOf = world:component()
 ```
 
-```typescript [typescript]
-const Position = world.component<Vector3>();
-print(world.has(Position, jecs.Component));
-```
+## Component Operations
 
-:::
+Jecs provides several operations for working with components:
 
-All of the APIs that apply to regular entities also apply to component entities. This means it is possible to contexualize components with logic by adding traits to components
+| Operation | Description                                                | Example |
+|-----------|------------------------------------------------------------|-|
+| `add`     | Adds a component to an entity (no value)                   | `world:add(entity, IsEnemy)` |
+| `set`     | Sets a component's value on an entity                      | `world:set(entity, Health, 100)` |
+| `get`     | Gets a component's value from an entity                    | `local health = world:get(entity, Health)` |
+| `remove`  | Removes a component from an entity                         | `world:remove(entity, IsEnemy)` |
+| `clear`   | Removes all components from an entity                      | `world:clear(entity)` |
 
+### Example Usage
 ::: code-group
+```lua [luau]
+local world = jecs.World.new()
 
-```luau [luau]
-local Networked = world:component()
-local Type = world:component()
-local Name = world:component()
+-- Create components
 local Position = world:component() :: jecs.Entity<Vector3>
-world:add(Position, Networked)
-world:set(Position, Name, "Position")
-world:set(Position, Type, { size = 12, type = "Vector3" } ) -- 12 bytes to represent a Vector3
+local Health = world:component() :: jecs.Entity<number>
+local IsEnemy = world:component()
 
-for id, ty, name in world:query(Type, Name, Networked) do
-    local batch = {}
-    for entity, data in world:query(id) do
-        table.insert(batch, { entity = entity, data = data })
-    end
-    -- entities are sized f64
-    local packet = buffer.create(#batch * (8 + ty.size))
-    local offset = 0
-    for _, entityData in batch do
-        offset+=8
-        buffer.writef64(packet, offset, entityData.entity)
-        if ty.type == "Vector3" then
-            local vec3 = entity.data :: Vector3
-            offset += 4
-            buffer.writei32(packet, offset, vec3.X)
-            offset += 4
-            buffer.writei32(packet, offset, vec3.Y)
-            offset += 4
-            buffer.writei32(packet, offset, vec3.Z)
-        end
-    end
+-- Create an entity
+local enemy = world:entity()
 
-    updatePositions:FireServer(packet)
+-- Add components and data
+world:set(enemy, Position, Vector3.new(0, 0, 0))
+world:set(enemy, Health, 100)
+world:add(enemy, IsEnemy)
+
+-- Get component data
+local pos = world:get(enemy, Position)
+print(`Enemy position: {pos}`)
+
+-- Check if entity has component
+if world:has(enemy, IsEnemy) then
+    print("This is an enemy!")
 end
 ```
-
 ```typescript [typescript]
-const Networked = world.component();
-const Type = world.component();
-const Name = world.component();
+const world = new World();
+
+// Create components
 const Position = world.component<Vector3>();
-world.add(Position, Networked);
-world.set(Position, Name, "Position");
-world.set(Position, Type, { size: 12, type: "Vector3" }); // 12 bytes to represent a Vector3
+const Health = world.component<number>();
+const IsEnemy = world.component();
 
-for (const [id, ty, name] of world.query(Type, Name, Networked)) {
-	const batch = new Array<{ entity: Entity; data: unknown }>();
+// Create an entity
+const enemy = world.entity();
 
-	for (const [entity, data] of world.query(id)) {
-		batch.push({ entity, data });
-	}
-	// entities are sized f64
-	const packet = buffer.create(batch.size() * (8 + ty.size));
-	const offset = 0;
-	for (const [_, entityData] of batch) {
-		offset += 8;
-		buffer.writef64(packet, offset, entityData.entity);
-		if (ty.type == "Vector3") {
-			const vec3 = entity.data as Vector3;
-			offset += 4;
-			buffer.writei32(packet, offsetm, vec3.X);
-			offset += 4;
-			buffer.writei32(packet, offset, vec3.Y);
-			offset += 4;
-			buffer.writei32(packet, offset, vec3.Z);
-		}
-	}
+// Add components and data
+world.set(enemy, Position, new Vector3(0, 0, 0));
+world.set(enemy, Health, 100);
+world.add(enemy, IsEnemy);
 
-	updatePositions.FireServer(packet);
+// Get component data
+const pos = world.get(enemy, Position);
+print(`Enemy position: ${pos}`);
+
+// Check if entity has component
+if (world.has(enemy, IsEnemy)) {
+    print("This is an enemy!");
 }
 ```
-
 :::
+
+## Components are Entities
+
+In Jecs, components themselves are entities with a special `Component` component. This means you can add components to components! This enables powerful features like:
+
+1. Adding metadata to components
+2. Creating component hierarchies
+3. Defining component relationships
+
+Example:
+```lua
+local Position = world:component() :: jecs.Entity<Vector3>
+local Networked = world:component()
+local Type = world:component()
+
+-- Add metadata to Position component
+world:add(Position, Networked)
+world:set(Position, Type, { size = 12, type = "Vector3" })
+```
+
+## Best Practices
+
+1. **Keep Components Simple**
+   - Components should store related data
+   - Avoid complex nested structures
+   - Use multiple components instead of one complex component
+
+2. **Use Tags Effectively**
+   - Tags are components without data
+   - Great for marking entity states or categories
+   - More efficient than components with boolean values
+
+3. **Component Naming**
+   - Use clear, descriptive names
+   - Consider using noun-based names for data (Position, Health)
+   - Consider using adjective-based names for tags (IsEnemy, IsDead)
+
+4. **Data Organization**
+   - Group related data in components
+   - Split unrelated data into separate components
+   - Use relationships for entity connections
 
 ## Singletons
 

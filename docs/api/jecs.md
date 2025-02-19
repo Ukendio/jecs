@@ -1,50 +1,74 @@
-# Jecs
+# Jecs API Reference
 
-Jecs. Just an Entity Component System.
+Jecs provides a simple but powerful API for entity component systems. This page documents the core API.
 
-# Properties
+## Core Types
 
-## World
+### World
 ```luau
 jecs.World: World
 ```
-A world is a container of all ECS data. Games can have multiple worlds but component IDs may conflict between worlds. Ensure to register the same component IDs in the same order for each world.
+The main container for all ECS data. See [World API](world.md) for details.
 
-## Wildcard
+### Entity
+```luau
+type Entity<T = unknown>
+```
+A unique identifier that can have components attached. The generic type `T` represents the data type of the entity when used as a component.
+
+### Id
+```luau
+type Id<T>
+```
+Represents either an Entity or a Pair that can be used to store component data of type `T`.
+
+## Core Functions
+
+### pair()
+```luau
+function jecs.pair(
+    first: Entity, -- The first element of the pair (relationship)
+    object: Entity -- The second element of the pair (target)
+): number -- Returns the ID representing this relationship pair
+```
+Creates a relationship pair between two entities. Used for creating relationships like parent-child, ownership, etc.
+
+::: info
+Note that while relationship pairs can be used as components (meaning you can add data with them as an ID), they cannot be used as entities. You cannot add components to a pair as the source of a binding.
+:::
+
+Example:
+```lua
+local ChildOf = world:component()
+local parent = world:entity()
+local child = world:entity() 
+
+-- Create parent-child relationship
+world:add(child, pair(ChildOf, parent))
+```
+
+## Constants
+
+### Wildcard
 ```luau
 jecs.Wildcard: Entity
 ```
-Builtin component type. This ID is used for wildcard queries.
+Special entity used for querying any entity in a relationship. See [Relationships](../learn/concepts/relationships.md).
 
-## Component
+### Component
 ```luau
 jecs.Component: Entity
 ```
-Builtin component type. Every ID created with [world:component()](world.md#component()) has this type added to it. This is meant for querying every component ID.
+Built-in component type. Every component created with `world:component()` has this added to it.
 
-## ChildOf
+### ChildOf
 ```luau
 jecs.ChildOf: Entity
 ```
-Builtin component type. This ID is for creating parent-child hierarchies.
+Built-in relationship type for parent-child hierarchies.
 
-## Rest
+### Rest
 ```luau
 jecs.Rest: Entity
 ```
-
-# Functions
-
-## pair()
-```luau
-function jecs.pair(
-    first: Entity, -- The first element of the pair, referred to as the relationship of the relationship pair.
-    object: Entity, -- The second element of the pair, referred to as the target of the relationship pair.
-): number -- Returns the ID with those two elements
-
-```
-::: info
-
-Note that while relationship pairs can be used as components, meaning you can add data with it as an ID, however they cannot be used as entities. Meaning you cannot add components to a pair as the source of a binding.
-
-:::
+Special component used in queries to match remaining components.

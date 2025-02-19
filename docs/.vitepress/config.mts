@@ -4,7 +4,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
     title: "Jecs",
     base: "/jecs/",
-    description: "A VitePress Site",
+    description: "Just a stupidly fast Entity Component System",
     themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
         nav: [
@@ -16,11 +16,11 @@ export default defineConfig({
         sidebar: {
             "/api/": [
                 {
-                    text: "API reference",
+                    text: "API Reference",
                     items: [
-                        { text: "jecs", link: "/api/jecs" },
-                        { text: "World", link: "/api/world" },
-                        { text: "Query", link: "/api/query" }
+                        { text: 'Jecs', link: '/api/jecs' },
+                        { text: 'World', link: '/api/world' },
+                        { text: 'Query', link: '/api/query' }
                     ]
                 }
             ],
@@ -38,32 +38,41 @@ export default defineConfig({
                         { text: 'Entities and Components', link: '/learn/concepts/entities-and-components' },
                         { text: 'Queries', link: '/learn/concepts/queries' },
                         { text: 'Relationships', link: '/learn/concepts/relationships' },
-                        { text: 'Component Traits', link: 'learn/concepts/component-traits' },
+                        { text: 'Component Traits', link: '/learn/concepts/component-traits' },
                         { text: 'Addons', link: '/learn/concepts/addons' }
                     ]
                 },
                 {
                     text: "FAQ",
                     items: [
-                        { text: 'How can I contribute?', link: '/learn/faq/contributing' }
+                        { text: 'Common Issues', link: '/learn/faq/common-issues' },
+                        { text: 'Migrating from Matter', link: '/learn/faq/migrating-from-matter' },
+                        { text: 'Contributing', link: '/learn/faq/contributing' }
                     ]
-                },
-
+                }
             ],
             "/contributing/": [
                 {
                     text: 'Contributing',
                     items: [
-                        { text: 'Contribution Guidelines', link: '/learn/contributing/guidelines' },
-                        { text: 'Submitting Issues', link: '/learn/contributing/issues' },
-                        { text: 'Submitting Pull Requests', link: '/learn/contributing/pull-requests' },
+                        { text: 'Guidelines', link: '/contributing/guidelines' },
+                        { text: 'Submitting Issues', link: '/contributing/issues' },
+                        { text: 'Pull Requests', link: '/contributing/pull-requests' }
                     ]
                 }
             ]
         },
 
         socialLinks: [
-            { icon: 'github', link: 'https://github.com/ukendio/jecs' }
-        ]
+            { icon: 'github', link: 'https://github.com/ukendio/jecs' },
+            { icon: 'discord', link: 'https://discord.gg/h2NV8PqhAD' }
+        ],
+
+        search: {
+            provider: 'local',
+            options: {
+                detailedView: true
+            }
+        }
     }
 })
