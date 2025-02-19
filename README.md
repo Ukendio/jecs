@@ -1,8 +1,8 @@
 <p align="center">
   <img src="assets/image-5.png" width=35%/>
 </p>
-<div align="center">
-  <img src="assets/image-5.png" width="240" alt="Jecs Logo"/>
+<!-- <div align="center">
+  <img src="assets/image-5.png" width="240" alt="Jecs Logo"/> -->
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE) [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs)
   # Jecs
