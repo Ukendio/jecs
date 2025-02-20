@@ -946,7 +946,6 @@ local function archetype_delete(world: World, archetype: Archetype, row: number,
 		end
 
 		entities[row] = move
-		delete = entities[row]
 	end
 
 	for _, id in id_types do
