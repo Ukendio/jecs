@@ -899,7 +899,7 @@ local function world_remove(world: World, entity: i53, id: i53)
 	end
 	local to = archetype_traverse_remove(world, id, from)
 
-	if from and not (from == to) then
+	if from ~= to then
 		local idr = world.component_index[id]
 		local on_remove = idr.hooks.on_remove
 		if on_remove then
