@@ -56,17 +56,21 @@ world:set(PreSimulation, Event, RunService.PreSimulation)
 world:add(PreAnimation, Phase)
 world:set(PreAnimation, Event, RunService.PreAnimation)
 
-table.insert(jabby.public, {
-	class_name = "World",
+jabby.register({
+	applet = jabby.applets.world,
 	name = "MyWorld",
+	configuration = {
 	world = world,
-	debug = Name,
-	entities = {},
+	},
 })
 
-jabby.public.updated = true
-
-table.insert(jabby.public, jabby_scheduler)
+jabby.register({
+	applet = jabby.applets.scheduler,
+	name = "Scheduler",
+	configuration = {
+		scheduler = jabby_scheduler,
+	},
+})
 
 if RunService:IsClient() then 
 	world:add(PreRender, Phase)
