@@ -15,7 +15,7 @@ Add the following to your wally configuration:
 ::: code-group
 
 ```toml [wally.toml]
-jecs = "ukendio/jecs@0.2.3"
+jecs = "ukendio/jecs@0.5.3"
 ```
 
 :::
