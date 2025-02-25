@@ -870,7 +870,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 
 	local on_set = idr_hooks.on_set
 	if on_set then
-		invoke_hook(on_set, entity, data)
+		on_set(entity, data)
 	end
 end
 
