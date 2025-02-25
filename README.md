@@ -62,3 +62,32 @@ Can be found under /benches/visual/query.luau
 Inserting 8 components to an entity and updating them over 50 times.
 ![Insertions](assets/image-4.png)
 Can be found under /benches/visual/insertions.luau
+
+## Installation
+
+### Using Wally
+
+Add jecs to your `wally.toml` file:
+
+```toml
+[dependencies]
+jecs = "ukendio/jecs@0.1.0"
+```
+
+Then run `wally install` in your project directory.
+
+### Manual Installation
+
+Download the latest release from the [releases page](https://github.com/ukendio/jecs/releases).
+
+## Documentation
+
+For complete documentation, visit our [documentation site](https://ukendio.github.io/jecs/).
+
+## Contributing
+
+Contributions are welcome. Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

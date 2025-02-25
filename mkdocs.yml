@@ -51,8 +51,64 @@ extra_css:
 extra_javascript:
   - assets/scripts/smooth-scroll.js
 
+plugins:
+  - search
+  - mike:
+      version_selector: true
+      canonical_version: latest
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          import:
+            - https://installer.github.io/docs/python-objects.inv
+            - https://docs.python.org/3/objects.inv
+          selection:
+            members: true
+          rendering:
+            show_source: true
+            show_submodules: true
+          paths: [src]
+
 nav:
   - Home: index.md
+  - Learn:
+    - learn/index.md
+    - Getting Started:
+      - Installation: learn/getting-started/installation.md
+      - Quick start: learn/getting-started/quick-start.md
+    - Concepts:
+      - Entities & Components: learn/concepts/entities-components.md
+      - Queries: learn/concepts/queries.md
+      - Component Traits: learn/concepts/component-traits.md
+      - Command line: learn/concepts/command-line.md
+      - Addons: learn/concepts/addons.md
+    - Guides:
+      - learn/guides/index.md
+      - Hello, World: learn/guides/hello-world.md
+      - Reading Queries: learn/guides/reading-queries.md
+      - Pair Rules: learn/guides/pair-rules.md
+      - Tagging: learn/guides/tagging.md
+      - Removing Components: learn/guides/removing-components.md
+      - Bulk Operations: learn/guides/bulk.md
+      - Bulk Queries: learn/guides/bulk-queries.md
+      - Debugging: learn/guides/debugging.md
+      - Naming: learn/guides/naming.md
+      - Building Applications: learn/guides/building-applications.md
+      - Troubleshoot: learn/guides/troubleshoot.md
+    - Migration from Matter: learn/migration-from-matter.md
+    - Observer APIs: learn/observers.md
+    - FAQ: learn/faq/index.md
+  - API:
+    - api/jecs.md
+    - World: api/world.md
+    - Query: api/query.md
+    - Entity Management: api/world-entity-management.md 
+    - Name Component: api/name.md
+  - Contributing:
+    - contributing/index.md
+    - Roadmap: contributing/roadmap.md
+    - How to Contribute: learn/faq/contributing.md
   - Tutorials:
     - Get Started: tutorials/index.md
     - Installing Fusion: tutorials/get-started/installing-fusion.md
