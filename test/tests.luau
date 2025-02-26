@@ -1262,7 +1262,7 @@ TEST("world:target", function()
 
 		local records = debug_world_inspect(world).records(e)
 		CHECK(jecs.pair_first(world, pair(B, C)) == B)
-		CHECK(records[pair(B, C)].column > records[pair(A, E)].column)
+		CHECK(records[pair(B, C)] > records[pair(A, E)])
 		CHECK(world:target(e, A, 0) == B)
 		CHECK(world:target(e, A, 1) == C)
 		CHECK(world:target(e, A, 2) == D)

@@ -35,7 +35,8 @@ export type Archetype = {
 	type: string,
 	entities: { number },
 	columns: { Column },
-	records: { ArchetypeRecord },
+	records: { number },
+	counts: { number },
 } & GraphNode
 
 export type Record = {
@@ -44,13 +45,9 @@ export type Record = {
 	dense: i24,
 }
 
-type ArchetypeRecord = {
-	count: number,
-	column: number,
-}
-
 type IdRecord = {
-	cache: { ArchetypeRecord },
+	columns: { number },
+	counts: { number },
 	flags: number,
 	size: number,
 	hooks: {
@@ -302,7 +299,7 @@ local function archetype_move(entity_index: EntityIndex, to: Archetype, dst_row:
 
 		-- Sometimes target column may not exist, e.g. when you remove a component.
 		if tr then
-			dst_columns[tr.column][dst_row] = column[src_row]
+			dst_columns[tr][dst_row] = column[src_row]
 		end
 
 		-- If the entity is the last row in the archetype then swapping it would be meaningless.
@@ -363,14 +360,14 @@ local function hash(arr: { number }): string
 	return table.concat(arr, "_")
 end
 
-local function fetch(id, records: { ArchetypeRecord }, columns: { Column }, row: number): any
+local function fetch(id, records: { number }, columns: { Column }, row: number): any
 	local tr = records[id]
 
 	if not tr then
 		return nil
 	end
 
-	return columns[tr.column][row]
+	return columns[tr][row]
 end
 
 local function world_get(world: World, entity: i53, a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
@@ -418,7 +415,7 @@ local function world_get_one_inline(world: World, entity: i53, id: i53): any
 	if not tr then
 		return nil
 	end
-	return archetype.columns[tr.column][record.row]
+	return archetype.columns[tr][record.row]
 end
 
 local function world_has_one_inline(world: World, entity: number, id: i53): boolean
@@ -476,17 +473,19 @@ local function world_target(world: World, entity: i53, relation: i24, index: num
 		return nil
 	end
 
-	local tr = idr.cache[archetype.id]
-	if not tr then
+	local archetype_id = archetype.id
+	local count = idr.counts[archetype.id]
+	if not count then
 		return nil
 	end
 
-	local count = tr.count
 	if nth >= count then
 		nth = nth + count + 1
 	end
 
-	nth = archetype.types[nth + tr.column]
+	local tr = idr.columns[archetype_id]
+
+	nth = archetype.types[nth + tr]
 
 	if not nth then
 		return nil
@@ -541,7 +540,8 @@ local function id_record_ensure(world: World, id: number): IdRecord
 
 		idr = {
 			size = 0,
-			cache = {},
+			columns = {},
+			counts = {},
 			flags = flags,
 			hooks = {
 				on_add = on_add,
@@ -558,19 +558,26 @@ end
 
 local function archetype_append_to_records(
 	idr: IdRecord,
-	archetype_id: number,
-	records: Map<i53, ArchetypeRecord>,
+	archetype: Archetype,
 	id: number,
 	index: number
 )
-	local tr = idr.cache[archetype_id]
+	local archetype_id = archetype.id
+	local archetype_records = archetype.records
+	local archetype_counts = archetype.counts
+	local idr_columns = idr.columns
+	local idr_counts = idr.counts
+	local tr = idr_columns[archetype_id]
 	if not tr then
-		tr = { column = index, count = 1 }
-		idr.cache[archetype_id] = tr
-		idr.size += 1
-		records[id] = tr
+		idr_columns[archetype_id] = index
+		idr_counts[archetype_id] = 1
+
+		archetype_records[id] = index
+		archetype_counts[id] = 1
 	else
-		tr.count += 1
+		local max_count = idr_counts[archetype_id] + 1
+		idr_counts[archetype_id] = max_count
+		archetype_counts[id] = max_count
 	end
 end
 
@@ -581,13 +588,15 @@ local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?)
 	local length = #id_types
 	local columns = (table.create(length) :: any) :: { Column }
 
-	local records: { ArchetypeRecord } = {}
+	local records: { number } = {}
+	local counts: {number} = {}
 
 	local archetype: Archetype = {
 		columns = columns,
 		entities = {},
 		id = archetype_id,
 		records = records,
+		counts = counts,
 		type = ty,
 		types = id_types,
 
@@ -598,7 +607,7 @@ local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?)
 
 	for i, componentId in id_types do
 		local idr = id_record_ensure(world, componentId)
-		archetype_append_to_records(idr, archetype_id, records, componentId, i)
+		archetype_append_to_records(idr, archetype, componentId, i)
 
 		if ECS_IS_PAIR(componentId) then
 			local relation = ecs_pair_first(world, componentId)
@@ -606,11 +615,11 @@ local function archetype_create(world: World, id_types: { i24 }, ty, prev: i53?)
 
 			local r = ECS_PAIR(relation, EcsWildcard)
 			local idr_r = id_record_ensure(world, r)
-			archetype_append_to_records(idr_r, archetype_id, records, r, i)
+			archetype_append_to_records(idr_r, archetype, r, i)
 
 			local t = ECS_PAIR(EcsWildcard, object)
 			local idr_t = id_record_ensure(world, t)
-			archetype_append_to_records(idr_t, archetype_id, records, t, i)
+			archetype_append_to_records(idr_t, archetype, t, i)
 		end
 
 		if bit32.band(idr.flags, ECS_ID_IS_TAG) == 0 then
@@ -790,10 +799,6 @@ local function archetype_traverse_remove(world: World, id: i53, from: Archetype)
 	return to :: Archetype
 end
 
-local function invoke_hook(action, entity, data)
-	action(entity, data)
-end
-
 local function world_add(world: World, entity: i53, id: i53): ()
 	local entity_index = world.entity_index
 	local record = entity_index_try_get_fast(entity_index, entity)
@@ -838,7 +843,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 		-- If the archetypes are the same it can avoid moving the entity
 		-- and just set the data directly.
 		local tr = to.records[id]
-		local column = from.columns[tr.column]
+		local column = from.columns[tr]
 		column[record.row] = data
 		local on_set = idr_hooks.on_set
 		if on_set then
@@ -864,7 +869,7 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 	end
 
 	local tr = to.records[id]
-	local column = to.columns[tr.column]
+	local column = to.columns[tr]
 
 	column[record.row] = data
 
@@ -1060,7 +1065,8 @@ local function archetype_destroy(world: World, archetype: Archetype)
 
 	for id in records do
 		local idr = component_index[id]
-		idr.cache[archetype_id] = nil :: any
+		idr.columns[archetype_id] = nil :: any
+		idr.counts[archetype_id] = nil
 		idr.size -= 1
 		records[id] = nil :: any
 		if idr.size == 0 then
@@ -1118,7 +1124,7 @@ do
 		if idr then
 			local flags = idr.flags
 			if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
-				for archetype_id in idr.cache do
+				for archetype_id in idr.columns do
 					local idr_archetype = archetypes[archetype_id]
 
 					local entities = idr_archetype.entities
@@ -1130,7 +1136,7 @@ do
 					archetype_destroy(world, idr_archetype)
 				end
 			else
-				for archetype_id in idr.cache do
+				for archetype_id in idr.columns do
 					local idr_archetype = archetypes[archetype_id]
 					local entities = idr_archetype.entities
 					local n = #entities
@@ -1147,7 +1153,7 @@ do
 		local dense_array = entity_index.dense_array
 
 		if idr_t then
-			for archetype_id in idr_t.cache do
+			for archetype_id in idr_t.columns do
 				local children = {}
 				local idr_t_archetype = archetypes[archetype_id]
 
@@ -1267,49 +1273,49 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 	local e: Column, f: Column, g: Column, h: Column
 
 	if not B then
-		a = columns[records[A].column]
+		a = columns[records[A]]
 	elseif not C then
-		a = columns[records[A].column]
-		b = columns[records[B].column]
+		a = columns[records[A]]
+		b = columns[records[B]]
 	elseif not D then
-		a = columns[records[A].column]
-		b = columns[records[B].column]
-		c = columns[records[C].column]
+		a = columns[records[A]]
+		b = columns[records[B]]
+		c = columns[records[C]]
 	elseif not E then
-		a = columns[records[A].column]
-		b = columns[records[B].column]
-		c = columns[records[C].column]
-		d = columns[records[D].column]
+		a = columns[records[A]]
+		b = columns[records[B]]
+		c = columns[records[C]]
+		d = columns[records[D]]
 	elseif not F then
-		a = columns[records[A].column]
-		b = columns[records[B].column]
-		c = columns[records[C].column]
-		d = columns[records[D].column]
-		e = columns[records[E].column]
+		a = columns[records[A]]
+		b = columns[records[B]]
+		c = columns[records[C]]
+		d = columns[records[D]]
+		e = columns[records[E]]
 	elseif not G then
-		a = columns[records[A].column]
-		b = columns[records[B].column]
-		c = columns[records[C].column]
-		d = columns[records[D].column]
-		e = columns[records[E].column]
-		f = columns[records[F].column]
+		a = columns[records[A]]
+		b = columns[records[B]]
+		c = columns[records[C]]
+		d = columns[records[D]]
+		e = columns[records[E]]
+		f = columns[records[F]]
 	elseif not H then
-		a = columns[records[A].column]
-		b = columns[records[B].column]
-		c = columns[records[C].column]
-		d = columns[records[D].column]
-		e = columns[records[E].column]
-		f = columns[records[F].column]
-		g = columns[records[G].column]
+		a = columns[records[A]]
+		b = columns[records[B]]
+		c = columns[records[C]]
+		d = columns[records[D]]
+		e = columns[records[E]]
+		f = columns[records[F]]
+		g = columns[records[G]]
 	elseif not I then
-		a = columns[records[A].column]
-		b = columns[records[B].column]
-		c = columns[records[C].column]
-		d = columns[records[D].column]
-		e = columns[records[E].column]
-		f = columns[records[F].column]
-		g = columns[records[G].column]
-		h = columns[records[H].column]
+		a = columns[records[A]]
+		b = columns[records[B]]
+		c = columns[records[C]]
+		d = columns[records[D]]
+		e = columns[records[E]]
+		f = columns[records[F]]
+		g = columns[records[G]]
+		h = columns[records[H]]
 	end
 
 	if not B then
@@ -1330,7 +1336,7 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
-				a = columns[records[A].column]
+				a = columns[records[A]]
 			end
 
 			local row = i
@@ -1356,8 +1362,8 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
-				a = columns[records[A].column]
-				b = columns[records[B].column]
+				a = columns[records[A]]
+				b = columns[records[B]]
 			end
 
 			local row = i
@@ -1383,9 +1389,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
-				a = columns[records[A].column]
-				b = columns[records[B].column]
-				c = columns[records[C].column]
+				a = columns[records[A]]
+				b = columns[records[B]]
+				c = columns[records[C]]
 			end
 
 			local row = i
@@ -1411,10 +1417,10 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
-				a = columns[records[A].column]
-				b = columns[records[B].column]
-				c = columns[records[C].column]
-				d = columns[records[D].column]
+				a = columns[records[A]]
+				b = columns[records[B]]
+				c = columns[records[C]]
+				d = columns[records[D]]
 			end
 
 			local row = i
@@ -1443,35 +1449,35 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 				records = archetype.records
 
 				if not F then
-					a = columns[records[A].column]
-					b = columns[records[B].column]
-					c = columns[records[C].column]
-					d = columns[records[D].column]
-					e = columns[records[E].column]
+					a = columns[records[A]]
+					b = columns[records[B]]
+					c = columns[records[C]]
+					d = columns[records[D]]
+					e = columns[records[E]]
 				elseif not G then
-					a = columns[records[A].column]
-					b = columns[records[B].column]
-					c = columns[records[C].column]
-					d = columns[records[D].column]
-					e = columns[records[E].column]
-					f = columns[records[F].column]
+					a = columns[records[A]]
+					b = columns[records[B]]
+					c = columns[records[C]]
+					d = columns[records[D]]
+					e = columns[records[E]]
+					f = columns[records[F]]
 				elseif not H then
-					a = columns[records[A].column]
-					b = columns[records[B].column]
-					c = columns[records[C].column]
-					d = columns[records[D].column]
-					e = columns[records[E].column]
-					f = columns[records[F].column]
-					g = columns[records[G].column]
+					a = columns[records[A]]
+					b = columns[records[B]]
+					c = columns[records[C]]
+					d = columns[records[D]]
+					e = columns[records[E]]
+					f = columns[records[F]]
+					g = columns[records[G]]
 				elseif not I then
-					a = columns[records[A].column]
-					b = columns[records[B].column]
-					c = columns[records[C].column]
-					d = columns[records[D].column]
-					e = columns[records[E].column]
-					f = columns[records[F].column]
-					g = columns[records[G].column]
-					h = columns[records[H].column]
+					a = columns[records[A]]
+					b = columns[records[B]]
+					c = columns[records[C]]
+					d = columns[records[D]]
+					e = columns[records[E]]
+					f = columns[records[F]]
+					g = columns[records[G]]
+					h = columns[records[H]]
 				end
 			end
 
@@ -1489,7 +1495,7 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 			end
 
 			for j, id in ids do
-				queryOutput[j] = columns[records[id].column][row]
+				queryOutput[j] = columns[records[id]][row]
 			end
 
 			return entityId, unpack(queryOutput)
@@ -1597,7 +1603,7 @@ local function query_cached(query: QueryInner)
 	local entities: { number }
 	local i: number
 	local archetype: Archetype
-	local records: { ArchetypeRecord }
+	local records: { number }
 	local archetypes = query.compatible_archetypes
 
 	local world = query.world :: { observable: Observable }
@@ -1654,49 +1660,49 @@ local function query_cached(query: QueryInner)
 		records = archetype.records
 		columns = archetype.columns
 		if not B then
-			a = columns[records[A].column]
+			a = columns[records[A]]
 		elseif not C then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
+			a = columns[records[A]]
+			b = columns[records[B]]
 		elseif not D then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
+			a = columns[records[A]]
+			b = columns[records[B]]
+			c = columns[records[C]]
 		elseif not E then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
+			a = columns[records[A]]
+			b = columns[records[B]]
+			c = columns[records[C]]
+			d = columns[records[D]]
 		elseif not F then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-			e = columns[records[E].column]
+			a = columns[records[A]]
+			b = columns[records[B]]
+			c = columns[records[C]]
+			d = columns[records[D]]
+			e = columns[records[E]]
 		elseif not G then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-			e = columns[records[E].column]
-			f = columns[records[F].column]
+			a = columns[records[A]]
+			b = columns[records[B]]
+			c = columns[records[C]]
+			d = columns[records[D]]
+			e = columns[records[E]]
+			f = columns[records[F]]
 		elseif not H then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-			e = columns[records[E].column]
-			f = columns[records[F].column]
-			g = columns[records[G].column]
+			a = columns[records[A]]
+			b = columns[records[B]]
+			c = columns[records[C]]
+			d = columns[records[D]]
+			e = columns[records[E]]
+			f = columns[records[F]]
+			g = columns[records[G]]
 		elseif not I then
-			a = columns[records[A].column]
-			b = columns[records[B].column]
-			c = columns[records[C].column]
-			d = columns[records[D].column]
-			e = columns[records[E].column]
-			f = columns[records[F].column]
-			g = columns[records[G].column]
-			h = columns[records[H].column]
+			a = columns[records[A]]
+			b = columns[records[B]]
+			c = columns[records[C]]
+			d = columns[records[D]]
+			e = columns[records[E]]
+			f = columns[records[F]]
+			g = columns[records[G]]
+			h = columns[records[H]]
 		end
 
 		return world_query_iter_next
@@ -1720,7 +1726,7 @@ local function query_cached(query: QueryInner)
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
-				a = columns[records[A].column]
+				a = columns[records[A]]
 			end
 
 			local row = i
@@ -1746,8 +1752,8 @@ local function query_cached(query: QueryInner)
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
-				a = columns[records[A].column]
-				b = columns[records[B].column]
+				a = columns[records[A]]
+				b = columns[records[B]]
 			end
 
 			local row = i
@@ -1773,9 +1779,9 @@ local function query_cached(query: QueryInner)
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
-				a = columns[records[A].column]
-				b = columns[records[B].column]
-				c = columns[records[C].column]
+				a = columns[records[A]]
+				b = columns[records[B]]
+				c = columns[records[C]]
 			end
 
 			local row = i
@@ -1801,10 +1807,10 @@ local function query_cached(query: QueryInner)
 				entityId = entities[i]
 				columns = archetype.columns
 				records = archetype.records
-				a = columns[records[A].column]
-				b = columns[records[B].column]
-				c = columns[records[C].column]
-				d = columns[records[D].column]
+				a = columns[records[A]]
+				b = columns[records[B]]
+				c = columns[records[C]]
+				d = columns[records[D]]
 			end
 
 			local row = i
@@ -1833,35 +1839,35 @@ local function query_cached(query: QueryInner)
 				records = archetype.records
 
 				if not F then
-					a = columns[records[A].column]
-					b = columns[records[B].column]
-					c = columns[records[C].column]
-					d = columns[records[D].column]
-					e = columns[records[E].column]
+					a = columns[records[A]]
+					b = columns[records[B]]
+					c = columns[records[C]]
+					d = columns[records[D]]
+					e = columns[records[E]]
 				elseif not G then
-					a = columns[records[A].column]
-					b = columns[records[B].column]
-					c = columns[records[C].column]
-					d = columns[records[D].column]
-					e = columns[records[E].column]
-					f = columns[records[F].column]
+					a = columns[records[A]]
+					b = columns[records[B]]
+					c = columns[records[C]]
+					d = columns[records[D]]
+					e = columns[records[E]]
+					f = columns[records[F]]
 				elseif not H then
-					a = columns[records[A].column]
-					b = columns[records[B].column]
-					c = columns[records[C].column]
-					d = columns[records[D].column]
-					e = columns[records[E].column]
-					f = columns[records[F].column]
-					g = columns[records[G].column]
+					a = columns[records[A]]
+					b = columns[records[B]]
+					c = columns[records[C]]
+					d = columns[records[D]]
+					e = columns[records[E]]
+					f = columns[records[F]]
+					g = columns[records[G]]
 				elseif not I then
-					a = columns[records[A].column]
-					b = columns[records[B].column]
-					c = columns[records[C].column]
-					d = columns[records[D].column]
-					e = columns[records[E].column]
-					f = columns[records[F].column]
-					g = columns[records[G].column]
-					h = columns[records[H].column]
+					a = columns[records[A]]
+					b = columns[records[B]]
+					c = columns[records[C]]
+					d = columns[records[D]]
+					e = columns[records[E]]
+					f = columns[records[F]]
+					g = columns[records[G]]
+					h = columns[records[H]]
 				end
 			end
 
@@ -1879,7 +1885,7 @@ local function query_cached(query: QueryInner)
 			end
 
 			for j, id in ids do
-				queryOutput[j] = columns[records[id].column][row]
+				queryOutput[j] = columns[records[id]][row]
 			end
 
 			return entityId, unpack(queryOutput)
@@ -1935,7 +1941,7 @@ local function world_query(world: World, ...)
 		return q
 	end
 
-	for archetype_id in idr.cache do
+	for archetype_id in idr.columns do
 		local compatibleArchetype = archetypes[archetype_id]
 		if #compatibleArchetype.entities == 0 then
 			continue
@@ -1969,9 +1975,9 @@ local function world_each(world: World, id): () -> ()
 		return NOOP
 	end
 
-	local idr_cache = idr.cache
+	local idr_columns = idr.columns
 	local archetypes = world.archetypes
-	local archetype_id = next(idr_cache, nil) :: number
+	local archetype_id = next(idr_columns, nil) :: number
 	local archetype = archetypes[archetype_id]
 	if not archetype then
 		return NOOP
@@ -1983,7 +1989,7 @@ local function world_each(world: World, id): () -> ()
 	return function(): any
 		local entity = entities[row]
 		while not entity do
-			archetype_id = next(idr_cache, archetype_id) :: number
+			archetype_id = next(idr_columns, archetype_id) :: number
 			if not archetype_id then
 				return
 			end
