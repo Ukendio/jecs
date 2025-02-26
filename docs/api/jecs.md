@@ -16,6 +16,12 @@ jecs.Wildcard: Entity
 ```
 Builtin component type. This ID is used for wildcard queries.
 
+## w
+```luau
+jecs.w: Entity
+```
+An alias for `jecs.Wildcard`. This ID is used for wildcard queries, providing a shorter syntax in query operations.
+
 ## Component
 ```luau
 jecs.Component: Entity
@@ -27,6 +33,54 @@ Builtin component type. Every ID created with [world:component()](world.md#compo
 jecs.ChildOf: Entity
 ```
 Builtin component type. This ID is for creating parent-child hierarchies.
+
+## Name
+```luau
+jecs.Name: Entity
+```
+Builtin component type. This ID is used to associate a string name with an entity, typically for debugging or display purposes.
+
+## OnAdd
+```luau
+jecs.OnAdd: Entity<(entity: Entity) -> ()>
+```
+Builtin component hook. When set on a component, the provided function is called whenever that component is added to an entity.
+
+## OnRemove
+```luau
+jecs.OnRemove: Entity<(entity: Entity) -> ()>
+```
+Builtin component hook. When set on a component, the provided function is called whenever that component is removed from an entity.
+
+## OnSet
+```luau
+jecs.OnSet: Entity<(entity: Entity, data: any) -> ()>
+```
+Builtin component hook. When set on a component, the provided function is called whenever that component's value is set or changed on an entity.
+
+## OnDelete
+```luau
+jecs.OnDelete: Entity
+```
+Builtin component trait. Used with `pair()` to define behavior when a component or entity is deleted. Must be paired with an action component like `jecs.Delete` or `jecs.Remove`.
+
+## OnDeleteTarget
+```luau
+jecs.OnDeleteTarget: Entity
+```
+Builtin component trait. Used with `pair()` to define behavior when a relationship target is deleted. Must be paired with an action component like `jecs.Delete` or `jecs.Remove`.
+
+## Delete
+```luau
+jecs.Delete: Entity
+```
+Builtin action component used with `OnDelete` or `OnDeleteTarget` to specify that entities should be deleted in the cleanup process.
+
+## Remove
+```luau
+jecs.Remove: Entity
+```
+Builtin action component used with `OnDelete` or `OnDeleteTarget` to specify that components should be removed in the cleanup process.
 
 ## Rest
 ```luau
