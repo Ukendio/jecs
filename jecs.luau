@@ -950,6 +950,7 @@ local function archetype_delete(world: World, archetype: Archetype, row: number,
 			record_to_move.row = row
 		end
 
+		delete = entities[row]
 		entities[row] = move
 	end
 

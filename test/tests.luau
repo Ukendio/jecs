@@ -1045,6 +1045,22 @@ TEST("world:component()", function()
 end)
 
 TEST("world:delete", function()
+	do CASE "invoke OnRemove hooks"
+		local world = world_new()
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local Stable = world:component()
+		world:set(Stable, jecs.OnRemove, function(e)
+			CHECK(e == e1)
+		end)
+
+		world:set(e1, Stable, true)
+		world:set(e2, Stable, true)
+
+		world:delete(e1)
+	end
 	do CASE "delete recycled entity id used as component"
 		local world = world_new()
 		local id = world:entity()
