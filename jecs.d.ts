@@ -31,31 +31,27 @@ export type Id<TData = unknown> = Entity<TData> | Pair<TData, unknown> | Pair<un
 export type InferComponent<E> = E extends Entity<infer D>
 	? D
 	: E extends Pair<infer P, infer O>
-		? P extends undefined
-			? O
-			: P
-		: never;
+	? P extends undefined
+		? O
+		: P
+	: never;
 
 type FlattenTuple<T extends unknown[]> = T extends [infer U] ? U : LuaTuple<T>;
 type Nullable<T extends unknown[]> = { [K in keyof T]: T[K] | undefined };
 type InferComponents<A extends Id[]> = { [K in keyof A]: InferComponent<A[K]> };
 
-type ArchetypeId = number
+type ArchetypeId = number;
 type Column = unknown[];
 
-type ArchetypeRecord = {
-    count: number;
-    column: number;
-}
-
 export type Archetype = {
-    id: number;
-    types: number[];
-    type: string;
-    entities: number[];
-    columns: Column[];
-    records: ArchetypeRecord[];
-}
+	id: number;
+	types: number[];
+	type: string;
+	entities: number[];
+	columns: Column[];
+	records: number[];
+	counts: number[];
+};
 
 type Iter<T extends unknown[]> = IterableFunction<LuaTuple<[Entity, ...T]>>;
 
