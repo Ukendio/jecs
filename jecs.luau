@@ -1221,27 +1221,6 @@ end
 
 local function NOOP() end
 
-local function ARM(query, ...)
-	return query
-end
-
-local EMPTY_LIST = {}
-local EMPTY_QUERY = {
-	__iter = function()
-		return NOOP
-	end,
-	iter = function()
-		return NOOP
-	end,
-	with = ARM,
-	without = ARM,
-	archetypes = function()
-		return EMPTY_LIST
-	end,
-}
-
-setmetatable(EMPTY_QUERY, EMPTY_QUERY)
-
 type QueryInner = {
 	compatible_archetypes: { Archetype },
 	ids: { i53 },
