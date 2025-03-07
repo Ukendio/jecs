@@ -1113,11 +1113,11 @@ do
 		end
 
 		local delete = entity
-		local component_index = world.component_index
 		local archetypes: Archetypes = world.archetypes
-		local tgt = ECS_PAIR(EcsWildcard, delete)
-		local idr_t = component_index[tgt]
-		local idr = component_index[delete]
+		local component_index = world.component_index
+
+		local idr = component_index[entity]
+		local idr_t = component_index[ECS_PAIR(EcsWildcard, entity)]
 
 		if idr then
 			local flags = idr.flags
@@ -1152,21 +1152,16 @@ do
 
 		if idr_t then
 			for archetype_id in idr_t.columns do
-				local children = {}
 				local idr_t_archetype = archetypes[archetype_id]
-
 				local idr_t_types = idr_t_archetype.types
-
-				for _, child in idr_t_archetype.entities do
-					table.insert(children, child)
-				end
-
+				local children = table.clone(idr_t_archetype.entities)
 				local n = #children
 
 				for _, id in idr_t_types do
 					if not ECS_IS_PAIR(id) then
 						continue
 					end
+
 					local object = ecs_pair_second(world, id)
 					if object == delete then
 						local id_record = component_index[id]
@@ -1181,14 +1176,24 @@ do
 							local on_remove = id_record.hooks.on_remove
 							local to = archetype_traverse_remove(world, id, idr_t_archetype)
 							local empty = #to.types == 0
-							for i = n, 1, -1 do
-								local child = children[i]
-								if on_remove then
+
+							if on_remove then
+								for i = n, 1, -1 do
+									local child = children[i]
 									on_remove(child)
+
+									if not empty then
+										local r = sparse_array[ECS_ENTITY_T_LO(child)]
+										entity_move(entity_index, child, r, to)
+									end
 								end
-								local r = sparse_array[ECS_ENTITY_T_LO(child)]
-								if not empty then
-									entity_move(entity_index, child, r, to)
+							else
+								if not empty then -- no on_remove hook set; fast path
+									for i = n, 1, -1 do
+										local child = children[i]
+										local r = sparse_array[ECS_ENTITY_T_LO(child)]
+										entity_move(entity_index, child, r, to)
+									end
 								end
 							end
 						end
