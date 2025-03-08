@@ -1113,11 +1113,11 @@ do
 		end
 
 		local delete = entity
-		local archetypes: Archetypes = world.archetypes
 		local component_index = world.component_index
-
-		local idr = component_index[entity]
-		local idr_t = component_index[ECS_PAIR(EcsWildcard, entity)]
+		local archetypes: Archetypes = world.archetypes
+		local tgt = ECS_PAIR(EcsWildcard, delete)
+		local idr_t = component_index[tgt]
+		local idr = component_index[delete]
 
 		if idr then
 			local flags = idr.flags
