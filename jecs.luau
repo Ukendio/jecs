@@ -1176,24 +1176,14 @@ do
 							local on_remove = id_record.hooks.on_remove
 							local to = archetype_traverse_remove(world, id, idr_t_archetype)
 							local empty = #to.types == 0
-
-							if on_remove then
-								for i = n, 1, -1 do
-									local child = children[i]
+							for i = n, 1, -1 do
+								local child = children[i]
+								if on_remove then
 									on_remove(child)
-
-									if not empty then
-										local r = sparse_array[ECS_ENTITY_T_LO(child)]
-										entity_move(entity_index, child, r, to)
-									end
 								end
-							else
-								if not empty then -- no on_remove hook set; fast path
-									for i = n, 1, -1 do
-										local child = children[i]
-										local r = sparse_array[ECS_ENTITY_T_LO(child)]
-										entity_move(entity_index, child, r, to)
-									end
+								if not empty then
+									local r = sparse_array[ECS_ENTITY_T_LO(child)]
+									entity_move(entity_index, child, r, to)
 								end
 							end
 						end
