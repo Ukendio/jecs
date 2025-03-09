@@ -1152,21 +1152,16 @@ do
 
 		if idr_t then
 			for archetype_id in idr_t.columns do
-				local children = {}
 				local idr_t_archetype = archetypes[archetype_id]
-
 				local idr_t_types = idr_t_archetype.types
-
-				for _, child in idr_t_archetype.entities do
-					table.insert(children, child)
-				end
-
+				local children = table.clone(idr_t_archetype.entities)
 				local n = #children
 
 				for _, id in idr_t_types do
 					if not ECS_IS_PAIR(id) then
 						continue
 					end
+
 					local object = ecs_pair_second(world, id)
 					if object == delete then
 						local id_record = component_index[id]
@@ -1186,8 +1181,8 @@ do
 								if on_remove then
 									on_remove(child)
 								end
-								local r = sparse_array[ECS_ENTITY_T_LO(child)]
 								if not empty then
+									local r = sparse_array[ECS_ENTITY_T_LO(child)]
 									entity_move(entity_index, child, r, to)
 								end
 							end
