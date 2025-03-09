@@ -172,9 +172,6 @@ end
 
 local function entity_index_try_get_any(entity_index: EntityIndex, entity: number): Record?
 	local r = entity_index.sparse_array[ECS_ENTITY_T_LO(entity)]
-	if not r then
-		return nil
-	end
 
 	if not r or r.dense == 0 then
 		return nil
@@ -1223,27 +1220,6 @@ local function world_contains(world: World, entity): boolean
 end
 
 local function NOOP() end
-
-local function ARM(query, ...)
-	return query
-end
-
-local EMPTY_LIST = {}
-local EMPTY_QUERY = {
-	__iter = function()
-		return NOOP
-	end,
-	iter = function()
-		return NOOP
-	end,
-	with = ARM,
-	without = ARM,
-	archetypes = function()
-		return EMPTY_LIST
-	end,
-}
-
-setmetatable(EMPTY_QUERY, EMPTY_QUERY)
 
 type QueryInner = {
 	compatible_archetypes: { Archetype },
