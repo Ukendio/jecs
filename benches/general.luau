@@ -36,7 +36,7 @@ do
 	TITLE("set")
 
 	local world = jecs.World.new()
-	local A = world:entity()
+	local A = world:component()
 
 	local entities = table.create(N)
 
@@ -70,7 +70,7 @@ do
 	TITLE("set relationship")
 
 	local world = jecs.World.new()
-	local A = world:entity()
+	local A = world:component()
 
 	local entities = table.create(N)
 
@@ -194,12 +194,13 @@ do
 					world:set(id, B, true)
 					world:set(id, C, true)
 					world:set(id, D, true)
-					world:set(id, ct, true)
+					world:add(id, ct)
 				end
 			end
 
+			local q = world:query(A, B, C, D)
 			START()
-			for id in world:query(A, B, C, D) do
+			for id in q do
 			end
 		end)
 
@@ -218,17 +219,18 @@ do
 					world:set(id, B, true)
 					world:set(id, C, true)
 					world:set(id, D, true)
-					world:set(id, ct, true)
+					world:add(id, ct)
 				end
 			end
 
+			local archetypes = world:query(A, B, C, D):archetypes()
 			START()
-			for _, archetype in world:query(A, B, C, D):archetypes() do
+			for _, archetype in archetypes do
 				local columns, records = archetype.columns, archetype.records
-				local a = columns[records[A].column]
-				local b = columns[records[B].column]
-				local c = columns[records[C].column]
-				local d = columns[records[D].column]
+				local a = columns[records[A]]
+				local b = columns[records[B]]
+				local c = columns[records[C]]
+				local d = columns[records[D]]
 				for row in archetype.entities do
 					local _1, _2, _3, _4 = a[row], b[row], c[row], d[row]
 				end
