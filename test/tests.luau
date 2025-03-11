@@ -1333,6 +1333,26 @@ TEST("world:target", function()
 
 		CHECK(i == 10)
 	end
+
+	do CASE("should return correct targets after deletion") -- ISSUE #207
+		local world = jecs.World.new()
+
+		local Attacks = world:component()
+		local Eats = world:component()
+		local a = world:entity()
+		local b = world:entity()
+		local c = world:entity()
+
+		world:add(a, jecs.pair(Attacks, b))
+		world:add(a, jecs.pair(Attacks, c))
+		world:add(a, jecs.pair(Eats, c))
+		world:add(a, jecs.pair(Eats, b))
+		world:delete(c)
+
+		CHECK(world:target(a, Attacks, 0) == b)
+		CHECK(not world:target(a, Attacks, 1))
+		CHECK(not world:target(a, Attacks, 2))
+	end
 end)
 
 TEST("world:contains", function()
