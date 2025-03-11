@@ -1154,6 +1154,8 @@ do
 			for archetype_id in idr_t.columns do
 				local idr_t_archetype = archetypes[archetype_id]
 				local idr_t_types = idr_t_archetype.types
+				local to = idr_t_archetype
+
 				local children = table.clone(idr_t_archetype.entities)
 				local n = #children
 
@@ -1163,28 +1165,30 @@ do
 					end
 
 					local object = ecs_pair_second(world, id)
-					if object == delete then
-						local id_record = component_index[id]
-						local flags = id_record.flags
-						local flags_delete_mask: number = bit32.band(flags, ECS_ID_DELETE)
-						if flags_delete_mask ~= 0 then
-							for i = n, 1, -1 do
-								world_delete(world, children[i])
+					if object ~= delete then
+						continue
+					end
+
+					local id_record = component_index[id]
+					local flags = id_record.flags
+					local flags_delete_mask: number = bit32.band(flags, ECS_ID_DELETE)
+					if flags_delete_mask ~= 0 then
+						for i = n, 1, -1 do
+							world_delete(world, children[i])
+						end
+						break
+					else
+						local on_remove = id_record.hooks.on_remove
+						to = archetype_traverse_remove(world, id, to)
+						local empty = #to.types == 0
+						for i = n, 1, -1 do
+							local child = children[i]
+							if on_remove then
+								on_remove(child)
 							end
-							break
-						else
-							local on_remove = id_record.hooks.on_remove
-							local to = archetype_traverse_remove(world, id, idr_t_archetype)
-							local empty = #to.types == 0
-							for i = n, 1, -1 do
-								local child = children[i]
-								if on_remove then
-									on_remove(child)
-								end
-								if not empty then
-									local r = sparse_array[ECS_ENTITY_T_LO(child)]
-									entity_move(entity_index, child, r, to)
-								end
+							if not empty then
+								local r = sparse_array[ECS_ENTITY_T_LO(child)]
+								entity_move(entity_index, child, r, to)
 							end
 						end
 					end
