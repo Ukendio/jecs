@@ -46,7 +46,7 @@ export type Record = {
 }
 
 type IdRecord = {
-	columns: { number },
+	cache: { number },
 	counts: { number },
 	flags: number,
 	size: number,
@@ -480,7 +480,7 @@ local function world_target(world: World, entity: i53, relation: i24, index: num
 		nth = nth + count + 1
 	end
 
-	local tr = idr.columns[archetype_id]
+	local tr = idr.cache[archetype_id]
 
 	nth = archetype.types[nth + tr]
 
@@ -537,7 +537,7 @@ local function id_record_ensure(world: World, id: number): IdRecord
 
 		idr = {
 			size = 0,
-			columns = {},
+			cache = {},
 			counts = {},
 			flags = flags,
 			hooks = {
@@ -562,7 +562,7 @@ local function archetype_append_to_records(
 	local archetype_id = archetype.id
 	local archetype_records = archetype.records
 	local archetype_counts = archetype.counts
-	local idr_columns = idr.columns
+	local idr_columns = idr.cache
 	local idr_counts = idr.counts
 	local tr = idr_columns[archetype_id]
 	if not tr then
@@ -1063,7 +1063,7 @@ local function archetype_destroy(world: World, archetype: Archetype)
 
 	for id in records do
 		local idr = component_index[id]
-		idr.columns[archetype_id] = nil :: any
+		idr.cache[archetype_id] = nil :: any
 		idr.counts[archetype_id] = nil
 		idr.size -= 1
 		records[id] = nil :: any
@@ -1122,7 +1122,7 @@ do
 		if idr then
 			local flags = idr.flags
 			if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
-				for archetype_id in idr.columns do
+				for archetype_id in idr.cache do
 					local idr_archetype = archetypes[archetype_id]
 
 					local entities = idr_archetype.entities
@@ -1134,7 +1134,7 @@ do
 					archetype_destroy(world, idr_archetype)
 				end
 			else
-				for archetype_id in idr.columns do
+				for archetype_id in idr.cache do
 					local idr_archetype = archetypes[archetype_id]
 					local entities = idr_archetype.entities
 					local n = #entities
@@ -1153,7 +1153,7 @@ do
 			local children
 			local ids
 			local count = 0
-			local archetype_ids = idr_t.columns
+			local archetype_ids = idr_t.cache
 			for archetype_id in archetype_ids do
 				local idr_t_archetype = archetypes[archetype_id]
 				local idr_t_types = idr_t_archetype.types
@@ -2107,7 +2107,7 @@ local function world_query(world: World, ...)
 		return q
 	end
 
-	for archetype_id in idr.columns do
+	for archetype_id in idr.cache do
 		local compatibleArchetype = archetypes[archetype_id]
 		if #compatibleArchetype.entities == 0 then
 			continue
@@ -2141,9 +2141,9 @@ local function world_each(world: World, id): () -> ()
 		return NOOP
 	end
 
-	local idr_columns = idr.columns
+	local idr_cache = idr.cache
 	local archetypes = world.archetypes
-	local archetype_id = next(idr_columns, nil) :: number
+	local archetype_id = next(idr_cache, nil) :: number
 	local archetype = archetypes[archetype_id]
 	if not archetype then
 		return NOOP
@@ -2155,7 +2155,7 @@ local function world_each(world: World, id): () -> ()
 	return function(): any
 		local entity = entities[row]
 		while not entity do
-			archetype_id = next(idr_columns, archetype_id) :: number
+			archetype_id = next(idr_cache, archetype_id) :: number
 			if not archetype_id then
 				return
 			end
@@ -2488,6 +2488,7 @@ export type World = {
 
 return {
 	World = World :: { new: () -> World },
+	world = World.new :: () -> World,
 
 	OnAdd = EcsOnAdd :: Entity<(entity: Entity) -> ()>,
 	OnRemove = EcsOnRemove :: Entity<(entity: Entity) -> ()>,

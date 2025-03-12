@@ -26,6 +26,50 @@ local N = 2 ^ 8
 type World = jecs.World
 type Entity<T=nil> = jecs.Entity<T>
 
+local c = {
+	white_underline = function(s: any)
+		return `\27[1;4m{s}\27[0m`
+	end,
+
+	white = function(s: any)
+		return `\27[37;1m{s}\27[0m`
+	end,
+
+	green = function(s: any)
+		return `\27[32;1m{s}\27[0m`
+	end,
+
+	red = function(s: any)
+		return `\27[31;1m{s}\27[0m`
+	end,
+
+	yellow = function(s: any)
+		return `\27[33;1m{s}\27[0m`
+	end,
+
+	red_highlight = function(s: any)
+		return `\27[41;1;30m{s}\27[0m`
+	end,
+
+	green_highlight = function(s: any)
+		return `\27[42;1;30m{s}\27[0m`
+	end,
+
+	gray = function(s: any)
+		return `\27[30;1m{s}\27[0m`
+	end,
+}
+
+local function pe(e)
+	local gen = ECS_GENERATION(e)
+	return c.green(`e{ECS_ID(e)}`)..c.yellow(`v{gen}`)
+end
+
+local function pp(e)
+	local gen = ECS_GENERATION(e)
+	return c.green(`e{ECS_ID(e)}`)..c.yellow(`v{jecs.ECS_ENTITY_T_HI(e)}`)
+end
+
 local function debug_world_inspect(world: World)
 	local function record(e): jecs.Record
 		return entity_index_try_get_any(world.entity_index, e) :: any
@@ -67,9 +111,60 @@ local function debug_world_inspect(world: World)
 	}
 end
 
+local dwi = debug_world_inspect
+
 local function name(world, e)
 	return world:get(e, jecs.Name)
 end
+
+TEST("#repro", function()
+	local world = world_new()
+
+	local function getTargets(relation)
+		local tgts = {}
+		local pairwildcard = pair(relation, jecs.Wildcard)
+		for _, archetype in world:query(pairwildcard):archetypes() do
+		local tr = archetype.records[pairwildcard]
+		local count = archetype.counts[pairwildcard]
+		local types = archetype.types
+		for _, entity in archetype.entities do
+		    for i = 0, count - 1 do
+		    local tgt = jecs.pair_second(world, types[i + tr])
+		    table.insert(tgts, tgt)
+		    end
+		end
+		end
+		return tgts
+	end
+
+	local Attacks = world:component()
+	local Eats = world:component()
+
+	local function setAttacksAndEats(entity1, entity2)
+		world:add(entity1, pair(Attacks, entity2))
+		world:add(entity1, pair(Eats, entity2))
+	end
+
+	local e1 = world:entity()
+	local e2 = world:entity()
+	local e3 = world:entity()
+	print(e1, e2, e3)
+	setAttacksAndEats(e3, e1)
+	setAttacksAndEats(e3, e2)
+	setAttacksAndEats(e1, e2)
+	print("---------------- delete e2 ---------------")
+	local d = dwi(world)
+	for archetype_id in world.component_index[pair(jecs.Wildcard, e2)].cache do
+		local archetype = world.archetypes[archetype_id].type
+		testkit.print(archetype)
+	end
+	world:delete(e2)
+	print("-----------------------------")
+	testkit.print(d.tbl(e1).types)
+	-- testkit.print(d.tbl(e3).types)
+	-- testkit.print(getTargets(Attacks))
+	-- testkit.print(getTargets(Eats))
+end)
 
 TEST("archetype", function()
 	local archetype_traverse_add = jecs.archetype_traverse_add
@@ -1199,6 +1294,7 @@ TEST("world:delete", function()
 			world:delete(e)
 		end)
 
+		local d = debug_world_inspect(world)
 		for i, friend in friends do
 			CHECK(not world:has(friend, pair(FriendsWith, e)))
 			CHECK(world:has(friend, Health))
