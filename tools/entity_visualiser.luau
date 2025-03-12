@@ -37,13 +37,6 @@ local function components(world: jecs.World, entity: any)
 	return true
 end
 
-local world = jecs.world()
-local A = world:component()
-world:set(A, jecs.Name, "A")
-local e = world:entity()
-world:set(e, A, true)
-components(world, e)
-
 return {
 	components = components,
 	prettify = pe
