@@ -1147,55 +1147,66 @@ do
 			end
 		end
 
-		local sparse_array = entity_index.sparse_array
 		local dense_array = entity_index.dense_array
 
 		if idr_t then
-			for archetype_id in idr_t.columns do
-				local children = {}
+			local children
+			local ids
+			local count = 0
+			local archetype_ids = idr_t.columns
+			for archetype_id in archetype_ids do
 				local idr_t_archetype = archetypes[archetype_id]
-
 				local idr_t_types = idr_t_archetype.types
-
-				for _, child in idr_t_archetype.entities do
-					table.insert(children, child)
-				end
-
-				local n = #children
+				local entities = idr_t_archetype.entities
+				local removal_queued = false
 
 				for _, id in idr_t_types do
 					if not ECS_IS_PAIR(id) then
 						continue
 					end
 					local object = ecs_pair_second(world, id)
-					if object == delete then
-						local id_record = component_index[id]
-						local flags = id_record.flags
-						local flags_delete_mask: number = bit32.band(flags, ECS_ID_DELETE)
-						if flags_delete_mask ~= 0 then
-							for i = n, 1, -1 do
-								world_delete(world, children[i])
-							end
-							break
-						else
-							local on_remove = id_record.hooks.on_remove
-							local to = archetype_traverse_remove(world, id, idr_t_archetype)
-							local empty = #to.types == 0
-							for i = n, 1, -1 do
-								local child = children[i]
-								if on_remove then
-									on_remove(child)
-								end
-								local r = sparse_array[ECS_ENTITY_T_LO(child)]
-								if not empty then
-									entity_move(entity_index, child, r, to)
-								end
-							end
+					if object ~= delete then
+						continue
+					end
+					local id_record = component_index[id]
+					local flags = id_record.flags
+					local flags_delete_mask: number = bit32.band(flags, ECS_ID_DELETE)
+					if flags_delete_mask ~= 0 then
+						for i = #entities, 1, -1 do
+							local child = entities[i]
+							world_delete(world, child)
 						end
+						break
+					else
+					    if not ids then
+							ids = {}
+						end
+						ids[id] = true
+						removal_queued = true
 					end
 				end
 
-				archetype_destroy(world, idr_t_archetype)
+				if not removal_queued then
+					continue
+				end
+				if not children then
+					children = {}
+				end
+				local n = #entities
+				table.move(entities, 1, n, count + 1, children)
+				count += n
+			end
+
+			if ids then
+				for id in ids do
+					for _, child in children do
+						world_remove(world, child, id)
+					end
+				end
+			end
+
+			for archetype_id in archetype_ids do
+				archetype_destroy(world, archetypes[archetype_id])
 			end
 		end
 
