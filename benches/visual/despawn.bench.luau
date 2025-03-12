@@ -5,41 +5,60 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Matter = require(ReplicatedStorage.DevPackages.Matter)
 local ecr = require(ReplicatedStorage.DevPackages.ecr)
 local jecs = require(ReplicatedStorage.Lib)
+local pair = jecs.pair
 local newWorld = Matter.World.new()
 local ecs = jecs.World.new()
+local mirror = require(ReplicatedStorage.mirror)
+local mcs = mirror.World.new()
 
-local A, B = Matter.component(), Matter.component()
-local C, D = ecs:component(), ecs:component()
+local C1 = ecs:component()
+local C2 = ecs:entity()
+ecs:add(C2, pair(jecs.OnDeleteTarget, jecs.Delete))
+local C3 = ecs:entity()
+ecs:add(C3, pair(jecs.OnDeleteTarget, jecs.Delete))
+local C4 = ecs:entity()
+ecs:add(C4, pair(jecs.OnDeleteTarget, jecs.Delete))
+local E1 = mcs:component()
+local E2 = mcs:entity()
+mcs:add(E2, pair(jecs.OnDeleteTarget, jecs.Delete))
+local E3 = mcs:entity()
+mcs:add(E3, pair(jecs.OnDeleteTarget, jecs.Delete))
+local E4 = mcs:entity()
+mcs:add(E4, pair(jecs.OnDeleteTarget, jecs.Delete))
+
+local registry2 = ecr.registry()
 
 return {
 	ParameterGenerator = function()
-		local matter_entities = {}
-		local jecs_entities = {}
-		local entities = {
-			matter = matter_entities,
-			jecs = jecs_entities,
-		}
+		local j = ecs:entity()
+		ecs:set(j, C1, true)
+		local m = mcs:entity()
+		mcs:set(m, E1, true)
 		for i = 1, 1000 do
-			table.insert(matter_entities, newWorld:spawn(A(), B()))
-			local e = ecs:entity()
-			ecs:set(e, C, {})
-			ecs:set(e, D, {})
-			table.insert(jecs_entities, e)
+			local friend1 = ecs:entity()
+			local friend2 = mcs:entity()
+
+			ecs:add(friend1, pair(C2, j))
+			ecs:add(friend1, pair(C3, j))
+			ecs:add(friend1, pair(C4, j))
+
+			mcs:add(friend2, pair(E2, m))
+			mcs:add(friend2, pair(E3, m))
+			mcs:add(friend2, pair(E4, m))
 		end
-		return entities
+		return {
+			m = m,
+			j = j,
+		}
 	end,
 
 	Functions = {
-		Matter = function(_, entities)
-			for _, entity in entities.matter do
-				newWorld:despawn(entity)
-			end
+		Mirror = function(_, a)
+			mcs:delete(a.m)
 		end,
 
-		Jecs = function(_, entities)
-			for _, entity in entities.jecs do
-				ecs:delete(entity)
-			end
+		Jecs = function(_, a)
+			ecs:delete(a.j)
 		end,
 	},
 }

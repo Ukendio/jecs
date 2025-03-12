@@ -65,3 +65,7 @@ drafts/
 
 # Luau tools
 profile.*
+
+# Patch files
+
+*.patch

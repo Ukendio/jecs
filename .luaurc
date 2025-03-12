@@ -2,7 +2,8 @@
     "aliases": {
         "jecs": "jecs",
         "testkit": "test/testkit",
-        "mirror": "mirror"
+        "mirror": "mirror",
+        "tools": "tools"
     },
     "languageMode": "strict"
 }
