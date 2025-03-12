@@ -4,70 +4,19 @@ local ECS_ID = jecs.ECS_ID
 local __ = jecs.Wildcard
 local pair = jecs.pair
 
-local testkit = require("@testkit")
-local BENCH, START = testkit.benchmark()
-
-local it = testkit.test()
-local TEST, CASE = it.TEST, it.CASE
-local CHECK, FINISH = it.CHECK, it.FINISH
-local SKIP, FOCUS = it.SKIP, it.FOCUS
-local CHECK_EXPECT_ERR = it.CHECK_EXPECT_ERR
-
-
-local c = {
-	white_underline = function(s: any)
-		return `\27[1;4m{s}\27[0m`
-	end,
-
-	white = function(s: any)
-		return `\27[37;1m{s}\27[0m`
-	end,
-
-	green = function(s: any)
-		return `\27[32;1m{s}\27[0m`
-	end,
-
-	red = function(s: any)
-		return `\27[31;1m{s}\27[0m`
-	end,
-
-	yellow = function(s: any)
-		return `\27[33;1m{s}\27[0m`
-	end,
-
-	red_highlight = function(s: any)
-		return `\27[41;1;30m{s}\27[0m`
-	end,
-
-	green_highlight = function(s: any)
-		return `\27[42;1;30m{s}\27[0m`
-	end,
-
-	gray = function(s: any)
-		return `\27[30;1m{s}\27[0m`
-	end,
-}
-
-local function pe(e: any)
-	local gen = ECS_GENERATION(e)
-	return c.green(`e{ECS_ID(e)}`)..c.yellow(`v{gen}`)
-end
+local pe = require("@tools/entity_visualiser").prettify
 
 function print_centered_entity(entity, width: number)
     local entity_str = tostring(entity)
     local entity_length = #entity_str
 
-    -- Calculate total padding needed to center the string
-    local padding_total = width - 2 - entity_length  -- Subtract 2 for the `| |` characters
+    local padding_total = width - 2 - entity_length
 
-    -- Calculate padding for the left and right
     local padding_left = math.floor(padding_total / 2)
     local padding_right = padding_total - padding_left
 
-    -- Build the centered string
     local centered_str = string.rep(" ", padding_left) .. entity_str .. string.rep(" ", padding_right)
 
-    -- Print with pipes around the centered string
     print("|" .. centered_str .. "|")
 end
 
@@ -82,36 +31,51 @@ local function lifetime_tracker_add(world: jecs.World)
 
 	local w = setmetatable({}, { __index = world })
 	w.delete = function(self, e)
-		print("Entity deleted:", e)
+		print(`*deleting {pe(e)}`)
 
-		for child in world:each(pair(__, e)) do
-
+		local idr_t = component_index[pair(__, e)]
+		if idr_t then
+			print(`{pe(e)} has the following dependencies:`)
+			for archetype_id in idr_t.cache do
+				local archetype = world.archetypes[archetype_id]
+				local entities = {}
+				for _, dependency in archetype.entities do
+					print(`  {pe(dependency)}`)
+				end
+			end
 		end
-		return world_delete(world, e)
+
+		world_delete(world, e)
+		print(`*deleted {pe(e)}`)
 	end
 	w.entity = function(self)
 		local e = world_entity(world)
-		print("Entity created:", pe(e))
+		print(`*created {pe(e)}`)
 		return e
 	end
-	w.print_entities = function(self)
+	w.print_entity_index = function(self)
 		local max_id = entity_index.max_id
 		local alive_count = entity_index.alive_count
 		local alive = table.move(dense_array, 1+jecs.Rest::any, alive_count, 1, {})
 		local dead = table.move(dense_array, alive_count + 1, max_id, 1, {})
 
 		local sep = "|--------|"
-		print("|-alive--|")
-		for i = 1, #alive do
-			local e = pe(alive[i])
-			print_centered_entity(e, 32)
-			print(sep)
+		if #alive > 0 then
+			print("|-alive--|")
+			for i = 1, #alive do
+				local e = pe(alive[i])
+				print_centered_entity(e, 32)
+				print(sep)
+			end
+			print("\n")
 		end
-		print("\n")
-		print("|--dead--|")
-		for i = 1, #dead do
-			print_centered_entity(pe(dead[i]), 32)
-			print(sep)
+
+		if #dead > 0 then
+			print("|--dead--|")
+			for i = 1, #dead do
+				print_centered_entity(pe(dead[i]), 32)
+				print(sep)
+			end
 		end
 	end
 	local timelines = {}

@@ -1,4 +1,6 @@
 local jecs = require("@jecs")
+local pair = jecs.pair
+local ChildOf = jecs.ChildOf
 local lifetime_tracker_add = require("@tools/lifetime_tracker")
 local world = lifetime_tracker_add(jecs.world())
 world:print_snapshot()
@@ -8,13 +10,15 @@ world:delete(e)
 
 world:print_snapshot()
 local e2 = world:entity()
+world:add(e2, pair(ChildOf, e1))
 local e3 = world:entity()
+world:add(e3, pair(ChildOf, e1))
 world:print_snapshot()
 world:delete(e1)
 world:delete(e2)
 world:delete(e3)
 world:print_snapshot()
-world:print_entities()
+world:print_entity_index()
 world:entity()
 world:entity()
 world:print_snapshot()
