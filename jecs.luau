@@ -2512,6 +2512,8 @@ return {
 	ECS_GENERATION = ECS_GENERATION,
 	ECS_ID_IS_WILDCARD = ECS_ID_IS_WILDCARD,
 
+	ECS_ID_DELETE = ECS_ID_DELETE,
+
 	IS_PAIR = ECS_IS_PAIR,
 	pair_first = ecs_pair_first,
 	pair_second = ecs_pair_second,

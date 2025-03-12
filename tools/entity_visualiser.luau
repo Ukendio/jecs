@@ -39,5 +39,5 @@ end
 
 return {
 	components = components,
-	prettify = pe
+	prettify = pe,
 }

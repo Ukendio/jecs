@@ -4,7 +4,9 @@ local ECS_ID = jecs.ECS_ID
 local __ = jecs.Wildcard
 local pair = jecs.pair
 
-local pe = require("@tools/entity_visualiser").prettify
+local prettify = require("@tools/entity_visualiser").prettify
+
+local pe = prettify
 local ansi = require("@tools/ansi")
 
 function print_centered_entity(entity, width: number)
@@ -24,8 +26,14 @@ end
 local function name(world, e)
 	return world:get(world, e, jecs.Name) or pe(e)
 end
+local padding_enabled = false
+local function pad()
+	if padding_enabled then
+		print("")
+	end
+end
 
-local function lifetime_tracker_add(world: jecs.World)
+local function lifetime_tracker_add(world: jecs.World, opt)
 	local entity_index = world.entity_index
 	local dense_array = entity_index.dense_array
 	local component_index = world.component_index
@@ -34,6 +42,7 @@ local function lifetime_tracker_add(world: jecs.World)
 
 	local w = setmetatable({}, { __index = world })
 
+	padding_enabled = opt.padding_enabled
 
 	local world_entity = world.entity
 	w.entity = function(self)
@@ -44,6 +53,7 @@ local function lifetime_tracker_add(world: jecs.World)
 		else
 			print(`*created {pe(e)}`)
 		end
+		pad()
 		return e
 	end
 	w.print_entity_index = function(self)
@@ -70,6 +80,7 @@ local function lifetime_tracker_add(world: jecs.World)
 				print(sep)
 			end
 		end
+		pad()
 	end
 	local timelines = {}
 	w.print_snapshot = function(self)
@@ -143,6 +154,7 @@ local function lifetime_tracker_add(world: jecs.World)
 			print(row)
 		end
 		print("-------------------------------------------------------------------")
+		pad()
 	end
 	local world_add = world.add
 	local relations = {}
@@ -152,49 +164,47 @@ local function lifetime_tracker_add(world: jecs.World)
 			local relation = jecs.pair_first(world, component)
 			local target = jecs.pair_second(world, component)
 			print(`*added ({pe(relation)}, {pe(target)}) to {pe(entity)}`)
-			local rs = relations[relation]
-			if not rs then
-				local flags = component_index[component].flags
-				rs = {
-					fragmenting = bit32.band(flags, 0b0000_0010) ~= 0
-				}
-				relations[relation] = rs
-			end
-			local ts = rs[target]
-			if not ts then
-				ts = {}
-				rs[target] = ts
-			end
-			table.insert(ts, entity)
+			pad()
 		end
 
 	end
 
 	local world_delete = world.delete
 	w.delete = function(self, e)
+		world_delete(world, e)
+
 		local idr_t = component_index[pair(__, e)]
 		if idr_t then
-			for relation, ts in relations do
-				local targets = ts[e]
-				if not targets then
-					continue
-				end
-				for _, target in targets do
-					if type(target) == "boolean" then
+			for archetype_id in idr_t.cache do
+				local archetype = world.archetypes[archetype_id]
+				for _, id in archetype.types do
+					if not jecs.IS_PAIR(id) then
 						continue
 					end
-					if targets.fragmenting then
-						print(`*deleted dependant {pe(target)}`)
+					local object = jecs.pair_second(world, id)
+					if object ~= e then
+						continue
+					end
+					local id_record = component_index[id]
+					local flags = id_record.flags
+					local flags_delete_mask: number = bit32.band(flags, jecs.ECS_ID_DELETE)
+					if flags_delete_mask ~= 0 then
+						for _, entity in archetype.entities do
+							print(`*deleted dependant {pe(entity)} of {pe(e)}`)
+							pad()
+						end
+						break
 					else
-						local t = pe(target)
-						print(`*removed dependency {ansi.red("(*, ")}{t}{ansi.green(")")} from {pe(e)}`)
+						for _, entity in archetype.entities do
+							print(`*removed dependency ({pe(jecs.pair_first(world, id))}, {pe(object)}) from {pe(entity)}`)
+						end
 					end
 				end
 			end
 		end
 
-		world_delete(world, e)
 		print(`*deleted {pe(e)}`)
+		pad()
 	end
 	return w
 end
