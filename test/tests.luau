@@ -1473,11 +1473,12 @@ TEST("Hooks", function()
 			local world = jecs.World.new()
 			local A = world:component() :: Entity<boolean>
 			local e1 = world:entity()
-			world:add(e1, A)
 			world:set(A, jecs.OnRemove, function(entity)
 				CHECK(e1 == entity)
-				CHECK(not world:has(e1, A))
+				CHECK(world:has(e1, A))
 			end)
+			world:add(e1, A)
+
 			world:remove(e1, A)
 			CHECK(not world:has(e1, A))
 		end
