@@ -69,3 +69,6 @@ If you are encountering problems, there are resources for you to get help:
 - [Roblox OSS Discord server](https://discord.gg/h2NV8PqhAD) has a [#jecs](https://discord.com/channels/385151591524597761/1248734074940559511) thread under the [#projects](https://discord.com/channels/385151591524597761/1019724676265676930) channel
 - [Open an issue](https://github.com/ukendio/jecs/issues) if you run into bugs or have feature requests
 - Dive into the nitty gritty in the [thesis paper](https://raw.githubusercontent.com/Ukendio/jecs/main/thesis/drafts/1/paper.pdf)
+
+## Benefits
+Jecs immediately adds 500k players to your game.
