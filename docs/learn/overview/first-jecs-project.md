@@ -71,4 +71,4 @@ If you are encountering problems, there are resources for you to get help:
 - Dive into the nitty gritty in the [thesis paper](https://raw.githubusercontent.com/Ukendio/jecs/main/thesis/drafts/1/paper.pdf)
 
 ## Benefits
-Jecs immediately adds 500k players to your game.
+Jecs immediately adds 500k **active** players to your game.
