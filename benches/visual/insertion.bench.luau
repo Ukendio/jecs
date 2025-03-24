@@ -28,22 +28,22 @@ local B6 = ecr.component()
 local B7 = ecr.component()
 local B8 = ecr.component()
 
-local C1 = ecs:entity()
-local C2 = ecs:entity()
-local C3 = ecs:entity()
-local C4 = ecs:entity()
-local C5 = ecs:entity()
-local C6 = ecs:entity()
-local C7 = ecs:entity()
-local C8 = ecs:entity()
-local E1 = mcs:entity()
-local E2 = mcs:entity()
-local E3 = mcs:entity()
-local E4 = mcs:entity()
-local E5 = mcs:entity()
-local E6 = mcs:entity()
-local E7 = mcs:entity()
-local E8 = mcs:entity()
+local C1 = ecs:component()
+local C2 = ecs:component()
+local C3 = ecs:component()
+local C4 = ecs:component()
+local C5 = ecs:component()
+local C6 = ecs:component()
+local C7 = ecs:component()
+local C8 = ecs:component()
+local E1 = mcs:component()
+local E2 = mcs:component()
+local E3 = mcs:component()
+local E4 = mcs:component()
+local E5 = mcs:component()
+local E6 = mcs:component()
+local E7 = mcs:component()
+local E8 = mcs:component()
 
 local registry2 = ecr.registry()
 return {
@@ -52,48 +52,30 @@ return {
 	end,
 
 	Functions = {
-		Matter = function()
-			local e = newWorld:spawn()
+		Mirror = function()
+			local e = mcs:entity()
 			for i = 1, 5000 do
-				newWorld:insert(
-					e,
-					A1({ value = true }),
-					A2({ value = true }),
-					A3({ value = true }),
-					A4({ value = true }),
-					A5({ value = true }),
-					A6({ value = true }),
-					A7({ value = true }),
-					A8({ value = true })
-				)
+				mcs:set(e, E1, false)
+				mcs:set(e, E2, false)
+				mcs:set(e, E3, false)
+				mcs:set(e, E4, false)
+				mcs:set(e, E5, false)
+				mcs:set(e, E6, false)
+				mcs:set(e, E7, false)
+				mcs:set(e, E8, false)
 			end
 		end,
-
-		ECR = function()
-			local e = registry2.create()
-			for i = 1, 5000 do
-				registry2:set(e, B1, { value = false })
-				registry2:set(e, B2, { value = false })
-				registry2:set(e, B3, { value = false })
-				registry2:set(e, B4, { value = false })
-				registry2:set(e, B5, { value = false })
-				registry2:set(e, B6, { value = false })
-				registry2:set(e, B7, { value = false })
-				registry2:set(e, B8, { value = false })
-			end
-		end,
-
 		Jecs = function()
 			local e = ecs:entity()
 			for i = 1, 5000 do
-				ecs:set(e, C1, { value = false })
-				ecs:set(e, C2, { value = false })
-				ecs:set(e, C3, { value = false })
-				ecs:set(e, C4, { value = false })
-				ecs:set(e, C5, { value = false })
-				ecs:set(e, C6, { value = false })
-				ecs:set(e, C7, { value = false })
-				ecs:set(e, C8, { value = false })
+				ecs:set(e, C1, false)
+				ecs:set(e, C2, false)
+				ecs:set(e, C3, false)
+				ecs:set(e, C4, false)
+				ecs:set(e, C5, false)
+				ecs:set(e, C6, false)
+				ecs:set(e, C7, false)
+				ecs:set(e, C8, false)
 			end
 		end,
 	},

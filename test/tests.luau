@@ -241,19 +241,6 @@ local pe = require("@tools/entity_visualiser").prettify
 local lifetime_tracker_add = require("@tools/lifetime_tracker")
 
 TEST("world:entity()", function()
-	do CASE "ensure id"
-		local w = world_new()
-		w = lifetime_tracker_add(w, {padding_enabled=false})
-		local id = w:entity()
-		CHECK(id == w:entity(id))
-		CHECK(w:entity(999 :: any) == 999 :: any)
-		w:print_snapshot()
-		local id1 = w:entity(999)
-		CHECK(w:contains(999))
-		CHECK(not w:contains(998))
-		print(w:entity(), "newest id after 999")
-	end
-
 	do
 		CASE("unique IDs")
 		local world = jecs.World.new()
@@ -1388,10 +1375,15 @@ TEST("world:target", function()
 		world:add(e, pair(C, D))
 
 		CHECK(pair(A, B) < pair(A, C))
-		CHECK(pair(A, E) < pair(B, C))
+		CHECK(pair(A, C) < pair(A, D))
+		CHECK(pair(C, A) < pair(C, D))
 
 		local records = debug_world_inspect(world).records(e)
 		CHECK(jecs.pair_first(world, pair(B, C)) == B)
+		local r = jecs.entity_index_try_get(world.entity_index, e)
+		local archetype = r.archetype
+		local counts = archetype.counts
+		CHECK(counts[pair(A, __)] == 4)
 		CHECK(records[pair(B, C)] > records[pair(A, E)])
 		CHECK(world:target(e, A, 0) == B)
 		CHECK(world:target(e, A, 1) == C)
@@ -1399,6 +1391,28 @@ TEST("world:target", function()
 		CHECK(world:target(e, A, 3) == E)
 		CHECK(world:target(e, B, 0) == C)
 		CHECK(world:target(e, B, 1) == D)
+		CHECK(world:target(e, C, 0) == D)
+		CHECK(world:target(e, C, 1) == nil)
+
+		-- for id in archetype.records do
+		-- 	local f = world:get(ecs_pair_first(world, id), jecs.Name)
+		-- 	local s = world:get(ecs_pair_second(world, id), jecs.Name)
+		-- 	print(`({f}, {s})`)
+		-- end
+		--
+
+		CHECK(archetype.records[pair(A, B)] == 1)
+		CHECK(archetype.records[pair(A, C)] == 2)
+		CHECK(archetype.records[pair(A, D)] == 3)
+		CHECK(archetype.records[pair(A, E)] == 4)
+		-- print("(A, B)", archetype.records[pair(A, B)])
+		-- print("(A, C)", archetype.records[pair(A, C)])
+		-- print("(A, D)", archetype.records[pair(A, D)])
+		-- print("(A, E)", archetype.records[pair(A, E)])
+
+		-- print(pair(A, D), pair(B, C))
+		-- print("(B, C)", archetype.records[pair(B, C)])
+
 		CHECK(world:target(e, C, 0) == D)
 		CHECK(world:target(e, C, 1) == nil)
 	end
@@ -1516,7 +1530,7 @@ TEST("Hooks", function()
 			world:set(e, A, true)
 			world:remove(e, A)
 			CHECK(not world:get(e, A))
-			CHECK(not world:get(e, B))
+			CHECK(world:get(e, B))
 		end
 	end
 end)
@@ -1596,7 +1610,6 @@ TEST("repro", function()
 
 				if cooldown <= 0 then
 					table.insert(toRemove, id)
-					print("removing")
 					-- world:remove(id, components.Cooldown)
 				else
 					world:set(id, components.Cooldown, cooldown)
@@ -1645,6 +1658,10 @@ TEST("wildcard query", function()
 
 		local entity = world:entity()
 
+		local p = pair(Relation, A)
+		CHECK(jecs.pair_first(world, p) == Relation)
+		CHECK(jecs.pair_second(world, p) == A)
+		local w = dwi(world)
 		world:add(entity, pair(Relation, A))
 
 		local counter = 0

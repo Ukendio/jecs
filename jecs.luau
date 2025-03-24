@@ -90,60 +90,35 @@ local EcsOnArchetypeCreate =        HI_COMPONENT_ID + 12
 local EcsOnArchetypeDelete =        HI_COMPONENT_ID + 13
 local EcsRest =                     HI_COMPONENT_ID + 14
 
-local ECS_PAIR_FLAG =                                0x8
-local ECS_ID_FLAGS_MASK =                           0x10
-local ECS_ENTITY_MASK =              bit32.lshift(1, 24)
-local ECS_GENERATION_MASK =          bit32.lshift(1, 16)
-
 local ECS_ID_DELETE =                        0b0000_0001
 local ECS_ID_IS_TAG =                        0b0000_0010
 local ECS_ID_HAS_ON_ADD =                    0b0000_0100
 local ECS_ID_HAS_ON_SET =                    0b0000_1000
 local ECS_ID_HAS_ON_REMOVE =                 0b0001_0000
 local ECS_ID_MASK =                          0b0000_0000
--- stylua: ignore end
-local NULL_ARRAY = table.freeze({}) :: Column
 
-local function FLAGS_ADD(is_pair: boolean): number
-	local flags = 0x0
+local ECS_ENTITY_MASK =              bit32.lshift(1, 24)
+local ECS_GENERATION_MASK =          bit32.lshift(1, 16)
 
-	if is_pair then
-		flags = bit32.bor(flags, ECS_PAIR_FLAG) -- HIGHEST bit in the ID.
-	end
-	if false then
-		flags = bit32.bor(flags, 0x4) -- Set the second flag to true
-	end
-	if false then
-		flags = bit32.bor(flags, 0x2) -- Set the third flag to true
-	end
-	if false then
-		flags = bit32.bor(flags, 0x1) -- LAST BIT in the ID.
-	end
+local NULL_ARRAY = table.freeze({})
 
-	return flags
+
+local function ECS_COMBINE(id: number, generation: number): i53
+	return id + (generation * ECS_ENTITY_MASK)
 end
-
-local function ECS_COMBINE(source: number, target: number): i53
-	return (source * 268435456) + (target * ECS_ID_FLAGS_MASK)
-end
+local ECS_PAIR_OFFSET = 2^48
 
 local function ECS_IS_PAIR(e: number): boolean
-	return if e > ECS_ENTITY_MASK then (e % ECS_ID_FLAGS_MASK) // ECS_PAIR_FLAG ~= 0 else false
-end
-
--- HIGH 24 bits LOW 24 bits
-local function ECS_GENERATION(e: i53): i24
-	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) % ECS_GENERATION_MASK else 0
+	return e > ECS_PAIR_OFFSET
 end
 
 local function ECS_GENERATION_INC(e: i53)
 	if e > ECS_ENTITY_MASK then
-		local flags = e // ECS_ID_FLAGS_MASK
-		local id = flags // ECS_ENTITY_MASK
-		local generation = flags % ECS_GENERATION_MASK
+		local id = e % ECS_ENTITY_MASK
+		local generation = e // ECS_ENTITY_MASK
 
 		local next_gen = generation + 1
-		if next_gen > ECS_GENERATION_MASK then
+		if next_gen >= ECS_GENERATION_MASK then
 			return id
 		end
 
@@ -152,22 +127,23 @@ local function ECS_GENERATION_INC(e: i53)
 	return ECS_COMBINE(e, 1)
 end
 
--- FIRST gets the high ID
-local function ECS_ENTITY_T_HI(e: i53): i24
-	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) % ECS_ENTITY_MASK else e
-end
-
--- SECOND
 local function ECS_ENTITY_T_LO(e: i53): i24
-	return if e > ECS_ENTITY_MASK then (e // ECS_ID_FLAGS_MASK) // ECS_ENTITY_MASK else e
+	return e % ECS_ENTITY_MASK
 end
 
-local function _STRIP_GENERATION(e: i53): i24
-	return ECS_ENTITY_T_LO(e)
+local function ECS_GENERATION(e: i53)
+	return e // ECS_ENTITY_MASK
+end
+
+local function ECS_ENTITY_T_HI(e: i53): i24
+	return e // ECS_ENTITY_MASK
 end
 
 local function ECS_PAIR(pred: i53, obj: i53): i53
-	return ECS_COMBINE(ECS_ENTITY_T_LO(pred), ECS_ENTITY_T_LO(obj)) + FLAGS_ADD(--[[isPair]] true) :: i53
+	pred %= ECS_ENTITY_MASK
+	obj %= ECS_ENTITY_MASK
+
+	return obj + (pred * 2^24) + ECS_PAIR_OFFSET
 end
 
 local function entity_index_try_get_any(entity_index: EntityIndex, entity: number): Record?
@@ -236,14 +212,14 @@ local function entity_index_new_id(entity_index: EntityIndex): i53
 	return id
 end
 
--- ECS_PAIR_FIRST, gets the relationship target / obj / HIGH bits
 local function ecs_pair_first(world, e)
-	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_LO(e))
+	local pred = (e - ECS_PAIR_OFFSET) // ECS_ENTITY_MASK
+	return entity_index_get_alive(world.entity_index, pred)
 end
 
--- ECS_PAIR_SECOND gets the relationship / pred / LOW bits
 local function ecs_pair_second(world, e)
-	return entity_index_get_alive(world.entity_index, ECS_ENTITY_T_HI(e))
+	local obj = (e - ECS_PAIR_OFFSET) % ECS_ENTITY_MASK
+	return entity_index_get_alive(world.entity_index, obj)
 end
 
 local function query_match(query, archetype: Archetype)
@@ -476,8 +452,8 @@ local function world_target(world: World, entity: i53, relation: i24, index: num
 		return nil
 	end
 
-	if nth >= count then
-		nth = nth + count + 1
+	if nth > count then
+		nth = nth + count
 	end
 
 	local tr = idr.cache[archetype_id]
