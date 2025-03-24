@@ -45,7 +45,10 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 	padding_enabled = opt.padding_enabled
 
 	local world_entity = world.entity
-	w.entity = function(self)
+	w.entity = function(self, entity)
+		if entity then
+			return world_entity(world, entity)
+		end
 		local will_recycle = entity_index.max_id ~= entity_index.alive_count
 		local e = world_entity(world)
 		if will_recycle then
@@ -108,7 +111,7 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 				local entity = dense_array[i]
 				local id = ECS_ID(entity)
 				local status = "alive"
-				if id > alive_count then
+				if not world:contains(entity) then
 					status = "dead"
 				end
 				data[id] = status

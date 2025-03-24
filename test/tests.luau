@@ -124,15 +124,15 @@ TEST("#repro", function()
 		local tgts = {}
 		local pairwildcard = pair(relation, jecs.Wildcard)
 		for _, archetype in world:query(pairwildcard):archetypes() do
-		local tr = archetype.records[pairwildcard]
-		local count = archetype.counts[pairwildcard]
-		local types = archetype.types
-		for _, entity in archetype.entities do
-		    for i = 0, count - 1 do
-		    local tgt = jecs.pair_second(world, types[i + tr])
-		    table.insert(tgts, tgt)
-		    end
-		end
+			local tr = archetype.records[pairwildcard]
+			local count = archetype.counts[pairwildcard]
+			local types = archetype.types
+			for _, entity in archetype.entities do
+			    for i = 0, count - 1 do
+				    local tgt = jecs.pair_second(world, types[i + tr])
+				    table.insert(tgts, tgt)
+			    end
+			end
 		end
 		return tgts
 	end
@@ -148,22 +148,24 @@ TEST("#repro", function()
 	local e1 = world:entity()
 	local e2 = world:entity()
 	local e3 = world:entity()
-	print(e1, e2, e3)
 	setAttacksAndEats(e3, e1)
 	setAttacksAndEats(e3, e2)
 	setAttacksAndEats(e1, e2)
-	print("---------------- delete e2 ---------------")
 	local d = dwi(world)
-	for archetype_id in world.component_index[pair(jecs.Wildcard, e2)].cache do
-		local archetype = world.archetypes[archetype_id].type
-		testkit.print(archetype)
-	end
 	world:delete(e2)
-	print("-----------------------------")
-	testkit.print(d.tbl(e1).types)
-	-- testkit.print(d.tbl(e3).types)
-	-- testkit.print(getTargets(Attacks))
-	-- testkit.print(getTargets(Eats))
+	local types1 = { pair(Attacks, e1), pair(Eats, e1) }
+	table.sort(types1)
+
+
+	CHECK(d.tbl(e1).type == "")
+	CHECK(d.tbl(e3).type == table.concat(types1, "_"))
+
+	for _, entity in getTargets(Attacks) do
+		CHECK(entity == e1)
+	end
+	for _, entity in getTargets(Eats) do
+		CHECK(entity == e1)
+	end
 end)
 
 TEST("archetype", function()
@@ -235,7 +237,23 @@ TEST("world:cleanup()", function()
 	CHECK(#archetype_index["1_2_3"].entities == 1)
 end)
 
+local pe = require("@tools/entity_visualiser").prettify
+local lifetime_tracker_add = require("@tools/lifetime_tracker")
+
 TEST("world:entity()", function()
+	do CASE "ensure id"
+		local w = world_new()
+		w = lifetime_tracker_add(w, {padding_enabled=false})
+		local id = w:entity()
+		CHECK(id == w:entity(id))
+		CHECK(w:entity(999 :: any) == 999 :: any)
+		w:print_snapshot()
+		local id1 = w:entity(999)
+		CHECK(w:contains(999))
+		CHECK(not w:contains(998))
+		print(w:entity(), "newest id after 999")
+	end
+
 	do
 		CASE("unique IDs")
 		local world = jecs.World.new()
@@ -1566,13 +1584,14 @@ TEST("repro", function()
 	do CASE "#1"
 		local world = world_new()
 		local reproEntity = world:component()
-		local components = { Cooldown = world:component() :: jecs.Id<number> }
+		local components = { Cooldown = world:component() :: jecs.Entity<number> }
 		world:set(reproEntity, components.Cooldown, 2)
 
 		local function updateCooldowns(dt: number)
 			local toRemove = {}
 
-			for id, cooldown in world:query(components.Cooldown):iter() do
+			local it = world:query(components.Cooldown):iter()
+			for id, cooldown in it do
 				cooldown -= dt
 
 				if cooldown <= 0 then

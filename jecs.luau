@@ -860,15 +860,15 @@ local function world_set(world: World, entity: i53, id: i53, data: unknown): ()
 		end
 	end
 
-	local on_add = idr_hooks.on_add
-	if on_add then
-		on_add(entity)
-	end
-
 	local tr = to.records[id]
 	local column = to.columns[tr]
 
 	column[record.row] = data
+
+	local on_add = idr_hooks.on_add
+	if on_add then
+		on_add(entity)
+	end
 
 	local on_set = idr_hooks.on_set
 	if on_set then
@@ -899,14 +899,15 @@ local function world_remove(world: World, entity: i53, id: i53)
 	if not from then
 		return
 	end
-	local to = archetype_traverse_remove(world, id, from)
 
-	if from ~= to then
+	if from.records[id] then
 		local idr = world.component_index[id]
 		local on_remove = idr.hooks.on_remove
 		if on_remove then
 			on_remove(entity)
 		end
+
+		local to = archetype_traverse_remove(world, id, record.archetype)
 
 		entity_move(entity_index, entity, record, to)
 	end
@@ -2413,51 +2414,44 @@ export type World = {
 	observable: any,
 
 	--- Creates a new entity
-	entity: (self: World) -> Entity,
+	entity: (self: World, id: Entity?) -> Entity,
 	--- Creates a new entity located in the first 256 ids.
 	--- These should be used for static components for fast access.
 	component: <T>(self: World) -> Entity<T>,
 	--- Gets the target of an relationship. For example, when a user calls
 	--- `world:target(id, ChildOf(parent), 0)`, you will obtain the parent entity.
-	target: <T, U>(self: World, id: Entity<T>, relation: Entity<U>, index: number?) -> Entity?,
+	target: (self: World, id: Entity, relation: Id, index: number?) -> Entity?,
 	--- Deletes an entity and all it's related components and relationships.
-	delete: <T>(self: World, id: Entity<T>) -> (),
+	delete: (self: World, id: Entity) -> (),
 
 	--- Adds a component to the entity with no value
-	add: <T, U>(self: World, id: Entity<T>, component: Id<U>) -> (),
+	add: <T>(self: World, id: Entity, component: Id) -> (),
 	--- Assigns a value to a component on the given entity
-	set: <T, U>(self: World, id: Entity<T>, component: Id<U>, data: U) -> (),
+	set: <T>(self: World, id: Entity, component: Id<T>, data: T) -> (),
 
 	cleanup: (self: World) -> (),
 	-- Clears an entity from the world
-	clear: <T>(self: World, id: Entity<T>) -> (),
+	clear: (self: World, id: Entity) -> (),
 	--- Removes a component from the given entity
-	remove: <T, U>(self: World, id: Entity<T>, component: Id<U>) -> (),
+	remove: (self: World, id: Entity, component: Id) -> (),
 	--- Retrieves the value of up to 4 components. These values may be nil.
-	get: (<T, A>(self: World, id: Entity<T>, Id<A>) -> A?)
-		& (<T, A, B>(self: World, id: Entity<T>, Id<A>, Id<B>) -> (A?, B?))
-		& (<T, A, B, C>(self: World, id: Entity<T>, Id<A>, Id<B>, Id<C>) -> (A?, B?, C?))
-		& <T, A, B, C, D>(self: World, id: Entity<T>, Id<A>, Id<B>, Id<C>, Id<D>) -> (A?, B?, C?, D?),
+	get: (<A>(self: World, id: Entity, Id<A>) -> A?)
+		& (<A, B>(self: World, id: Entity, Id<A>, Id<B>) -> (A?, B?))
+		& (<A, B, C>(self: World, id: Entity, Id<A>, Id<B>, Id<C>) -> (A?, B?, C?))
+		& <A, B, C, D>(self: World, id: Entity, Id<A>, Id<B>, Id<C>, Id<D>) -> (A?, B?, C?, D?),
 
 	--- Returns whether the entity has the ID.
-	has: (<T, U>(self: World, entity: Entity<T>, ...Id<U>) -> boolean)
-		& (<T, U, V>(self: World, entity: Entity<T>, Id<U>, Id<V>) -> boolean)
-		& (<T, U, V, W>(self: World, entity: Entity<T>, Id<U>, Id<V>, Id<W>) -> boolean)
-		& (<T, U, V, W, X>(self: World, entity: Entity<T>, Id<U>, Id<V>, Id<W>, Id<X>) -> boolean)
-		& (<T, U, V, W, X, Y>(self: World, entity: Entity<T>, Id<U>, Id<V>, Id<W>, Id<X>, Id<Y>) -> boolean)
-		& (<T, U, V, W, X, Y, Z>(self: World, entity: Entity<T>, Id<U>, Id<V>, Id<W>, Id<X>, Id<Y>, Id<Z>) -> boolean)
-		& (<T, U, V, W, X, Y, Z, A>(self: World, entity: Entity<T>, Id<U>, Id<V>, Id<W>, Id<X>, Id<Y>, Id<Z>, Id<A>) -> boolean)
-		& (<T, U, V, W, X, Y, Z, A>(self: World, entity: Entity<T>, Id<U>, Id<V>, Id<W>, Id<X>, Id<Y>, Id<Z>, Id<A>, ...unknown) -> boolean),
+	has: (self: World, entity: Entity, ...Id) -> boolean,
 
 	--- Get parent (target of ChildOf relationship) for entity. If there is no ChildOf relationship pair, it will return nil.
-	parent: <T>(self: World, entity: Entity<T>) -> Entity,
+	parent:(self: World, entity: Entity) -> Entity,
 
 	--- Checks if the world contains the given entity
-	contains: <T>(self: World, entity: Entity<T>) -> boolean,
+	contains:(self: World, entity: Entity) -> boolean,
 
-	each: <T>(self: World, id: Id<T>) -> () -> Entity,
+	each: (self: World, id: Id) -> () -> Entity,
 
-	children: <T>(self: World, id: Id<T>) -> () -> Entity,
+	children: (self: World, id: Id) -> () -> Entity,
 
 	--- Searches the world for entities that match a given query
 	query: (<A>(World, Id<A>) -> Query<A>)
