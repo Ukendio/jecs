@@ -117,6 +117,34 @@ local function name(world, e)
 	return world:get(e, jecs.Name)
 end
 
+TEST("#repro2", function()
+	local world = world_new()
+	local Lifetime = world:component() :: jecs.Id<number>
+	local Particle = world:entity()
+	local Beam = world:entity()
+
+	local entity = world:entity()
+	world:set(entity, pair(Lifetime, Particle), 1)
+	world:set(entity, pair(Lifetime, Beam), 2)
+
+	for e in world:each(pair(Lifetime, __)) do
+		local i = 0
+		local nth = world:target(e, Lifetime, i)
+		while nth do
+			local data = world:get(e, pair(Lifetime, nth))
+			if nth == Particle then
+				CHECK(data == 1)
+			elseif nth == Beam then
+				CHECK(data == 2)
+			else
+				CHECK(false)
+			end
+			i += 1
+			nth = world:target(e, Lifetime, i)
+		end
+	end
+end)
+
 TEST("#repro", function()
 	local world = world_new()
 
@@ -1394,24 +1422,10 @@ TEST("world:target", function()
 		CHECK(world:target(e, C, 0) == D)
 		CHECK(world:target(e, C, 1) == nil)
 
-		-- for id in archetype.records do
-		-- 	local f = world:get(ecs_pair_first(world, id), jecs.Name)
-		-- 	local s = world:get(ecs_pair_second(world, id), jecs.Name)
-		-- 	print(`({f}, {s})`)
-		-- end
-		--
-
 		CHECK(archetype.records[pair(A, B)] == 1)
 		CHECK(archetype.records[pair(A, C)] == 2)
 		CHECK(archetype.records[pair(A, D)] == 3)
 		CHECK(archetype.records[pair(A, E)] == 4)
-		-- print("(A, B)", archetype.records[pair(A, B)])
-		-- print("(A, C)", archetype.records[pair(A, C)])
-		-- print("(A, D)", archetype.records[pair(A, D)])
-		-- print("(A, E)", archetype.records[pair(A, E)])
-
-		-- print(pair(A, D), pair(B, C))
-		-- print("(B, C)", archetype.records[pair(B, C)])
 
 		CHECK(world:target(e, C, 0) == D)
 		CHECK(world:target(e, C, 1) == nil)
