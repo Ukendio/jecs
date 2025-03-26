@@ -117,6 +117,22 @@ local function name(world, e)
 	return world:get(e, jecs.Name)
 end
 
+TEST("#adding a recycled target", function()
+    local world = world_new()
+    local R = world:component()
+
+    local e = world:entity()
+    local T = world:entity()
+    world:add(e, pair(R, T))
+    world:delete(T)
+    CHECK(not world:has(e, pair(R, T)))
+    local T2 = world:entity()
+    world:add(e, pair(R, T2))
+    CHECK(world:target(e, R) ~= T)
+    CHECK(world:target(e, R) ~= 0)
+
+end)
+
 TEST("#repro2", function()
 	local world = world_new()
 	local Lifetime = world:component() :: jecs.Id<number>

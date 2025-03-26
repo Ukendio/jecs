@@ -233,12 +233,12 @@ local function entity_index_is_alive(entity_index: ecs_entity_index_t, entity: i
 	return entity_index_try_get(entity_index, entity) ~= nil
 end
 
-local function entity_index_get_alive(index: ecs_entity_index_t, entity: i53): i53
+local function entity_index_get_alive(index: ecs_entity_index_t, entity: i53): i53?
 	local r = entity_index_try_get_any(index, entity)
 	if r then
 		return index.dense_array[r.dense]
 	end
-	return 0
+	return nil
 end
 
 local function ecs_get_alive(world, entity)
@@ -293,6 +293,10 @@ end
 local function ecs_pair_second(world: ecs_world_t, e: i53)
 	local obj = ECS_PAIR_SECOND(e)
 	return ecs_get_alive(world, obj)
+end
+
+local function ecs_component_record(world: ecs_world_t, component: i53)
+    return world.component_index[component]
 end
 
 local function query_match(query: ecs_query_data_t,
@@ -534,7 +538,8 @@ local function world_target(world: ecs_world_t, entity: i53, relation: i24, inde
 		return nil
 	end
 
-	return ECS_PAIR_SECOND(nth)
+	return entity_index_get_alive(world.entity_index,
+	    ECS_PAIR_SECOND(nth))
 end
 
 local function ECS_ID_IS_WILDCARD(e: i53): boolean
@@ -555,10 +560,10 @@ local function id_record_ensure(world: ecs_world_t, id: number): ecs_id_record_t
 		local is_pair = ECS_IS_PAIR(id)
 		if is_pair then
 			relation = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id))
-			assert(relation ~= 0 and entity_index_is_alive(
+			assert(relation and entity_index_is_alive(
 				entity_index, relation), ECS_INTERNAL_ERROR)
 			target = entity_index_get_alive(entity_index, ECS_PAIR_SECOND(id))
-			assert(target ~= 0 and entity_index_is_alive(
+			assert(target and entity_index_is_alive(
 				entity_index, target), ECS_INTERNAL_ERROR)
 		end
 
@@ -662,9 +667,7 @@ local function archetype_create(world: ecs_world_t, id_types: { i24 }, ty, prev:
 
 		if ECS_IS_PAIR(component_id) then
 			local relation = ECS_PAIR_FIRST(component_id)
-			relation = entity_index_get_alive(entity_index, relation)
 			local object = ECS_PAIR_SECOND(component_id)
-			object = entity_index_get_alive(entity_index, object)
 			local r = ECS_PAIR(relation, EcsWildcard)
 			local idr_r = id_record_ensure(world, r)
 			archetype_append_to_records(idr_r, archetype, r, i)
@@ -1259,7 +1262,8 @@ local function world_delete(world: ecs_world_t, entity: i53)
 				if not ECS_IS_PAIR(id) then
 					continue
 				end
-				local object = ecs_pair_second(world, id)
+				local object = entity_index_get_alive(
+				    entity_index, ECS_PAIR_SECOND(id))
 				if object ~= delete then
 					continue
 				end
