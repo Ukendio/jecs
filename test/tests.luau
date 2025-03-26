@@ -242,9 +242,9 @@ end)
 
 TEST("world:cleanup()", function()
 	local world = world_new()
-	local A = world:component()
-	local B = world:component()
-	local C = world:component()
+	local A = world:component() :: jecs.Id<boolean>
+	local B = world:component() :: jecs.Id<boolean>
+	local C = world:component() :: jecs.Id<boolean>
 
 	local e1 = world:entity()
 	local e2 = world:entity()
@@ -355,7 +355,7 @@ TEST("world:entity()", function()
 
 	do CASE "Recycling max generation"
 		local world = world_new()
-		local pin = jecs.Rest::number + 1
+		local pin = (jecs.Rest :: any) :: number + 1
 		for i = 1, 2^16-1 do
 			local e = world:entity()
 			world:delete(e)
@@ -569,21 +569,22 @@ TEST("world:query()", function()
 	do CASE "pairs"
 		local world = jecs.World.new()
 
-		local C1 = world:component()
-		local C2 = world:component()
+		local C1 = world:component() :: jecs.Id<boolean>
+		local C2 = world:component() :: jecs.Id<boolean>
 		local T1 = world:entity()
 		local T2 = world:entity()
 
 		local e = world:entity()
 
-		world:set(e, pair(C1, C2), true)
+		local C1_C2 = pair(C1, C2)
+		world:set(e, C1_C2, true)
 		world:set(e, pair(C1, T1), true)
 		world:set(e, pair(T1, C1), true)
 		CHECK_EXPECT_ERR(function()
 			world:set(e, pair(T1, T2), true :: any)
 		end)
 
-		for id, a, b, c, d in world:query(pair(C1, C2), pair(C1, T1), pair(T1, C1), pair(T1, T2)) :: any do
+		for id, a, b, c, d in world:query(pair(C1, C2), pair(C1, T1), pair(T1, C1), pair(T1, T2)):iter() do
 			CHECK(a == true)
 			CHECK(b == true)
 			CHECK(c == true)

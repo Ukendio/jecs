@@ -2374,9 +2374,10 @@ end
 
 World.new = world_new
 
-export type Entity<T = unknown> = { __nominal_entity: "Tag", __phantom_data: T }
-export type Id<T = unknown> = { __phantom_data: T }
-export type Pair<P, O> = { __phantom_data: P }
+export type Entity<T = nil> = { __T: T }
+export type Id<T = unknown> = { __T: T }
+export type Pair<P, O> = Id<P>
+type ecs_id_t<T=unknown> = Id<T> | Pair<T, "Tag"> | Pair<"Tag", T>
 export type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 export type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 
@@ -2500,7 +2501,7 @@ return {
 	Name = EcsName :: Entity<string>,
 	Rest = EcsRest :: Entity,
 
-	pair = (ECS_PAIR :: any) :: <P, O>(first: P, second: O) -> Pair<P, O>,
+	pair = (ECS_PAIR :: any) :: <P, O>(first: Id<P>, second: Id<O>) -> Pair<P, O>,
 
 	-- Inwards facing API for testing
 	ECS_ID = ECS_ENTITY_T_LO,
