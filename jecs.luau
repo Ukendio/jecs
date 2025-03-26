@@ -135,7 +135,11 @@ local ECS_ENTITY_MASK =              bit32.lshift(1, 24)
 local ECS_GENERATION_MASK =          bit32.lshift(1, 16)
 
 local NULL_ARRAY = table.freeze({})
+local ECS_INTERNAL_ERROR = [[
+	This is an internal error, please file a bug report via the following link:
 
+	https://github.com/Ukendio/jecs/issues/new?template=BUG-REPORT.md
+]]
 
 local function ECS_COMBINE(id: number, generation: number): i53
 	return id + (generation * ECS_ENTITY_MASK)
@@ -180,6 +184,14 @@ local function ECS_PAIR(pred: i53, obj: i53): i53
 	return obj + (pred * ECS_ENTITY_MASK) + ECS_PAIR_OFFSET
 end
 
+local function ECS_PAIR_FIRST(e: i53): i24
+	return (e - ECS_PAIR_OFFSET) // ECS_ENTITY_MASK
+end
+
+local function ECS_PAIR_SECOND(e: i53): i24
+	return (e - ECS_PAIR_OFFSET) % ECS_ENTITY_MASK
+end
+
 local function entity_index_try_get_any(
 	entity_index: ecs_entity_index_t,
 	entity: number
@@ -217,16 +229,39 @@ local function entity_index_try_get_fast(entity_index: ecs_entity_index_t, entit
 	return r
 end
 
-local function entity_index_get_alive(index: ecs_entity_index_t, id: i24): i53
-	local r = entity_index_try_get_any(index, id)
+local function entity_index_is_alive(entity_index: ecs_entity_index_t, entity: i53)
+	return entity_index_try_get(entity_index, entity) ~= nil
+end
+
+local function entity_index_get_alive(index: ecs_entity_index_t, entity: i53): i53
+	local r = entity_index_try_get_any(index, entity)
 	if r then
 		return index.dense_array[r.dense]
 	end
 	return 0
 end
 
-local function entity_index_is_alive(entity_index: ecs_entity_index_t, entity: i53)
-	return entity_index_try_get(entity_index, entity) ~= nil
+local function ecs_get_alive(world, entity)
+	if entity == 0 then
+		return 0
+	end
+
+	local eindex = world.entity_index
+
+	if entity_index_is_alive(eindex, entity) then
+		return entity
+	end
+
+	if entity > ECS_ENTITY_MASK then
+		return 0
+	end
+
+	local current = entity_index_get_alive(eindex, entity)
+	if not current or not entity_index_is_alive(eindex, current) then
+		return 0
+	end
+
+	return current
 end
 
 local function entity_index_new_id(entity_index: ecs_entity_index_t): i53
@@ -251,13 +286,13 @@ local function entity_index_new_id(entity_index: ecs_entity_index_t): i53
 end
 
 local function ecs_pair_first(world: ecs_world_t, e: i53)
-	local pred = (e - ECS_PAIR_OFFSET) // ECS_ENTITY_MASK
-	return entity_index_get_alive(world.entity_index, pred)
+	local pred = ECS_PAIR_FIRST(e)
+	return ecs_get_alive(world, pred)
 end
 
 local function ecs_pair_second(world: ecs_world_t, e: i53)
-	local obj = (e - ECS_PAIR_OFFSET) % ECS_ENTITY_MASK
-	return entity_index_get_alive(world.entity_index, obj)
+	local obj = ECS_PAIR_SECOND(e)
+	return ecs_get_alive(world, obj)
 end
 
 local function query_match(query: ecs_query_data_t,
@@ -433,24 +468,6 @@ local function world_get(world: ecs_world_t, entity: i53,
 	end
 end
 
-local function world_get_one_inline(world: ecs_world_t, entity: i53, id: i53): any
-	local record = entity_index_try_get_fast(world.entity_index, entity)
-	if not record then
-		return nil
-	end
-
-	local archetype = record.archetype
-	if not archetype then
-		return nil
-	end
-
-	local tr = archetype.records[id]
-	if not tr then
-		return nil
-	end
-	return archetype.columns[tr][record.row]
-end
-
 local function world_has_one_inline(world: ecs_world_t, entity: i53, id: i53): boolean
 	local record = entity_index_try_get_fast(world.entity_index, entity)
 	if not record then
@@ -501,30 +518,23 @@ local function world_target(world: ecs_world_t, entity: i53, relation: i24, inde
 		return nil
 	end
 
-	local idr = world.component_index[ECS_PAIR(relation, EcsWildcard)]
-	if not idr then
-		return nil
-	end
+	local r = ECS_PAIR(relation, EcsWildcard)
 
-	local archetype_id = archetype.id
-	local count = idr.counts[archetype.id]
+	local count = archetype.counts[r]
 	if not count then
 		return nil
 	end
 
-	if nth > count then
-		nth = nth + count
+	if nth >= count then
+		nth = nth + count + 1
 	end
 
-	local tr = idr.cache[archetype_id]
-
-	nth = archetype.types[nth + tr]
-
+	nth = archetype.types[nth + archetype.records[r]]
 	if not nth then
 		return nil
 	end
 
-	return ecs_pair_second(world, nth)
+	return ECS_PAIR_SECOND(nth)
 end
 
 local function ECS_ID_IS_WILDCARD(e: i53): boolean
@@ -535,14 +545,21 @@ end
 
 local function id_record_ensure(world: ecs_world_t, id: number): ecs_id_record_t
 	local component_index = world.component_index
+	local entity_index = world.entity_index
 	local idr: ecs_id_record_t = component_index[id]
 
 	if not idr then
 		local flags = ECS_ID_MASK
 		local relation = id
+		local target = 0
 		local is_pair = ECS_IS_PAIR(id)
 		if is_pair then
-			relation = ecs_pair_first(world, id)
+			relation = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id))
+			assert(relation ~= 0 and entity_index_is_alive(
+				entity_index, relation), ECS_INTERNAL_ERROR)
+			target = entity_index_get_alive(entity_index, ECS_PAIR_SECOND(id))
+			assert(target ~= 0 and entity_index_is_alive(
+				entity_index, target), ECS_INTERNAL_ERROR)
 		end
 
 		local cleanup_policy = world_target(world, relation, EcsOnDelete, 0)
@@ -559,7 +576,7 @@ local function id_record_ensure(world: ecs_world_t, id: number): ecs_id_record_t
 		local is_tag = not world_has_one_inline(world, relation, EcsComponent)
 
 		if is_tag and is_pair then
-			is_tag = not world_has_one_inline(world, ecs_pair_second(world, id), EcsComponent)
+			is_tag = not world_has_one_inline(world, target, EcsComponent)
 		end
 
 		flags = bit32.bor(
@@ -624,6 +641,7 @@ local function archetype_create(world: ecs_world_t, id_types: { i24 }, ty, prev:
 	local records: { number } = {}
 	local counts: {number} = {}
 
+	local entity_index = world.entity_index
 	local archetype: ecs_archetype_t = {
 		columns = columns,
 		entities = {},
@@ -643,9 +661,10 @@ local function archetype_create(world: ecs_world_t, id_types: { i24 }, ty, prev:
 		archetype_append_to_records(idr, archetype, component_id, i)
 
 		if ECS_IS_PAIR(component_id) then
-			local relation = ecs_pair_first(world, component_id)
-			local object = ecs_pair_second(world, component_id)
-
+			local relation = ECS_PAIR_FIRST(component_id)
+			relation = entity_index_get_alive(entity_index, relation)
+			local object = ECS_PAIR_SECOND(component_id)
+			object = entity_index_get_alive(entity_index, object)
 			local r = ECS_PAIR(relation, EcsWildcard)
 			local idr_r = id_record_ensure(world, r)
 			archetype_append_to_records(idr_r, archetype, r, i)
@@ -2481,7 +2500,7 @@ return {
 	Name = EcsName :: Entity<string>,
 	Rest = EcsRest :: Entity,
 
-	pair = ECS_PAIR :: <P, O>(first: P, second: O) -> Pair<P, O>,
+	pair = (ECS_PAIR :: any) :: <P, O>(first: P, second: O) -> Pair<P, O>,
 
 	-- Inwards facing API for testing
 	ECS_ID = ECS_ENTITY_T_LO,

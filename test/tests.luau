@@ -126,23 +126,51 @@ TEST("#repro2", function()
 	local entity = world:entity()
 	world:set(entity, pair(Lifetime, Particle), 1)
 	world:set(entity, pair(Lifetime, Beam), 2)
+	world:set(entity, pair(4, 5), 6) -- noise
+
+	local entity_visualizer = require("@tools/entity_visualiser")
+	entity_visualizer.components(world, entity)
 
 	for e in world:each(pair(Lifetime, __)) do
 		local i = 0
 		local nth = world:target(e, Lifetime, i)
 		while nth do
+			entity_visualizer.components(world, e)
+
 			local data = world:get(e, pair(Lifetime, nth))
-			if nth == Particle then
-				CHECK(data == 1)
-			elseif nth == Beam then
-				CHECK(data == 2)
-			else
-				CHECK(false)
-			end
+			data -= 1
+		 	if data <= 0 then
+                world:remove(e, pair(Lifetime, nth))
+            else
+                world:set(e, pair(Lifetime, nth), data)
+            end
 			i += 1
 			nth = world:target(e, Lifetime, i)
 		end
 	end
+
+	CHECK(not world:has(entity, pair(Lifetime, Particle)))
+	CHECK(world:get(entity, pair(Lifetime, Beam)) == 1)
+end)
+
+local lifetime_tracker_add = require("@tools/lifetime_tracker")
+
+TEST("another", function()
+	local world = world_new()
+	world = lifetime_tracker_add(world, {padding_enabled=false})
+	local e1 = world:entity()
+	local e2 = world:entity()
+	local e3 = world:entity()
+	world:delete(e2)
+	world:print_entity_index()
+	print(pair(e1, e2))
+	print(pair(e2, e3))
+	local e2_e3 = pair(e2, e3)
+	CHECK(jecs.pair_first(world, e2_e3) == 0)
+	CHECK(jecs.pair_second(world, e2_e3) == e3)
+	CHECK_EXPECT_ERR(function()
+		world:add(e1, pair(e2, e3))
+	end)
 end)
 
 TEST("#repro", function()
@@ -851,8 +879,9 @@ TEST("world:query()", function()
 		local bob = world:entity()
 
 		world:delete(Apples)
-
-		world:set(bob, pair(Eats, Apples), "bob eats apples")
+		CHECK_EXPECT_ERR(function()
+			world:set(bob, pair(Eats, Apples), "bob eats apples")
+		end)
 	end
 
 	do
