@@ -69,3 +69,5 @@ profile.*
 # Patch files
 
 *.patch
+
+genhtml.perl
