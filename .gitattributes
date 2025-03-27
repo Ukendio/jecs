@@ -1,1 +1,2 @@
 *.luau                 text eol=lf
+*.html           linguist-vendored
