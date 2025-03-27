@@ -2373,7 +2373,7 @@ end
 
 World.new = world_new
 
-export type Entity<T = nil> = { __T: T }
+export type Entity<T = unknown> = { __T: T }
 export type Id<T = unknown> = { __T: T }
 export type Pair<P, O> = Id<P>
 type ecs_id_t<T=unknown> = Id<T> | Pair<T, "Tag"> | Pair<"Tag", T>
