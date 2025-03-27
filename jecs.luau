@@ -52,7 +52,7 @@ export type Archetype = {
 type ecs_record_t = {
 	archetype: ecs_archetype_t,
 	row: number,
-	dense: i24
+	dense: i24,
 }
 
 type ecs_id_record_t = {
@@ -90,8 +90,8 @@ type ecs_query_data_t = {
 }
 
 type ecs_observer_t = {
- 	callback: (archetype: ecs_archetype_t) -> (),
-   	query: ecs_query_data_t,
+	callback: (archetype: ecs_archetype_t) -> (),
+	query: ecs_query_data_t,
 }
 
 type ecs_observable_t = Map<i53, Map<i53, { ecs_observer_t }>>
@@ -293,10 +293,6 @@ end
 local function ecs_pair_second(world: ecs_world_t, e: i53)
 	local obj = ECS_PAIR_SECOND(e)
 	return ecs_get_alive(world, obj)
-end
-
-local function ecs_component_record(world: ecs_world_t, component: i53)
-    return world.component_index[component]
 end
 
 local function query_match(query: ecs_query_data_t,
@@ -559,10 +555,10 @@ local function id_record_ensure(world: ecs_world_t, id: number): ecs_id_record_t
 		local target = 0
 		local is_pair = ECS_IS_PAIR(id)
 		if is_pair then
-			relation = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id))
+			relation = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id)) :: i53
 			assert(relation and entity_index_is_alive(
 				entity_index, relation), ECS_INTERNAL_ERROR)
-			target = entity_index_get_alive(entity_index, ECS_PAIR_SECOND(id))
+			target = entity_index_get_alive(entity_index, ECS_PAIR_SECOND(id)) :: i53
 			assert(target and entity_index_is_alive(
 				entity_index, target), ECS_INTERNAL_ERROR)
 		end
@@ -646,7 +642,6 @@ local function archetype_create(world: ecs_world_t, id_types: { i24 }, ty, prev:
 	local records: { number } = {}
 	local counts: {number} = {}
 
-	local entity_index = world.entity_index
 	local archetype: ecs_archetype_t = {
 		columns = columns,
 		entities = {},

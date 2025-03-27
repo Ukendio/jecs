@@ -1,5 +1,5 @@
 local jecs = require("@jecs")
-local mirror = require("../mirror/init")
+local mirror = require("@mirror")
 
 type i53 = number
 

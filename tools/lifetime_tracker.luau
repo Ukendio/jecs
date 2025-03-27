@@ -10,17 +10,17 @@ local pe = prettify
 local ansi = require("@tools/ansi")
 
 function print_centered_entity(entity, width: number)
-    local entity_str = tostring(entity)
-    local entity_length = #entity_str
+	local entity_str = tostring(entity)
+	local entity_length = #entity_str
 
-    local padding_total = width - 2 - entity_length
+	local padding_total = width - 2 - entity_length
 
-    local padding_left = math.floor(padding_total / 2)
-    local padding_right = padding_total - padding_left
+	local padding_left = math.floor(padding_total / 2)
+	local padding_right = padding_total - padding_left
 
-    local centered_str = string.rep(" ", padding_left) .. entity_str .. string.rep(" ", padding_right)
+	local centered_str = string.rep(" ", padding_left) .. entity_str .. string.rep(" ", padding_right)
 
-    print("|" .. centered_str .. "|")
+	print("|" .. centered_str .. "|")
 end
 
 local function name(world, e)
@@ -62,7 +62,7 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 	w.print_entity_index = function(self)
 		local max_id = entity_index.max_id
 		local alive_count = entity_index.alive_count
-		local alive = table.move(dense_array, 1+jecs.Rest::any, alive_count, 1, {})
+		local alive = table.move(dense_array, 1 + jecs.Rest :: any, alive_count, 1, {})
 		local dead = table.move(dense_array, alive_count + 1, max_id, 1, {})
 
 		local sep = "|--------|"
@@ -98,7 +98,7 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 
 		local max_id = entity_index.max_id
 		local alive_count = entity_index.alive_count
-		local alive = table.move(dense_array, 1+jecs.Rest::any, alive_count, 1, {})
+		local alive = table.move(dense_array, 1 + jecs.Rest :: any, alive_count, 1, {})
 		local dead = table.move(dense_array, alive_count + 1, max_id, 1, {})
 
 		local data = {}
@@ -127,7 +127,7 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 				local entity = dense_array[i]
 				local id = ECS_ID(entity)
 				-- Push entity and id into the new `entities` table
-				table.insert(entities, {entity = entity, id = id})
+				table.insert(entities, { entity = entity, id = id })
 			end
 		end
 
@@ -169,7 +169,6 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 			print(`*added ({pe(relation)}, {pe(target)}) to {pe(entity)}`)
 			pad()
 		end
-
 	end
 
 	local world_delete = world.delete
@@ -199,7 +198,9 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 						break
 					else
 						for _, entity in archetype.entities do
-							print(`*removed dependency ({pe(jecs.pair_first(world, id))}, {pe(object)}) from {pe(entity)}`)
+							print(
+								`*removed dependency ({pe(jecs.pair_first(world, id))}, {pe(object)}) from {pe(entity)}`
+							)
 						end
 					end
 				end

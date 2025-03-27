@@ -5,7 +5,7 @@ local ansi = require("@tools/ansi")
 
 local function pe(e: any)
 	local gen = ECS_GENERATION(e)
-	return ansi.green(`e{ECS_ID(e)}`)..ansi.yellow(`v{gen}`)
+	return ansi.green(`e{ECS_ID(e)}`) .. ansi.yellow(`v{gen}`)
 end
 
 local function name(world: jecs.World, id: any)

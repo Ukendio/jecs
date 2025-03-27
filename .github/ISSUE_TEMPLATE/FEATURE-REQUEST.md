@@ -1,10 +1,9 @@
 ---
 name: Feature Request
 about: File a feature request for something you believe should be added to Jecs
-title: "[FEATURE]"
+title: ""
 labels: enhancement
-assignees: ''
-
+assignees: ""
 ---
 
 ## Describe your Feature
@@ -22,6 +21,7 @@ What other alternative implementations or otherwise relevant information is impo
 ## Considerations
 
 Some questions that need to be answered include the following:
+
 - Will old code break in response to this feature?
 - What are the performance impacts with this feature (if any)?
 - How is it useful to include?
