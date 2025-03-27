@@ -145,13 +145,13 @@ TEST("#repro2", function()
 	world:set(entity, pair(4, 5), 6) -- noise
 
 	local entity_visualizer = require("@tools/entity_visualiser")
-	entity_visualizer.components(world, entity)
+	-- entity_visualizer.components(world, entity)
 
 	for e in world:each(pair(Lifetime, __)) do
 		local i = 0
 		local nth = world:target(e, Lifetime, i)
 		while nth do
-			entity_visualizer.components(world, e)
+			-- entity_visualizer.components(world, e)
 
 			local data = world:get(e, pair(Lifetime, nth))
 			data -= 1
@@ -173,14 +173,11 @@ local lifetime_tracker_add = require("@tools/lifetime_tracker")
 
 TEST("another", function()
 	local world = world_new()
-	world = lifetime_tracker_add(world, {padding_enabled=false})
+	-- world = lifetime_tracker_add(world, {padding_enabled=false})
 	local e1 = world:entity()
 	local e2 = world:entity()
 	local e3 = world:entity()
 	world:delete(e2)
-	world:print_entity_index()
-	print(pair(e1, e2))
-	print(pair(e2, e3))
 	local e2_e3 = pair(e2, e3)
 	CHECK(jecs.pair_first(world, e2_e3) == 0)
 	CHECK(jecs.pair_second(world, e2_e3) == e3)
@@ -945,10 +942,8 @@ TEST("world:query()", function()
 		CHECK(count == 2)
 	end
 
-	do
-		CASE("iterator invalidation")
-		do
-			CASE("adding")
+	do CASE("iterator invalidation")
+		do CASE("adding")
 			SKIP()
 			local world = jecs.World.new()
 			local A = world:component()
@@ -970,8 +965,7 @@ TEST("world:query()", function()
 			CHECK(count == 2)
 		end
 
-		do
-			CASE("spawning")
+		do CASE("spawning")
 			local world = jecs.World.new()
 			local A = world:component()
 			local B = world:component()
@@ -992,8 +986,7 @@ TEST("world:query()", function()
 		end
 	end
 
-	do
-		CASE("should not find any entities")
+	do CASE("should not find any entities")
 		local world = jecs.World.new()
 
 		local Hello = world:component()
@@ -1011,19 +1004,16 @@ TEST("world:query()", function()
 		CHECK(withoutCount == 0)
 	end
 
-	do
-		CASE("without")
-		do
-			-- REGRESSION TEST
-			local world = jecs.World.new()
-			local _1, _2, _3 = world:component(), world:component(), world:component()
+	do CASE("without")
+		-- REGRESSION TEST
+		local world = jecs.World.new()
+		local _1, _2, _3 = world:component(), world:component(), world:component()
 
-			local counter = 0
-			for e, a, b in world:query(_1, _2):without(_3) :: any do
-				counter += 1
-			end
-			CHECK(counter == 0)
+		local counter = 0
+		for e, a, b in world:query(_1, _2):without(_3) :: any do
+			counter += 1
 		end
+		CHECK(counter == 0)
 	end
 end)
 
@@ -1093,35 +1083,33 @@ TEST("world:children", function()
 end)
 
 TEST("world:clear()", function()
-	do
-			CASE("should remove its components")
-			local world = jecs.World.new() :: World
-			local A = world:component()
-			local B = world:component()
-			local C = world:component()
-			local D = world:component()
+	do CASE("should remove its components")
+		local world = jecs.World.new() :: World
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		local D = world:component()
 
-			local e = world:entity()
-			local e1 = world:entity()
-			local e2 = world:entity()
+		local e = world:entity()
+		local e1 = world:entity()
+		local e2 = world:entity()
 
-			world:set(e, A, true)
-			world:set(e, B, true)
+		world:set(e, A, true)
+		world:set(e, B, true)
 
-			world:set(e1, A, true)
-			world:set(e1, B, true)
+		world:set(e1, A, true)
+		world:set(e1, B, true)
 
-			CHECK(world:get(e, A))
-			CHECK(world:get(e, B))
+		CHECK(world:get(e, A))
+		CHECK(world:get(e, B))
 
-			world:clear(A)
-			CHECK(world:get(e, A) == nil)
-			CHECK(world:get(e, B))
-			CHECK(world:get(e1, A) == nil)
-			CHECK(world:get(e1, B))
-		end
-	do
-		CASE("should remove its components")
+		world:clear(A)
+		CHECK(world:get(e, A) == nil)
+		CHECK(world:get(e, B))
+		CHECK(world:get(e1, A) == nil)
+		CHECK(world:get(e1, B))
+	end
+	do CASE("should remove its components")
 		local world = jecs.World.new() :: World
 		local A = world:component()
 		local B = world:component()
@@ -1139,8 +1127,7 @@ TEST("world:clear()", function()
 		CHECK(world:get(e, B) == nil)
 	end
 
-	do
-		CASE("should move last record")
+	do CASE("should move last record")
 		local world = world_new()
 		local A = world:component()
 
@@ -1185,8 +1172,7 @@ TEST("world:clear()", function()
 end)
 
 TEST("world:has()", function()
-	do
-		CASE("should find Tag on entity")
+	do CASE("should find Tag on entity")
 		local world = jecs.World.new()
 
 		local Tag = world:entity()
@@ -1197,8 +1183,7 @@ TEST("world:has()", function()
 		CHECK(world:has(e, Tag))
 	end
 
-	do
-		CASE("should return false when missing one tag")
+	do CASE("should return false when missing one tag")
 		local world = jecs.World.new()
 
 		local A = world:entity()
@@ -1216,8 +1201,7 @@ TEST("world:has()", function()
 end)
 
 TEST("world:component()", function()
-	do
-		CASE("only components should have EcsComponent trait")
+	do CASE("only components should have EcsComponent trait")
 		local world = jecs.World.new() :: World
 		local A = world:component()
 		local e = world:entity()

@@ -222,37 +222,16 @@ local function CHECK<T>(value: T, stack: number?): T?
 end
 
 local function TEST(name: string, fn: () -> ())
-	local active = test
-	assert(not active, "cannot start test while another test is in progress")
 
 	test = {
 		name = name,
 		cases = {},
 		duration = 0,
 		focus = false,
+		fn = fn
 	}
-	assert(test)
 
 	table.insert(tests, test)
-
-	local start = os.clock()
-	local err
-	local success = xpcall(fn, function(m: string)
-		err = { message = m, trace = debug.traceback(nil, 2) }
-	end)
-	test.duration = os.clock() - start
-
-	if not test.case then
-		CASE("")
-	end
-	assert(test.case, "no active case")
-
-	if not success then
-		test.case.result = ERROR
-		test.error = err
-	end
-
-	test = nil
 end
 
 local function FOCUS()
@@ -273,6 +252,31 @@ local function FINISH(): boolean
 	local passed_focus_cases = 0
 	local total_focus_cases = 0
 	local duration = 0
+
+	for _, t in tests do
+		if check_for_focused and not t.focus then
+			continue
+		end
+		test = t
+		fn = t.fn
+		local start = os.clock()
+		local err
+		local success = xpcall(fn, function(m: string)
+			err = { message = m, trace = debug.traceback(nil, 2) }
+		end)
+		test.duration = os.clock() - start
+
+		if not test.case then
+			CASE("")
+		end
+		assert(test.case, "no active case")
+
+		if not success then
+			test.case.result = ERROR
+			test.error = err
+		end
+		collectgarbage()
+	end
 
 	for _, test in tests do
 		duration += test.duration
