@@ -1094,6 +1094,33 @@ end)
 
 TEST("world:clear()", function()
 	do
+			CASE("should remove its components")
+			local world = jecs.World.new() :: World
+			local A = world:component()
+			local B = world:component()
+			local C = world:component()
+			local D = world:component()
+
+			local e = world:entity()
+			local e1 = world:entity()
+			local e2 = world:entity()
+
+			world:set(e, A, true)
+			world:set(e, B, true)
+
+			world:set(e1, A, true)
+			world:set(e1, B, true)
+
+			CHECK(world:get(e, A))
+			CHECK(world:get(e, B))
+
+			world:clear(A)
+			CHECK(world:get(e, A) == nil)
+			CHECK(world:get(e, B))
+			CHECK(world:get(e1, A) == nil)
+			CHECK(world:get(e1, B))
+		end
+	do
 		CASE("should remove its components")
 		local world = jecs.World.new() :: World
 		local A = world:component()

@@ -1073,6 +1073,22 @@ local function world_clear(world: ecs_world_t, entity: i53)
 	local archetype = record.archetype
 	local row = record.row
 
+	local idr = world.component_index[entity]
+	if idr then
+		local count = 0
+		local queue = {}
+		for archetype_id in idr.cache do
+			local idr_archetype = world.archetypes[archetype_id]
+			local entities = idr_archetype.entities
+			local n = #entities
+			count += n
+			table.move(entities, 1, n, #queue + 1, queue)
+		end
+		for _, e in queue do
+			world_remove(world, e, entity)
+		end
+	end
+
 	if archetype then
 		-- In the future should have a destruct mode for
 		-- deleting archetypes themselves. Maybe requires recycling
