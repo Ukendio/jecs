@@ -1064,21 +1064,19 @@ local function archetype_delete(world: ecs_world_t, archetype: ecs_archetype_t, 
 end
 
 local function world_clear(world: ecs_world_t, entity: i53)
-	--TODO: use sparse_get (stashed)
-	local record = entity_index_try_get(world.entity_index, entity)
-	if not record then
-		return
-	end
+	local component_index = world.component_index
+	local archetypes = world.archetypes
+	local tgt = ECS_PAIR(EcsWildcard, entity)
+	local idr_t = component_index[tgt]
+	local idr = component_index[entity]
+	local rel = ECS_PAIR(entity, EcsWildcard)
+	local idr_r = component_index[rel]
 
-	local archetype = record.archetype
-	local row = record.row
-
-	local idr = world.component_index[entity]
 	if idr then
 		local count = 0
 		local queue = {}
 		for archetype_id in idr.cache do
-			local idr_archetype = world.archetypes[archetype_id]
+			local idr_archetype = archetypes[archetype_id]
 			local entities = idr_archetype.entities
 			local n = #entities
 			count += n
@@ -1089,14 +1087,79 @@ local function world_clear(world: ecs_world_t, entity: i53)
 		end
 	end
 
-	if archetype then
-		-- In the future should have a destruct mode for
-		-- deleting archetypes themselves. Maybe requires recycling
-		archetype_delete(world, archetype, row)
+	if idr_t then
+		local children
+		local ids
+
+		local count = 0
+		local archetype_ids = idr_t.cache
+		for archetype_id in archetype_ids do
+			local idr_t_archetype = archetypes[archetype_id]
+			local idr_t_types = idr_t_archetype.types
+			local entities = idr_t_archetype.entities
+			local removal_queued = false
+
+			for _, id in idr_t_types do
+				if not ECS_IS_PAIR(id) then
+					continue
+				end
+				local object = entity_index_get_alive(
+				    entity_index, ECS_PAIR_SECOND(id))
+				if object ~= entity then
+					continue
+				end
+				if not ids then
+					ids = {}
+				end
+				ids[id] = true
+				removal_queued = true
+			end
+
+			if not removal_queued then
+				continue
+			end
+
+			if not queue then
+				queue = {}
+			end
+
+			local n = #entities
+			table.move(entities, 1, n, count + 1, queue)
+			count += n
+		end
+
+		for id in ids do
+			for _, child in queue do
+				world_remove(world, child, id)
+			end
+		end
 	end
 
-	record.archetype = nil :: any
-	record.row = nil :: any
+	if idr_r then
+		local count = 0
+		local archetype_ids = idr_r.cache
+		local ids = {}
+		local queue = {}
+		for archetype_id in archetype_ids do
+			local idr_r_archetype = archetypes[archetype_id]
+			local entities = idr_r_archetype.entities
+			local tr = idr_r_archetype.records[rel]
+			local tr_count = idr_r_archetype.counts[rel]
+			local types = idr_r_archetype.types
+			for i = tr, tr + tr_count - 1 do
+				ids[types[i]] = true
+			end
+			local n = #entities
+			table.move(entities, 1, n, count + 1, queue)
+			count += n
+		end
+
+		for _, e in queue do
+			for id in ids do
+				world_remove(world, e, id)
+			end
+		end
+	end
 end
 
 local function archetype_disconnect_edge(edge: ecs_graph_edge_t)
@@ -1225,8 +1288,11 @@ local function world_delete(world: ecs_world_t, entity: i53)
 	local component_index = world.component_index
 	local archetypes = world.archetypes
 	local tgt = ECS_PAIR(EcsWildcard, delete)
+	local rel = ECS_PAIR(delete, EcsWildcard)
+
 	local idr_t = component_index[tgt]
 	local idr = component_index[delete]
+	local idr_r = component_index[rel]
 
 	if idr then
 		local flags = idr.flags
@@ -1256,11 +1322,10 @@ local function world_delete(world: ecs_world_t, entity: i53)
 		end
 	end
 
-	local dense_array = entity_index.dense_array
-
 	if idr_t then
 		local children
 		local ids
+
 		local count = 0
 		local archetype_ids = idr_t.cache
 		for archetype_id in archetype_ids do
@@ -1288,7 +1353,7 @@ local function world_delete(world: ecs_world_t, entity: i53)
 					end
 					break
 				else
-				    if not ids then
+					if not ids then
 						ids = {}
 					end
 					ids[id] = true
@@ -1308,8 +1373,8 @@ local function world_delete(world: ecs_world_t, entity: i53)
 		end
 
 		if ids then
-			for id in ids do
-				for _, child in children do
+			for _, child in children do
+				for id in ids do
 					world_remove(world, child, id)
 				end
 			end
@@ -1320,6 +1385,51 @@ local function world_delete(world: ecs_world_t, entity: i53)
 		end
 	end
 
+	if idr_r then
+		local count = 0
+		local archetype_ids = idr_r.cache
+		local flags = idr_r.flags
+		if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
+			for archetype_id in archetype_ids do
+				local idr_r_archetype = archetypes[archetype_id]
+				local entities = idr_r_archetype.entities
+				local n = #entities
+				for i = n, 1, -1 do
+					world_delete(world, entities[i])
+				end
+				archetype_destroy(world, idr_r_archetype)
+			end
+		else
+			local children = {}
+			local count = 0
+			local ids = {}
+			for archetype_id in archetype_ids do
+				local idr_r_archetype = archetypes[archetype_id]
+				local entities = idr_r_archetype.entities
+				local tr = idr_r_achetype.records[rel]
+				local tr_count = idr_r_archetype.counts[rel]
+				local types = idr_r_achetype.types
+				for i = tr, tr_count - 1 do
+					ids[types[tr]] = true
+				end
+				local n = #entities
+				table.move(entities, 1, n, count + 1, children)
+				count += n
+			end
+
+			for _, child in children do
+				for id in ids do
+					world_remove(world, child, id)
+				end
+			end
+
+			for archetype_id in archetype_ids do
+				archetype_destroy(world, archetypes[archetype_id])
+			end
+		end
+	end
+
+	local dense_array = entity_index.dense_array
 	local index_of_deleted_entity = record.dense
 	local index_of_last_alive_entity = entity_index.alive_count
 	entity_index.alive_count = index_of_last_alive_entity - 1
@@ -1349,8 +1459,6 @@ export type QueryInner = {
 	next: () -> (number, ...any),
 	world: World,
 }
-
-
 
 local function query_iter_init(query: ecs_query_data_t): () -> (number, ...any)
 	local world_query_iter_next

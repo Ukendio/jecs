@@ -1109,66 +1109,6 @@ TEST("world:clear()", function()
 		CHECK(world:get(e1, A) == nil)
 		CHECK(world:get(e1, B))
 	end
-	do CASE("should remove its components")
-		local world = jecs.World.new() :: World
-		local A = world:component()
-		local B = world:component()
-
-		local e = world:entity()
-
-		world:set(e, A, true)
-		world:set(e, B, true)
-
-		CHECK(world:get(e, A))
-		CHECK(world:get(e, B))
-
-		world:clear(e)
-		CHECK(world:get(e, A) == nil)
-		CHECK(world:get(e, B) == nil)
-	end
-
-	do CASE("should move last record")
-		local world = world_new()
-		local A = world:component()
-
-		local e = world:entity()
-		local e1 = world:entity()
-
-		world:add(e, A)
-		world:add(e1, A)
-
-		local archetype = world.archetype_index["1"]
-		local archetype_entities = archetype.entities
-
-		local _e = e :: number
-		local _e1 = e1 :: number
-
-		CHECK(archetype_entities[1] == _e)
-		CHECK(archetype_entities[2] == _e1)
-
-		local e_record: jecs.Record = entity_index_try_get_any(
-			world.entity_index, e) :: any
-		local e1_record: jecs.Record = entity_index_try_get_any(
-			world.entity_index, e1) :: any
-		CHECK(e_record.archetype == archetype)
-		CHECK(e1_record.archetype == archetype)
-		CHECK(e1_record.row == 2)
-
-		world:clear(e)
-
-		CHECK((e_record.archetype :: jecs.Archetype?) == nil)
-		CHECK((e_record.row :: number?) == nil)
-		CHECK(e1_record.archetype == archetype)
-		CHECK(e1_record.row == 1)
-
-		CHECK(archetype_entities[1] == _e1)
-		CHECK(archetype_entities[2] == nil)
-
-		CHECK(world:contains(e) == true)
-		CHECK(world:has(e, A) == false)
-		CHECK(world:contains(e1) == true)
-		CHECK(world:has(e1, A) == true)
-	end
 end)
 
 TEST("world:has()", function()
