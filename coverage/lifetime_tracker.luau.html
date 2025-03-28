@@ -1,0 +1,250 @@
+<html><head>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<style>
+body { font-family: monospace; font-size: 16px; }
+.zero-hits { background-color: #fcc; font-weight: bold; color: red; }
+.nonzero-hits { color: green; font-weight: bold; }
+.low-hits { background-color: #ffe6b3; }
+.high-hits { background-color: #cfc; }
+th, td { padding: 0px; font-size: 12px; }
+table.table { font-size: 14px; border-collapse: collapse; }
+table.table th, table.table td { padding: 1px; font-size: 12px; line-height: 1.2; }
+table.table tr { height: auto; }
+</style></head><body>
+<h1 class="text-center">lifetime_tracker.luau Coverage</h1>
+<h2>Total Execution Hits: 1</h2>
+<h2>Function Coverage Overview: 9.09%</h2>
+<button class="btn btn-primary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#funcTable">Toggle Function Coverage</button>
+<div class="collapse show" id="funcTable">
+<h2>Function Coverage:</h2><table class="table table-bordered"><thead><tr><th>Function</th><th>Hits</th></tr></thead><tbody>
+<tr><td style="padding: 1px; min-width: 24ch;"><main></td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 24ch;">print_centered_entity:12</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 24ch;">name:26</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 24ch;">pad:30</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 24ch;">lifetime_tracker_add:36</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 24ch;"><anonymous>:48</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 24ch;"><anonymous>:62</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 24ch;"><anonymous>:89</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 24ch;"><anonymous>:135</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 24ch;"><anonymous>:164</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 24ch;"><anonymous>:175</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+</tbody></table></div>
+<h2>Source Code:</h2><table class="table table-bordered"><thead><tr><th>Line</th><th>Hits</th><th>Code</th></tr></thead><tbody>
+<tr><td>1</td><td>1</td><td><span class=high-hits>local jecs = require("@jecs")</span></td></tr>
+<tr><td>2</td><td>1</td><td><span class=high-hits>local ECS_GENERATION = jecs.ECS_GENERATION</span></td></tr>
+<tr><td>3</td><td>1</td><td><span class=high-hits>local ECS_ID = jecs.ECS_ID</span></td></tr>
+<tr><td>4</td><td>1</td><td><span class=high-hits>local __ = jecs.Wildcard</span></td></tr>
+<tr><td>5</td><td>1</td><td><span class=high-hits>local pair = jecs.pair</span></td></tr>
+<tr><td>6</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>7</td><td>1</td><td><span class=high-hits>local prettify = require("@tools/entity_visualiser").prettify</span></td></tr>
+<tr><td>8</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>9</td><td>1</td><td><span class=high-hits>local pe = prettify</span></td></tr>
+<tr><td>10</td><td>1</td><td><span class=high-hits>local ansi = require("@tools/ansi")</span></td></tr>
+<tr><td>11</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>12</td><td>1</td><td><span class=high-hits>function print_centered_entity(entity, width: number)</span></td></tr>
+<tr><td>13</td><td>0</td><td><span class=zero-hits>local entity_str = tostring(entity)</span></td></tr>
+<tr><td>14</td><td>0</td><td><span class=zero-hits>local entity_length = #entity_str</span></td></tr>
+<tr><td>15</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>16</td><td>0</td><td><span class=zero-hits>local padding_total = width - 2 - entity_length</span></td></tr>
+<tr><td>17</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>18</td><td>0</td><td><span class=zero-hits>local padding_left = math.floor(padding_total / 2)</span></td></tr>
+<tr><td>19</td><td>0</td><td><span class=zero-hits>local padding_right = padding_total - padding_left</span></td></tr>
+<tr><td>20</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>21</td><td>0</td><td><span class=zero-hits>local centered_str = string.rep(" ", padding_left) .. entity_str .. string.rep(" ", padding_right)</span></td></tr>
+<tr><td>22</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>23</td><td>0</td><td><span class=zero-hits>print("|" .. centered_str .. "|")</span></td></tr>
+<tr><td>24</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>25</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>26</td><td>1</td><td><span class=high-hits>local function name(world, e)</span></td></tr>
+<tr><td>27</td><td>0</td><td><span class=zero-hits>return world:get(world, e, jecs.Name) or pe(e)</span></td></tr>
+<tr><td>28</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>29</td><td>1</td><td><span class=high-hits>local padding_enabled = false</span></td></tr>
+<tr><td>30</td><td>1</td><td><span class=high-hits>local function pad()</span></td></tr>
+<tr><td>31</td><td>0</td><td><span class=zero-hits>if padding_enabled then</span></td></tr>
+<tr><td>32</td><td>0</td><td><span class=zero-hits>print("")</span></td></tr>
+<tr><td>33</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>34</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>35</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>36</td><td>1</td><td><span class=high-hits>local function lifetime_tracker_add(world: jecs.World, opt)</span></td></tr>
+<tr><td>37</td><td>0</td><td><span class=zero-hits>local entity_index = world.entity_index</span></td></tr>
+<tr><td>38</td><td>0</td><td><span class=zero-hits>local dense_array = entity_index.dense_array</span></td></tr>
+<tr><td>39</td><td>0</td><td><span class=zero-hits>local component_index = world.component_index</span></td></tr>
+<tr><td>40</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>41</td><td>0</td><td><span class=zero-hits>local ENTITY_RANGE = (jecs.Rest :: any) + 1</span></td></tr>
+<tr><td>42</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>43</td><td>0</td><td><span class=zero-hits>local w = setmetatable({}, { __index = world })</span></td></tr>
+<tr><td>44</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>45</td><td>0</td><td><span class=zero-hits>padding_enabled = opt.padding_enabled</span></td></tr>
+<tr><td>46</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>47</td><td>0</td><td><span class=zero-hits>local world_entity = world.entity</span></td></tr>
+<tr><td>48</td><td>0</td><td><span class=zero-hits>w.entity = function(self, entity)</span></td></tr>
+<tr><td>49</td><td>0</td><td><span class=zero-hits>if entity then</span></td></tr>
+<tr><td>50</td><td>0</td><td><span class=zero-hits>return world_entity(world, entity)</span></td></tr>
+<tr><td>51</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>52</td><td>0</td><td><span class=zero-hits>local will_recycle = entity_index.max_id ~= entity_index.alive_count</span></td></tr>
+<tr><td>53</td><td>0</td><td><span class=zero-hits>local e = world_entity(world)</span></td></tr>
+<tr><td>54</td><td>0</td><td><span class=zero-hits>if will_recycle then</span></td></tr>
+<tr><td>55</td><td>0</td><td><span class=zero-hits>print(`*recycled {pe(e)}`)</span></td></tr>
+<tr><td>56</td><td>0</td><td><span class=zero-hits>else</span></td></tr>
+<tr><td>57</td><td>0</td><td><span class=zero-hits>print(`*created {pe(e)}`)</span></td></tr>
+<tr><td>58</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>59</td><td>0</td><td><span class=zero-hits>pad()</span></td></tr>
+<tr><td>60</td><td>0</td><td><span class=zero-hits>return e</span></td></tr>
+<tr><td>61</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>62</td><td>0</td><td><span class=zero-hits>w.print_entity_index = function(self)</span></td></tr>
+<tr><td>63</td><td>0</td><td><span class=zero-hits>local max_id = entity_index.max_id</span></td></tr>
+<tr><td>64</td><td>0</td><td><span class=zero-hits>local alive_count = entity_index.alive_count</span></td></tr>
+<tr><td>65</td><td>0</td><td><span class=zero-hits>local alive = table.move(dense_array, 1 + jecs.Rest :: any, alive_count, 1, {})</span></td></tr>
+<tr><td>66</td><td>0</td><td><span class=zero-hits>local dead = table.move(dense_array, alive_count + 1, max_id, 1, {})</span></td></tr>
+<tr><td>67</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>68</td><td>0</td><td><span class=zero-hits>local sep = "|--------|"</span></td></tr>
+<tr><td>69</td><td>0</td><td><span class=zero-hits>if #alive > 0 then</span></td></tr>
+<tr><td>70</td><td>0</td><td><span class=zero-hits>print("|-alive--|")</span></td></tr>
+<tr><td>71</td><td>0</td><td><span class=zero-hits>for i = 1, #alive do</span></td></tr>
+<tr><td>72</td><td>0</td><td><span class=zero-hits>local e = pe(alive[i])</span></td></tr>
+<tr><td>73</td><td>0</td><td><span class=zero-hits>print_centered_entity(e, 32)</span></td></tr>
+<tr><td>74</td><td>0</td><td><span class=zero-hits>print(sep)</span></td></tr>
+<tr><td>75</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>76</td><td>0</td><td><span class=zero-hits>print("\n")</span></td></tr>
+<tr><td>77</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>78</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>79</td><td>0</td><td><span class=zero-hits>if #dead > 0 then</span></td></tr>
+<tr><td>80</td><td>0</td><td><span class=zero-hits>print("|--dead--|")</span></td></tr>
+<tr><td>81</td><td>0</td><td><span class=zero-hits>for i = 1, #dead do</span></td></tr>
+<tr><td>82</td><td>0</td><td><span class=zero-hits>print_centered_entity(pe(dead[i]), 32)</span></td></tr>
+<tr><td>83</td><td>0</td><td><span class=zero-hits>print(sep)</span></td></tr>
+<tr><td>84</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>85</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>86</td><td>0</td><td><span class=zero-hits>pad()</span></td></tr>
+<tr><td>87</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>88</td><td>0</td><td><span class=zero-hits>local timelines = {}</span></td></tr>
+<tr><td>89</td><td>0</td><td><span class=zero-hits>w.print_snapshot = function(self)</span></td></tr>
+<tr><td>90</td><td>0</td><td><span class=zero-hits>local timeline = #timelines + 1</span></td></tr>
+<tr><td>91</td><td>0</td><td><span class=zero-hits>local entity_column_width = 10</span></td></tr>
+<tr><td>92</td><td>0</td><td><span class=zero-hits>local status_column_width = 8</span></td></tr>
+<tr><td>93</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>94</td><td>0</td><td><span class=zero-hits>local header = string.format("| %-" .. entity_column_width .. "s |", "Entity")</span></td></tr>
+<tr><td>95</td><td>0</td><td><span class=zero-hits>for i = 1, timeline do</span></td></tr>
+<tr><td>96</td><td>0</td><td><span class=zero-hits>header = header .. string.format(" %-" .. status_column_width .. "s |", string.format("T%d", i))</span></td></tr>
+<tr><td>97</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>98</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>99</td><td>0</td><td><span class=zero-hits>local max_id = entity_index.max_id</span></td></tr>
+<tr><td>100</td><td>0</td><td><span class=zero-hits>local alive_count = entity_index.alive_count</span></td></tr>
+<tr><td>101</td><td>0</td><td><span class=zero-hits>local alive = table.move(dense_array, 1 + jecs.Rest :: any, alive_count, 1, {})</span></td></tr>
+<tr><td>102</td><td>0</td><td><span class=zero-hits>local dead = table.move(dense_array, alive_count + 1, max_id, 1, {})</span></td></tr>
+<tr><td>103</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>104</td><td>0</td><td><span class=zero-hits>local data = {}</span></td></tr>
+<tr><td>105</td><td>0</td><td><span class=zero-hits>print("-------------------------------------------------------------------")</span></td></tr>
+<tr><td>106</td><td>0</td><td><span class=zero-hits>print(header)</span></td></tr>
+<tr><td>107</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>108</td><td><span class='text-muted'>N/A</span></td><td>-- Store the snapshot data for this timeline</td>></tr>
+<tr><td>109</td><td>0</td><td><span class=zero-hits>for i = ENTITY_RANGE, max_id do</span></td></tr>
+<tr><td>110</td><td>0</td><td><span class=zero-hits>if dense_array[i] then</span></td></tr>
+<tr><td>111</td><td>0</td><td><span class=zero-hits>local entity = dense_array[i]</span></td></tr>
+<tr><td>112</td><td>0</td><td><span class=zero-hits>local id = ECS_ID(entity)</span></td></tr>
+<tr><td>113</td><td>0</td><td><span class=zero-hits>local status = "alive"</span></td></tr>
+<tr><td>114</td><td>0</td><td><span class=zero-hits>if not world:contains(entity) then</span></td></tr>
+<tr><td>115</td><td>0</td><td><span class=zero-hits>status = "dead"</span></td></tr>
+<tr><td>116</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>117</td><td>0</td><td><span class=zero-hits>data[id] = status</span></td></tr>
+<tr><td>118</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>119</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>120</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>121</td><td>0</td><td><span class=zero-hits>table.insert(timelines, data)</span></td></tr>
+<tr><td>122</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>123</td><td><span class='text-muted'>N/A</span></td><td>-- Create a table to hold entity data for sorting</td>></tr>
+<tr><td>124</td><td>0</td><td><span class=zero-hits>local entities = {}</span></td></tr>
+<tr><td>125</td><td>0</td><td><span class=zero-hits>for i = ENTITY_RANGE, max_id do</span></td></tr>
+<tr><td>126</td><td>0</td><td><span class=zero-hits>if dense_array[i] then</span></td></tr>
+<tr><td>127</td><td>0</td><td><span class=zero-hits>local entity = dense_array[i]</span></td></tr>
+<tr><td>128</td><td>0</td><td><span class=zero-hits>local id = ECS_ID(entity)</span></td></tr>
+<tr><td>129</td><td><span class='text-muted'>N/A</span></td><td>-- Push entity and id into the new `entities` table</td>></tr>
+<tr><td>130</td><td>0</td><td><span class=zero-hits>table.insert(entities, { entity = entity, id = id })</span></td></tr>
+<tr><td>131</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>132</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>133</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>134</td><td><span class='text-muted'>N/A</span></td><td>-- Sort the entities by ECS_ID</td>></tr>
+<tr><td>135</td><td>0</td><td><span class=zero-hits>table.sort(entities, function(a, b)</span></td></tr>
+<tr><td>136</td><td>0</td><td><span class=zero-hits>return a.id < b.id</span></td></tr>
+<tr><td>137</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>138</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>139</td><td><span class='text-muted'>N/A</span></td><td>-- Print the sorted rows</td>></tr>
+<tr><td>140</td><td>0</td><td><span class=zero-hits>for _, entity_data in ipairs(entities) do</span></td></tr>
+<tr><td>141</td><td>0</td><td><span class=zero-hits>local entity = entity_data.entity</span></td></tr>
+<tr><td>142</td><td>0</td><td><span class=zero-hits>local id = entity_data.id</span></td></tr>
+<tr><td>143</td><td>0</td><td><span class=zero-hits>local status = "alive"</span></td></tr>
+<tr><td>144</td><td>0</td><td><span class=zero-hits>if id > alive_count then</span></td></tr>
+<tr><td>145</td><td>0</td><td><span class=zero-hits>status = "dead"</span></td></tr>
+<tr><td>146</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>147</td><td>0</td><td><span class=zero-hits>local row = string.format("| %-" .. entity_column_width .. "s     |", pe(entity))</span></td></tr>
+<tr><td>148</td><td>0</td><td><span class=zero-hits>for j = 1, timeline do</span></td></tr>
+<tr><td>149</td><td>0</td><td><span class=zero-hits>local timeline_data = timelines[j]</span></td></tr>
+<tr><td>150</td><td>0</td><td><span class=zero-hits>local entity_data = timeline_data[id]</span></td></tr>
+<tr><td>151</td><td>0</td><td><span class=zero-hits>if entity_data then</span></td></tr>
+<tr><td>152</td><td>0</td><td><span class=zero-hits>row = row .. string.format(" %-" .. status_column_width .. "s |", entity_data)</span></td></tr>
+<tr><td>153</td><td>0</td><td><span class=zero-hits>else</span></td></tr>
+<tr><td>154</td><td>0</td><td><span class=zero-hits>row = row .. string.format(" %-" .. status_column_width .. "s |", "-")</span></td></tr>
+<tr><td>155</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>156</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>157</td><td>0</td><td><span class=zero-hits>print(row)</span></td></tr>
+<tr><td>158</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>159</td><td>0</td><td><span class=zero-hits>print("-------------------------------------------------------------------")</span></td></tr>
+<tr><td>160</td><td>0</td><td><span class=zero-hits>pad()</span></td></tr>
+<tr><td>161</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>162</td><td>0</td><td><span class=zero-hits>local world_add = world.add</span></td></tr>
+<tr><td>163</td><td>0</td><td><span class=zero-hits>local relations = {}</span></td></tr>
+<tr><td>164</td><td>0</td><td><span class=zero-hits>w.add = function(self, entity: any, component: any)</span></td></tr>
+<tr><td>165</td><td>0</td><td><span class=zero-hits>world_add(world, entity, component)</span></td></tr>
+<tr><td>166</td><td>0</td><td><span class=zero-hits>if jecs.IS_PAIR(component) then</span></td></tr>
+<tr><td>167</td><td>0</td><td><span class=zero-hits>local relation = jecs.pair_first(world, component)</span></td></tr>
+<tr><td>168</td><td>0</td><td><span class=zero-hits>local target = jecs.pair_second(world, component)</span></td></tr>
+<tr><td>169</td><td>0</td><td><span class=zero-hits>print(`*added ({pe(relation)}, {pe(target)}) to {pe(entity)}`)</span></td></tr>
+<tr><td>170</td><td>0</td><td><span class=zero-hits>pad()</span></td></tr>
+<tr><td>171</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>172</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>173</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>174</td><td>0</td><td><span class=zero-hits>local world_delete = world.delete</span></td></tr>
+<tr><td>175</td><td>0</td><td><span class=zero-hits>w.delete = function(self, e)</span></td></tr>
+<tr><td>176</td><td>0</td><td><span class=zero-hits>world_delete(world, e)</span></td></tr>
+<tr><td>177</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>178</td><td>0</td><td><span class=zero-hits>local idr_t = component_index[pair(__, e)]</span></td></tr>
+<tr><td>179</td><td>0</td><td><span class=zero-hits>if idr_t then</span></td></tr>
+<tr><td>180</td><td>0</td><td><span class=zero-hits>for archetype_id in idr_t.cache do</span></td></tr>
+<tr><td>181</td><td>0</td><td><span class=zero-hits>local archetype = world.archetypes[archetype_id]</span></td></tr>
+<tr><td>182</td><td>0</td><td><span class=zero-hits>for _, id in archetype.types do</span></td></tr>
+<tr><td>183</td><td>0</td><td><span class=zero-hits>if not jecs.IS_PAIR(id) then</span></td></tr>
+<tr><td>184</td><td>0</td><td><span class=zero-hits>continue</span></td></tr>
+<tr><td>185</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>186</td><td>0</td><td><span class=zero-hits>local object = jecs.pair_second(world, id)</span></td></tr>
+<tr><td>187</td><td>0</td><td><span class=zero-hits>if object ~= e then</span></td></tr>
+<tr><td>188</td><td>0</td><td><span class=zero-hits>continue</span></td></tr>
+<tr><td>189</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>190</td><td>0</td><td><span class=zero-hits>local id_record = component_index[id]</span></td></tr>
+<tr><td>191</td><td>0</td><td><span class=zero-hits>local flags = id_record.flags</span></td></tr>
+<tr><td>192</td><td>0</td><td><span class=zero-hits>local flags_delete_mask: number = bit32.band(flags, jecs.ECS_ID_DELETE)</span></td></tr>
+<tr><td>193</td><td>0</td><td><span class=zero-hits>if flags_delete_mask ~= 0 then</span></td></tr>
+<tr><td>194</td><td>0</td><td><span class=zero-hits>for _, entity in archetype.entities do</span></td></tr>
+<tr><td>195</td><td>0</td><td><span class=zero-hits>print(`*deleted dependant {pe(entity)} of {pe(e)}`)</span></td></tr>
+<tr><td>196</td><td>0</td><td><span class=zero-hits>pad()</span></td></tr>
+<tr><td>197</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>198</td><td>0</td><td><span class=zero-hits>break</span></td></tr>
+<tr><td>199</td><td>0</td><td><span class=zero-hits>else</span></td></tr>
+<tr><td>200</td><td>0</td><td><span class=zero-hits>for _, entity in archetype.entities do</span></td></tr>
+<tr><td>201</td><td>0</td><td><span class=zero-hits>print(</span></td></tr>
+<tr><td>202</td><td>0</td><td><span class=zero-hits>`*removed dependency ({pe(jecs.pair_first(world, id))}, {pe(object)}) from {pe(entity)}`</span></td></tr>
+<tr><td>203</td><td>0</td><td><span class=zero-hits>)</span></td></tr>
+<tr><td>204</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>205</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>206</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>207</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>208</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>209</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>210</td><td>0</td><td><span class=zero-hits>print(`*deleted {pe(e)}`)</span></td></tr>
+<tr><td>211</td><td>0</td><td><span class=zero-hits>pad()</span></td></tr>
+<tr><td>212</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>213</td><td>0</td><td><span class=zero-hits>return w</span></td></tr>
+<tr><td>214</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>215</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>216</td><td>1</td><td><span class=high-hits>return lifetime_tracker_add</span></td></tr>
+</tbody></table></body></html>

@@ -1,0 +1,70 @@
+<html><head>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<style>
+body { font-family: monospace; font-size: 16px; }
+.zero-hits { background-color: #fcc; font-weight: bold; color: red; }
+.nonzero-hits { color: green; font-weight: bold; }
+.low-hits { background-color: #ffe6b3; }
+.high-hits { background-color: #cfc; }
+th, td { padding: 0px; font-size: 12px; }
+table.table { font-size: 14px; border-collapse: collapse; }
+table.table th, table.table td { padding: 1px; font-size: 12px; line-height: 1.2; }
+table.table tr { height: auto; }
+</style></head><body>
+<h1 class="text-center">entity_visualiser.luau Coverage</h1>
+<h2>Total Execution Hits: 1</h2>
+<h2>Function Coverage Overview: 25.00%</h2>
+<button class="btn btn-primary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#funcTable">Toggle Function Coverage</button>
+<div class="collapse show" id="funcTable">
+<h2>Function Coverage:</h2><table class="table table-bordered"><thead><tr><th>Function</th><th>Hits</th></tr></thead><tbody>
+<tr><td style="padding: 1px; min-width: 13ch;"><main></td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 13ch;">pe:6</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 13ch;">name:11</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 13ch;">components:15</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+</tbody></table></div>
+<h2>Source Code:</h2><table class="table table-bordered"><thead><tr><th>Line</th><th>Hits</th><th>Code</th></tr></thead><tbody>
+<tr><td>1</td><td>1</td><td><span class=high-hits>local jecs = require("@jecs")</span></td></tr>
+<tr><td>2</td><td>1</td><td><span class=high-hits>local ECS_GENERATION = jecs.ECS_GENERATION</span></td></tr>
+<tr><td>3</td><td>1</td><td><span class=high-hits>local ECS_ID = jecs.ECS_ID</span></td></tr>
+<tr><td>4</td><td>1</td><td><span class=high-hits>local ansi = require("@tools/ansi")</span></td></tr>
+<tr><td>5</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>6</td><td>1</td><td><span class=high-hits>local function pe(e: any)</span></td></tr>
+<tr><td>7</td><td>0</td><td><span class=zero-hits>local gen = ECS_GENERATION(e)</span></td></tr>
+<tr><td>8</td><td>0</td><td><span class=zero-hits>return ansi.green(`e{ECS_ID(e)}`) .. ansi.yellow(`v{gen}`)</span></td></tr>
+<tr><td>9</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>10</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>11</td><td>1</td><td><span class=high-hits>local function name(world: jecs.World, id: any)</span></td></tr>
+<tr><td>12</td><td>0</td><td><span class=zero-hits>return world:get(id, jecs.Name) or `${id}`</span></td></tr>
+<tr><td>13</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>14</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>15</td><td>1</td><td><span class=high-hits>local function components(world: jecs.World, entity: any)</span></td></tr>
+<tr><td>16</td><td>0</td><td><span class=zero-hits>local r = jecs.entity_index_try_get(world.entity_index, entity)</span></td></tr>
+<tr><td>17</td><td>0</td><td><span class=zero-hits>if not r then</span></td></tr>
+<tr><td>18</td><td>0</td><td><span class=zero-hits>return false</span></td></tr>
+<tr><td>19</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>20</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>21</td><td>0</td><td><span class=zero-hits>local archetype = r.archetype</span></td></tr>
+<tr><td>22</td><td>0</td><td><span class=zero-hits>local row = r.row</span></td></tr>
+<tr><td>23</td><td>0</td><td><span class=zero-hits>print(`Entity {pe(entity)}`)</span></td></tr>
+<tr><td>24</td><td>0</td><td><span class=zero-hits>print("-----------------------------------------------------")</span></td></tr>
+<tr><td>25</td><td>0</td><td><span class=zero-hits>for i, column in archetype.columns do</span></td></tr>
+<tr><td>26</td><td>0</td><td><span class=zero-hits>local component = archetype.types[i]</span></td></tr>
+<tr><td>27</td><td>0</td><td><span class=zero-hits>local n</span></td></tr>
+<tr><td>28</td><td>0</td><td><span class=zero-hits>if jecs.IS_PAIR(component) then</span></td></tr>
+<tr><td>29</td><td>0</td><td><span class=zero-hits>n = `({name(world, jecs.pair_first(world, component))}, {name(world, jecs.pair_second(world, component))})`</span></td></tr>
+<tr><td>30</td><td>0</td><td><span class=zero-hits>else</span></td></tr>
+<tr><td>31</td><td>0</td><td><span class=zero-hits>n = name(world, component)</span></td></tr>
+<tr><td>32</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>33</td><td>0</td><td><span class=zero-hits>local data = column[row] or "TAG"</span></td></tr>
+<tr><td>34</td><td>0</td><td><span class=zero-hits>print(`| {n} | {data} |`)</span></td></tr>
+<tr><td>35</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>36</td><td>0</td><td><span class=zero-hits>print("-----------------------------------------------------")</span></td></tr>
+<tr><td>37</td><td>0</td><td><span class=zero-hits>return true</span></td></tr>
+<tr><td>38</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>39</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>40</td><td>1</td><td><span class=high-hits>return {</span></td></tr>
+<tr><td>41</td><td>1</td><td><span class=high-hits>components = components,</span></td></tr>
+<tr><td>42</td><td>1</td><td><span class=high-hits>prettify = pe,</span></td></tr>
+<tr><td>43</td><td>0</td><td><span class=zero-hits>}</span></td></tr>
+</tbody></table></body></html>

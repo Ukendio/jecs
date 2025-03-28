@@ -1,0 +1,2040 @@
+<html><head>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<style>
+body { font-family: monospace; font-size: 16px; }
+.zero-hits { background-color: #fcc; font-weight: bold; color: red; }
+.nonzero-hits { color: green; font-weight: bold; }
+.low-hits { background-color: #ffe6b3; }
+.high-hits { background-color: #cfc; }
+th, td { padding: 0px; font-size: 12px; }
+table.table { font-size: 14px; border-collapse: collapse; }
+table.table th, table.table td { padding: 1px; font-size: 12px; line-height: 1.2; }
+table.table tr { height: auto; }
+</style></head><body>
+<h1 class="text-center">tests.luau Coverage</h1>
+<h2>Total Execution Hits: 72</h2>
+<h2>Function Coverage Overview: 79.10%</h2>
+<button class="btn btn-primary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#funcTable">Toggle Function Coverage</button>
+<div class="collapse show" id="funcTable">
+<h2>Function Coverage:</h2><table class="table table-bordered"><thead><tr><th>Function</th><th>Hits</th></tr></thead><tbody>
+<tr><td style="padding: 1px; min-width: 22ch;"><main></td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">white_underline:30</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">white:34</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">green:38</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">red:42</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">yellow:46</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">red_highlight:50</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">green_highlight:54</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">gray:58</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">pe:63</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">pp:68</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">debug_world_inspect:73</td><td style="padding: 1px; color: green; font-weight: bold;">7</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">record:74</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">tbl:77</td><td style="padding: 1px; color: green; font-weight: bold;">6</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">archetype:80</td><td style="padding: 1px; color: green; font-weight: bold;">4</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">records:83</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">columns:86</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">row:89</td><td style="padding: 1px; color: green; font-weight: bold;">3</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">tuple:94</td><td style="padding: 1px; color: green; font-weight: bold;">2</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">name:116</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:120</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:136</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:174</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:184</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:189</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">getTargets:192</td><td style="padding: 1px; color: green; font-weight: bold;">2</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">setAttacksAndEats:212</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:240</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:256</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:312</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:386</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:435</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:446</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:453</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:475</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:514</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:572</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:596</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:896</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1020</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1048</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1085</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1184</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1213</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1231</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1242</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1250</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1325</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1330</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1370</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1391</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1512</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1541</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1639</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1651</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1656</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1667</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1681</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1697</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1711</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1770</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">updateCooldowns:1777</td><td style="padding: 1px; color: green; font-weight: bold;">2</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1820</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1889</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1897</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1919</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1939</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+</tbody></table></div>
+<h2>Source Code:</h2><table class="table table-bordered"><thead><tr><th>Line</th><th>Hits</th><th>Code</th></tr></thead><tbody>
+<tr><td>1</td><td>1</td><td><span class=low-hits>local jecs = require("@jecs")</span></td></tr>
+<tr><td>2</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>3</td><td>1</td><td><span class=low-hits>local testkit = require("@testkit")</span></td></tr>
+<tr><td>4</td><td>1</td><td><span class=low-hits>local BENCH, START = testkit.benchmark()</span></td></tr>
+<tr><td>5</td><td>1</td><td><span class=low-hits>local __ = jecs.Wildcard</span></td></tr>
+<tr><td>6</td><td>1</td><td><span class=low-hits>local ECS_ID, ECS_GENERATION = jecs.ECS_ID, jecs.ECS_GENERATION</span></td></tr>
+<tr><td>7</td><td>1</td><td><span class=low-hits>local ECS_GENERATION_INC = jecs.ECS_GENERATION_INC</span></td></tr>
+<tr><td>8</td><td>1</td><td><span class=low-hits>local IS_PAIR = jecs.IS_PAIR</span></td></tr>
+<tr><td>9</td><td>1</td><td><span class=low-hits>local pair = jecs.pair</span></td></tr>
+<tr><td>10</td><td>1</td><td><span class=low-hits>local ecs_pair_first = jecs.pair_first</span></td></tr>
+<tr><td>11</td><td>1</td><td><span class=low-hits>local ecs_pair_second = jecs.pair_second</span></td></tr>
+<tr><td>12</td><td>1</td><td><span class=low-hits>local entity_index_try_get_any = jecs.entity_index_try_get_any</span></td></tr>
+<tr><td>13</td><td>1</td><td><span class=low-hits>local entity_index_get_alive = jecs.entity_index_get_alive</span></td></tr>
+<tr><td>14</td><td>1</td><td><span class=low-hits>local entity_index_is_alive = jecs.entity_index_is_alive</span></td></tr>
+<tr><td>15</td><td>1</td><td><span class=low-hits>local ChildOf = jecs.ChildOf</span></td></tr>
+<tr><td>16</td><td>1</td><td><span class=low-hits>local world_new = jecs.World.new</span></td></tr>
+<tr><td>17</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>18</td><td>1</td><td><span class=low-hits>local it = testkit.test()</span></td></tr>
+<tr><td>19</td><td>1</td><td><span class=low-hits>local TEST, CASE = it.TEST, it.CASE</span></td></tr>
+<tr><td>20</td><td>1</td><td><span class=low-hits>local CHECK, FINISH = it.CHECK, it.FINISH</span></td></tr>
+<tr><td>21</td><td>1</td><td><span class=low-hits>local SKIP, FOCUS = it.SKIP, it.FOCUS</span></td></tr>
+<tr><td>22</td><td>1</td><td><span class=low-hits>local CHECK_EXPECT_ERR = it.CHECK_EXPECT_ERR</span></td></tr>
+<tr><td>23</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>24</td><td>1</td><td><span class=low-hits>local N = 2 ^ 8</span></td></tr>
+<tr><td>25</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>26</td><td>0</td><td><span class=zero-hits>type World = jecs.World</span></td></tr>
+<tr><td>27</td><td>0</td><td><span class=zero-hits>type Entity<T=nil> = jecs.Entity<T></span></td></tr>
+<tr><td>28</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>29</td><td>1</td><td><span class=low-hits>local c = {</span></td></tr>
+<tr><td>30</td><td>1</td><td><span class=low-hits>white_underline = function(s: any)</span></td></tr>
+<tr><td>31</td><td>0</td><td><span class=zero-hits>return `\27[1;4m{s}\27[0m`</span></td></tr>
+<tr><td>32</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
+<tr><td>33</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>34</td><td>1</td><td><span class=low-hits>white = function(s: any)</span></td></tr>
+<tr><td>35</td><td>0</td><td><span class=zero-hits>return `\27[37;1m{s}\27[0m`</span></td></tr>
+<tr><td>36</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
+<tr><td>37</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>38</td><td>1</td><td><span class=low-hits>green = function(s: any)</span></td></tr>
+<tr><td>39</td><td>0</td><td><span class=zero-hits>return `\27[32;1m{s}\27[0m`</span></td></tr>
+<tr><td>40</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
+<tr><td>41</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>42</td><td>1</td><td><span class=low-hits>red = function(s: any)</span></td></tr>
+<tr><td>43</td><td>0</td><td><span class=zero-hits>return `\27[31;1m{s}\27[0m`</span></td></tr>
+<tr><td>44</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
+<tr><td>45</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>46</td><td>1</td><td><span class=low-hits>yellow = function(s: any)</span></td></tr>
+<tr><td>47</td><td>0</td><td><span class=zero-hits>return `\27[33;1m{s}\27[0m`</span></td></tr>
+<tr><td>48</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
+<tr><td>49</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>50</td><td>1</td><td><span class=low-hits>red_highlight = function(s: any)</span></td></tr>
+<tr><td>51</td><td>0</td><td><span class=zero-hits>return `\27[41;1;30m{s}\27[0m`</span></td></tr>
+<tr><td>52</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
+<tr><td>53</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>54</td><td>1</td><td><span class=low-hits>green_highlight = function(s: any)</span></td></tr>
+<tr><td>55</td><td>0</td><td><span class=zero-hits>return `\27[42;1;30m{s}\27[0m`</span></td></tr>
+<tr><td>56</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
+<tr><td>57</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>58</td><td>1</td><td><span class=low-hits>gray = function(s: any)</span></td></tr>
+<tr><td>59</td><td>0</td><td><span class=zero-hits>return `\27[30;1m{s}\27[0m`</span></td></tr>
+<tr><td>60</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
+<tr><td>61</td><td>0</td><td><span class=zero-hits>}</span></td></tr>
+<tr><td>62</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>63</td><td>1</td><td><span class=low-hits>local function pe(e)</span></td></tr>
+<tr><td>64</td><td>0</td><td><span class=zero-hits>local gen = ECS_GENERATION(e)</span></td></tr>
+<tr><td>65</td><td>0</td><td><span class=zero-hits>return c.green(`e{ECS_ID(e)}`)..c.yellow(`v{gen}`)</span></td></tr>
+<tr><td>66</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>67</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>68</td><td>1</td><td><span class=low-hits>local function pp(e)</span></td></tr>
+<tr><td>69</td><td>0</td><td><span class=zero-hits>local gen = ECS_GENERATION(e)</span></td></tr>
+<tr><td>70</td><td>0</td><td><span class=zero-hits>return c.green(`e{ECS_ID(e)}`)..c.yellow(`v{jecs.ECS_ENTITY_T_HI(e)}`)</span></td></tr>
+<tr><td>71</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>72</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>73</td><td>1</td><td><span class=low-hits>local function debug_world_inspect(world: World)</span></td></tr>
+<tr><td>74</td><td>7</td><td><span class=high-hits>local function record(e): jecs.Record</span></td></tr>
+<tr><td>75</td><td>2</td><td><span class=low-hits>return entity_index_try_get_any(world.entity_index, e) :: any</span></td></tr>
+<tr><td>76</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>77</td><td>7</td><td><span class=high-hits>local function tbl(e)</span></td></tr>
+<tr><td>78</td><td>1</td><td><span class=low-hits>return record(e).archetype</span></td></tr>
+<tr><td>79</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>80</td><td>7</td><td><span class=high-hits>local function archetype(e)</span></td></tr>
+<tr><td>81</td><td>4</td><td><span class=high-hits>return tbl(e).type</span></td></tr>
+<tr><td>82</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>83</td><td>7</td><td><span class=high-hits>local function records(e)</span></td></tr>
+<tr><td>84</td><td>1</td><td><span class=low-hits>return tbl(e).records</span></td></tr>
+<tr><td>85</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>86</td><td>7</td><td><span class=high-hits>local function columns(e)</span></td></tr>
+<tr><td>87</td><td>1</td><td><span class=low-hits>return tbl(e).columns</span></td></tr>
+<tr><td>88</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>89</td><td>7</td><td><span class=high-hits>local function row(e)</span></td></tr>
+<tr><td>90</td><td>2</td><td><span class=low-hits>return record(e).row</span></td></tr>
+<tr><td>91</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>92</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>93</td><td><span class='text-muted'>N/A</span></td><td>-- Important to order them in the order of their columns</td>></tr>
+<tr><td>94</td><td>7</td><td><span class=high-hits>local function tuple(e, ...)</span></td></tr>
+<tr><td>95</td><td>1</td><td><span class=low-hits>for i, column in columns(e) do</span></td></tr>
+<tr><td>96</td><td>2</td><td><span class=low-hits>if select(i, ...) ~= column[row(e)] then</span></td></tr>
+<tr><td>97</td><td>0</td><td><span class=zero-hits>return false</span></td></tr>
+<tr><td>98</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>99</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>100</td><td>1</td><td><span class=low-hits>return true</span></td></tr>
+<tr><td>101</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>102</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>103</td><td>7</td><td><span class=high-hits>return {</span></td></tr>
+<tr><td>104</td><td>7</td><td><span class=high-hits>record = record,</span></td></tr>
+<tr><td>105</td><td>7</td><td><span class=high-hits>tbl = tbl,</span></td></tr>
+<tr><td>106</td><td>7</td><td><span class=high-hits>archetype = archetype,</span></td></tr>
+<tr><td>107</td><td>7</td><td><span class=high-hits>records = records,</span></td></tr>
+<tr><td>108</td><td>7</td><td><span class=high-hits>row = row,</span></td></tr>
+<tr><td>109</td><td>7</td><td><span class=high-hits>tuple = tuple,</span></td></tr>
+<tr><td>110</td><td>7</td><td><span class=high-hits>columns = columns</span></td></tr>
+<tr><td>111</td><td>0</td><td><span class=zero-hits>}</span></td></tr>
+<tr><td>112</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>113</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>114</td><td>1</td><td><span class=low-hits>local dwi = debug_world_inspect</span></td></tr>
+<tr><td>115</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>116</td><td>1</td><td><span class=low-hits>local function name(world, e)</span></td></tr>
+<tr><td>117</td><td>0</td><td><span class=zero-hits>return world:get(e, jecs.Name)</span></td></tr>
+<tr><td>118</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>119</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>120</td><td>1</td><td><span class=low-hits>TEST("#adding a recycled target", function()</span></td></tr>
+<tr><td>121</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>122</td><td>1</td><td><span class=low-hits>local R = world:component()</span></td></tr>
+<tr><td>123</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>124</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>125</td><td>1</td><td><span class=low-hits>local T = world:entity()</span></td></tr>
+<tr><td>126</td><td>1</td><td><span class=low-hits>world:add(e, pair(R, T))</span></td></tr>
+<tr><td>127</td><td>1</td><td><span class=low-hits>world:delete(T)</span></td></tr>
+<tr><td>128</td><td>1</td><td><span class=low-hits>CHECK(not world:has(e, pair(R, T)))</span></td></tr>
+<tr><td>129</td><td>1</td><td><span class=low-hits>local T2 = world:entity()</span></td></tr>
+<tr><td>130</td><td>1</td><td><span class=low-hits>world:add(e, pair(R, T2))</span></td></tr>
+<tr><td>131</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, R) ~= T)</span></td></tr>
+<tr><td>132</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, R) ~= 0)</span></td></tr>
+<tr><td>133</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>134</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>135</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>136</td><td>1</td><td><span class=low-hits>TEST("#repro2", function()</span></td></tr>
+<tr><td>137</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>138</td><td>1</td><td><span class=low-hits>local Lifetime = world:component() :: jecs.Id<number></span></td></tr>
+<tr><td>139</td><td>1</td><td><span class=low-hits>local Particle = world:entity()</span></td></tr>
+<tr><td>140</td><td>1</td><td><span class=low-hits>local Beam = world:entity()</span></td></tr>
+<tr><td>141</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>142</td><td>1</td><td><span class=low-hits>local entity = world:entity()</span></td></tr>
+<tr><td>143</td><td>1</td><td><span class=low-hits>world:set(entity, pair(Lifetime, Particle), 1)</span></td></tr>
+<tr><td>144</td><td>1</td><td><span class=low-hits>world:set(entity, pair(Lifetime, Beam), 2)</span></td></tr>
+<tr><td>145</td><td>1</td><td><span class=low-hits>world:set(entity, pair(4, 5), 6) -- noise</span></td></tr>
+<tr><td>146</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>147</td><td>1</td><td><span class=low-hits>local entity_visualizer = require("@tools/entity_visualiser")</span></td></tr>
+<tr><td>148</td><td><span class='text-muted'>N/A</span></td><td>-- entity_visualizer.components(world, entity)</td>></tr>
+<tr><td>149</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>150</td><td>1</td><td><span class=low-hits>for e in world:each(pair(Lifetime, __)) do</span></td></tr>
+<tr><td>151</td><td>2</td><td><span class=low-hits>local i = 0</span></td></tr>
+<tr><td>152</td><td>2</td><td><span class=low-hits>local nth = world:target(e, Lifetime, i)</span></td></tr>
+<tr><td>153</td><td>2</td><td><span class=low-hits>while nth do</span></td></tr>
+<tr><td>154</td><td><span class='text-muted'>N/A</span></td><td>-- entity_visualizer.components(world, e)</td>></tr>
+<tr><td>155</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>156</td><td>2</td><td><span class=low-hits>local data = world:get(e, pair(Lifetime, nth))</span></td></tr>
+<tr><td>157</td><td>2</td><td><span class=low-hits>data -= 1</span></td></tr>
+<tr><td>158</td><td>2</td><td><span class=low-hits>if data <= 0 then</span></td></tr>
+<tr><td>159</td><td>1</td><td><span class=low-hits>world:remove(e, pair(Lifetime, nth))</span></td></tr>
+<tr><td>160</td><td>0</td><td><span class=zero-hits>else</span></td></tr>
+<tr><td>161</td><td>1</td><td><span class=low-hits>world:set(e, pair(Lifetime, nth), data)</span></td></tr>
+<tr><td>162</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>163</td><td>2</td><td><span class=low-hits>i += 1</span></td></tr>
+<tr><td>164</td><td>2</td><td><span class=low-hits>nth = world:target(e, Lifetime, i)</span></td></tr>
+<tr><td>165</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>166</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>167</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>168</td><td>1</td><td><span class=low-hits>CHECK(not world:has(entity, pair(Lifetime, Particle)))</span></td></tr>
+<tr><td>169</td><td>1</td><td><span class=low-hits>CHECK(world:get(entity, pair(Lifetime, Beam)) == 1)</span></td></tr>
+<tr><td>170</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>171</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>172</td><td>1</td><td><span class=low-hits>local lifetime_tracker_add = require("@tools/lifetime_tracker")</span></td></tr>
+<tr><td>173</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>174</td><td>1</td><td><span class=low-hits>TEST("another", function()</span></td></tr>
+<tr><td>175</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>176</td><td><span class='text-muted'>N/A</span></td><td>-- world = lifetime_tracker_add(world, {padding_enabled=false})</td>></tr>
+<tr><td>177</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>178</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>179</td><td>1</td><td><span class=low-hits>local e3 = world:entity()</span></td></tr>
+<tr><td>180</td><td>1</td><td><span class=low-hits>world:delete(e2)</span></td></tr>
+<tr><td>181</td><td>1</td><td><span class=low-hits>local e2_e3 = pair(e2, e3)</span></td></tr>
+<tr><td>182</td><td>1</td><td><span class=low-hits>CHECK(jecs.pair_first(world, e2_e3) == 0)</span></td></tr>
+<tr><td>183</td><td>1</td><td><span class=low-hits>CHECK(jecs.pair_second(world, e2_e3) == e3)</span></td></tr>
+<tr><td>184</td><td>1</td><td><span class=low-hits>CHECK_EXPECT_ERR(function()</span></td></tr>
+<tr><td>185</td><td>1</td><td><span class=low-hits>world:add(e1, pair(e2, e3))</span></td></tr>
+<tr><td>186</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>187</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>188</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>189</td><td>1</td><td><span class=low-hits>TEST("#repro", function()</span></td></tr>
+<tr><td>190</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>191</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>192</td><td>1</td><td><span class=low-hits>local function getTargets(relation)</span></td></tr>
+<tr><td>193</td><td>2</td><td><span class=low-hits>local tgts = {}</span></td></tr>
+<tr><td>194</td><td>2</td><td><span class=low-hits>local pairwildcard = pair(relation, jecs.Wildcard)</span></td></tr>
+<tr><td>195</td><td>2</td><td><span class=low-hits>for _, archetype in world:query(pairwildcard):archetypes() do</span></td></tr>
+<tr><td>196</td><td>2</td><td><span class=low-hits>local tr = archetype.records[pairwildcard]</span></td></tr>
+<tr><td>197</td><td>2</td><td><span class=low-hits>local count = archetype.counts[pairwildcard]</span></td></tr>
+<tr><td>198</td><td>2</td><td><span class=low-hits>local types = archetype.types</span></td></tr>
+<tr><td>199</td><td>2</td><td><span class=low-hits>for _, entity in archetype.entities do</span></td></tr>
+<tr><td>200</td><td>2</td><td><span class=low-hits>for i = 0, count - 1 do</span></td></tr>
+<tr><td>201</td><td>2</td><td><span class=low-hits>local tgt = jecs.pair_second(world, types[i + tr])</span></td></tr>
+<tr><td>202</td><td>2</td><td><span class=low-hits>table.insert(tgts, tgt)</span></td></tr>
+<tr><td>203</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>204</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>205</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>206</td><td>2</td><td><span class=low-hits>return tgts</span></td></tr>
+<tr><td>207</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>208</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>209</td><td>1</td><td><span class=low-hits>local Attacks = world:component()</span></td></tr>
+<tr><td>210</td><td>1</td><td><span class=low-hits>local Eats = world:component()</span></td></tr>
+<tr><td>211</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>212</td><td>1</td><td><span class=low-hits>local function setAttacksAndEats(entity1, entity2)</span></td></tr>
+<tr><td>213</td><td>0</td><td><span class=zero-hits>world:add(entity1, pair(Attacks, entity2))</span></td></tr>
+<tr><td>214</td><td>0</td><td><span class=zero-hits>world:add(entity1, pair(Eats, entity2))</span></td></tr>
+<tr><td>215</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>216</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>217</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>218</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>219</td><td>1</td><td><span class=low-hits>local e3 = world:entity()</span></td></tr>
+<tr><td>220</td><td>1</td><td><span class=low-hits>setAttacksAndEats(e3, e1)</span></td></tr>
+<tr><td>221</td><td>1</td><td><span class=low-hits>setAttacksAndEats(e3, e2)</span></td></tr>
+<tr><td>222</td><td>1</td><td><span class=low-hits>setAttacksAndEats(e1, e2)</span></td></tr>
+<tr><td>223</td><td>1</td><td><span class=low-hits>local d = dwi(world)</span></td></tr>
+<tr><td>224</td><td>1</td><td><span class=low-hits>world:delete(e2)</span></td></tr>
+<tr><td>225</td><td>1</td><td><span class=low-hits>local types1 = { pair(Attacks, e1), pair(Eats, e1) }</span></td></tr>
+<tr><td>226</td><td>1</td><td><span class=low-hits>table.sort(types1)</span></td></tr>
+<tr><td>227</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>228</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>229</td><td>1</td><td><span class=low-hits>CHECK(d.tbl(e1).type == "")</span></td></tr>
+<tr><td>230</td><td>1</td><td><span class=low-hits>CHECK(d.tbl(e3).type == table.concat(types1, "_"))</span></td></tr>
+<tr><td>231</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>232</td><td>1</td><td><span class=low-hits>for _, entity in getTargets(Attacks) do</span></td></tr>
+<tr><td>233</td><td>1</td><td><span class=low-hits>CHECK(entity == e1)</span></td></tr>
+<tr><td>234</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>235</td><td>1</td><td><span class=low-hits>for _, entity in getTargets(Eats) do</span></td></tr>
+<tr><td>236</td><td>1</td><td><span class=low-hits>CHECK(entity == e1)</span></td></tr>
+<tr><td>237</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>238</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>239</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>240</td><td>1</td><td><span class=low-hits>TEST("archetype", function()</span></td></tr>
+<tr><td>241</td><td>1</td><td><span class=low-hits>local archetype_traverse_add = jecs.archetype_traverse_add</span></td></tr>
+<tr><td>242</td><td>1</td><td><span class=low-hits>local archetype_traverse_remove = jecs.archetype_traverse_remove</span></td></tr>
+<tr><td>243</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>244</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>245</td><td>1</td><td><span class=low-hits>local root = world.ROOT_ARCHETYPE</span></td></tr>
+<tr><td>246</td><td>1</td><td><span class=low-hits>local c1 = world:component()</span></td></tr>
+<tr><td>247</td><td>1</td><td><span class=low-hits>local c2 = world:component()</span></td></tr>
+<tr><td>248</td><td>1</td><td><span class=low-hits>local c3 = world:component()</span></td></tr>
+<tr><td>249</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>250</td><td>1</td><td><span class=low-hits>local a1 = archetype_traverse_add(world, c1, nil :: any)</span></td></tr>
+<tr><td>251</td><td>1</td><td><span class=low-hits>local a2 = archetype_traverse_remove(world, c1, a1)</span></td></tr>
+<tr><td>252</td><td>1</td><td><span class=low-hits>CHECK(root.add[c1].to == a1)</span></td></tr>
+<tr><td>253</td><td>1</td><td><span class=low-hits>CHECK(root == a2)</span></td></tr>
+<tr><td>254</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>255</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>256</td><td>1</td><td><span class=low-hits>TEST("world:cleanup()", function()</span></td></tr>
+<tr><td>257</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>258</td><td>1</td><td><span class=low-hits>local A = world:component() :: jecs.Id<boolean></span></td></tr>
+<tr><td>259</td><td>1</td><td><span class=low-hits>local B = world:component() :: jecs.Id<boolean></span></td></tr>
+<tr><td>260</td><td>1</td><td><span class=low-hits>local C = world:component() :: jecs.Id<boolean></span></td></tr>
+<tr><td>261</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>262</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>263</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>264</td><td>1</td><td><span class=low-hits>local e3 = world:entity()</span></td></tr>
+<tr><td>265</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>266</td><td>1</td><td><span class=low-hits>world:set(e1, A, true)</span></td></tr>
+<tr><td>267</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>268</td><td>1</td><td><span class=low-hits>world:set(e2, A, true)</span></td></tr>
+<tr><td>269</td><td>1</td><td><span class=low-hits>world:set(e2, B, true)</span></td></tr>
+<tr><td>270</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>271</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>272</td><td>1</td><td><span class=low-hits>world:set(e3, A, true)</span></td></tr>
+<tr><td>273</td><td>1</td><td><span class=low-hits>world:set(e3, B, true)</span></td></tr>
+<tr><td>274</td><td>1</td><td><span class=low-hits>world:set(e3, C, true)</span></td></tr>
+<tr><td>275</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>276</td><td>1</td><td><span class=low-hits>local archetype_index = world.archetype_index</span></td></tr>
+<tr><td>277</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>278</td><td>1</td><td><span class=low-hits>CHECK(#archetype_index["1"].entities == 1)</span></td></tr>
+<tr><td>279</td><td>1</td><td><span class=low-hits>CHECK(#archetype_index["1_2"].entities == 1)</span></td></tr>
+<tr><td>280</td><td>1</td><td><span class=low-hits>CHECK(#archetype_index["1_2_3"].entities == 1)</span></td></tr>
+<tr><td>281</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>282</td><td>1</td><td><span class=low-hits>world:delete(e1)</span></td></tr>
+<tr><td>283</td><td>1</td><td><span class=low-hits>world:delete(e2)</span></td></tr>
+<tr><td>284</td><td>1</td><td><span class=low-hits>world:delete(e3)</span></td></tr>
+<tr><td>285</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>286</td><td>1</td><td><span class=low-hits>world:cleanup()</span></td></tr>
+<tr><td>287</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>288</td><td>1</td><td><span class=low-hits>archetype_index = world.archetype_index</span></td></tr>
+<tr><td>289</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>290</td><td>1</td><td><span class=low-hits>CHECK((archetype_index["1"] :: jecs.Archetype?) == nil)</span></td></tr>
+<tr><td>291</td><td>1</td><td><span class=low-hits>CHECK((archetype_index["1_2"] :: jecs.Archetype?) == nil)</span></td></tr>
+<tr><td>292</td><td>1</td><td><span class=low-hits>CHECK((archetype_index["1_2_3"] :: jecs.Archetype?) == nil)</span></td></tr>
+<tr><td>293</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>294</td><td>1</td><td><span class=low-hits>local e4 = world:entity()</span></td></tr>
+<tr><td>295</td><td>1</td><td><span class=low-hits>world:set(e4, A, true)</span></td></tr>
+<tr><td>296</td><td>1</td><td><span class=low-hits>CHECK(#archetype_index["1"].entities == 1)</span></td></tr>
+<tr><td>297</td><td>1</td><td><span class=low-hits>CHECK((archetype_index["1_2"] :: jecs.Archetype?) == nil)</span></td></tr>
+<tr><td>298</td><td>1</td><td><span class=low-hits>CHECK((archetype_index["1_2_3"] :: jecs.Archetype?) == nil)</span></td></tr>
+<tr><td>299</td><td>1</td><td><span class=low-hits>world:set(e4, B, true)</span></td></tr>
+<tr><td>300</td><td>1</td><td><span class=low-hits>CHECK(#archetype_index["1"].entities == 0)</span></td></tr>
+<tr><td>301</td><td>1</td><td><span class=low-hits>CHECK(#archetype_index["1_2"].entities == 1)</span></td></tr>
+<tr><td>302</td><td>1</td><td><span class=low-hits>CHECK((archetype_index["1_2_3"] :: jecs.Archetype?) == nil)</span></td></tr>
+<tr><td>303</td><td>1</td><td><span class=low-hits>world:set(e4, C, true)</span></td></tr>
+<tr><td>304</td><td>1</td><td><span class=low-hits>CHECK(#archetype_index["1"].entities == 0)</span></td></tr>
+<tr><td>305</td><td>1</td><td><span class=low-hits>CHECK(#archetype_index["1_2"].entities == 0)</span></td></tr>
+<tr><td>306</td><td>1</td><td><span class=low-hits>CHECK(#archetype_index["1_2_3"].entities == 1)</span></td></tr>
+<tr><td>307</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>308</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>309</td><td>1</td><td><span class=low-hits>local pe = require("@tools/entity_visualiser").prettify</span></td></tr>
+<tr><td>310</td><td>1</td><td><span class=low-hits>local lifetime_tracker_add = require("@tools/lifetime_tracker")</span></td></tr>
+<tr><td>311</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>312</td><td>1</td><td><span class=low-hits>TEST("world:entity()", function()</span></td></tr>
+<tr><td>313</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>314</td><td>1</td><td><span class=low-hits>CASE("unique IDs")</span></td></tr>
+<tr><td>315</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>316</td><td>1</td><td><span class=low-hits>local set = {}</span></td></tr>
+<tr><td>317</td><td>1</td><td><span class=low-hits>for i = 1, N do</span></td></tr>
+<tr><td>318</td><td>256</td><td><span class=high-hits>local e = world:entity()</span></td></tr>
+<tr><td>319</td><td>256</td><td><span class=high-hits>CHECK(not set[e])</span></td></tr>
+<tr><td>320</td><td>256</td><td><span class=high-hits>set[e] = true</span></td></tr>
+<tr><td>321</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>322</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>323</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>324</td><td>1</td><td><span class=low-hits>CASE("generations")</span></td></tr>
+<tr><td>325</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>326</td><td>1</td><td><span class=low-hits>local e = world:entity() :: number</span></td></tr>
+<tr><td>327</td><td>1</td><td><span class=low-hits>CHECK(ECS_ID(e) == 1 + jecs.Rest :: number)</span></td></tr>
+<tr><td>328</td><td>1</td><td><span class=low-hits>CHECK(ECS_GENERATION(e) == 0) -- 0</span></td></tr>
+<tr><td>329</td><td>1</td><td><span class=low-hits>e = ECS_GENERATION_INC(e)</span></td></tr>
+<tr><td>330</td><td>1</td><td><span class=low-hits>CHECK(ECS_GENERATION(e) == 1) -- 1</span></td></tr>
+<tr><td>331</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>332</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>333</td><td>1</td><td><span class=low-hits>do CASE "pairs"</span></td></tr>
+<tr><td>334</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>335</td><td>1</td><td><span class=low-hits>local _e = world:entity()</span></td></tr>
+<tr><td>336</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>337</td><td>1</td><td><span class=low-hits>local e3 = world:entity()</span></td></tr>
+<tr><td>338</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>339</td><td><span class='text-muted'>N/A</span></td><td>-- Incomplete pair, must have a bit flag that notes it is a pair</td>></tr>
+<tr><td>340</td><td>1</td><td><span class=low-hits>CHECK(IS_PAIR(world:entity()) == false)</span></td></tr>
+<tr><td>341</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>342</td><td>1</td><td><span class=low-hits>local p = pair(e2, e3)</span></td></tr>
+<tr><td>343</td><td>1</td><td><span class=low-hits>CHECK(IS_PAIR(p) == true)</span></td></tr>
+<tr><td>344</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>345</td><td>1</td><td><span class=low-hits>CHECK(ecs_pair_first(world, p) == e2 :: number)</span></td></tr>
+<tr><td>346</td><td>1</td><td><span class=low-hits>CHECK(ecs_pair_second(world, p) == e3 :: number)</span></td></tr>
+<tr><td>347</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>348</td><td>1</td><td><span class=low-hits>world:delete(e2)</span></td></tr>
+<tr><td>349</td><td>1</td><td><span class=low-hits>local e2v2 = world:entity()</span></td></tr>
+<tr><td>350</td><td>1</td><td><span class=low-hits>CHECK(IS_PAIR(e2v2) == false)</span></td></tr>
+<tr><td>351</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>352</td><td>1</td><td><span class=low-hits>CHECK(IS_PAIR(pair(e2v2, e3)) == true)</span></td></tr>
+<tr><td>353</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>354</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>355</td><td>1</td><td><span class=low-hits>do CASE "Recycling"</span></td></tr>
+<tr><td>356</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>357</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>358</td><td>1</td><td><span class=low-hits>world:delete(e)</span></td></tr>
+<tr><td>359</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>360</td><td>1</td><td><span class=low-hits>world:delete(e1)</span></td></tr>
+<tr><td>361</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>362</td><td>1</td><td><span class=low-hits>CHECK(ECS_ID(e2) == e :: number)</span></td></tr>
+<tr><td>363</td><td>1</td><td><span class=low-hits>CHECK(ECS_GENERATION(e2) == 2)</span></td></tr>
+<tr><td>364</td><td>1</td><td><span class=low-hits>CHECK(world:contains(e2))</span></td></tr>
+<tr><td>365</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(e1))</span></td></tr>
+<tr><td>366</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(e))</span></td></tr>
+<tr><td>367</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>368</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>369</td><td>1</td><td><span class=low-hits>do CASE "Recycling max generation"</span></td></tr>
+<tr><td>370</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>371</td><td>1</td><td><span class=low-hits>local pin = (jecs.Rest :: any) :: number + 1</span></td></tr>
+<tr><td>372</td><td>1</td><td><span class=low-hits>for i = 1, 2^16-1 do</span></td></tr>
+<tr><td>373</td><td>65535</td><td><span class=high-hits>local e = world:entity()</span></td></tr>
+<tr><td>374</td><td>65535</td><td><span class=high-hits>world:delete(e)</span></td></tr>
+<tr><td>375</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>376</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>377</td><td>1</td><td><span class=low-hits>CHECK(ECS_ID(e) == pin)</span></td></tr>
+<tr><td>378</td><td>1</td><td><span class=low-hits>CHECK(ECS_GENERATION(e) == 2^16-1)</span></td></tr>
+<tr><td>379</td><td>1</td><td><span class=low-hits>world:delete(e)</span></td></tr>
+<tr><td>380</td><td>1</td><td><span class=low-hits>e = world:entity()</span></td></tr>
+<tr><td>381</td><td>1</td><td><span class=low-hits>CHECK(ECS_ID(e) == pin)</span></td></tr>
+<tr><td>382</td><td>1</td><td><span class=low-hits>CHECK(ECS_GENERATION(e) == 0)</span></td></tr>
+<tr><td>383</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>384</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>385</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>386</td><td>1</td><td><span class=low-hits>TEST("world:set()", function()</span></td></tr>
+<tr><td>387</td><td>1</td><td><span class=low-hits>do CASE "archetype move"</span></td></tr>
+<tr><td>388</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>389</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>390</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>391</td><td>1</td><td><span class=low-hits>local d = debug_world_inspect(world)</span></td></tr>
+<tr><td>392</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>393</td><td>1</td><td><span class=low-hits>local _1 = world:component()</span></td></tr>
+<tr><td>394</td><td>1</td><td><span class=low-hits>local _2 = world:component()</span></td></tr>
+<tr><td>395</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>396</td><td><span class='text-muted'>N/A</span></td><td>-- An entity starts without an archetype or row</td>></tr>
+<tr><td>397</td><td><span class='text-muted'>N/A</span></td><td>-- should therefore not need to copy over data</td>></tr>
+<tr><td>398</td><td>1</td><td><span class=low-hits>CHECK(d.tbl(e) == nil)</span></td></tr>
+<tr><td>399</td><td>1</td><td><span class=low-hits>CHECK(d.row(e) == nil)</span></td></tr>
+<tr><td>400</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>401</td><td>1</td><td><span class=low-hits>local archetypes = #world.archetypes</span></td></tr>
+<tr><td>402</td><td><span class='text-muted'>N/A</span></td><td>-- This should create a new archetype since it is the first</td>></tr>
+<tr><td>403</td><td><span class='text-muted'>N/A</span></td><td>-- entity to have moved there</td>></tr>
+<tr><td>404</td><td>1</td><td><span class=low-hits>world:set(e, _1, 1)</span></td></tr>
+<tr><td>405</td><td>1</td><td><span class=low-hits>local oldRow = d.row(e)</span></td></tr>
+<tr><td>406</td><td>1</td><td><span class=low-hits>local oldArchetype = d.archetype(e)</span></td></tr>
+<tr><td>407</td><td>1</td><td><span class=low-hits>CHECK(#world.archetypes == archetypes + 1)</span></td></tr>
+<tr><td>408</td><td>1</td><td><span class=low-hits>CHECK(oldArchetype == "1")</span></td></tr>
+<tr><td>409</td><td>1</td><td><span class=low-hits>CHECK(d.tbl(e))</span></td></tr>
+<tr><td>410</td><td>1</td><td><span class=low-hits>CHECK(oldRow == 1)</span></td></tr>
+<tr><td>411</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>412</td><td>1</td><td><span class=low-hits>world:set(e, _2, 2)</span></td></tr>
+<tr><td>413</td><td>1</td><td><span class=low-hits>CHECK(d.archetype(e) == "1_2")</span></td></tr>
+<tr><td>414</td><td><span class='text-muted'>N/A</span></td><td>-- Should have tuple of fields to the next archetype and set the component data</td>></tr>
+<tr><td>415</td><td>1</td><td><span class=low-hits>CHECK(d.tuple(e, 1, 2))</span></td></tr>
+<tr><td>416</td><td><span class='text-muted'>N/A</span></td><td>-- Should have moved the data from the old archetype</td>></tr>
+<tr><td>417</td><td>1</td><td><span class=low-hits>CHECK(world.archetype_index[oldArchetype].columns[_1][oldRow] == nil)</span></td></tr>
+<tr><td>418</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>419</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>420</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>421</td><td>1</td><td><span class=low-hits>do CASE "pairs"</span></td></tr>
+<tr><td>422</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>423</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>424</td><td>1</td><td><span class=low-hits>local C1 = world:component()</span></td></tr>
+<tr><td>425</td><td>1</td><td><span class=low-hits>local C2 = world:component()</span></td></tr>
+<tr><td>426</td><td>1</td><td><span class=low-hits>local T1 = world:entity()</span></td></tr>
+<tr><td>427</td><td>1</td><td><span class=low-hits>local T2 = world:entity()</span></td></tr>
+<tr><td>428</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>429</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>430</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>431</td><td>1</td><td><span class=low-hits>world:set(e, pair(C1, C2), true)</span></td></tr>
+<tr><td>432</td><td>1</td><td><span class=low-hits>world:set(e, pair(C1, T1), true)</span></td></tr>
+<tr><td>433</td><td>1</td><td><span class=low-hits>world:set(e, pair(T1, C1), true)</span></td></tr>
+<tr><td>434</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>435</td><td>1</td><td><span class=low-hits>CHECK_EXPECT_ERR(function()</span></td></tr>
+<tr><td>436</td><td>1</td><td><span class=low-hits>world:set(e, pair(T1, T2), true :: any)</span></td></tr>
+<tr><td>437</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>438</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>439</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, pair(C1, C2)))</span></td></tr>
+<tr><td>440</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, pair(C1, T1)))</span></td></tr>
+<tr><td>441</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, pair(T1, C1)))</span></td></tr>
+<tr><td>442</td><td>1</td><td><span class=low-hits>CHECK(not world:get(e, pair(T1, T2)))</span></td></tr>
+<tr><td>443</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>444</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>445</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>446</td><td>1</td><td><span class=low-hits>CHECK_EXPECT_ERR(function()</span></td></tr>
+<tr><td>447</td><td>1</td><td><span class=low-hits>world:set(e2, pair(jecs.ChildOf, e), true :: any)</span></td></tr>
+<tr><td>448</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>449</td><td>1</td><td><span class=low-hits>CHECK(not world:get(e2, pair(jecs.ChildOf, e)))</span></td></tr>
+<tr><td>450</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>451</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>452</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>453</td><td>1</td><td><span class=low-hits>TEST("world:remove()", function()</span></td></tr>
+<tr><td>454</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>455</td><td>1</td><td><span class=low-hits>CASE("should allow remove a component that doesn't exist on entity")</span></td></tr>
+<tr><td>456</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>457</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>458</td><td>1</td><td><span class=low-hits>local Health = world:component()</span></td></tr>
+<tr><td>459</td><td>1</td><td><span class=low-hits>local Poison = world:component()</span></td></tr>
+<tr><td>460</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>461</td><td>1</td><td><span class=low-hits>local id = world:entity()</span></td></tr>
+<tr><td>462</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>463</td><td>1</td><td><span class=low-hits>world:remove(id, Poison)</span></td></tr>
+<tr><td>464</td><td>1</td><td><span class=low-hits>CHECK(true) -- Didn't error</span></td></tr>
+<tr><td>465</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>466</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>467</td><td>1</td><td><span class=low-hits>world:set(id, Health, 50)</span></td></tr>
+<tr><td>468</td><td>1</td><td><span class=low-hits>world:remove(id, Poison)</span></td></tr>
+<tr><td>469</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>470</td><td>1</td><td><span class=low-hits>CHECK(world:get(id, Poison) == nil)</span></td></tr>
+<tr><td>471</td><td>1</td><td><span class=low-hits>CHECK(world:get(id, Health) == 50)</span></td></tr>
+<tr><td>472</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>473</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>474</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>475</td><td>1</td><td><span class=low-hits>TEST("world:add()", function()</span></td></tr>
+<tr><td>476</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>477</td><td>1</td><td><span class=low-hits>CASE("idempotent")</span></td></tr>
+<tr><td>478</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>479</td><td>1</td><td><span class=low-hits>local d = debug_world_inspect(world)</span></td></tr>
+<tr><td>480</td><td>1</td><td><span class=low-hits>local _1, _2 = world:component(), world:component()</span></td></tr>
+<tr><td>481</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>482</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>483</td><td>1</td><td><span class=low-hits>world:add(e, _1)</span></td></tr>
+<tr><td>484</td><td>1</td><td><span class=low-hits>world:add(e, _2)</span></td></tr>
+<tr><td>485</td><td>1</td><td><span class=low-hits>world:add(e, _2) -- should have 0 effects</span></td></tr>
+<tr><td>486</td><td>1</td><td><span class=low-hits>CHECK(d.archetype(e) == "1_2")</span></td></tr>
+<tr><td>487</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>488</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>489</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>490</td><td>1</td><td><span class=low-hits>CASE("archetype move")</span></td></tr>
+<tr><td>491</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>492</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>493</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>494</td><td>1</td><td><span class=low-hits>local d = debug_world_inspect(world)</span></td></tr>
+<tr><td>495</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>496</td><td>1</td><td><span class=low-hits>local _1 = world:component()</span></td></tr>
+<tr><td>497</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>498</td><td><span class='text-muted'>N/A</span></td><td>-- An entity starts without an archetype or row</td>></tr>
+<tr><td>499</td><td><span class='text-muted'>N/A</span></td><td>-- should therefore not need to copy over data</td>></tr>
+<tr><td>500</td><td>1</td><td><span class=low-hits>CHECK(d.tbl(e) == nil)</span></td></tr>
+<tr><td>501</td><td>1</td><td><span class=low-hits>CHECK(d.row(e) == nil)</span></td></tr>
+<tr><td>502</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>503</td><td>1</td><td><span class=low-hits>local archetypes = #world.archetypes</span></td></tr>
+<tr><td>504</td><td><span class='text-muted'>N/A</span></td><td>-- This should create a new archetype</td>></tr>
+<tr><td>505</td><td>1</td><td><span class=low-hits>world:add(e, _1)</span></td></tr>
+<tr><td>506</td><td>1</td><td><span class=low-hits>CHECK(#world.archetypes == archetypes + 1)</span></td></tr>
+<tr><td>507</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>508</td><td>1</td><td><span class=low-hits>CHECK(d.archetype(e) == "1")</span></td></tr>
+<tr><td>509</td><td>1</td><td><span class=low-hits>CHECK(d.tbl(e))</span></td></tr>
+<tr><td>510</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>511</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>512</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>513</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>514</td><td>1</td><td><span class=low-hits>TEST("world:query()", function()</span></td></tr>
+<tr><td>515</td><td>1</td><td><span class=low-hits>do CASE "cached"</span></td></tr>
+<tr><td>516</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>517</td><td>1</td><td><span class=low-hits>local Foo = world:component()</span></td></tr>
+<tr><td>518</td><td>1</td><td><span class=low-hits>local Bar = world:component()</span></td></tr>
+<tr><td>519</td><td>1</td><td><span class=low-hits>local Baz = world:component()</span></td></tr>
+<tr><td>520</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>521</td><td>1</td><td><span class=low-hits>local q = world:query(Foo, Bar):without(Baz):cached()</span></td></tr>
+<tr><td>522</td><td>1</td><td><span class=low-hits>world:set(e, Foo, true)</span></td></tr>
+<tr><td>523</td><td>1</td><td><span class=low-hits>world:set(e, Bar, false)</span></td></tr>
+<tr><td>524</td><td>1</td><td><span class=low-hits>local i = 0</span></td></tr>
+<tr><td>525</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>526</td><td>1</td><td><span class=low-hits>local iter = 0</span></td></tr>
+<tr><td>527</td><td>1</td><td><span class=low-hits>for _, e in q:iter() do</span></td></tr>
+<tr><td>528</td><td>1</td><td><span class=low-hits>iter += 1</span></td></tr>
+<tr><td>529</td><td>1</td><td><span class=low-hits>i=1</span></td></tr>
+<tr><td>530</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>531</td><td>1</td><td><span class=low-hits>CHECK (iter == 1)</span></td></tr>
+<tr><td>532</td><td>1</td><td><span class=low-hits>CHECK(i == 1)</span></td></tr>
+<tr><td>533</td><td>1</td><td><span class=low-hits>for _, e in q:iter() do</span></td></tr>
+<tr><td>534</td><td>1</td><td><span class=low-hits>i=2</span></td></tr>
+<tr><td>535</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>536</td><td>1</td><td><span class=low-hits>CHECK(i == 2)</span></td></tr>
+<tr><td>537</td><td>1</td><td><span class=low-hits>for _, e in q :: any do</span></td></tr>
+<tr><td>538</td><td>1</td><td><span class=low-hits>i=3</span></td></tr>
+<tr><td>539</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>540</td><td>1</td><td><span class=low-hits>CHECK(i == 3)</span></td></tr>
+<tr><td>541</td><td>1</td><td><span class=low-hits>for _, e in q :: any do</span></td></tr>
+<tr><td>542</td><td>1</td><td><span class=low-hits>i=4</span></td></tr>
+<tr><td>543</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>544</td><td>1</td><td><span class=low-hits>CHECK(i == 4)</span></td></tr>
+<tr><td>545</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>546</td><td>1</td><td><span class=low-hits>CHECK(#q:archetypes() == 1)</span></td></tr>
+<tr><td>547</td><td>1</td><td><span class=low-hits>CHECK(not table.find(q:archetypes(), world.archetype_index[table.concat({Foo, Bar, Baz}, "_")]))</span></td></tr>
+<tr><td>548</td><td>1</td><td><span class=low-hits>world:delete(Foo)</span></td></tr>
+<tr><td>549</td><td>1</td><td><span class=low-hits>CHECK(#q:archetypes() == 0)</span></td></tr>
+<tr><td>550</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>551</td><td>1</td><td><span class=low-hits>do CASE "multiple iter"</span></td></tr>
+<tr><td>552</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>553</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>554</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>555</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>556</td><td>1</td><td><span class=low-hits>world:add(e, A)</span></td></tr>
+<tr><td>557</td><td>1</td><td><span class=low-hits>world:add(e, B)</span></td></tr>
+<tr><td>558</td><td>1</td><td><span class=low-hits>local q = world:query(A, B)</span></td></tr>
+<tr><td>559</td><td>1</td><td><span class=low-hits>local counter = 0</span></td></tr>
+<tr><td>560</td><td>1</td><td><span class=low-hits>for x in q:iter() do</span></td></tr>
+<tr><td>561</td><td>1</td><td><span class=low-hits>counter += 1</span></td></tr>
+<tr><td>562</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>563</td><td>1</td><td><span class=low-hits>for x in q:iter() do</span></td></tr>
+<tr><td>564</td><td>1</td><td><span class=low-hits>counter += 1</span></td></tr>
+<tr><td>565</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>566</td><td>1</td><td><span class=low-hits>CHECK(counter == 2)</span></td></tr>
+<tr><td>567</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>568</td><td>1</td><td><span class=low-hits>do CASE "tag"</span></td></tr>
+<tr><td>569</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>570</td><td>1</td><td><span class=low-hits>local A = world:entity()</span></td></tr>
+<tr><td>571</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>572</td><td>1</td><td><span class=low-hits>CHECK_EXPECT_ERR(function()</span></td></tr>
+<tr><td>573</td><td>1</td><td><span class=low-hits>world:set(e, A, "test" :: any)</span></td></tr>
+<tr><td>574</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>575</td><td>1</td><td><span class=low-hits>local count = 0</span></td></tr>
+<tr><td>576</td><td>1</td><td><span class=low-hits>for id, a in world:query(A) :: any do</span></td></tr>
+<tr><td>577</td><td>1</td><td><span class=low-hits>count += 1</span></td></tr>
+<tr><td>578</td><td>1</td><td><span class=low-hits>CHECK(a == nil)</span></td></tr>
+<tr><td>579</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>580</td><td>1</td><td><span class=low-hits>CHECK(count == 1)</span></td></tr>
+<tr><td>581</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>582</td><td>1</td><td><span class=low-hits>do CASE "pairs"</span></td></tr>
+<tr><td>583</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>584</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>585</td><td>1</td><td><span class=low-hits>local C1 = world:component() :: jecs.Id<boolean></span></td></tr>
+<tr><td>586</td><td>1</td><td><span class=low-hits>local C2 = world:component() :: jecs.Id<boolean></span></td></tr>
+<tr><td>587</td><td>1</td><td><span class=low-hits>local T1 = world:entity()</span></td></tr>
+<tr><td>588</td><td>1</td><td><span class=low-hits>local T2 = world:entity()</span></td></tr>
+<tr><td>589</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>590</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>591</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>592</td><td>1</td><td><span class=low-hits>local C1_C2 = pair(C1, C2)</span></td></tr>
+<tr><td>593</td><td>1</td><td><span class=low-hits>world:set(e, C1_C2, true)</span></td></tr>
+<tr><td>594</td><td>1</td><td><span class=low-hits>world:set(e, pair(C1, T1), true)</span></td></tr>
+<tr><td>595</td><td>1</td><td><span class=low-hits>world:set(e, pair(T1, C1), true)</span></td></tr>
+<tr><td>596</td><td>1</td><td><span class=low-hits>CHECK_EXPECT_ERR(function()</span></td></tr>
+<tr><td>597</td><td>1</td><td><span class=low-hits>world:set(e, pair(T1, T2), true :: any)</span></td></tr>
+<tr><td>598</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>599</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>600</td><td>1</td><td><span class=low-hits>for id, a, b, c, d in world:query(pair(C1, C2), pair(C1, T1), pair(T1, C1), pair(T1, T2)):iter() do</span></td></tr>
+<tr><td>601</td><td>1</td><td><span class=low-hits>CHECK(a == true)</span></td></tr>
+<tr><td>602</td><td>1</td><td><span class=low-hits>CHECK(b == true)</span></td></tr>
+<tr><td>603</td><td>1</td><td><span class=low-hits>CHECK(c == true)</span></td></tr>
+<tr><td>604</td><td>1</td><td><span class=low-hits>CHECK(d == nil)</span></td></tr>
+<tr><td>605</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>606</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>607</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>608</td><td>1</td><td><span class=low-hits>CASE("query single component")</span></td></tr>
+<tr><td>609</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>610</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>611</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>612</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>613</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>614</td><td>1</td><td><span class=low-hits>local entities = {}</span></td></tr>
+<tr><td>615</td><td>1</td><td><span class=low-hits>for i = 1, N do</span></td></tr>
+<tr><td>616</td><td>256</td><td><span class=high-hits>local id = world:entity()</span></td></tr>
+<tr><td>617</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>618</td><td>256</td><td><span class=high-hits>world:set(id, A, true)</span></td></tr>
+<tr><td>619</td><td>256</td><td><span class=high-hits>if i > 5 then</span></td></tr>
+<tr><td>620</td><td>251</td><td><span class=high-hits>world:set(id, B, true)</span></td></tr>
+<tr><td>621</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>622</td><td>256</td><td><span class=high-hits>entities[i] = id</span></td></tr>
+<tr><td>623</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>624</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>625</td><td>1</td><td><span class=low-hits>for id in world:query(A) :: any do</span></td></tr>
+<tr><td>626</td><td>256</td><td><span class=high-hits>table.remove(entities, CHECK(table.find(entities, id)))</span></td></tr>
+<tr><td>627</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>628</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>629</td><td>1</td><td><span class=low-hits>CHECK(#entities == 0)</span></td></tr>
+<tr><td>630</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>631</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>632</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>633</td><td>1</td><td><span class=low-hits>local world = jecs.World.new() :: World</span></td></tr>
+<tr><td>634</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>635</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>636</td><td>1</td><td><span class=low-hits>local eA = world:entity()</span></td></tr>
+<tr><td>637</td><td>1</td><td><span class=low-hits>world:set(eA, A, true)</span></td></tr>
+<tr><td>638</td><td>1</td><td><span class=low-hits>local eB = world:entity()</span></td></tr>
+<tr><td>639</td><td>1</td><td><span class=low-hits>world:set(eB, B, true)</span></td></tr>
+<tr><td>640</td><td>1</td><td><span class=low-hits>local eAB = world:entity()</span></td></tr>
+<tr><td>641</td><td>1</td><td><span class=low-hits>world:set(eAB, A, true)</span></td></tr>
+<tr><td>642</td><td>1</td><td><span class=low-hits>world:set(eAB, B, true)</span></td></tr>
+<tr><td>643</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>644</td><td><span class='text-muted'>N/A</span></td><td>-- Should drain the iterator</td>></tr>
+<tr><td>645</td><td>1</td><td><span class=low-hits>local q = world:query(A)</span></td></tr>
+<tr><td>646</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>647</td><td>1</td><td><span class=low-hits>local i = 0</span></td></tr>
+<tr><td>648</td><td>1</td><td><span class=low-hits>local j = 0</span></td></tr>
+<tr><td>649</td><td>1</td><td><span class=low-hits>for _ in q :: any do</span></td></tr>
+<tr><td>650</td><td>2</td><td><span class=low-hits>i += 1</span></td></tr>
+<tr><td>651</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>652</td><td>1</td><td><span class=low-hits>for _ in q :: any do</span></td></tr>
+<tr><td>653</td><td>0</td><td><span class=zero-hits>j += 1</span></td></tr>
+<tr><td>654</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>655</td><td>1</td><td><span class=low-hits>CHECK(i == 2)</span></td></tr>
+<tr><td>656</td><td>1</td><td><span class=low-hits>CHECK(j == 0)</span></td></tr>
+<tr><td>657</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>658</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>659</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>660</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>661</td><td>1</td><td><span class=low-hits>CASE("query missing component")</span></td></tr>
+<tr><td>662</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>663</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>664</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>665</td><td>1</td><td><span class=low-hits>local C = world:component()</span></td></tr>
+<tr><td>666</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>667</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>668</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>669</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>670</td><td>1</td><td><span class=low-hits>world:set(e1, A, "abc")</span></td></tr>
+<tr><td>671</td><td>1</td><td><span class=low-hits>world:set(e2, A, "def")</span></td></tr>
+<tr><td>672</td><td>1</td><td><span class=low-hits>world:set(e1, B, 123)</span></td></tr>
+<tr><td>673</td><td>1</td><td><span class=low-hits>world:set(e2, B, 457)</span></td></tr>
+<tr><td>674</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>675</td><td>1</td><td><span class=low-hits>local counter = 0</span></td></tr>
+<tr><td>676</td><td>1</td><td><span class=low-hits>for _ in world:query(B, C) :: any do</span></td></tr>
+<tr><td>677</td><td>0</td><td><span class=zero-hits>counter += 1</span></td></tr>
+<tr><td>678</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>679</td><td>1</td><td><span class=low-hits>CHECK(counter == 0)</span></td></tr>
+<tr><td>680</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>681</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>682</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>683</td><td>1</td><td><span class=low-hits>CASE("query more than 8 components")</span></td></tr>
+<tr><td>684</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>685</td><td>1</td><td><span class=low-hits>local components = {}</span></td></tr>
+<tr><td>686</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>687</td><td>1</td><td><span class=low-hits>for i = 1, 9 do</span></td></tr>
+<tr><td>688</td><td>9</td><td><span class=high-hits>local id = world:component()</span></td></tr>
+<tr><td>689</td><td>9</td><td><span class=high-hits>components[i] = id</span></td></tr>
+<tr><td>690</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>691</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>692</td><td>1</td><td><span class=low-hits>for i, id in components do</span></td></tr>
+<tr><td>693</td><td>9</td><td><span class=high-hits>world:set(e, id, 13 ^ i)</span></td></tr>
+<tr><td>694</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>695</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>696</td><td>1</td><td><span class=low-hits>for entity, a, b, c, d, e, f, g, h, i in world:query(unpack(components)) :: any do</span></td></tr>
+<tr><td>697</td><td>1</td><td><span class=low-hits>CHECK(a == 13 ^ 1)</span></td></tr>
+<tr><td>698</td><td>1</td><td><span class=low-hits>CHECK(b == 13 ^ 2)</span></td></tr>
+<tr><td>699</td><td>1</td><td><span class=low-hits>CHECK(c == 13 ^ 3)</span></td></tr>
+<tr><td>700</td><td>1</td><td><span class=low-hits>CHECK(d == 13 ^ 4)</span></td></tr>
+<tr><td>701</td><td>1</td><td><span class=low-hits>CHECK(e == 13 ^ 5)</span></td></tr>
+<tr><td>702</td><td>1</td><td><span class=low-hits>CHECK(f == 13 ^ 6)</span></td></tr>
+<tr><td>703</td><td>1</td><td><span class=low-hits>CHECK(g == 13 ^ 7)</span></td></tr>
+<tr><td>704</td><td>1</td><td><span class=low-hits>CHECK(h == 13 ^ 8)</span></td></tr>
+<tr><td>705</td><td>1</td><td><span class=low-hits>CHECK(i == 13 ^ 9)</span></td></tr>
+<tr><td>706</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>707</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>708</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>709</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>710</td><td>1</td><td><span class=low-hits>CASE("should be able to get next results")</span></td></tr>
+<tr><td>711</td><td>1</td><td><span class=low-hits>local world = jecs.World.new() :: World</span></td></tr>
+<tr><td>712</td><td>1</td><td><span class=low-hits>world:component()</span></td></tr>
+<tr><td>713</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>714</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>715</td><td>1</td><td><span class=low-hits>local eA = world:entity()</span></td></tr>
+<tr><td>716</td><td>1</td><td><span class=low-hits>world:set(eA, A, true)</span></td></tr>
+<tr><td>717</td><td>1</td><td><span class=low-hits>local eB = world:entity()</span></td></tr>
+<tr><td>718</td><td>1</td><td><span class=low-hits>world:set(eB, B, true)</span></td></tr>
+<tr><td>719</td><td>1</td><td><span class=low-hits>local eAB = world:entity()</span></td></tr>
+<tr><td>720</td><td>1</td><td><span class=low-hits>world:set(eAB, A, true)</span></td></tr>
+<tr><td>721</td><td>1</td><td><span class=low-hits>world:set(eAB, B, true)</span></td></tr>
+<tr><td>722</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>723</td><td>1</td><td><span class=low-hits>local it = world:query(A):iter()</span></td></tr>
+<tr><td>724</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>725</td><td>1</td><td><span class=low-hits>local e: number, data = it()</span></td></tr>
+<tr><td>726</td><td>1</td><td><span class=low-hits>while e do</span></td></tr>
+<tr><td>727</td><td>2</td><td><span class=low-hits>if e == eA :: number then</span></td></tr>
+<tr><td>728</td><td>1</td><td><span class=low-hits>CHECK(data)</span></td></tr>
+<tr><td>729</td><td>1</td><td><span class=low-hits>elseif e == eAB :: number then</span></td></tr>
+<tr><td>730</td><td>1</td><td><span class=low-hits>CHECK(data)</span></td></tr>
+<tr><td>731</td><td>0</td><td><span class=zero-hits>else</span></td></tr>
+<tr><td>732</td><td>0</td><td><span class=zero-hits>CHECK(false)</span></td></tr>
+<tr><td>733</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>734</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>735</td><td>2</td><td><span class=low-hits>e, data = it()</span></td></tr>
+<tr><td>736</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>737</td><td>1</td><td><span class=low-hits>CHECK(true)</span></td></tr>
+<tr><td>738</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>739</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>740</td><td>1</td><td><span class=low-hits>do CASE "should query all matching entities when irrelevant component is removed"</span></td></tr>
+<tr><td>741</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>742</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>743</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>744</td><td>1</td><td><span class=low-hits>local C = world:component()</span></td></tr>
+<tr><td>745</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>746</td><td>1</td><td><span class=low-hits>local entities = {}</span></td></tr>
+<tr><td>747</td><td>1</td><td><span class=low-hits>for i = 1, N do</span></td></tr>
+<tr><td>748</td><td>256</td><td><span class=high-hits>local id = world:entity()</span></td></tr>
+<tr><td>749</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>750</td><td><span class='text-muted'>N/A</span></td><td>-- specifically put them in disorder to track regression</td>></tr>
+<tr><td>751</td><td><span class='text-muted'>N/A</span></td><td>-- https://github.com/Ukendio/jecs/pull/15</td>></tr>
+<tr><td>752</td><td>256</td><td><span class=high-hits>world:set(id, B, true)</span></td></tr>
+<tr><td>753</td><td>256</td><td><span class=high-hits>world:set(id, A, true)</span></td></tr>
+<tr><td>754</td><td>256</td><td><span class=high-hits>if i > 5 then</span></td></tr>
+<tr><td>755</td><td>251</td><td><span class=high-hits>world:remove(id, B)</span></td></tr>
+<tr><td>756</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>757</td><td>256</td><td><span class=high-hits>entities[i] = id</span></td></tr>
+<tr><td>758</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>759</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>760</td><td>1</td><td><span class=low-hits>local added = 0</span></td></tr>
+<tr><td>761</td><td>1</td><td><span class=low-hits>for id in world:query(A) :: any do</span></td></tr>
+<tr><td>762</td><td>256</td><td><span class=high-hits>added += 1</span></td></tr>
+<tr><td>763</td><td>256</td><td><span class=high-hits>table.remove(entities, CHECK(table.find(entities, id)))</span></td></tr>
+<tr><td>764</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>765</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>766</td><td>1</td><td><span class=low-hits>CHECK(added == N)</span></td></tr>
+<tr><td>767</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>768</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>769</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>770</td><td>1</td><td><span class=low-hits>CASE("should query all entities without B")</span></td></tr>
+<tr><td>771</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>772</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>773</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>774</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>775</td><td>1</td><td><span class=low-hits>local entities = {}</span></td></tr>
+<tr><td>776</td><td>1</td><td><span class=low-hits>for i = 1, N do</span></td></tr>
+<tr><td>777</td><td>256</td><td><span class=high-hits>local id = world:entity()</span></td></tr>
+<tr><td>778</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>779</td><td>256</td><td><span class=high-hits>world:set(id, A, true)</span></td></tr>
+<tr><td>780</td><td>256</td><td><span class=high-hits>if i < 5 then</span></td></tr>
+<tr><td>781</td><td>4</td><td><span class=high-hits>entities[i] = id</span></td></tr>
+<tr><td>782</td><td>0</td><td><span class=zero-hits>else</span></td></tr>
+<tr><td>783</td><td>252</td><td><span class=high-hits>world:set(id, B, true)</span></td></tr>
+<tr><td>784</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>785</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>786</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>787</td><td>1</td><td><span class=low-hits>for id in world:query(A):without(B) :: any do</span></td></tr>
+<tr><td>788</td><td>4</td><td><span class=high-hits>table.remove(entities, CHECK(table.find(entities, id)))</span></td></tr>
+<tr><td>789</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>790</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>791</td><td>1</td><td><span class=low-hits>CHECK(#entities == 0)</span></td></tr>
+<tr><td>792</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>793</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>794</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>795</td><td>1</td><td><span class=low-hits>CASE("should allow querying for relations")</span></td></tr>
+<tr><td>796</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>797</td><td>1</td><td><span class=low-hits>local Eats = world:component()</span></td></tr>
+<tr><td>798</td><td>1</td><td><span class=low-hits>local Apples = world:component()</span></td></tr>
+<tr><td>799</td><td>1</td><td><span class=low-hits>local bob = world:entity()</span></td></tr>
+<tr><td>800</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>801</td><td>1</td><td><span class=low-hits>world:set(bob, pair(Eats, Apples), true)</span></td></tr>
+<tr><td>802</td><td>1</td><td><span class=low-hits>for e, bool in world:query(pair(Eats, Apples)) :: any do</span></td></tr>
+<tr><td>803</td><td>1</td><td><span class=low-hits>CHECK(e == bob)</span></td></tr>
+<tr><td>804</td><td>1</td><td><span class=low-hits>CHECK(bool)</span></td></tr>
+<tr><td>805</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>806</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>807</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>808</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>809</td><td>1</td><td><span class=low-hits>CASE("should allow wildcards in queries")</span></td></tr>
+<tr><td>810</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>811</td><td>1</td><td><span class=low-hits>local Eats = world:component()</span></td></tr>
+<tr><td>812</td><td>1</td><td><span class=low-hits>local Apples = world:entity()</span></td></tr>
+<tr><td>813</td><td>1</td><td><span class=low-hits>local bob = world:entity()</span></td></tr>
+<tr><td>814</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>815</td><td>1</td><td><span class=low-hits>world:set(bob, pair(Eats, Apples), "bob eats apples")</span></td></tr>
+<tr><td>816</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>817</td><td>1</td><td><span class=low-hits>local w = jecs.Wildcard</span></td></tr>
+<tr><td>818</td><td>1</td><td><span class=low-hits>for e, data in world:query(pair(Eats, w)) :: any do</span></td></tr>
+<tr><td>819</td><td>1</td><td><span class=low-hits>CHECK(e == bob)</span></td></tr>
+<tr><td>820</td><td>1</td><td><span class=low-hits>CHECK(data == "bob eats apples")</span></td></tr>
+<tr><td>821</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>822</td><td>1</td><td><span class=low-hits>for e, data in world:query(pair(w, Apples)) :: any do</span></td></tr>
+<tr><td>823</td><td>1</td><td><span class=low-hits>CHECK(e == bob)</span></td></tr>
+<tr><td>824</td><td>1</td><td><span class=low-hits>CHECK(data == "bob eats apples")</span></td></tr>
+<tr><td>825</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>826</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>827</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>828</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>829</td><td>1</td><td><span class=low-hits>CASE("should match against multiple pairs")</span></td></tr>
+<tr><td>830</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>831</td><td>1</td><td><span class=low-hits>local Eats = world:component()</span></td></tr>
+<tr><td>832</td><td>1</td><td><span class=low-hits>local Apples = world:entity()</span></td></tr>
+<tr><td>833</td><td>1</td><td><span class=low-hits>local Oranges = world:entity()</span></td></tr>
+<tr><td>834</td><td>1</td><td><span class=low-hits>local bob = world:entity()</span></td></tr>
+<tr><td>835</td><td>1</td><td><span class=low-hits>local alice = world:entity()</span></td></tr>
+<tr><td>836</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>837</td><td>1</td><td><span class=low-hits>world:set(bob, pair(Eats, Apples), "bob eats apples")</span></td></tr>
+<tr><td>838</td><td>1</td><td><span class=low-hits>world:set(alice, pair(Eats, Oranges), "alice eats oranges")</span></td></tr>
+<tr><td>839</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>840</td><td>1</td><td><span class=low-hits>local w = jecs.Wildcard</span></td></tr>
+<tr><td>841</td><td>1</td><td><span class=low-hits>local count = 0</span></td></tr>
+<tr><td>842</td><td>1</td><td><span class=low-hits>for e, data in world:query(pair(Eats, w)) :: any do</span></td></tr>
+<tr><td>843</td><td>2</td><td><span class=low-hits>count += 1</span></td></tr>
+<tr><td>844</td><td>2</td><td><span class=low-hits>if e == bob then</span></td></tr>
+<tr><td>845</td><td>1</td><td><span class=low-hits>CHECK(data == "bob eats apples")</span></td></tr>
+<tr><td>846</td><td>0</td><td><span class=zero-hits>else</span></td></tr>
+<tr><td>847</td><td>1</td><td><span class=low-hits>CHECK(data == "alice eats oranges")</span></td></tr>
+<tr><td>848</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>849</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>850</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>851</td><td>1</td><td><span class=low-hits>CHECK(count == 2)</span></td></tr>
+<tr><td>852</td><td>1</td><td><span class=low-hits>count = 0</span></td></tr>
+<tr><td>853</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>854</td><td>1</td><td><span class=low-hits>for e, data in world:query(pair(w, Apples)) :: any do</span></td></tr>
+<tr><td>855</td><td>1</td><td><span class=low-hits>count += 1</span></td></tr>
+<tr><td>856</td><td>1</td><td><span class=low-hits>CHECK(data == "bob eats apples")</span></td></tr>
+<tr><td>857</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>858</td><td>1</td><td><span class=low-hits>CHECK(count == 1)</span></td></tr>
+<tr><td>859</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>860</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>861</td><td>1</td><td><span class=low-hits>do CASE "should only relate alive entities"</span></td></tr>
+<tr><td>862</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>863</td><td>1</td><td><span class=low-hits>local Eats = world:entity()</span></td></tr>
+<tr><td>864</td><td>1</td><td><span class=low-hits>local Apples = world:component()</span></td></tr>
+<tr><td>865</td><td>1</td><td><span class=low-hits>local Oranges = world:component()</span></td></tr>
+<tr><td>866</td><td>1</td><td><span class=low-hits>local bob = world:entity()</span></td></tr>
+<tr><td>867</td><td>1</td><td><span class=low-hits>local alice = world:entity()</span></td></tr>
+<tr><td>868</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>869</td><td>1</td><td><span class=low-hits>world:set(bob, Apples, "apples")</span></td></tr>
+<tr><td>870</td><td>1</td><td><span class=low-hits>world:set(bob, pair(Eats, Apples), "bob eats apples")</span></td></tr>
+<tr><td>871</td><td>1</td><td><span class=low-hits>world:set(alice, pair(Eats, Oranges) :: Entity<string>, "alice eats oranges")</span></td></tr>
+<tr><td>872</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>873</td><td>1</td><td><span class=low-hits>world:delete(Apples)</span></td></tr>
+<tr><td>874</td><td>1</td><td><span class=low-hits>local Wildcard = jecs.Wildcard</span></td></tr>
+<tr><td>875</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>876</td><td>1</td><td><span class=low-hits>local count = 0</span></td></tr>
+<tr><td>877</td><td>1</td><td><span class=low-hits>for _, data in world:query(pair(Wildcard, Apples)) :: any do</span></td></tr>
+<tr><td>878</td><td>0</td><td><span class=zero-hits>count += 1</span></td></tr>
+<tr><td>879</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>880</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>881</td><td>1</td><td><span class=low-hits>world:delete(pair(Eats, Apples))</span></td></tr>
+<tr><td>882</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>883</td><td>1</td><td><span class=low-hits>CHECK(count == 0)</span></td></tr>
+<tr><td>884</td><td>1</td><td><span class=low-hits>CHECK(world:get(bob, pair(Eats, Apples)) == nil)</span></td></tr>
+<tr><td>885</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>886</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>887</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>888</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>889</td><td>1</td><td><span class=low-hits>CASE("should error when setting invalid pair")</span></td></tr>
+<tr><td>890</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>891</td><td>1</td><td><span class=low-hits>local Eats = world:component()</span></td></tr>
+<tr><td>892</td><td>1</td><td><span class=low-hits>local Apples = world:component()</span></td></tr>
+<tr><td>893</td><td>1</td><td><span class=low-hits>local bob = world:entity()</span></td></tr>
+<tr><td>894</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>895</td><td>1</td><td><span class=low-hits>world:delete(Apples)</span></td></tr>
+<tr><td>896</td><td>1</td><td><span class=low-hits>CHECK_EXPECT_ERR(function()</span></td></tr>
+<tr><td>897</td><td>1</td><td><span class=low-hits>world:set(bob, pair(Eats, Apples), "bob eats apples")</span></td></tr>
+<tr><td>898</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>899</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>900</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>901</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>902</td><td>1</td><td><span class=low-hits>CASE("should find target for ChildOf")</span></td></tr>
+<tr><td>903</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>904</td><td>1</td><td><span class=low-hits>local ChildOf = jecs.ChildOf</span></td></tr>
+<tr><td>905</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>906</td><td>1</td><td><span class=low-hits>local Name = world:component()</span></td></tr>
+<tr><td>907</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>908</td><td>1</td><td><span class=low-hits>local bob = world:entity()</span></td></tr>
+<tr><td>909</td><td>1</td><td><span class=low-hits>local alice = world:entity()</span></td></tr>
+<tr><td>910</td><td>1</td><td><span class=low-hits>local sara = world:entity()</span></td></tr>
+<tr><td>911</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>912</td><td>1</td><td><span class=low-hits>world:add(bob, pair(ChildOf, alice))</span></td></tr>
+<tr><td>913</td><td>1</td><td><span class=low-hits>world:set(bob, Name, "bob")</span></td></tr>
+<tr><td>914</td><td>1</td><td><span class=low-hits>world:add(sara, pair(ChildOf, alice))</span></td></tr>
+<tr><td>915</td><td>1</td><td><span class=low-hits>world:set(sara, Name, "sara")</span></td></tr>
+<tr><td>916</td><td>1</td><td><span class=low-hits>CHECK(world:parent(bob) :: number == alice :: number) -- O(1)</span></td></tr>
+<tr><td>917</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>918</td><td>1</td><td><span class=low-hits>local count = 0</span></td></tr>
+<tr><td>919</td><td>1</td><td><span class=low-hits>for _, name in world:query(Name, pair(ChildOf, alice)) :: any do</span></td></tr>
+<tr><td>920</td><td>2</td><td><span class=low-hits>count += 1</span></td></tr>
+<tr><td>921</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>922</td><td>1</td><td><span class=low-hits>CHECK(count == 2)</span></td></tr>
+<tr><td>923</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>924</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>925</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>926</td><td>1</td><td><span class=low-hits>CASE("despawning while iterating")</span></td></tr>
+<tr><td>927</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>928</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>929</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>930</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>931</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>932</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>933</td><td>1</td><td><span class=low-hits>world:add(e1, A)</span></td></tr>
+<tr><td>934</td><td>1</td><td><span class=low-hits>world:add(e2, A)</span></td></tr>
+<tr><td>935</td><td>1</td><td><span class=low-hits>world:add(e2, B)</span></td></tr>
+<tr><td>936</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>937</td><td>1</td><td><span class=low-hits>local count = 0</span></td></tr>
+<tr><td>938</td><td>1</td><td><span class=low-hits>for id in world:query(A) :: any do</span></td></tr>
+<tr><td>939</td><td>2</td><td><span class=low-hits>world:clear(id)</span></td></tr>
+<tr><td>940</td><td>2</td><td><span class=low-hits>count += 1</span></td></tr>
+<tr><td>941</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>942</td><td>1</td><td><span class=low-hits>CHECK(count == 2)</span></td></tr>
+<tr><td>943</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>944</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>945</td><td>1</td><td><span class=low-hits>do CASE("iterator invalidation")</span></td></tr>
+<tr><td>946</td><td>1</td><td><span class=low-hits>do CASE("adding")</span></td></tr>
+<tr><td>947</td><td>1</td><td><span class=low-hits>SKIP()</span></td></tr>
+<tr><td>948</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>949</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>950</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>951</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>952</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>953</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>954</td><td>1</td><td><span class=low-hits>world:add(e1, A)</span></td></tr>
+<tr><td>955</td><td>1</td><td><span class=low-hits>world:add(e2, A)</span></td></tr>
+<tr><td>956</td><td>1</td><td><span class=low-hits>world:add(e2, B)</span></td></tr>
+<tr><td>957</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>958</td><td>1</td><td><span class=low-hits>local count = 0</span></td></tr>
+<tr><td>959</td><td>1</td><td><span class=low-hits>for id in world:query(A) :: any do</span></td></tr>
+<tr><td>960</td><td>3</td><td><span class=high-hits>world:add(id, B)</span></td></tr>
+<tr><td>961</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>962</td><td>3</td><td><span class=high-hits>count += 1</span></td></tr>
+<tr><td>963</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>964</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>965</td><td>1</td><td><span class=low-hits>CHECK(count == 2)</span></td></tr>
+<tr><td>966</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>967</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>968</td><td>1</td><td><span class=low-hits>do CASE("spawning")</span></td></tr>
+<tr><td>969</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>970</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>971</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>972</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>973</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>974</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>975</td><td>1</td><td><span class=low-hits>world:add(e1, A)</span></td></tr>
+<tr><td>976</td><td>1</td><td><span class=low-hits>world:add(e2, A)</span></td></tr>
+<tr><td>977</td><td>1</td><td><span class=low-hits>world:add(e2, B)</span></td></tr>
+<tr><td>978</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>979</td><td>1</td><td><span class=low-hits>for id in world:query(A) :: any do</span></td></tr>
+<tr><td>980</td><td>3</td><td><span class=high-hits>local e = world:entity()</span></td></tr>
+<tr><td>981</td><td>3</td><td><span class=high-hits>world:add(e, A)</span></td></tr>
+<tr><td>982</td><td>3</td><td><span class=high-hits>world:add(e, B)</span></td></tr>
+<tr><td>983</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>984</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>985</td><td>1</td><td><span class=low-hits>CHECK(true)</span></td></tr>
+<tr><td>986</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>987</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>988</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>989</td><td>1</td><td><span class=low-hits>do CASE("should not find any entities")</span></td></tr>
+<tr><td>990</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>991</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>992</td><td>1</td><td><span class=low-hits>local Hello = world:component()</span></td></tr>
+<tr><td>993</td><td>1</td><td><span class=low-hits>local Bob = world:component()</span></td></tr>
+<tr><td>994</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>995</td><td>1</td><td><span class=low-hits>local helloBob = world:entity()</span></td></tr>
+<tr><td>996</td><td>1</td><td><span class=low-hits>world:add(helloBob, pair(Hello, Bob))</span></td></tr>
+<tr><td>997</td><td>1</td><td><span class=low-hits>world:add(helloBob, Bob)</span></td></tr>
+<tr><td>998</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>999</td><td>1</td><td><span class=low-hits>local withoutCount = 0</span></td></tr>
+<tr><td>1000</td><td>1</td><td><span class=low-hits>for _ in world:query(pair(Hello, Bob)):without(Bob) :: any do</span></td></tr>
+<tr><td>1001</td><td>0</td><td><span class=zero-hits>withoutCount += 1</span></td></tr>
+<tr><td>1002</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1003</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1004</td><td>1</td><td><span class=low-hits>CHECK(withoutCount == 0)</span></td></tr>
+<tr><td>1005</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1006</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1007</td><td>1</td><td><span class=low-hits>do CASE("without")</span></td></tr>
+<tr><td>1008</td><td><span class='text-muted'>N/A</span></td><td>-- REGRESSION TEST</td>></tr>
+<tr><td>1009</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>1010</td><td>1</td><td><span class=low-hits>local _1, _2, _3 = world:component(), world:component(), world:component()</span></td></tr>
+<tr><td>1011</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1012</td><td>1</td><td><span class=low-hits>local counter = 0</span></td></tr>
+<tr><td>1013</td><td>1</td><td><span class=low-hits>for e, a, b in world:query(_1, _2):without(_3) :: any do</span></td></tr>
+<tr><td>1014</td><td>0</td><td><span class=zero-hits>counter += 1</span></td></tr>
+<tr><td>1015</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1016</td><td>1</td><td><span class=low-hits>CHECK(counter == 0)</span></td></tr>
+<tr><td>1017</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1018</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1019</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1020</td><td>1</td><td><span class=low-hits>TEST("world:each", function()</span></td></tr>
+<tr><td>1021</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1022</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>1023</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>1024</td><td>1</td><td><span class=low-hits>local C = world:component()</span></td></tr>
+<tr><td>1025</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1026</td><td>1</td><td><span class=low-hits>local e3 = world:entity()</span></td></tr>
+<tr><td>1027</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>1028</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>1029</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1030</td><td>1</td><td><span class=low-hits>world:set(e1, A, true)</span></td></tr>
+<tr><td>1031</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1032</td><td>1</td><td><span class=low-hits>world:set(e2, A, true)</span></td></tr>
+<tr><td>1033</td><td>1</td><td><span class=low-hits>world:set(e2, B, true)</span></td></tr>
+<tr><td>1034</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1035</td><td>1</td><td><span class=low-hits>world:set(e3, A, true)</span></td></tr>
+<tr><td>1036</td><td>1</td><td><span class=low-hits>world:set(e3, B, true)</span></td></tr>
+<tr><td>1037</td><td>1</td><td><span class=low-hits>world:set(e3, C, true)</span></td></tr>
+<tr><td>1038</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1039</td><td>1</td><td><span class=low-hits>for entity: number in world:each(A) do</span></td></tr>
+<tr><td>1040</td><td>3</td><td><span class=high-hits>if entity == e1 :: number or entity == e2 :: number or entity == e3 :: number then</span></td></tr>
+<tr><td>1041</td><td>3</td><td><span class=high-hits>CHECK(true)</span></td></tr>
+<tr><td>1042</td><td>3</td><td><span class=high-hits>continue</span></td></tr>
+<tr><td>1043</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1044</td><td>0</td><td><span class=zero-hits>CHECK(false)</span></td></tr>
+<tr><td>1045</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1046</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1047</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1048</td><td>1</td><td><span class=low-hits>TEST("world:children", function()</span></td></tr>
+<tr><td>1049</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1050</td><td>1</td><td><span class=low-hits>local C = world:component()</span></td></tr>
+<tr><td>1051</td><td>1</td><td><span class=low-hits>local T = world:entity()</span></td></tr>
+<tr><td>1052</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1053</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>1054</td><td>1</td><td><span class=low-hits>world:set(e1, C, true)</span></td></tr>
+<tr><td>1055</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1056</td><td>1</td><td><span class=low-hits>local e2 = world:entity() :: number</span></td></tr>
+<tr><td>1057</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1058</td><td>1</td><td><span class=low-hits>world:add(e2, T)</span></td></tr>
+<tr><td>1059</td><td>1</td><td><span class=low-hits>world:add(e2, pair(ChildOf, e1))</span></td></tr>
+<tr><td>1060</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1061</td><td>1</td><td><span class=low-hits>local e3 = world:entity() :: number</span></td></tr>
+<tr><td>1062</td><td>1</td><td><span class=low-hits>world:add(e3, pair(ChildOf, e1))</span></td></tr>
+<tr><td>1063</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1064</td><td>1</td><td><span class=low-hits>local count = 0</span></td></tr>
+<tr><td>1065</td><td>1</td><td><span class=low-hits>for entity: number in world:children(e1) do</span></td></tr>
+<tr><td>1066</td><td>2</td><td><span class=low-hits>count += 1</span></td></tr>
+<tr><td>1067</td><td>2</td><td><span class=low-hits>if entity == e2 or entity == e3 then</span></td></tr>
+<tr><td>1068</td><td>2</td><td><span class=low-hits>CHECK(true)</span></td></tr>
+<tr><td>1069</td><td>2</td><td><span class=low-hits>continue</span></td></tr>
+<tr><td>1070</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1071</td><td>0</td><td><span class=zero-hits>CHECK(false)</span></td></tr>
+<tr><td>1072</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1073</td><td>1</td><td><span class=low-hits>CHECK(count == 2)</span></td></tr>
+<tr><td>1074</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1075</td><td>1</td><td><span class=low-hits>world:remove(e2, pair(ChildOf, e1))</span></td></tr>
+<tr><td>1076</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1077</td><td>1</td><td><span class=low-hits>count = 0</span></td></tr>
+<tr><td>1078</td><td>1</td><td><span class=low-hits>for entity in world:children(e1) do</span></td></tr>
+<tr><td>1079</td><td>1</td><td><span class=low-hits>count += 1</span></td></tr>
+<tr><td>1080</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1081</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1082</td><td>1</td><td><span class=low-hits>CHECK(count == 1)</span></td></tr>
+<tr><td>1083</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1084</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1085</td><td>1</td><td><span class=low-hits>TEST("world:clear()", function()</span></td></tr>
+<tr><td>1086</td><td>1</td><td><span class=low-hits>do CASE("should remove its components")</span></td></tr>
+<tr><td>1087</td><td>1</td><td><span class=low-hits>local world = jecs.World.new() :: World</span></td></tr>
+<tr><td>1088</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>1089</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>1090</td><td>1</td><td><span class=low-hits>local C = world:component()</span></td></tr>
+<tr><td>1091</td><td>1</td><td><span class=low-hits>local D = world:component()</span></td></tr>
+<tr><td>1092</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1093</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>1094</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>1095</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>1096</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1097</td><td>1</td><td><span class=low-hits>world:set(e, A, true)</span></td></tr>
+<tr><td>1098</td><td>1</td><td><span class=low-hits>world:set(e, B, true)</span></td></tr>
+<tr><td>1099</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1100</td><td>1</td><td><span class=low-hits>world:set(e1, A, true)</span></td></tr>
+<tr><td>1101</td><td>1</td><td><span class=low-hits>world:set(e1, B, true)</span></td></tr>
+<tr><td>1102</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1103</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, A))</span></td></tr>
+<tr><td>1104</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, B))</span></td></tr>
+<tr><td>1105</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1106</td><td>1</td><td><span class=low-hits>world:clear(A)</span></td></tr>
+<tr><td>1107</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, A) == nil)</span></td></tr>
+<tr><td>1108</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, B))</span></td></tr>
+<tr><td>1109</td><td>1</td><td><span class=low-hits>CHECK(world:get(e1, A) == nil)</span></td></tr>
+<tr><td>1110</td><td>1</td><td><span class=low-hits>CHECK(world:get(e1, B))</span></td></tr>
+<tr><td>1111</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1112</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1113</td><td>1</td><td><span class=low-hits>do CASE("remove cleared ID from entities")</span></td></tr>
+<tr><td>1114</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1115</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>1116</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>1117</td><td>1</td><td><span class=low-hits>local C = world:component()</span></td></tr>
+<tr><td>1118</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1119</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1120</td><td>1</td><td><span class=low-hits>local id1 = world:entity()</span></td></tr>
+<tr><td>1121</td><td>1</td><td><span class=low-hits>local id2 = world:entity()</span></td></tr>
+<tr><td>1122</td><td>1</td><td><span class=low-hits>local id3 = world:entity()</span></td></tr>
+<tr><td>1123</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1124</td><td>1</td><td><span class=low-hits>world:set(id1, A, true)</span></td></tr>
+<tr><td>1125</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1126</td><td>1</td><td><span class=low-hits>world:set(id2, A, true)</span></td></tr>
+<tr><td>1127</td><td>1</td><td><span class=low-hits>world:set(id2, B, true)</span></td></tr>
+<tr><td>1128</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1129</td><td>1</td><td><span class=low-hits>world:set(id3, A, true)</span></td></tr>
+<tr><td>1130</td><td>1</td><td><span class=low-hits>world:set(id3, B, true)</span></td></tr>
+<tr><td>1131</td><td>1</td><td><span class=low-hits>world:set(id3, C, true)</span></td></tr>
+<tr><td>1132</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1133</td><td>1</td><td><span class=low-hits>world:clear(A)</span></td></tr>
+<tr><td>1134</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1135</td><td>1</td><td><span class=low-hits>CHECK(not world:has(id1, A))</span></td></tr>
+<tr><td>1136</td><td>1</td><td><span class=low-hits>CHECK(not world:has(id2, A))</span></td></tr>
+<tr><td>1137</td><td>1</td><td><span class=low-hits>CHECK(not world:has(id3, A))</span></td></tr>
+<tr><td>1138</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1139</td><td>1</td><td><span class=low-hits>CHECK(world:has(id2, B))</span></td></tr>
+<tr><td>1140</td><td>1</td><td><span class=low-hits>CHECK(world:has(id3, B, C))</span></td></tr>
+<tr><td>1141</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1142</td><td>1</td><td><span class=low-hits>world:clear(C)</span></td></tr>
+<tr><td>1143</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1144</td><td>1</td><td><span class=low-hits>CHECK(world:has(id2, B))</span></td></tr>
+<tr><td>1145</td><td>1</td><td><span class=low-hits>CHECK(world:has(id3, B))</span></td></tr>
+<tr><td>1146</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1147</td><td>1</td><td><span class=low-hits>CHECK(world:contains(A))</span></td></tr>
+<tr><td>1148</td><td>1</td><td><span class=low-hits>CHECK(world:contains(C))</span></td></tr>
+<tr><td>1149</td><td>1</td><td><span class=low-hits>CHECK(world:has(A, jecs.Component))</span></td></tr>
+<tr><td>1150</td><td>1</td><td><span class=low-hits>CHECK(world:has(B, jecs.Component))</span></td></tr>
+<tr><td>1151</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1152</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1153</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1154</td><td>1</td><td><span class=low-hits>local id1 = world:entity()</span></td></tr>
+<tr><td>1155</td><td>1</td><td><span class=low-hits>local id2 = world:entity()</span></td></tr>
+<tr><td>1156</td><td>1</td><td><span class=low-hits>local id3 = world:entity()</span></td></tr>
+<tr><td>1157</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1158</td><td>1</td><td><span class=low-hits>local tgt = world:entity()</span></td></tr>
+<tr><td>1159</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1160</td><td>1</td><td><span class=low-hits>world:add(id1, pair(A, tgt))</span></td></tr>
+<tr><td>1161</td><td>1</td><td><span class=low-hits>world:add(id1, pair(B, tgt))</span></td></tr>
+<tr><td>1162</td><td>1</td><td><span class=low-hits>world:add(id1, pair(C, tgt))</span></td></tr>
+<tr><td>1163</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1164</td><td>1</td><td><span class=low-hits>world:add(id2, pair(A, tgt))</span></td></tr>
+<tr><td>1165</td><td>1</td><td><span class=low-hits>world:add(id2, pair(B, tgt))</span></td></tr>
+<tr><td>1166</td><td>1</td><td><span class=low-hits>world:add(id2, pair(C, tgt))</span></td></tr>
+<tr><td>1167</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1168</td><td>1</td><td><span class=low-hits>world:add(id3, pair(A, tgt))</span></td></tr>
+<tr><td>1169</td><td>1</td><td><span class=low-hits>world:add(id3, pair(B, tgt))</span></td></tr>
+<tr><td>1170</td><td>1</td><td><span class=low-hits>world:add(id3, pair(C, tgt))</span></td></tr>
+<tr><td>1171</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1172</td><td>1</td><td><span class=low-hits>world:clear(B)</span></td></tr>
+<tr><td>1173</td><td>1</td><td><span class=low-hits>CHECK(world:has(id1, pair(A, tgt), pair(C, tgt)))</span></td></tr>
+<tr><td>1174</td><td>1</td><td><span class=low-hits>CHECK(not world:has(id1, pair(B, tgt)))</span></td></tr>
+<tr><td>1175</td><td>1</td><td><span class=low-hits>CHECK(world:has(id2, pair(A, tgt), pair(C, tgt)))</span></td></tr>
+<tr><td>1176</td><td>1</td><td><span class=low-hits>CHECK(not world:has(id1, pair(B, tgt)))</span></td></tr>
+<tr><td>1177</td><td>1</td><td><span class=low-hits>CHECK(world:has(id3, pair(A, tgt), pair(C, tgt)))</span></td></tr>
+<tr><td>1178</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1179</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1180</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1181</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1182</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1183</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1184</td><td>1</td><td><span class=low-hits>TEST("world:has()", function()</span></td></tr>
+<tr><td>1185</td><td>1</td><td><span class=low-hits>do CASE("should find Tag on entity")</span></td></tr>
+<tr><td>1186</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>1187</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1188</td><td>1</td><td><span class=low-hits>local Tag = world:entity()</span></td></tr>
+<tr><td>1189</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1190</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>1191</td><td>1</td><td><span class=low-hits>world:add(e, Tag)</span></td></tr>
+<tr><td>1192</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1193</td><td>1</td><td><span class=low-hits>CHECK(world:has(e, Tag))</span></td></tr>
+<tr><td>1194</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1195</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1196</td><td>1</td><td><span class=low-hits>do CASE("should return false when missing one tag")</span></td></tr>
+<tr><td>1197</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>1198</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1199</td><td>1</td><td><span class=low-hits>local A = world:entity()</span></td></tr>
+<tr><td>1200</td><td>1</td><td><span class=low-hits>local B = world:entity()</span></td></tr>
+<tr><td>1201</td><td>1</td><td><span class=low-hits>local C = world:entity()</span></td></tr>
+<tr><td>1202</td><td>1</td><td><span class=low-hits>local D = world:entity()</span></td></tr>
+<tr><td>1203</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1204</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>1205</td><td>1</td><td><span class=low-hits>world:add(e, A)</span></td></tr>
+<tr><td>1206</td><td>1</td><td><span class=low-hits>world:add(e, C)</span></td></tr>
+<tr><td>1207</td><td>1</td><td><span class=low-hits>world:add(e, D)</span></td></tr>
+<tr><td>1208</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1209</td><td>1</td><td><span class=low-hits>CHECK(world:has(e, A, B, C, D) == false)</span></td></tr>
+<tr><td>1210</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1211</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1212</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1213</td><td>1</td><td><span class=low-hits>TEST("world:component()", function()</span></td></tr>
+<tr><td>1214</td><td>1</td><td><span class=low-hits>do CASE("only components should have EcsComponent trait")</span></td></tr>
+<tr><td>1215</td><td>1</td><td><span class=low-hits>local world = jecs.World.new() :: World</span></td></tr>
+<tr><td>1216</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>1217</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>1218</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1219</td><td>1</td><td><span class=low-hits>CHECK(world:has(A, jecs.Component))</span></td></tr>
+<tr><td>1220</td><td>1</td><td><span class=low-hits>CHECK(not world:has(e, jecs.Component))</span></td></tr>
+<tr><td>1221</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1222</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1223</td><td>1</td><td><span class=low-hits>do CASE("tag")</span></td></tr>
+<tr><td>1224</td><td>1</td><td><span class=low-hits>local world = jecs.World.new() :: World</span></td></tr>
+<tr><td>1225</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>1226</td><td>1</td><td><span class=low-hits>local B = world:entity()</span></td></tr>
+<tr><td>1227</td><td>1</td><td><span class=low-hits>local C = world:entity()</span></td></tr>
+<tr><td>1228</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>1229</td><td>1</td><td><span class=low-hits>world:set(e, A, "test")</span></td></tr>
+<tr><td>1230</td><td>1</td><td><span class=low-hits>world:add(e, B)</span></td></tr>
+<tr><td>1231</td><td>1</td><td><span class=low-hits>CHECK_EXPECT_ERR(function()</span></td></tr>
+<tr><td>1232</td><td>1</td><td><span class=low-hits>world:set(e, C, 11 :: any)</span></td></tr>
+<tr><td>1233</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1234</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1235</td><td>1</td><td><span class=low-hits>CHECK(world:has(e, A))</span></td></tr>
+<tr><td>1236</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, A) == "test")</span></td></tr>
+<tr><td>1237</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, B) == nil)</span></td></tr>
+<tr><td>1238</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, C) == nil)</span></td></tr>
+<tr><td>1239</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1240</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1241</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1242</td><td>1</td><td><span class=low-hits>TEST("world:delete", function()</span></td></tr>
+<tr><td>1243</td><td>1</td><td><span class=low-hits>do CASE "invoke OnRemove hooks"</span></td></tr>
+<tr><td>1244</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1245</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1246</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>1247</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>1248</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1249</td><td>1</td><td><span class=low-hits>local Stable = world:component()</span></td></tr>
+<tr><td>1250</td><td>1</td><td><span class=low-hits>world:set(Stable, jecs.OnRemove, function(e)</span></td></tr>
+<tr><td>1251</td><td>1</td><td><span class=low-hits>CHECK(e == e1)</span></td></tr>
+<tr><td>1252</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1253</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1254</td><td>1</td><td><span class=low-hits>world:set(e1, Stable, true)</span></td></tr>
+<tr><td>1255</td><td>1</td><td><span class=low-hits>world:set(e2, Stable, true)</span></td></tr>
+<tr><td>1256</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1257</td><td>1</td><td><span class=low-hits>world:delete(e1)</span></td></tr>
+<tr><td>1258</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1259</td><td>1</td><td><span class=low-hits>do CASE "delete recycled entity id used as component"</span></td></tr>
+<tr><td>1260</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1261</td><td>1</td><td><span class=low-hits>local id = world:entity()</span></td></tr>
+<tr><td>1262</td><td>1</td><td><span class=low-hits>world:add(id, jecs.Component)</span></td></tr>
+<tr><td>1263</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1264</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>1265</td><td>1</td><td><span class=low-hits>world:set(e, id, 1)</span></td></tr>
+<tr><td>1266</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, id) == 1)</span></td></tr>
+<tr><td>1267</td><td>1</td><td><span class=low-hits>world:delete(id)</span></td></tr>
+<tr><td>1268</td><td>1</td><td><span class=low-hits>local recycled = world:entity()</span></td></tr>
+<tr><td>1269</td><td>1</td><td><span class=low-hits>world:add(recycled, jecs.Component)</span></td></tr>
+<tr><td>1270</td><td>1</td><td><span class=low-hits>world:set(e, recycled, 1)</span></td></tr>
+<tr><td>1271</td><td>1</td><td><span class=low-hits>CHECK(world:has(recycled, jecs.Component))</span></td></tr>
+<tr><td>1272</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, recycled) == 1)</span></td></tr>
+<tr><td>1273</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1274</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1275</td><td>1</td><td><span class=low-hits>CASE("bug: Empty entity does not respect cleanup policy")</span></td></tr>
+<tr><td>1276</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1277</td><td>1</td><td><span class=low-hits>local parent = world:entity()</span></td></tr>
+<tr><td>1278</td><td>1</td><td><span class=low-hits>local tag = world:entity()</span></td></tr>
+<tr><td>1279</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1280</td><td>1</td><td><span class=low-hits>local child = world:entity()</span></td></tr>
+<tr><td>1281</td><td>1</td><td><span class=low-hits>world:add(child, jecs.pair(jecs.ChildOf, parent))</span></td></tr>
+<tr><td>1282</td><td>1</td><td><span class=low-hits>world:delete(parent)</span></td></tr>
+<tr><td>1283</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1284</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(parent))</span></td></tr>
+<tr><td>1285</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(child))</span></td></tr>
+<tr><td>1286</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1287</td><td>1</td><td><span class=low-hits>local entity = world:entity()</span></td></tr>
+<tr><td>1288</td><td>1</td><td><span class=low-hits>world:add(entity, tag)</span></td></tr>
+<tr><td>1289</td><td>1</td><td><span class=low-hits>world:delete(tag)</span></td></tr>
+<tr><td>1290</td><td>1</td><td><span class=low-hits>CHECK(world:contains(entity))</span></td></tr>
+<tr><td>1291</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(tag))</span></td></tr>
+<tr><td>1292</td><td>1</td><td><span class=low-hits>CHECK(not world:has(entity, tag)) -- => true</span></td></tr>
+<tr><td>1293</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1294</td><td>1</td><td><span class=low-hits>do CASE("should allow deleting components")</span></td></tr>
+<tr><td>1295</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>1296</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1297</td><td>1</td><td><span class=low-hits>local Health = world:component()</span></td></tr>
+<tr><td>1298</td><td>1</td><td><span class=low-hits>local Poison = world:component()</span></td></tr>
+<tr><td>1299</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1300</td><td>1</td><td><span class=low-hits>local id = world:entity()</span></td></tr>
+<tr><td>1301</td><td>1</td><td><span class=low-hits>world:set(id, Poison, 5)</span></td></tr>
+<tr><td>1302</td><td>1</td><td><span class=low-hits>world:set(id, Health, 50)</span></td></tr>
+<tr><td>1303</td><td>1</td><td><span class=low-hits>local id1 = world:entity()</span></td></tr>
+<tr><td>1304</td><td>1</td><td><span class=low-hits>world:set(id1, Poison, 500)</span></td></tr>
+<tr><td>1305</td><td>1</td><td><span class=low-hits>world:set(id1, Health, 50)</span></td></tr>
+<tr><td>1306</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1307</td><td>1</td><td><span class=low-hits>world:delete(id)</span></td></tr>
+<tr><td>1308</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(id))</span></td></tr>
+<tr><td>1309</td><td>1</td><td><span class=low-hits>CHECK(world:get(id, Poison) == nil)</span></td></tr>
+<tr><td>1310</td><td>1</td><td><span class=low-hits>CHECK(world:get(id, Health) == nil)</span></td></tr>
+<tr><td>1311</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1312</td><td>1</td><td><span class=low-hits>CHECK(world:get(id1, Poison) == 500)</span></td></tr>
+<tr><td>1313</td><td>1</td><td><span class=low-hits>CHECK(world:get(id1, Health) == 50)</span></td></tr>
+<tr><td>1314</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1315</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1316</td><td>1</td><td><span class=low-hits>do CASE("delete entities using another Entity as component with Delete cleanup action")</span></td></tr>
+<tr><td>1317</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>1318</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1319</td><td>1</td><td><span class=low-hits>local Health = world:entity()</span></td></tr>
+<tr><td>1320</td><td>1</td><td><span class=low-hits>world:add(Health, pair(jecs.OnDelete, jecs.Delete))</span></td></tr>
+<tr><td>1321</td><td>1</td><td><span class=low-hits>local Poison = world:component()</span></td></tr>
+<tr><td>1322</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1323</td><td>1</td><td><span class=low-hits>local id = world:entity()</span></td></tr>
+<tr><td>1324</td><td>1</td><td><span class=low-hits>world:set(id, Poison, 5)</span></td></tr>
+<tr><td>1325</td><td>1</td><td><span class=low-hits>CHECK_EXPECT_ERR(function()</span></td></tr>
+<tr><td>1326</td><td>1</td><td><span class=low-hits>world:set(id, Health, 50 :: any)</span></td></tr>
+<tr><td>1327</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1328</td><td>1</td><td><span class=low-hits>local id1 = world:entity()</span></td></tr>
+<tr><td>1329</td><td>1</td><td><span class=low-hits>world:set(id1, Poison, 500)</span></td></tr>
+<tr><td>1330</td><td>1</td><td><span class=low-hits>CHECK_EXPECT_ERR(function()</span></td></tr>
+<tr><td>1331</td><td>1</td><td><span class=low-hits>world:set(id1, Health, 50 :: any)</span></td></tr>
+<tr><td>1332</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1333</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1334</td><td>1</td><td><span class=low-hits>CHECK(world:has(id, Poison, Health))</span></td></tr>
+<tr><td>1335</td><td>1</td><td><span class=low-hits>CHECK(world:has(id1, Poison, Health))</span></td></tr>
+<tr><td>1336</td><td>1</td><td><span class=low-hits>world:delete(Poison)</span></td></tr>
+<tr><td>1337</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1338</td><td>1</td><td><span class=low-hits>CHECK(world:contains(id))</span></td></tr>
+<tr><td>1339</td><td>1</td><td><span class=low-hits>CHECK(not world:has(id, Poison))</span></td></tr>
+<tr><td>1340</td><td>1</td><td><span class=low-hits>CHECK(not world:has(id1, Poison))</span></td></tr>
+<tr><td>1341</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1342</td><td>1</td><td><span class=low-hits>world:delete(Health)</span></td></tr>
+<tr><td>1343</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(id))</span></td></tr>
+<tr><td>1344</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(id1))</span></td></tr>
+<tr><td>1345</td><td>1</td><td><span class=low-hits>CHECK(not world:has(id, Health))</span></td></tr>
+<tr><td>1346</td><td>1</td><td><span class=low-hits>CHECK(not world:has(id1, Health))</span></td></tr>
+<tr><td>1347</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1348</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1349</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1350</td><td>1</td><td><span class=low-hits>do CASE("delete children")</span></td></tr>
+<tr><td>1351</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>1352</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1353</td><td>1</td><td><span class=low-hits>local Health = world:component()</span></td></tr>
+<tr><td>1354</td><td>1</td><td><span class=low-hits>local Poison = world:component()</span></td></tr>
+<tr><td>1355</td><td>1</td><td><span class=low-hits>local FriendsWith = world:component()</span></td></tr>
+<tr><td>1356</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1357</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>1358</td><td>1</td><td><span class=low-hits>world:set(e, Poison, 5)</span></td></tr>
+<tr><td>1359</td><td>1</td><td><span class=low-hits>world:set(e, Health, 50)</span></td></tr>
+<tr><td>1360</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1361</td><td>1</td><td><span class=low-hits>local children = {}</span></td></tr>
+<tr><td>1362</td><td>1</td><td><span class=low-hits>for i = 1, 10 do</span></td></tr>
+<tr><td>1363</td><td>10</td><td><span class=high-hits>local child = world:entity()</span></td></tr>
+<tr><td>1364</td><td>10</td><td><span class=high-hits>world:set(child, Poison, 9999)</span></td></tr>
+<tr><td>1365</td><td>10</td><td><span class=high-hits>world:set(child, Health, 100)</span></td></tr>
+<tr><td>1366</td><td>10</td><td><span class=high-hits>world:add(child, pair(jecs.ChildOf, e))</span></td></tr>
+<tr><td>1367</td><td>10</td><td><span class=high-hits>table.insert(children, child)</span></td></tr>
+<tr><td>1368</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1369</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1370</td><td>1</td><td><span class=low-hits>BENCH("delete children of entity", function()</span></td></tr>
+<tr><td>1371</td><td>1</td><td><span class=low-hits>world:delete(e)</span></td></tr>
+<tr><td>1372</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1373</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1374</td><td>1</td><td><span class=low-hits>for i, child in children do</span></td></tr>
+<tr><td>1375</td><td>10</td><td><span class=high-hits>CHECK(not world:contains(child))</span></td></tr>
+<tr><td>1376</td><td>10</td><td><span class=high-hits>CHECK(not world:has(child, pair(jecs.ChildOf, e)))</span></td></tr>
+<tr><td>1377</td><td>10</td><td><span class=high-hits>CHECK(not world:has(child, Health))</span></td></tr>
+<tr><td>1378</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1379</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1380</td><td>1</td><td><span class=low-hits>e = world:entity()</span></td></tr>
+<tr><td>1381</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1382</td><td>1</td><td><span class=low-hits>local friends = {}</span></td></tr>
+<tr><td>1383</td><td>1</td><td><span class=low-hits>for i = 1, 10 do</span></td></tr>
+<tr><td>1384</td><td>10</td><td><span class=high-hits>local friend = world:entity()</span></td></tr>
+<tr><td>1385</td><td>10</td><td><span class=high-hits>world:set(friend, Poison, 9999)</span></td></tr>
+<tr><td>1386</td><td>10</td><td><span class=high-hits>world:set(friend, Health, 100)</span></td></tr>
+<tr><td>1387</td><td>10</td><td><span class=high-hits>world:add(friend, pair(FriendsWith, e))</span></td></tr>
+<tr><td>1388</td><td>10</td><td><span class=high-hits>table.insert(friends, friend)</span></td></tr>
+<tr><td>1389</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1390</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1391</td><td>1</td><td><span class=low-hits>BENCH("remove friends of entity", function()</span></td></tr>
+<tr><td>1392</td><td>1</td><td><span class=low-hits>world:delete(e)</span></td></tr>
+<tr><td>1393</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1394</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1395</td><td>1</td><td><span class=low-hits>local d = debug_world_inspect(world)</span></td></tr>
+<tr><td>1396</td><td>1</td><td><span class=low-hits>for i, friend in friends do</span></td></tr>
+<tr><td>1397</td><td>10</td><td><span class=high-hits>CHECK(not world:has(friend, pair(FriendsWith, e)))</span></td></tr>
+<tr><td>1398</td><td>10</td><td><span class=high-hits>CHECK(world:has(friend, Health))</span></td></tr>
+<tr><td>1399</td><td>10</td><td><span class=high-hits>CHECK(world:contains(friend))</span></td></tr>
+<tr><td>1400</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1401</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1402</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1403</td><td>1</td><td><span class=low-hits>do CASE("remove deleted ID from entities")</span></td></tr>
+<tr><td>1404</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1405</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1406</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>1407</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>1408</td><td>1</td><td><span class=low-hits>local C = world:component()</span></td></tr>
+<tr><td>1409</td><td>1</td><td><span class=low-hits>local id1 = world:entity()</span></td></tr>
+<tr><td>1410</td><td>1</td><td><span class=low-hits>local id2 = world:entity()</span></td></tr>
+<tr><td>1411</td><td>1</td><td><span class=low-hits>local id3 = world:entity()</span></td></tr>
+<tr><td>1412</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1413</td><td>1</td><td><span class=low-hits>world:set(id1, A, true)</span></td></tr>
+<tr><td>1414</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1415</td><td>1</td><td><span class=low-hits>world:set(id2, A, true)</span></td></tr>
+<tr><td>1416</td><td>1</td><td><span class=low-hits>world:set(id2, B, true)</span></td></tr>
+<tr><td>1417</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1418</td><td>1</td><td><span class=low-hits>world:set(id3, A, true)</span></td></tr>
+<tr><td>1419</td><td>1</td><td><span class=low-hits>world:set(id3, B, true)</span></td></tr>
+<tr><td>1420</td><td>1</td><td><span class=low-hits>world:set(id3, C, true)</span></td></tr>
+<tr><td>1421</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1422</td><td>1</td><td><span class=low-hits>world:delete(A)</span></td></tr>
+<tr><td>1423</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1424</td><td>1</td><td><span class=low-hits>CHECK(not world:has(id1, A))</span></td></tr>
+<tr><td>1425</td><td>1</td><td><span class=low-hits>CHECK(not world:has(id2, A))</span></td></tr>
+<tr><td>1426</td><td>1</td><td><span class=low-hits>CHECK(not world:has(id3, A))</span></td></tr>
+<tr><td>1427</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1428</td><td>1</td><td><span class=low-hits>CHECK(world:has(id2, B))</span></td></tr>
+<tr><td>1429</td><td>1</td><td><span class=low-hits>CHECK(world:has(id3, B, C))</span></td></tr>
+<tr><td>1430</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1431</td><td>1</td><td><span class=low-hits>world:delete(C)</span></td></tr>
+<tr><td>1432</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1433</td><td>1</td><td><span class=low-hits>CHECK(world:has(id2, B))</span></td></tr>
+<tr><td>1434</td><td>1</td><td><span class=low-hits>CHECK(world:has(id3, B))</span></td></tr>
+<tr><td>1435</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1436</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(A))</span></td></tr>
+<tr><td>1437</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(C))</span></td></tr>
+<tr><td>1438</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1439</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1440</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1441</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>1442</td><td>1</td><td><span class=low-hits>world:add(A, pair(jecs.OnDeleteTarget, jecs.Delete))</span></td></tr>
+<tr><td>1443</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>1444</td><td>1</td><td><span class=low-hits>local C = world:component()</span></td></tr>
+<tr><td>1445</td><td>1</td><td><span class=low-hits>world:add(C, pair(jecs.OnDeleteTarget, jecs.Delete))</span></td></tr>
+<tr><td>1446</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1447</td><td>1</td><td><span class=low-hits>local id1 = world:entity()</span></td></tr>
+<tr><td>1448</td><td>1</td><td><span class=low-hits>local id2 = world:entity()</span></td></tr>
+<tr><td>1449</td><td>1</td><td><span class=low-hits>local id3 = world:entity()</span></td></tr>
+<tr><td>1450</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1451</td><td>1</td><td><span class=low-hits>world:set(id1, C, true)</span></td></tr>
+<tr><td>1452</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1453</td><td>1</td><td><span class=low-hits>world:set(id2, pair(A, id1), true)</span></td></tr>
+<tr><td>1454</td><td>1</td><td><span class=low-hits>world:set(id2, B, true)</span></td></tr>
+<tr><td>1455</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1456</td><td>1</td><td><span class=low-hits>world:set(id3, B, true)</span></td></tr>
+<tr><td>1457</td><td>1</td><td><span class=low-hits>world:set(id3, pair(C, id2), true)</span></td></tr>
+<tr><td>1458</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1459</td><td>1</td><td><span class=low-hits>world:delete(id1)</span></td></tr>
+<tr><td>1460</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1461</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(id1))</span></td></tr>
+<tr><td>1462</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(id2))</span></td></tr>
+<tr><td>1463</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(id3))</span></td></tr>
+<tr><td>1464</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1465</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1466</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1467</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1468</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>1469</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>1470</td><td>1</td><td><span class=low-hits>local C = world:component()</span></td></tr>
+<tr><td>1471</td><td>1</td><td><span class=low-hits>local id1 = world:entity()</span></td></tr>
+<tr><td>1472</td><td>1</td><td><span class=low-hits>local id2 = world:entity()</span></td></tr>
+<tr><td>1473</td><td>1</td><td><span class=low-hits>local id3 = world:entity()</span></td></tr>
+<tr><td>1474</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1475</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1476</td><td>1</td><td><span class=low-hits>world:set(id2, A, true)</span></td></tr>
+<tr><td>1477</td><td>1</td><td><span class=low-hits>world:set(id2, pair(B, id1), true)</span></td></tr>
+<tr><td>1478</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1479</td><td>1</td><td><span class=low-hits>world:set(id3, A, true)</span></td></tr>
+<tr><td>1480</td><td>1</td><td><span class=low-hits>world:set(id3, pair(B, id1), true)</span></td></tr>
+<tr><td>1481</td><td>1</td><td><span class=low-hits>world:set(id3, C, true)</span></td></tr>
+<tr><td>1482</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1483</td><td>1</td><td><span class=low-hits>world:delete(id1)</span></td></tr>
+<tr><td>1484</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1485</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(id1))</span></td></tr>
+<tr><td>1486</td><td>1</td><td><span class=low-hits>CHECK(world:contains(id2))</span></td></tr>
+<tr><td>1487</td><td>1</td><td><span class=low-hits>CHECK(world:contains(id3))</span></td></tr>
+<tr><td>1488</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1489</td><td>1</td><td><span class=low-hits>CHECK(world:has(id2, A))</span></td></tr>
+<tr><td>1490</td><td>1</td><td><span class=low-hits>CHECK(world:has(id3, A, C))</span></td></tr>
+<tr><td>1491</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1492</td><td>1</td><td><span class=low-hits>CHECK(not world:target(id2, B))</span></td></tr>
+<tr><td>1493</td><td>1</td><td><span class=low-hits>CHECK(not world:target(id3, B))</span></td></tr>
+<tr><td>1494</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1495</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1496</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1497</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1498</td><td>1</td><td><span class=low-hits>CASE("fast delete")</span></td></tr>
+<tr><td>1499</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>1500</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1501</td><td>1</td><td><span class=low-hits>local entities = {}</span></td></tr>
+<tr><td>1502</td><td>1</td><td><span class=low-hits>local Health = world:component()</span></td></tr>
+<tr><td>1503</td><td>1</td><td><span class=low-hits>local Poison = world:component()</span></td></tr>
+<tr><td>1504</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1505</td><td>1</td><td><span class=low-hits>for i = 1, 100 do</span></td></tr>
+<tr><td>1506</td><td>100</td><td><span class=high-hits>local child = world:entity()</span></td></tr>
+<tr><td>1507</td><td>100</td><td><span class=high-hits>world:set(child, Poison, 9999)</span></td></tr>
+<tr><td>1508</td><td>100</td><td><span class=high-hits>world:set(child, Health, 100)</span></td></tr>
+<tr><td>1509</td><td>100</td><td><span class=high-hits>table.insert(entities, child)</span></td></tr>
+<tr><td>1510</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1511</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1512</td><td>1</td><td><span class=low-hits>BENCH("simple deletion of entity", function()</span></td></tr>
+<tr><td>1513</td><td>1</td><td><span class=low-hits>for i = 1, START(100) do</span></td></tr>
+<tr><td>1514</td><td>100</td><td><span class=high-hits>local e = entities[i]</span></td></tr>
+<tr><td>1515</td><td>100</td><td><span class=high-hits>world:delete(e)</span></td></tr>
+<tr><td>1516</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1517</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1518</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1519</td><td>1</td><td><span class=low-hits>for _, entity in entities do</span></td></tr>
+<tr><td>1520</td><td>100</td><td><span class=high-hits>CHECK(not world:contains(entity))</span></td></tr>
+<tr><td>1521</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1522</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1523</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1524</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1525</td><td>1</td><td><span class=low-hits>CASE("cycle")</span></td></tr>
+<tr><td>1526</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>1527</td><td>1</td><td><span class=low-hits>local Likes = world:component()</span></td></tr>
+<tr><td>1528</td><td>1</td><td><span class=low-hits>world:add(Likes, pair(jecs.OnDeleteTarget, jecs.Delete))</span></td></tr>
+<tr><td>1529</td><td>1</td><td><span class=low-hits>local bob = world:entity()</span></td></tr>
+<tr><td>1530</td><td>1</td><td><span class=low-hits>local alice = world:entity()</span></td></tr>
+<tr><td>1531</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1532</td><td>1</td><td><span class=low-hits>world:add(bob, pair(Likes, alice))</span></td></tr>
+<tr><td>1533</td><td>1</td><td><span class=low-hits>world:add(alice, pair(Likes, bob))</span></td></tr>
+<tr><td>1534</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1535</td><td>1</td><td><span class=low-hits>world:delete(bob)</span></td></tr>
+<tr><td>1536</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(bob))</span></td></tr>
+<tr><td>1537</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(alice))</span></td></tr>
+<tr><td>1538</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1539</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1540</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1541</td><td>1</td><td><span class=low-hits>TEST("world:target", function()</span></td></tr>
+<tr><td>1542</td><td>1</td><td><span class=low-hits>do CASE("nth index")</span></td></tr>
+<tr><td>1543</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1544</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>1545</td><td>1</td><td><span class=low-hits>world:set(A, jecs.Name, "A")</span></td></tr>
+<tr><td>1546</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>1547</td><td>1</td><td><span class=low-hits>world:set(B, jecs.Name, "B")</span></td></tr>
+<tr><td>1548</td><td>1</td><td><span class=low-hits>local C = world:component()</span></td></tr>
+<tr><td>1549</td><td>1</td><td><span class=low-hits>world:set(C, jecs.Name, "C")</span></td></tr>
+<tr><td>1550</td><td>1</td><td><span class=low-hits>local D = world:component()</span></td></tr>
+<tr><td>1551</td><td>1</td><td><span class=low-hits>world:set(D, jecs.Name, "D")</span></td></tr>
+<tr><td>1552</td><td>1</td><td><span class=low-hits>local E = world:component()</span></td></tr>
+<tr><td>1553</td><td>1</td><td><span class=low-hits>world:set(E, jecs.Name, "E")</span></td></tr>
+<tr><td>1554</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>1555</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1556</td><td>1</td><td><span class=low-hits>world:add(e, pair(A, B))</span></td></tr>
+<tr><td>1557</td><td>1</td><td><span class=low-hits>world:add(e, pair(A, C))</span></td></tr>
+<tr><td>1558</td><td>1</td><td><span class=low-hits>world:add(e, pair(A, D))</span></td></tr>
+<tr><td>1559</td><td>1</td><td><span class=low-hits>world:add(e, pair(A, E))</span></td></tr>
+<tr><td>1560</td><td>1</td><td><span class=low-hits>world:add(e, pair(B, C))</span></td></tr>
+<tr><td>1561</td><td>1</td><td><span class=low-hits>world:add(e, pair(B, D))</span></td></tr>
+<tr><td>1562</td><td>1</td><td><span class=low-hits>world:add(e, pair(C, D))</span></td></tr>
+<tr><td>1563</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1564</td><td>1</td><td><span class=low-hits>CHECK(pair(A, B) < pair(A, C))</span></td></tr>
+<tr><td>1565</td><td>1</td><td><span class=low-hits>CHECK(pair(A, C) < pair(A, D))</span></td></tr>
+<tr><td>1566</td><td>1</td><td><span class=low-hits>CHECK(pair(C, A) < pair(C, D))</span></td></tr>
+<tr><td>1567</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1568</td><td>1</td><td><span class=low-hits>local records = debug_world_inspect(world).records(e)</span></td></tr>
+<tr><td>1569</td><td>1</td><td><span class=low-hits>CHECK(jecs.pair_first(world, pair(B, C)) == B)</span></td></tr>
+<tr><td>1570</td><td>1</td><td><span class=low-hits>local r = jecs.entity_index_try_get(world.entity_index, e)</span></td></tr>
+<tr><td>1571</td><td>1</td><td><span class=low-hits>local archetype = r.archetype</span></td></tr>
+<tr><td>1572</td><td>1</td><td><span class=low-hits>local counts = archetype.counts</span></td></tr>
+<tr><td>1573</td><td>1</td><td><span class=low-hits>CHECK(counts[pair(A, __)] == 4)</span></td></tr>
+<tr><td>1574</td><td>1</td><td><span class=low-hits>CHECK(records[pair(B, C)] > records[pair(A, E)])</span></td></tr>
+<tr><td>1575</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, A, 0) == B)</span></td></tr>
+<tr><td>1576</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, A, 1) == C)</span></td></tr>
+<tr><td>1577</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, A, 2) == D)</span></td></tr>
+<tr><td>1578</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, A, 3) == E)</span></td></tr>
+<tr><td>1579</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, B, 0) == C)</span></td></tr>
+<tr><td>1580</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, B, 1) == D)</span></td></tr>
+<tr><td>1581</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, C, 0) == D)</span></td></tr>
+<tr><td>1582</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, C, 1) == nil)</span></td></tr>
+<tr><td>1583</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1584</td><td>1</td><td><span class=low-hits>CHECK(archetype.records[pair(A, B)] == 1)</span></td></tr>
+<tr><td>1585</td><td>1</td><td><span class=low-hits>CHECK(archetype.records[pair(A, C)] == 2)</span></td></tr>
+<tr><td>1586</td><td>1</td><td><span class=low-hits>CHECK(archetype.records[pair(A, D)] == 3)</span></td></tr>
+<tr><td>1587</td><td>1</td><td><span class=low-hits>CHECK(archetype.records[pair(A, E)] == 4)</span></td></tr>
+<tr><td>1588</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1589</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, C, 0) == D)</span></td></tr>
+<tr><td>1590</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, C, 1) == nil)</span></td></tr>
+<tr><td>1591</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1592</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1593</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1594</td><td>1</td><td><span class=low-hits>CASE("infer index when unspecified")</span></td></tr>
+<tr><td>1595</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1596</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>1597</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>1598</td><td>1</td><td><span class=low-hits>local C = world:component()</span></td></tr>
+<tr><td>1599</td><td>1</td><td><span class=low-hits>local D = world:component()</span></td></tr>
+<tr><td>1600</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>1601</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1602</td><td>1</td><td><span class=low-hits>world:add(e, pair(A, B))</span></td></tr>
+<tr><td>1603</td><td>1</td><td><span class=low-hits>world:add(e, pair(A, C))</span></td></tr>
+<tr><td>1604</td><td>1</td><td><span class=low-hits>world:add(e, pair(B, C))</span></td></tr>
+<tr><td>1605</td><td>1</td><td><span class=low-hits>world:add(e, pair(B, D))</span></td></tr>
+<tr><td>1606</td><td>1</td><td><span class=low-hits>world:add(e, pair(C, D))</span></td></tr>
+<tr><td>1607</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1608</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, A) == world:target(e, A, 0))</span></td></tr>
+<tr><td>1609</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, B) == world:target(e, B, 0))</span></td></tr>
+<tr><td>1610</td><td>1</td><td><span class=low-hits>CHECK(world:target(e, C) == world:target(e, C, 0))</span></td></tr>
+<tr><td>1611</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1612</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1613</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1614</td><td>1</td><td><span class=low-hits>CASE("loop until no target")</span></td></tr>
+<tr><td>1615</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1616</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1617</td><td>1</td><td><span class=low-hits>local ROOT = world:entity()</span></td></tr>
+<tr><td>1618</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>1619</td><td>1</td><td><span class=low-hits>local targets = {}</span></td></tr>
+<tr><td>1620</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1621</td><td>1</td><td><span class=low-hits>for i = 1, 10 do</span></td></tr>
+<tr><td>1622</td><td>10</td><td><span class=high-hits>local target = world:entity()</span></td></tr>
+<tr><td>1623</td><td>10</td><td><span class=high-hits>targets[i] = target</span></td></tr>
+<tr><td>1624</td><td>10</td><td><span class=high-hits>world:add(e1, pair(ROOT, target))</span></td></tr>
+<tr><td>1625</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1626</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1627</td><td>1</td><td><span class=low-hits>local i = 0</span></td></tr>
+<tr><td>1628</td><td>1</td><td><span class=low-hits>local target = world:target(e1, ROOT, 0)</span></td></tr>
+<tr><td>1629</td><td>1</td><td><span class=low-hits>while target do</span></td></tr>
+<tr><td>1630</td><td>10</td><td><span class=high-hits>i += 1</span></td></tr>
+<tr><td>1631</td><td>10</td><td><span class=high-hits>CHECK(targets[i] == target)</span></td></tr>
+<tr><td>1632</td><td>10</td><td><span class=high-hits>target = world:target(e1, ROOT, i)</span></td></tr>
+<tr><td>1633</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1634</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1635</td><td>1</td><td><span class=low-hits>CHECK(i == 10)</span></td></tr>
+<tr><td>1636</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1637</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1638</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1639</td><td>1</td><td><span class=low-hits>TEST("world:contains", function()</span></td></tr>
+<tr><td>1640</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>1641</td><td>1</td><td><span class=low-hits>local id = world:entity()</span></td></tr>
+<tr><td>1642</td><td>1</td><td><span class=low-hits>CHECK(world:contains(id))</span></td></tr>
+<tr><td>1643</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1644</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1645</td><td>1</td><td><span class=low-hits>CASE("should not exist after delete")</span></td></tr>
+<tr><td>1646</td><td>1</td><td><span class=low-hits>world:delete(id)</span></td></tr>
+<tr><td>1647</td><td>1</td><td><span class=low-hits>CHECK(not world:contains(id))</span></td></tr>
+<tr><td>1648</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1649</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1650</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1651</td><td>1</td><td><span class=low-hits>TEST("Hooks", function()</span></td></tr>
+<tr><td>1652</td><td>1</td><td><span class=low-hits>do CASE "OnAdd"</span></td></tr>
+<tr><td>1653</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>1654</td><td>1</td><td><span class=low-hits>local Transform = world:component()</span></td></tr>
+<tr><td>1655</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>1656</td><td>1</td><td><span class=low-hits>world:set(Transform, jecs.OnAdd, function(entity)</span></td></tr>
+<tr><td>1657</td><td>1</td><td><span class=low-hits>CHECK(e1 == entity)</span></td></tr>
+<tr><td>1658</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1659</td><td>1</td><td><span class=low-hits>world:add(e1, Transform)</span></td></tr>
+<tr><td>1660</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1661</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1662</td><td>1</td><td><span class=low-hits>do CASE "OnSet"</span></td></tr>
+<tr><td>1663</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>1664</td><td>1</td><td><span class=low-hits>local Number = world:component()</span></td></tr>
+<tr><td>1665</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>1666</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1667</td><td>1</td><td><span class=low-hits>world:set(Number, jecs.OnSet, function(entity, data)</span></td></tr>
+<tr><td>1668</td><td>1</td><td><span class=low-hits>CHECK(e1 == entity)</span></td></tr>
+<tr><td>1669</td><td>1</td><td><span class=low-hits>CHECK(data == world:get(entity, Number))</span></td></tr>
+<tr><td>1670</td><td>1</td><td><span class=low-hits>CHECK(data == 1)</span></td></tr>
+<tr><td>1671</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1672</td><td>1</td><td><span class=low-hits>world:set(e1, Number, 1)</span></td></tr>
+<tr><td>1673</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1674</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1675</td><td>1</td><td><span class=low-hits>do CASE("OnRemove")</span></td></tr>
+<tr><td>1676</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1677</td><td><span class='text-muted'>N/A</span></td><td>-- basic</td>></tr>
+<tr><td>1678</td><td>1</td><td><span class=low-hits>local world = jecs.World.new()</span></td></tr>
+<tr><td>1679</td><td>1</td><td><span class=low-hits>local A = world:component() :: Entity<boolean></span></td></tr>
+<tr><td>1680</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>1681</td><td>1</td><td><span class=low-hits>world:set(A, jecs.OnRemove, function(entity)</span></td></tr>
+<tr><td>1682</td><td>1</td><td><span class=low-hits>CHECK(e1 == entity)</span></td></tr>
+<tr><td>1683</td><td>1</td><td><span class=low-hits>CHECK(world:has(e1, A))</span></td></tr>
+<tr><td>1684</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1685</td><td>1</td><td><span class=low-hits>world:add(e1, A)</span></td></tr>
+<tr><td>1686</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1687</td><td>1</td><td><span class=low-hits>world:remove(e1, A)</span></td></tr>
+<tr><td>1688</td><td>1</td><td><span class=low-hits>CHECK(not world:has(e1, A))</span></td></tr>
+<tr><td>1689</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1690</td><td>0</td><td><span class=zero-hits>do</span></td></tr>
+<tr><td>1691</td><td><span class='text-muted'>N/A</span></td><td>-- [BUG] https://github.com/Ukendio/jecs/issues/118</td>></tr>
+<tr><td>1692</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1693</td><td>1</td><td><span class=low-hits>local A = world:component()</span></td></tr>
+<tr><td>1694</td><td>1</td><td><span class=low-hits>local B = world:component()</span></td></tr>
+<tr><td>1695</td><td>1</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>1696</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1697</td><td>1</td><td><span class=low-hits>world:set(A, jecs.OnRemove, function(entity)</span></td></tr>
+<tr><td>1698</td><td>1</td><td><span class=low-hits>world:set(entity, B, true)</span></td></tr>
+<tr><td>1699</td><td>1</td><td><span class=low-hits>CHECK(world:get(entity, A))</span></td></tr>
+<tr><td>1700</td><td>1</td><td><span class=low-hits>CHECK(world:get(entity, B))</span></td></tr>
+<tr><td>1701</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1702</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1703</td><td>1</td><td><span class=low-hits>world:set(e, A, true)</span></td></tr>
+<tr><td>1704</td><td>1</td><td><span class=low-hits>world:remove(e, A)</span></td></tr>
+<tr><td>1705</td><td>1</td><td><span class=low-hits>CHECK(not world:get(e, A))</span></td></tr>
+<tr><td>1706</td><td>1</td><td><span class=low-hits>CHECK(world:get(e, B))</span></td></tr>
+<tr><td>1707</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1708</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1709</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1710</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1711</td><td>1</td><td><span class=low-hits>TEST("change tracking", function()</span></td></tr>
+<tr><td>1712</td><td>1</td><td><span class=low-hits>do CASE "#1"</span></td></tr>
+<tr><td>1713</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1714</td><td>1</td><td><span class=low-hits>local Foo = world:component() :: Entity<number></span></td></tr>
+<tr><td>1715</td><td>1</td><td><span class=low-hits>local Previous = jecs.Rest</span></td></tr>
+<tr><td>1716</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1717</td><td>1</td><td><span class=low-hits>local q1 = world</span></td></tr>
+<tr><td>1718</td><td>1</td><td><span class=low-hits>:query(Foo)</span></td></tr>
+<tr><td>1719</td><td>1</td><td><span class=low-hits>:without(pair(Previous, Foo))</span></td></tr>
+<tr><td>1720</td><td>0</td><td><span class=zero-hits>:cached()</span></td></tr>
+<tr><td>1721</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1722</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
+<tr><td>1723</td><td>1</td><td><span class=low-hits>world:set(e1, Foo, 1)</span></td></tr>
+<tr><td>1724</td><td>1</td><td><span class=low-hits>local e2 = world:entity()</span></td></tr>
+<tr><td>1725</td><td>1</td><td><span class=low-hits>world:set(e2, Foo, 2)</span></td></tr>
+<tr><td>1726</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1727</td><td>1</td><td><span class=low-hits>local i = 0</span></td></tr>
+<tr><td>1728</td><td>1</td><td><span class=low-hits>for e, new in q1 :: any do</span></td></tr>
+<tr><td>1729</td><td>2</td><td><span class=low-hits>i += 1</span></td></tr>
+<tr><td>1730</td><td>2</td><td><span class=low-hits>world:set(e, pair(Previous, Foo), new)</span></td></tr>
+<tr><td>1731</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1732</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1733</td><td>1</td><td><span class=low-hits>CHECK(i == 2)</span></td></tr>
+<tr><td>1734</td><td>1</td><td><span class=low-hits>local j = 0</span></td></tr>
+<tr><td>1735</td><td>1</td><td><span class=low-hits>for e, new in q1 :: any do</span></td></tr>
+<tr><td>1736</td><td>0</td><td><span class=zero-hits>j += 1</span></td></tr>
+<tr><td>1737</td><td>0</td><td><span class=zero-hits>world:set(e, pair(Previous, Foo), new)</span></td></tr>
+<tr><td>1738</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1739</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1740</td><td>1</td><td><span class=low-hits>CHECK(j == 0)</span></td></tr>
+<tr><td>1741</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1742</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1743</td><td>1</td><td><span class=low-hits>do CASE "#2"</span></td></tr>
+<tr><td>1744</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1745</td><td>1</td><td><span class=low-hits>local component = world:component() :: Entity<number></span></td></tr>
+<tr><td>1746</td><td>1</td><td><span class=low-hits>local tag = world:entity()</span></td></tr>
+<tr><td>1747</td><td>1</td><td><span class=low-hits>local previous = jecs.Rest</span></td></tr>
+<tr><td>1748</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1749</td><td>1</td><td><span class=low-hits>local q1 = world:query(component):without(pair(previous, component), tag):cached()</span></td></tr>
+<tr><td>1750</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1751</td><td>1</td><td><span class=low-hits>local testEntity = world:entity()</span></td></tr>
+<tr><td>1752</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1753</td><td>1</td><td><span class=low-hits>world:set(testEntity, component, 10)</span></td></tr>
+<tr><td>1754</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1755</td><td>1</td><td><span class=low-hits>local i = 0</span></td></tr>
+<tr><td>1756</td><td>1</td><td><span class=low-hits>for entity, number in q1 :: any do</span></td></tr>
+<tr><td>1757</td><td>1</td><td><span class=low-hits>i += 1</span></td></tr>
+<tr><td>1758</td><td>1</td><td><span class=low-hits>world:add(testEntity, tag)</span></td></tr>
+<tr><td>1759</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1760</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1761</td><td>1</td><td><span class=low-hits>CHECK(i == 1)</span></td></tr>
+<tr><td>1762</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1763</td><td>1</td><td><span class=low-hits>for e, n in q1 :: any do</span></td></tr>
+<tr><td>1764</td><td>0</td><td><span class=zero-hits>world:set(e, pair(previous, component), n)</span></td></tr>
+<tr><td>1765</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1766</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1767</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1768</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1769</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1770</td><td>1</td><td><span class=low-hits>TEST("repro", function()</span></td></tr>
+<tr><td>1771</td><td>1</td><td><span class=low-hits>do CASE "#1"</span></td></tr>
+<tr><td>1772</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1773</td><td>1</td><td><span class=low-hits>local reproEntity = world:component()</span></td></tr>
+<tr><td>1774</td><td>1</td><td><span class=low-hits>local components = { Cooldown = world:component() :: jecs.Entity<number> }</span></td></tr>
+<tr><td>1775</td><td>1</td><td><span class=low-hits>world:set(reproEntity, components.Cooldown, 2)</span></td></tr>
+<tr><td>1776</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1777</td><td>1</td><td><span class=low-hits>local function updateCooldowns(dt: number)</span></td></tr>
+<tr><td>1778</td><td>2</td><td><span class=low-hits>local toRemove = {}</span></td></tr>
+<tr><td>1779</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1780</td><td>2</td><td><span class=low-hits>local it = world:query(components.Cooldown):iter()</span></td></tr>
+<tr><td>1781</td><td>2</td><td><span class=low-hits>for id, cooldown in it do</span></td></tr>
+<tr><td>1782</td><td>2</td><td><span class=low-hits>cooldown -= dt</span></td></tr>
+<tr><td>1783</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1784</td><td>2</td><td><span class=low-hits>if cooldown <= 0 then</span></td></tr>
+<tr><td>1785</td><td>1</td><td><span class=low-hits>table.insert(toRemove, id)</span></td></tr>
+<tr><td>1786</td><td><span class='text-muted'>N/A</span></td><td>-- world:remove(id, components.Cooldown)</td>></tr>
+<tr><td>1787</td><td>0</td><td><span class=zero-hits>else</span></td></tr>
+<tr><td>1788</td><td>1</td><td><span class=low-hits>world:set(id, components.Cooldown, cooldown)</span></td></tr>
+<tr><td>1789</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1790</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1791</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1792</td><td>2</td><td><span class=low-hits>for _, id in toRemove do</span></td></tr>
+<tr><td>1793</td><td>1</td><td><span class=low-hits>world:remove(id, components.Cooldown)</span></td></tr>
+<tr><td>1794</td><td>1</td><td><span class=low-hits>CHECK(not world:get(id, components.Cooldown))</span></td></tr>
+<tr><td>1795</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1796</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1797</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1798</td><td>1</td><td><span class=low-hits>updateCooldowns(1.5)</span></td></tr>
+<tr><td>1799</td><td>1</td><td><span class=low-hits>updateCooldowns(1.5)</span></td></tr>
+<tr><td>1800</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1801</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1802</td><td>1</td><td><span class=low-hits>do CASE "#2" -- ISSUE #171</span></td></tr>
+<tr><td>1803</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1804</td><td>1</td><td><span class=low-hits>local component1 = world:component()</span></td></tr>
+<tr><td>1805</td><td>1</td><td><span class=low-hits>local tag1 = world:entity()</span></td></tr>
+<tr><td>1806</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1807</td><td>1</td><td><span class=low-hits>local query = world:query(component1):with(tag1):cached()</span></td></tr>
+<tr><td>1808</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1809</td><td>1</td><td><span class=low-hits>local entity = world:entity()</span></td></tr>
+<tr><td>1810</td><td>1</td><td><span class=low-hits>world:set(entity, component1, "some data")</span></td></tr>
+<tr><td>1811</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1812</td><td>1</td><td><span class=low-hits>local counter = 0</span></td></tr>
+<tr><td>1813</td><td>1</td><td><span class=low-hits>for x in query:iter() do</span></td></tr>
+<tr><td>1814</td><td>0</td><td><span class=zero-hits>counter += 1</span></td></tr>
+<tr><td>1815</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1816</td><td>1</td><td><span class=low-hits>CHECK(counter == 0)</span></td></tr>
+<tr><td>1817</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1818</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1819</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1820</td><td>1</td><td><span class=low-hits>TEST("wildcard query", function()</span></td></tr>
+<tr><td>1821</td><td>1</td><td><span class=low-hits>do CASE "#1"</span></td></tr>
+<tr><td>1822</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1823</td><td>1</td><td><span class=low-hits>local pair = jecs.pair</span></td></tr>
+<tr><td>1824</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1825</td><td>1</td><td><span class=low-hits>local Relation = world:entity()</span></td></tr>
+<tr><td>1826</td><td>1</td><td><span class=low-hits>local Wildcard = jecs.Wildcard</span></td></tr>
+<tr><td>1827</td><td>1</td><td><span class=low-hits>local A = world:entity()</span></td></tr>
+<tr><td>1828</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1829</td><td>1</td><td><span class=low-hits>local relationship = pair(Relation, Wildcard)</span></td></tr>
+<tr><td>1830</td><td>1</td><td><span class=low-hits>local query = world:query(relationship):cached()</span></td></tr>
+<tr><td>1831</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1832</td><td>1</td><td><span class=low-hits>local entity = world:entity()</span></td></tr>
+<tr><td>1833</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1834</td><td>1</td><td><span class=low-hits>local p = pair(Relation, A)</span></td></tr>
+<tr><td>1835</td><td>1</td><td><span class=low-hits>CHECK(jecs.pair_first(world, p) == Relation)</span></td></tr>
+<tr><td>1836</td><td>1</td><td><span class=low-hits>CHECK(jecs.pair_second(world, p) == A)</span></td></tr>
+<tr><td>1837</td><td>1</td><td><span class=low-hits>local w = dwi(world)</span></td></tr>
+<tr><td>1838</td><td>1</td><td><span class=low-hits>world:add(entity, pair(Relation, A))</span></td></tr>
+<tr><td>1839</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1840</td><td>1</td><td><span class=low-hits>local counter = 0</span></td></tr>
+<tr><td>1841</td><td>1</td><td><span class=low-hits>for e in query:iter() do</span></td></tr>
+<tr><td>1842</td><td>1</td><td><span class=low-hits>counter += 1</span></td></tr>
+<tr><td>1843</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1844</td><td>1</td><td><span class=low-hits>CHECK(counter == 1)</span></td></tr>
+<tr><td>1845</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1846</td><td>1</td><td><span class=low-hits>do CASE "#2"</span></td></tr>
+<tr><td>1847</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1848</td><td>1</td><td><span class=low-hits>local pair = jecs.pair</span></td></tr>
+<tr><td>1849</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1850</td><td>1</td><td><span class=low-hits>local Relation = world:entity()</span></td></tr>
+<tr><td>1851</td><td>1</td><td><span class=low-hits>local Wildcard = jecs.Wildcard</span></td></tr>
+<tr><td>1852</td><td>1</td><td><span class=low-hits>local A = world:entity()</span></td></tr>
+<tr><td>1853</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1854</td><td>1</td><td><span class=low-hits>local relationship = pair(Relation, Wildcard)</span></td></tr>
+<tr><td>1855</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1856</td><td>1</td><td><span class=low-hits>local entity = world:entity()</span></td></tr>
+<tr><td>1857</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1858</td><td>1</td><td><span class=low-hits>world:add(entity, pair(Relation, A))</span></td></tr>
+<tr><td>1859</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1860</td><td>1</td><td><span class=low-hits>local counter = 0</span></td></tr>
+<tr><td>1861</td><td>1</td><td><span class=low-hits>for e in world:query(relationship):iter() do</span></td></tr>
+<tr><td>1862</td><td>1</td><td><span class=low-hits>counter += 1</span></td></tr>
+<tr><td>1863</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1864</td><td>1</td><td><span class=low-hits>CHECK(counter == 1)</span></td></tr>
+<tr><td>1865</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1866</td><td>1</td><td><span class=low-hits>do CASE "#3"</span></td></tr>
+<tr><td>1867</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1868</td><td>1</td><td><span class=low-hits>local pair = jecs.pair</span></td></tr>
+<tr><td>1869</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1870</td><td>1</td><td><span class=low-hits>local Relation = world:entity()</span></td></tr>
+<tr><td>1871</td><td>1</td><td><span class=low-hits>local Wildcard = jecs.Wildcard</span></td></tr>
+<tr><td>1872</td><td>1</td><td><span class=low-hits>local A = world:entity()</span></td></tr>
+<tr><td>1873</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1874</td><td>1</td><td><span class=low-hits>local entity = world:entity()</span></td></tr>
+<tr><td>1875</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1876</td><td>1</td><td><span class=low-hits>world:add(entity, pair(Relation, A))</span></td></tr>
+<tr><td>1877</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1878</td><td>1</td><td><span class=low-hits>local relationship = pair(Relation, Wildcard)</span></td></tr>
+<tr><td>1879</td><td>1</td><td><span class=low-hits>local query = world:query(relationship):cached()</span></td></tr>
+<tr><td>1880</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1881</td><td>1</td><td><span class=low-hits>local counter = 0</span></td></tr>
+<tr><td>1882</td><td>1</td><td><span class=low-hits>for e in query:iter() do</span></td></tr>
+<tr><td>1883</td><td>1</td><td><span class=low-hits>counter += 1</span></td></tr>
+<tr><td>1884</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1885</td><td>1</td><td><span class=low-hits>CHECK(counter == 1)</span></td></tr>
+<tr><td>1886</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1887</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1888</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1889</td><td>1</td><td><span class=low-hits>TEST("world:delete() invokes OnRemove hook", function()</span></td></tr>
+<tr><td>1890</td><td>1</td><td><span class=low-hits>do CASE "#1"</span></td></tr>
+<tr><td>1891</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1892</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1893</td><td>1</td><td><span class=low-hits>local A = world:entity()</span></td></tr>
+<tr><td>1894</td><td>1</td><td><span class=low-hits>local entity = world:entity()</span></td></tr>
+<tr><td>1895</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1896</td><td>1</td><td><span class=low-hits>local called = false</span></td></tr>
+<tr><td>1897</td><td>1</td><td><span class=low-hits>world:set(A, jecs.OnRemove, function(e)</span></td></tr>
+<tr><td>1898</td><td>1</td><td><span class=low-hits>called = true</span></td></tr>
+<tr><td>1899</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1900</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1901</td><td>1</td><td><span class=low-hits>world:add(entity, A)</span></td></tr>
+<tr><td>1902</td><td>1</td><td><span class=low-hits>world:delete(entity)</span></td></tr>
+<tr><td>1903</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1904</td><td>1</td><td><span class=low-hits>CHECK(called)</span></td></tr>
+<tr><td>1905</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1906</td><td>1</td><td><span class=low-hits>do CASE "#2"</span></td></tr>
+<tr><td>1907</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1908</td><td>1</td><td><span class=low-hits>local pair = jecs.pair</span></td></tr>
+<tr><td>1909</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1910</td><td>1</td><td><span class=low-hits>local Relation = world:entity()</span></td></tr>
+<tr><td>1911</td><td>1</td><td><span class=low-hits>local A = world:entity()</span></td></tr>
+<tr><td>1912</td><td>1</td><td><span class=low-hits>local B = world:entity()</span></td></tr>
+<tr><td>1913</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1914</td><td>1</td><td><span class=low-hits>world:add(Relation, pair(jecs.OnDelete, jecs.Delete))</span></td></tr>
+<tr><td>1915</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1916</td><td>1</td><td><span class=low-hits>local entity = world:entity()</span></td></tr>
+<tr><td>1917</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1918</td><td>1</td><td><span class=low-hits>local called = false</span></td></tr>
+<tr><td>1919</td><td>1</td><td><span class=low-hits>world:set(A, jecs.OnRemove, function(e)</span></td></tr>
+<tr><td>1920</td><td>1</td><td><span class=low-hits>called = true</span></td></tr>
+<tr><td>1921</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1922</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1923</td><td>1</td><td><span class=low-hits>world:add(entity, A)</span></td></tr>
+<tr><td>1924</td><td>1</td><td><span class=low-hits>world:add(entity, pair(Relation, B))</span></td></tr>
+<tr><td>1925</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1926</td><td>1</td><td><span class=low-hits>world:delete(B)</span></td></tr>
+<tr><td>1927</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1928</td><td>1</td><td><span class=low-hits>CHECK(called)</span></td></tr>
+<tr><td>1929</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1930</td><td>1</td><td><span class=low-hits>do CASE "#3"</span></td></tr>
+<tr><td>1931</td><td>1</td><td><span class=low-hits>local world = world_new()</span></td></tr>
+<tr><td>1932</td><td>1</td><td><span class=low-hits>local pair = jecs.pair</span></td></tr>
+<tr><td>1933</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1934</td><td>1</td><td><span class=low-hits>local viewingContainer = world:entity()</span></td></tr>
+<tr><td>1935</td><td>1</td><td><span class=low-hits>local character = world:entity()</span></td></tr>
+<tr><td>1936</td><td>1</td><td><span class=low-hits>local container = world:entity()</span></td></tr>
+<tr><td>1937</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1938</td><td>1</td><td><span class=low-hits>local called = false</span></td></tr>
+<tr><td>1939</td><td>1</td><td><span class=low-hits>world:set(viewingContainer, jecs.OnRemove, function(e)</span></td></tr>
+<tr><td>1940</td><td>1</td><td><span class=low-hits>called = true</span></td></tr>
+<tr><td>1941</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1942</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1943</td><td>1</td><td><span class=low-hits>world:add(character, pair(viewingContainer, container))</span></td></tr>
+<tr><td>1944</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1945</td><td>1</td><td><span class=low-hits>world:delete(container)</span></td></tr>
+<tr><td>1946</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
+<tr><td>1947</td><td>1</td><td><span class=low-hits>CHECK(called)</span></td></tr>
+<tr><td>1948</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
+<tr><td>1949</td><td><span class='text-muted'>N/A</span></td><td>end)</td>></tr>
+<tr><td>1950</td><td>1</td><td><span class=low-hits>FINISH()</span></td></tr>
+</tbody></table></body></html>

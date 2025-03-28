@@ -1109,6 +1109,76 @@ TEST("world:clear()", function()
 		CHECK(world:get(e1, A) == nil)
 		CHECK(world:get(e1, B))
 	end
+
+	do CASE("remove cleared ID from entities")
+		local world = world_new()
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		do
+			local id1 = world:entity()
+			local id2 = world:entity()
+			local id3 = world:entity()
+
+			world:set(id1, A, true)
+
+			world:set(id2, A, true)
+			world:set(id2, B, true)
+
+			world:set(id3, A, true)
+			world:set(id3, B, true)
+			world:set(id3, C, true)
+
+			world:clear(A)
+
+			CHECK(not world:has(id1, A))
+			CHECK(not world:has(id2, A))
+			CHECK(not world:has(id3, A))
+
+			CHECK(world:has(id2, B))
+			CHECK(world:has(id3, B, C))
+
+			world:clear(C)
+
+			CHECK(world:has(id2, B))
+			CHECK(world:has(id3, B))
+
+			CHECK(world:contains(A))
+			CHECK(world:contains(C))
+			CHECK(world:has(A, jecs.Component))
+			CHECK(world:has(B, jecs.Component))
+		end
+
+		do
+			local id1 = world:entity()
+			local id2 = world:entity()
+			local id3 = world:entity()
+
+			local tgt = world:entity()
+
+			world:add(id1, pair(A, tgt))
+			world:add(id1, pair(B, tgt))
+			world:add(id1, pair(C, tgt))
+
+			world:add(id2, pair(A, tgt))
+			world:add(id2, pair(B, tgt))
+			world:add(id2, pair(C, tgt))
+
+			world:add(id3, pair(A, tgt))
+			world:add(id3, pair(B, tgt))
+			world:add(id3, pair(C, tgt))
+
+			world:clear(B)
+			CHECK(world:has(id1, pair(A, tgt), pair(C, tgt)))
+			CHECK(not world:has(id1, pair(B, tgt)))
+			CHECK(world:has(id2, pair(A, tgt), pair(C, tgt)))
+			CHECK(not world:has(id1, pair(B, tgt)))
+			CHECK(world:has(id3, pair(A, tgt), pair(C, tgt)))
+
+		end
+
+	end
 end)
 
 TEST("world:has()", function()
@@ -1221,8 +1291,7 @@ TEST("world:delete", function()
 		CHECK(not world:contains(tag))
 		CHECK(not world:has(entity, tag)) -- => true
 	end
-	do
-		CASE("should allow deleting components")
+	do CASE("should allow deleting components")
 		local world = jecs.World.new()
 
 		local Health = world:component()
@@ -1244,8 +1313,7 @@ TEST("world:delete", function()
 		CHECK(world:get(id1, Health) == 50)
 	end
 
-	do
-		CASE("delete entities using another Entity as component with Delete cleanup action")
+	do CASE("delete entities using another Entity as component with Delete cleanup action")
 		local world = jecs.World.new()
 
 		local Health = world:entity()
@@ -1278,8 +1346,8 @@ TEST("world:delete", function()
 		CHECK(not world:has(id1, Health))
 	end
 
-	do
-		CASE("delete children")
+
+	do CASE("delete children")
 		local world = jecs.World.new()
 
 		local Health = world:component()
@@ -1329,6 +1397,100 @@ TEST("world:delete", function()
 			CHECK(not world:has(friend, pair(FriendsWith, e)))
 			CHECK(world:has(friend, Health))
 			CHECK(world:contains(friend))
+		end
+	end
+
+	do CASE("remove deleted ID from entities")
+		local world = world_new()
+		do
+			local A = world:component()
+			local B = world:component()
+			local C = world:component()
+			local id1 = world:entity()
+			local id2 = world:entity()
+			local id3 = world:entity()
+
+			world:set(id1, A, true)
+
+			world:set(id2, A, true)
+			world:set(id2, B, true)
+
+			world:set(id3, A, true)
+			world:set(id3, B, true)
+			world:set(id3, C, true)
+
+			world:delete(A)
+
+			CHECK(not world:has(id1, A))
+			CHECK(not world:has(id2, A))
+			CHECK(not world:has(id3, A))
+
+			CHECK(world:has(id2, B))
+			CHECK(world:has(id3, B, C))
+
+			world:delete(C)
+
+			CHECK(world:has(id2, B))
+			CHECK(world:has(id3, B))
+
+			CHECK(not world:contains(A))
+			CHECK(not world:contains(C))
+		end
+
+		do
+			local A = world:component()
+			world:add(A, pair(jecs.OnDeleteTarget, jecs.Delete))
+			local B = world:component()
+			local C = world:component()
+			world:add(C, pair(jecs.OnDeleteTarget, jecs.Delete))
+
+			local id1 = world:entity()
+			local id2 = world:entity()
+			local id3 = world:entity()
+
+			world:set(id1, C, true)
+
+			world:set(id2, pair(A, id1), true)
+			world:set(id2, B, true)
+
+			world:set(id3, B, true)
+			world:set(id3, pair(C, id2), true)
+
+			world:delete(id1)
+
+			CHECK(not world:contains(id1))
+			CHECK(not world:contains(id2))
+			CHECK(not world:contains(id3))
+		end
+
+
+		do
+			local A = world:component()
+			local B = world:component()
+			local C = world:component()
+			local id1 = world:entity()
+			local id2 = world:entity()
+			local id3 = world:entity()
+
+
+			world:set(id2, A, true)
+			world:set(id2, pair(B, id1), true)
+
+			world:set(id3, A, true)
+			world:set(id3, pair(B, id1), true)
+			world:set(id3, C, true)
+
+			world:delete(id1)
+
+			CHECK(not world:contains(id1))
+			CHECK(world:contains(id2))
+			CHECK(world:contains(id3))
+
+			CHECK(world:has(id2, A))
+			CHECK(world:has(id3, A, C))
+
+			CHECK(not world:target(id2, B))
+			CHECK(not world:target(id3, B))
 		end
 	end
 
