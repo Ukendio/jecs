@@ -1064,6 +1064,7 @@ local function archetype_delete(world: ecs_world_t, archetype: ecs_archetype_t, 
 end
 
 local function world_clear(world: ecs_world_t, entity: i53)
+	local entity_index = world.entity_index
 	local component_index = world.component_index
 	local archetypes = world.archetypes
 	local tgt = ECS_PAIR(EcsWildcard, entity)
@@ -1088,7 +1089,7 @@ local function world_clear(world: ecs_world_t, entity: i53)
 	end
 
 	if idr_t then
-		local children
+		local queue
 		local ids
 
 		local count = 0
@@ -1386,7 +1387,6 @@ local function world_delete(world: ecs_world_t, entity: i53)
 	end
 
 	if idr_r then
-		local count = 0
 		local archetype_ids = idr_r.cache
 		local flags = idr_r.flags
 		if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
@@ -1406,9 +1406,9 @@ local function world_delete(world: ecs_world_t, entity: i53)
 			for archetype_id in archetype_ids do
 				local idr_r_archetype = archetypes[archetype_id]
 				local entities = idr_r_archetype.entities
-				local tr = idr_r_achetype.records[rel]
+				local tr = idr_r_archetype.records[rel]
 				local tr_count = idr_r_archetype.counts[rel]
-				local types = idr_r_achetype.types
+				local types = idr_r_archetype.types
 				for i = tr, tr_count - 1 do
 					ids[types[tr]] = true
 				end
