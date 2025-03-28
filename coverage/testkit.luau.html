@@ -2,19 +2,23 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 <style>
-body { font-family: monospace; font-size: 16px; }
+body { font-family: monospace; text-align: center; }
+#funcTable table { margin: 0 auto; width: auto; max-width: 300px; font-size: 14px; border-collapse: collapse; }
+#funcTable th, #funcTable td { padding: 2px 6px; text-align: left; white-space: nowrap; }
+#funcTable th { background-color: #ddd; }
+#funcTable td:nth-child(2) { text-align: right; min-width: 50px; }
 .zero-hits { background-color: #fcc; font-weight: bold; color: red; }
 .nonzero-hits { color: green; font-weight: bold; }
 .low-hits { background-color: #ffe6b3; }
 .high-hits { background-color: #cfc; }
-th, td { padding: 0px; font-size: 12px; }
+.source-code-table { margin-left: 10px; }th, td { padding: 0px; font-size: 12px; }
 table.table { font-size: 14px; border-collapse: collapse; }
 table.table th, table.table td { padding: 1px; font-size: 12px; line-height: 1.2; }
 table.table tr { height: auto; }
 </style></head><body>
 <h1 class="text-center">testkit.luau Coverage</h1>
-<h2>Total Execution Hits: 615</h2>
-<h2>Function Coverage Overview: 54.84%</h2>
+<h2>Total Execution Hits: 1826</h2>
+<h2>Function Coverage Overview: 64.52%</h2>
 <button class="btn btn-primary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#funcTable">Toggle Function Coverage</button>
 <div class="collapse show" id="funcTable">
 <h2>Function Coverage:</h2><table class="table table-bordered"><thead><tr><th>Function</th><th>Hits</th></tr></thead><tbody>
@@ -30,18 +34,18 @@ table.table tr { height: auto; }
 <tr><td style="padding: 1px; min-width: 22ch;">orange:43</td><td style="padding: 1px; color: green; font-weight: bold;">73</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">convert_units:48</td><td style="padding: 1px; color: green; font-weight: bold;">6</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">output_test_result:131</td><td style="padding: 1px; color: green; font-weight: bold;">24</td></tr>
-<tr><td style="padding: 1px; min-width: 22ch;">CASE:169</td><td style="padding: 1px; color: green; font-weight: bold;">64</td></tr>
-<tr><td style="padding: 1px; min-width: 22ch;">CHECK_EXPECT_ERR:183</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
-<tr><td style="padding: 1px; min-width: 22ch;">CHECK:201</td><td style="padding: 1px; color: green; font-weight: bold;">9</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">CASE:169</td><td style="padding: 1px; color: green; font-weight: bold;">73</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">CHECK_EXPECT_ERR:183</td><td style="padding: 1px; color: green; font-weight: bold;">9</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">CHECK:201</td><td style="padding: 1px; color: green; font-weight: bold;">1195</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">TEST:224</td><td style="padding: 1px; color: green; font-weight: bold;">24</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">FOCUS:237</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
-<tr><td style="padding: 1px; min-width: 22ch;">FINISH:248</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">FINISH:248</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:264</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">SKIP:314</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">START:330</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">BENCH:342</td><td style="padding: 1px; color: green; font-weight: bold;">3</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:354</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
-<tr><td style="padding: 1px; min-width: 22ch;">round:372</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">round:372</td><td style="padding: 1px; color: green; font-weight: bold;">6</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">print2:396</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">tos:401</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">shallow_eq:480</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
@@ -50,7 +54,7 @@ table.table tr { height: auto; }
 <tr><td style="padding: 1px; min-width: 22ch;">benchmark:545</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">disable_formatting:549</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
 </tbody></table></div>
-<h2>Source Code:</h2><table class="table table-bordered"><thead><tr><th>Line</th><th>Hits</th><th>Code</th></tr></thead><tbody>
+<h2>Source Code:</h2><table class="table table-bordered source-code-table "><thead><tr><th>Line</th><th>Hits</th><th>Code</th></tr></thead><tbody>
 <tr><td>1</td><td><span class='text-muted'>N/A</span></td><td>--------------------------------------------------------------------------------</td>></tr>
 <tr><td>2</td><td><span class='text-muted'>N/A</span></td><td>-- testkit.luau</td>></tr>
 <tr><td>3</td><td><span class='text-muted'>N/A</span></td><td>-- v0.7.3</td>></tr>
@@ -70,15 +74,15 @@ table.table tr { height: auto; }
 <tr><td>17</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
 <tr><td>18</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>19</td><td>1</td><td><span class=low-hits>green = function(s: string): string</span></td></tr>
-<tr><td>20</td><td>77</td><td><span class=high-hits>return if disable_ansi then s else `\27[32;1m{s}\27[0m`</span></td></tr>
+<tr><td>20</td><td>77</td><td><span class=low-hits>return if disable_ansi then s else `\27[32;1m{s}\27[0m`</span></td></tr>
 <tr><td>21</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
 <tr><td>22</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>23</td><td>1</td><td><span class=low-hits>red = function(s: string): string</span></td></tr>
-<tr><td>24</td><td>146</td><td><span class=high-hits>return if disable_ansi then s else `\27[31;1m{s}\27[0m`</span></td></tr>
+<tr><td>24</td><td>146</td><td><span class=low-hits>return if disable_ansi then s else `\27[31;1m{s}\27[0m`</span></td></tr>
 <tr><td>25</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
 <tr><td>26</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>27</td><td>1</td><td><span class=low-hits>yellow = function(s: string): string</span></td></tr>
-<tr><td>28</td><td>76</td><td><span class=high-hits>return if disable_ansi then s else `\27[33;1m{s}\27[0m`</span></td></tr>
+<tr><td>28</td><td>76</td><td><span class=low-hits>return if disable_ansi then s else `\27[33;1m{s}\27[0m`</span></td></tr>
 <tr><td>29</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
 <tr><td>30</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>31</td><td>1</td><td><span class=low-hits>red_highlight = function(s: string): string</span></td></tr>
@@ -90,11 +94,11 @@ table.table tr { height: auto; }
 <tr><td>37</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
 <tr><td>38</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>39</td><td>1</td><td><span class=low-hits>gray = function(s: string): string</span></td></tr>
-<tr><td>40</td><td>84</td><td><span class=high-hits>return if disable_ansi then s else `\27[38;1m{s}\27[0m`</span></td></tr>
+<tr><td>40</td><td>84</td><td><span class=low-hits>return if disable_ansi then s else `\27[38;1m{s}\27[0m`</span></td></tr>
 <tr><td>41</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
 <tr><td>42</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>43</td><td>1</td><td><span class=low-hits>orange = function(s: string): string</span></td></tr>
-<tr><td>44</td><td>73</td><td><span class=high-hits>return if disable_ansi then s else `\27[38;5;208m{s}\27[0m`</span></td></tr>
+<tr><td>44</td><td>73</td><td><span class=low-hits>return if disable_ansi then s else `\27[38;5;208m{s}\27[0m`</span></td></tr>
 <tr><td>45</td><td><span class='text-muted'>N/A</span></td><td>end,</td>></tr>
 <tr><td>46</td><td>0</td><td><span class=zero-hits>}</span></td></tr>
 <tr><td>47</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
@@ -141,9 +145,9 @@ table.table tr { height: auto; }
 <tr><td>88</td><td>6</td><td><span class=low-hits>if value >= 100 then</span></td></tr>
 <tr><td>89</td><td>1</td><td><span class=low-hits>value = math.floor(value)</span></td></tr>
 <tr><td>90</td><td>5</td><td><span class=low-hits>elseif value >= 10 then</span></td></tr>
-<tr><td>91</td><td>1</td><td><span class=low-hits>value = math.floor(value * 1e1) / 1e1</span></td></tr>
-<tr><td>92</td><td>4</td><td><span class=low-hits>elseif value >= 1 then</span></td></tr>
-<tr><td>93</td><td>2</td><td><span class=low-hits>value = math.floor(value * 1e2) / 1e2</span></td></tr>
+<tr><td>91</td><td>2</td><td><span class=low-hits>value = math.floor(value * 1e1) / 1e1</span></td></tr>
+<tr><td>92</td><td>3</td><td><span class=low-hits>elseif value >= 1 then</span></td></tr>
+<tr><td>93</td><td>1</td><td><span class=low-hits>value = math.floor(value * 1e2) / 1e2</span></td></tr>
 <tr><td>94</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>95</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>96</td><td>6</td><td><span class=low-hits>return value * sign, prefix_colors[order](prefixes[order] .. unit)</span></td></tr>
@@ -196,19 +200,19 @@ table.table tr { height: auto; }
 <tr><td>143</td><td>24</td><td><span class=low-hits>print(color.white(test.name))</span></td></tr>
 <tr><td>144</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>145</td><td>24</td><td><span class=low-hits>for _, case in test.cases do</span></td></tr>
-<tr><td>146</td><td>73</td><td><span class=high-hits>local status = ({</span></td></tr>
-<tr><td>147</td><td>73</td><td><span class=high-hits>[PASS] = color.green("PASS"),</span></td></tr>
-<tr><td>148</td><td>73</td><td><span class=high-hits>[FAIL] = color.red("FAIL"),</span></td></tr>
-<tr><td>149</td><td>73</td><td><span class=high-hits>[NONE] = color.orange("NONE"),</span></td></tr>
-<tr><td>150</td><td>73</td><td><span class=high-hits>[ERROR] = color.red("FAIL"),</span></td></tr>
-<tr><td>151</td><td>73</td><td><span class=high-hits>[SKIPPED] = color.yellow("SKIP"),</span></td></tr>
-<tr><td>152</td><td>73</td><td><span class=high-hits>})[case.result]</span></td></tr>
+<tr><td>146</td><td>73</td><td><span class=low-hits>local status = ({</span></td></tr>
+<tr><td>147</td><td>73</td><td><span class=low-hits>[PASS] = color.green("PASS"),</span></td></tr>
+<tr><td>148</td><td>73</td><td><span class=low-hits>[FAIL] = color.red("FAIL"),</span></td></tr>
+<tr><td>149</td><td>73</td><td><span class=low-hits>[NONE] = color.orange("NONE"),</span></td></tr>
+<tr><td>150</td><td>73</td><td><span class=low-hits>[ERROR] = color.red("FAIL"),</span></td></tr>
+<tr><td>151</td><td>73</td><td><span class=low-hits>[SKIPPED] = color.yellow("SKIP"),</span></td></tr>
+<tr><td>152</td><td>73</td><td><span class=low-hits>})[case.result]</span></td></tr>
 <tr><td>153</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
-<tr><td>154</td><td>73</td><td><span class=high-hits>local line = case.result == FAIL and color.red(`{case.line}:`) or ""</span></td></tr>
-<tr><td>155</td><td>73</td><td><span class=high-hits>if check_for_focused and case.focus == false and test.focus == false then</span></td></tr>
+<tr><td>154</td><td>73</td><td><span class=low-hits>local line = case.result == FAIL and color.red(`{case.line}:`) or ""</span></td></tr>
+<tr><td>155</td><td>73</td><td><span class=low-hits>if check_for_focused and case.focus == false and test.focus == false then</span></td></tr>
 <tr><td>156</td><td>0</td><td><span class=zero-hits>continue</span></td></tr>
 <tr><td>157</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
-<tr><td>158</td><td>73</td><td><span class=high-hits>print(`{status}{WALL} {line}{color.gray(case.name)}`)</span></td></tr>
+<tr><td>158</td><td>73</td><td><span class=low-hits>print(`{status}{WALL} {line}{color.gray(case.name)}`)</span></td></tr>
 <tr><td>159</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>160</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>161</td><td>24</td><td><span class=low-hits>if test.error then</span></td></tr>
@@ -220,17 +224,17 @@ table.table tr { height: auto; }
 <tr><td>167</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>168</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>169</td><td>1</td><td><span class=low-hits>local function CASE(name: string)</span></td></tr>
-<tr><td>170</td><td>0</td><td><span class=zero-hits>skip = false</span></td></tr>
-<tr><td>171</td><td>0</td><td><span class=zero-hits>assert(test, "no active test")</span></td></tr>
+<tr><td>170</td><td>73</td><td><span class=low-hits>skip = false</span></td></tr>
+<tr><td>171</td><td>73</td><td><span class=low-hits>assert(test, "no active test")</span></td></tr>
 <tr><td>172</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
-<tr><td>173</td><td>0</td><td><span class=zero-hits>local case = {</span></td></tr>
-<tr><td>174</td><td>0</td><td><span class=zero-hits>name = name,</span></td></tr>
-<tr><td>175</td><td>0</td><td><span class=zero-hits>result = NONE,</span></td></tr>
-<tr><td>176</td><td>0</td><td><span class=zero-hits>focus = false,</span></td></tr>
+<tr><td>173</td><td>73</td><td><span class=low-hits>local case = {</span></td></tr>
+<tr><td>174</td><td>73</td><td><span class=low-hits>name = name,</span></td></tr>
+<tr><td>175</td><td>73</td><td><span class=low-hits>result = NONE,</span></td></tr>
+<tr><td>176</td><td>73</td><td><span class=low-hits>focus = false,</span></td></tr>
 <tr><td>177</td><td>0</td><td><span class=zero-hits>}</span></td></tr>
 <tr><td>178</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
-<tr><td>179</td><td>0</td><td><span class=zero-hits>test.case = case</span></td></tr>
-<tr><td>180</td><td>0</td><td><span class=zero-hits>table.insert(test.cases, case)</span></td></tr>
+<tr><td>179</td><td>73</td><td><span class=low-hits>test.case = case</span></td></tr>
+<tr><td>180</td><td>73</td><td><span class=low-hits>table.insert(test.cases, case)</span></td></tr>
 <tr><td>181</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>182</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>183</td><td>1</td><td><span class=low-hits>local function CHECK_EXPECT_ERR(fn, ...)</span></td></tr>
@@ -334,15 +338,15 @@ table.table tr { height: auto; }
 <tr><td>281</td><td>1</td><td><span class=low-hits>for _, test in tests do</span></td></tr>
 <tr><td>282</td><td>24</td><td><span class=low-hits>duration += test.duration</span></td></tr>
 <tr><td>283</td><td>24</td><td><span class=low-hits>for _, case in test.cases do</span></td></tr>
-<tr><td>284</td><td>73</td><td><span class=high-hits>total_cases += 1</span></td></tr>
-<tr><td>285</td><td>73</td><td><span class=high-hits>if case.focus or test.focus then</span></td></tr>
+<tr><td>284</td><td>73</td><td><span class=low-hits>total_cases += 1</span></td></tr>
+<tr><td>285</td><td>73</td><td><span class=low-hits>if case.focus or test.focus then</span></td></tr>
 <tr><td>286</td><td>0</td><td><span class=zero-hits>total_focus_cases += 1</span></td></tr>
 <tr><td>287</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
-<tr><td>288</td><td>73</td><td><span class=high-hits>if case.result == PASS or case.result == NONE or case.result == SKIPPED then</span></td></tr>
-<tr><td>289</td><td>73</td><td><span class=high-hits>if case.focus or test.focus then</span></td></tr>
+<tr><td>288</td><td>73</td><td><span class=low-hits>if case.result == PASS or case.result == NONE or case.result == SKIPPED then</span></td></tr>
+<tr><td>289</td><td>73</td><td><span class=low-hits>if case.focus or test.focus then</span></td></tr>
 <tr><td>290</td><td>0</td><td><span class=zero-hits>passed_focus_cases += 1</span></td></tr>
 <tr><td>291</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
-<tr><td>292</td><td>73</td><td><span class=high-hits>passed_cases += 1</span></td></tr>
+<tr><td>292</td><td>73</td><td><span class=low-hits>passed_cases += 1</span></td></tr>
 <tr><td>293</td><td>0</td><td><span class=zero-hits>else</span></td></tr>
 <tr><td>294</td><td>0</td><td><span class=zero-hits>success = false</span></td></tr>
 <tr><td>295</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
@@ -423,8 +427,8 @@ table.table tr { height: auto; }
 <tr><td>370</td><td>3</td><td><span class=low-hits>local a, a_unit = convert_units("B", math.round((mem_stop - mem_start) / n * 1e3))</span></td></tr>
 <tr><td>371</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>372</td><td>3</td><td><span class=low-hits>local function round(x: number): string</span></td></tr>
-<tr><td>373</td><td>0</td><td><span class=zero-hits>return x > 0 and x < 10 and (x - math.floor(x)) > 0 and string.format("%2.1f", x)</span></td></tr>
-<tr><td>374</td><td>0</td><td><span class=zero-hits>or string.format("%3.f", x)</span></td></tr>
+<tr><td>373</td><td>6</td><td><span class=low-hits>return x > 0 and x < 10 and (x - math.floor(x)) > 0 and string.format("%2.1f", x)</span></td></tr>
+<tr><td>374</td><td>6</td><td><span class=low-hits>or string.format("%3.f", x)</span></td></tr>
 <tr><td>375</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>376</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>377</td><td>3</td><td><span class=low-hits>print(</span></td></tr>

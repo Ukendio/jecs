@@ -61,11 +61,16 @@ def generate_file_html(filepath, coverage_data, functions_data):
         '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">',
         '<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>',
         "<style>",
-        "body { font-family: monospace; font-size: 16px; }",
-        ".zero-hits { background-color: #fcc; font-weight: bold; color: red; }",  # Red for functions with 0 hits
-        ".nonzero-hits { color: green; font-weight: bold; }",  # Green for nonzero hit functions
-        ".low-hits { background-color: #ffe6b3; }",  # Yellow for low-hit functions
-        ".high-hits { background-color: #cfc; }",  # Green for high-hit functions
+        "body { font-family: monospace; text-align: center; }",
+        "#funcTable table { margin: 0 auto; width: auto; max-width: 300px; font-size: 14px; border-collapse: collapse; }",
+        "#funcTable th, #funcTable td { padding: 2px 6px; text-align: left; white-space: nowrap; }",
+        "#funcTable th { background-color: #ddd; }",
+        "#funcTable td:nth-child(2) { text-align: right; min-width: 50px; }",
+        ".zero-hits { background-color: #fcc; font-weight: bold; color: red; }",
+        ".nonzero-hits { color: green; font-weight: bold; }",
+        ".low-hits { background-color: #ffe6b3; }",
+        ".high-hits { background-color: #cfc; }",
+        ".source-code-table { margin-left: 10px; }"
         "th, td { padding: 0px; font-size: 12px; }",
         "table.table { font-size: 14px; border-collapse: collapse; }",
         "table.table th, table.table td { padding: 1px; font-size: 12px; line-height: 1.2; }",
@@ -93,7 +98,7 @@ def generate_file_html(filepath, coverage_data, functions_data):
 
     lines.append('</tbody></table></div>')  # Close collapsible div
 
-    lines.append('<h2>Source Code:</h2><table class="table table-bordered"><thead><tr><th>Line</th><th>Hits</th><th>Code</th></tr></thead><tbody>')
+    lines.append('<h2>Source Code:</h2><table class="table table-bordered source-code-table "><thead><tr><th>Line</th><th>Hits</th><th>Code</th></tr></thead><tbody>')
 
     for i, line in enumerate(source_code, start=1):
         stripped_line = line.strip()

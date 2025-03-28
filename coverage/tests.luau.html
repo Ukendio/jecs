@@ -2,19 +2,23 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 <style>
-body { font-family: monospace; font-size: 16px; }
+body { font-family: monospace; text-align: center; }
+#funcTable table { margin: 0 auto; width: auto; max-width: 300px; font-size: 14px; border-collapse: collapse; }
+#funcTable th, #funcTable td { padding: 2px 6px; text-align: left; white-space: nowrap; }
+#funcTable th { background-color: #ddd; }
+#funcTable td:nth-child(2) { text-align: right; min-width: 50px; }
 .zero-hits { background-color: #fcc; font-weight: bold; color: red; }
 .nonzero-hits { color: green; font-weight: bold; }
 .low-hits { background-color: #ffe6b3; }
 .high-hits { background-color: #cfc; }
-th, td { padding: 0px; font-size: 12px; }
+.source-code-table { margin-left: 10px; }th, td { padding: 0px; font-size: 12px; }
 table.table { font-size: 14px; border-collapse: collapse; }
 table.table th, table.table td { padding: 1px; font-size: 12px; line-height: 1.2; }
 table.table tr { height: auto; }
 </style></head><body>
 <h1 class="text-center">tests.luau Coverage</h1>
-<h2>Total Execution Hits: 72</h2>
-<h2>Function Coverage Overview: 79.10%</h2>
+<h2>Total Execution Hits: 100</h2>
+<h2>Function Coverage Overview: 83.58%</h2>
 <button class="btn btn-primary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#funcTable">Toggle Function Coverage</button>
 <div class="collapse show" id="funcTable">
 <h2>Function Coverage:</h2><table class="table table-bordered"><thead><tr><th>Function</th><th>Hits</th></tr></thead><tbody>
@@ -30,13 +34,13 @@ table.table tr { height: auto; }
 <tr><td style="padding: 1px; min-width: 22ch;">pe:63</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">pp:68</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">debug_world_inspect:73</td><td style="padding: 1px; color: green; font-weight: bold;">7</td></tr>
-<tr><td style="padding: 1px; min-width: 22ch;">record:74</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
-<tr><td style="padding: 1px; min-width: 22ch;">tbl:77</td><td style="padding: 1px; color: green; font-weight: bold;">6</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">record:74</td><td style="padding: 1px; color: green; font-weight: bold;">17</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">tbl:77</td><td style="padding: 1px; color: green; font-weight: bold;">12</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">archetype:80</td><td style="padding: 1px; color: green; font-weight: bold;">4</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">records:83</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
-<tr><td style="padding: 1px; min-width: 22ch;">columns:86</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
-<tr><td style="padding: 1px; min-width: 22ch;">row:89</td><td style="padding: 1px; color: green; font-weight: bold;">3</td></tr>
-<tr><td style="padding: 1px; min-width: 22ch;">tuple:94</td><td style="padding: 1px; color: green; font-weight: bold;">2</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">columns:86</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">row:89</td><td style="padding: 1px; color: green; font-weight: bold;">5</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">tuple:94</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">name:116</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:120</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:136</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
@@ -44,7 +48,7 @@ table.table tr { height: auto; }
 <tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:184</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:189</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;">getTargets:192</td><td style="padding: 1px; color: green; font-weight: bold;">2</td></tr>
-<tr><td style="padding: 1px; min-width: 22ch;">setAttacksAndEats:212</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
+<tr><td style="padding: 1px; min-width: 22ch;">setAttacksAndEats:212</td><td style="padding: 1px; color: green; font-weight: bold;">3</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:240</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:256</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:312</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
@@ -86,7 +90,7 @@ table.table tr { height: auto; }
 <tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1919</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
 <tr><td style="padding: 1px; min-width: 22ch;"><anonymous>:1939</td><td style="padding: 1px; color: green; font-weight: bold;">1</td></tr>
 </tbody></table></div>
-<h2>Source Code:</h2><table class="table table-bordered"><thead><tr><th>Line</th><th>Hits</th><th>Code</th></tr></thead><tbody>
+<h2>Source Code:</h2><table class="table table-bordered source-code-table "><thead><tr><th>Line</th><th>Hits</th><th>Code</th></tr></thead><tbody>
 <tr><td>1</td><td>1</td><td><span class=low-hits>local jecs = require("@jecs")</span></td></tr>
 <tr><td>2</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>3</td><td>1</td><td><span class=low-hits>local testkit = require("@testkit")</span></td></tr>
@@ -161,13 +165,13 @@ table.table tr { height: auto; }
 <tr><td>72</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>73</td><td>1</td><td><span class=low-hits>local function debug_world_inspect(world: World)</span></td></tr>
 <tr><td>74</td><td>7</td><td><span class=high-hits>local function record(e): jecs.Record</span></td></tr>
-<tr><td>75</td><td>2</td><td><span class=low-hits>return entity_index_try_get_any(world.entity_index, e) :: any</span></td></tr>
+<tr><td>75</td><td>17</td><td><span class=high-hits>return entity_index_try_get_any(world.entity_index, e) :: any</span></td></tr>
 <tr><td>76</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>77</td><td>7</td><td><span class=high-hits>local function tbl(e)</span></td></tr>
-<tr><td>78</td><td>1</td><td><span class=low-hits>return record(e).archetype</span></td></tr>
+<tr><td>78</td><td>12</td><td><span class=high-hits>return record(e).archetype</span></td></tr>
 <tr><td>79</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>80</td><td>7</td><td><span class=high-hits>local function archetype(e)</span></td></tr>
-<tr><td>81</td><td>4</td><td><span class=high-hits>return tbl(e).type</span></td></tr>
+<tr><td>81</td><td>4</td><td><span class=low-hits>return tbl(e).type</span></td></tr>
 <tr><td>82</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>83</td><td>7</td><td><span class=high-hits>local function records(e)</span></td></tr>
 <tr><td>84</td><td>1</td><td><span class=low-hits>return tbl(e).records</span></td></tr>
@@ -176,7 +180,7 @@ table.table tr { height: auto; }
 <tr><td>87</td><td>1</td><td><span class=low-hits>return tbl(e).columns</span></td></tr>
 <tr><td>88</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>89</td><td>7</td><td><span class=high-hits>local function row(e)</span></td></tr>
-<tr><td>90</td><td>2</td><td><span class=low-hits>return record(e).row</span></td></tr>
+<tr><td>90</td><td>5</td><td><span class=low-hits>return record(e).row</span></td></tr>
 <tr><td>91</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>92</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>93</td><td><span class='text-muted'>N/A</span></td><td>-- Important to order them in the order of their columns</td>></tr>
@@ -299,8 +303,8 @@ table.table tr { height: auto; }
 <tr><td>210</td><td>1</td><td><span class=low-hits>local Eats = world:component()</span></td></tr>
 <tr><td>211</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>212</td><td>1</td><td><span class=low-hits>local function setAttacksAndEats(entity1, entity2)</span></td></tr>
-<tr><td>213</td><td>0</td><td><span class=zero-hits>world:add(entity1, pair(Attacks, entity2))</span></td></tr>
-<tr><td>214</td><td>0</td><td><span class=zero-hits>world:add(entity1, pair(Eats, entity2))</span></td></tr>
+<tr><td>213</td><td>3</td><td><span class=low-hits>world:add(entity1, pair(Attacks, entity2))</span></td></tr>
+<tr><td>214</td><td>3</td><td><span class=low-hits>world:add(entity1, pair(Eats, entity2))</span></td></tr>
 <tr><td>215</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>216</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>217</td><td>1</td><td><span class=low-hits>local e1 = world:entity()</span></td></tr>
@@ -867,14 +871,14 @@ table.table tr { height: auto; }
 <tr><td>778</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>779</td><td>256</td><td><span class=high-hits>world:set(id, A, true)</span></td></tr>
 <tr><td>780</td><td>256</td><td><span class=high-hits>if i < 5 then</span></td></tr>
-<tr><td>781</td><td>4</td><td><span class=high-hits>entities[i] = id</span></td></tr>
+<tr><td>781</td><td>4</td><td><span class=low-hits>entities[i] = id</span></td></tr>
 <tr><td>782</td><td>0</td><td><span class=zero-hits>else</span></td></tr>
 <tr><td>783</td><td>252</td><td><span class=high-hits>world:set(id, B, true)</span></td></tr>
 <tr><td>784</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>785</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>786</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>787</td><td>1</td><td><span class=low-hits>for id in world:query(A):without(B) :: any do</span></td></tr>
-<tr><td>788</td><td>4</td><td><span class=high-hits>table.remove(entities, CHECK(table.find(entities, id)))</span></td></tr>
+<tr><td>788</td><td>4</td><td><span class=low-hits>table.remove(entities, CHECK(table.find(entities, id)))</span></td></tr>
 <tr><td>789</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>790</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>791</td><td>1</td><td><span class=low-hits>CHECK(#entities == 0)</span></td></tr>
@@ -1046,9 +1050,9 @@ table.table tr { height: auto; }
 <tr><td>957</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>958</td><td>1</td><td><span class=low-hits>local count = 0</span></td></tr>
 <tr><td>959</td><td>1</td><td><span class=low-hits>for id in world:query(A) :: any do</span></td></tr>
-<tr><td>960</td><td>3</td><td><span class=high-hits>world:add(id, B)</span></td></tr>
+<tr><td>960</td><td>3</td><td><span class=low-hits>world:add(id, B)</span></td></tr>
 <tr><td>961</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
-<tr><td>962</td><td>3</td><td><span class=high-hits>count += 1</span></td></tr>
+<tr><td>962</td><td>3</td><td><span class=low-hits>count += 1</span></td></tr>
 <tr><td>963</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>964</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>965</td><td>1</td><td><span class=low-hits>CHECK(count == 2)</span></td></tr>
@@ -1066,9 +1070,9 @@ table.table tr { height: auto; }
 <tr><td>977</td><td>1</td><td><span class=low-hits>world:add(e2, B)</span></td></tr>
 <tr><td>978</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>979</td><td>1</td><td><span class=low-hits>for id in world:query(A) :: any do</span></td></tr>
-<tr><td>980</td><td>3</td><td><span class=high-hits>local e = world:entity()</span></td></tr>
-<tr><td>981</td><td>3</td><td><span class=high-hits>world:add(e, A)</span></td></tr>
-<tr><td>982</td><td>3</td><td><span class=high-hits>world:add(e, B)</span></td></tr>
+<tr><td>980</td><td>3</td><td><span class=low-hits>local e = world:entity()</span></td></tr>
+<tr><td>981</td><td>3</td><td><span class=low-hits>world:add(e, A)</span></td></tr>
+<tr><td>982</td><td>3</td><td><span class=low-hits>world:add(e, B)</span></td></tr>
 <tr><td>983</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>984</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>985</td><td>1</td><td><span class=low-hits>CHECK(true)</span></td></tr>
@@ -1126,9 +1130,9 @@ table.table tr { height: auto; }
 <tr><td>1037</td><td>1</td><td><span class=low-hits>world:set(e3, C, true)</span></td></tr>
 <tr><td>1038</td><td><span class='text-muted'>N/A</span></td><td></td>></tr>
 <tr><td>1039</td><td>1</td><td><span class=low-hits>for entity: number in world:each(A) do</span></td></tr>
-<tr><td>1040</td><td>3</td><td><span class=high-hits>if entity == e1 :: number or entity == e2 :: number or entity == e3 :: number then</span></td></tr>
-<tr><td>1041</td><td>3</td><td><span class=high-hits>CHECK(true)</span></td></tr>
-<tr><td>1042</td><td>3</td><td><span class=high-hits>continue</span></td></tr>
+<tr><td>1040</td><td>3</td><td><span class=low-hits>if entity == e1 :: number or entity == e2 :: number or entity == e3 :: number then</span></td></tr>
+<tr><td>1041</td><td>3</td><td><span class=low-hits>CHECK(true)</span></td></tr>
+<tr><td>1042</td><td>3</td><td><span class=low-hits>continue</span></td></tr>
 <tr><td>1043</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>
 <tr><td>1044</td><td>0</td><td><span class=zero-hits>CHECK(false)</span></td></tr>
 <tr><td>1045</td><td><span class='text-muted'>N/A</span></td><td>end</td>></tr>

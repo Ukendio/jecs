@@ -2,12 +2,16 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 <style>
-body { font-family: monospace; font-size: 16px; }
+body { font-family: monospace; text-align: center; }
+#funcTable table { margin: 0 auto; width: auto; max-width: 300px; font-size: 14px; border-collapse: collapse; }
+#funcTable th, #funcTable td { padding: 2px 6px; text-align: left; white-space: nowrap; }
+#funcTable th { background-color: #ddd; }
+#funcTable td:nth-child(2) { text-align: right; min-width: 50px; }
 .zero-hits { background-color: #fcc; font-weight: bold; color: red; }
 .nonzero-hits { color: green; font-weight: bold; }
 .low-hits { background-color: #ffe6b3; }
 .high-hits { background-color: #cfc; }
-th, td { padding: 0px; font-size: 12px; }
+.source-code-table { margin-left: 10px; }th, td { padding: 0px; font-size: 12px; }
 table.table { font-size: 14px; border-collapse: collapse; }
 table.table th, table.table td { padding: 1px; font-size: 12px; line-height: 1.2; }
 table.table tr { height: auto; }
@@ -28,7 +32,7 @@ table.table tr { height: auto; }
 <tr><td style="padding: 1px; min-width: 18ch;">green_highlight:26</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
 <tr><td style="padding: 1px; min-width: 18ch;">gray:30</td><td style="padding: 1px; color: red; font-weight: bold;">0</td></tr>
 </tbody></table></div>
-<h2>Source Code:</h2><table class="table table-bordered"><thead><tr><th>Line</th><th>Hits</th><th>Code</th></tr></thead><tbody>
+<h2>Source Code:</h2><table class="table table-bordered source-code-table "><thead><tr><th>Line</th><th>Hits</th><th>Code</th></tr></thead><tbody>
 <tr><td>1</td><td>1</td><td><span class=high-hits>return {</span></td></tr>
 <tr><td>2</td><td>1</td><td><span class=high-hits>white_underline = function(s: any)</span></td></tr>
 <tr><td>3</td><td>0</td><td><span class=zero-hits>return `\27[1;4m{s}\27[0m`</span></td></tr>
