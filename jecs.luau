@@ -737,13 +737,13 @@ local function find_archetype_with(world: ecs_world_t, node: ecs_archetype_t, id
 	-- them each time would be expensive. Instead this insertion sort can find the insertion
 	-- point in the types array.
 
-	local dst = table.clone(node.types) :: { i53 }
 	local at = find_insert(id_types, id)
 	if at == -1 then
 		-- If it finds a duplicate, it just means it is the same archetype so it can return it
 		-- directly instead of needing to hash types for a lookup to the archetype.
 		return node
 	end
+	local dst = table.clone(id_types) :: { i53 }
 	table.insert(dst, at, id)
 
 	return archetype_ensure(world, dst)
