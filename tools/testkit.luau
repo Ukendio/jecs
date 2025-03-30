@@ -112,6 +112,7 @@ type Test = {
 		trace: string,
 	}?,
 	focus: boolean,
+	fn: () -> ()
 }
 
 type Case = {
@@ -231,7 +232,9 @@ local function TEST(name: string, fn: () -> ())
 		fn = fn
 	}
 
-	table.insert(tests, test)
+	local t = test
+
+	table.insert(tests, t)
 end
 
 local function FOCUS()
@@ -258,22 +261,22 @@ local function FINISH(): boolean
 			continue
 		end
 		test = t
-		fn = t.fn
+		local fn = t.fn
 		local start = os.clock()
 		local err
-		local success = xpcall(fn, function(m: string)
+		local ok = xpcall(fn, function(m: string)
 			err = { message = m, trace = debug.traceback(nil, 2) }
 		end)
-		test.duration = os.clock() - start
+		t.duration = os.clock() - start
 
-		if not test.case then
+		if not t.case then
 			CASE("")
 		end
-		assert(test.case, "no active case")
+		assert(t.case, "no active case")
 
-		if not success then
-			test.case.result = ERROR
-			test.error = err
+		if not ok then
+			t.case.result = ERROR
+			t.error = err
 		end
 		collectgarbage()
 	end
