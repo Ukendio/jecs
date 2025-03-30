@@ -11,7 +11,6 @@ export default defineConfig({
 			{ text: "Learn", link: "/" },
 			{ text: "API", link: "/api/jecs.md" },
 			{ text: "Examples", link: "https://github.com/Ukendio/jecs/tree/main/examples" },
-			{ text: "Coverage", link: "/coverage/index.html" },
 		],
 
 		sidebar: {
