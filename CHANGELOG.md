@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
         -   Specifically happened when you had at least two pairs of different relations with multiple targets each
 -   `[hooks]`:
     -   Replaced `OnSet` with `OnChange`
-        -   The former was used to detect emplace/move actions. Now the behaviour for `OnChange` is that it will run only when the value is about to be changed allowing you to retrieve the old value when needed
+        -   The former was used to detect emplace/move actions. Now the behaviour for `OnChange` is that it will run only when the value has changed
     -   Changed `OnAdd` to specifically run after the data has been set for non-zero-sized components. Also returns the value that the component was set to
         -   This should allow a more lenient window for modifying data
     -   Changed `OnRemove` to lazily lookup which archetype the entity will move to

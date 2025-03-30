@@ -124,12 +124,9 @@ local EcsOnArchetypeCreate =        HI_COMPONENT_ID + 12
 local EcsOnArchetypeDelete =        HI_COMPONENT_ID + 13
 local EcsRest =                     HI_COMPONENT_ID + 14
 
-local ECS_ID_DELETE =                        0b0000_0001
-local ECS_ID_IS_TAG =                        0b0000_0010
-local ECS_ID_HAS_ON_ADD =                    0b0000_0100
-local ECS_ID_HAS_ON_SET =                    0b0000_1000
-local ECS_ID_HAS_ON_REMOVE =                 0b0001_0000
-local ECS_ID_MASK =                          0b0000_0000
+local ECS_ID_DELETE =                        		0b01
+local ECS_ID_IS_TAG =                        		0b10
+local ECS_ID_MASK =                          		0b00
 
 local ECS_ENTITY_MASK =              bit32.lshift(1, 24)
 local ECS_GENERATION_MASK =          bit32.lshift(1, 16)
@@ -930,6 +927,10 @@ local function world_set(world: ecs_world_t, entity: i53, id: i53, data: unknown
 	local idr_hooks = idr.hooks
 
 	if from == to then
+		local tr = to.records[id]
+		local column = from.columns[tr]
+		column[record.row] = data
+
 		-- If the archetypes are the same it can avoid moving the entity
 		-- and just set the data directly.
 		local on_change = idr_hooks.on_change
@@ -937,9 +938,6 @@ local function world_set(world: ecs_world_t, entity: i53, id: i53, data: unknown
 			on_change(entity, data)
 		end
 
-		local tr = to.records[id]
-		local column = from.columns[tr]
-		column[record.row] = data
 		return
 	end
 
@@ -962,8 +960,6 @@ local function world_set(world: ecs_world_t, entity: i53, id: i53, data: unknown
 	if on_add then
 		on_add(entity, data)
 	end
-
-
 end
 
 local function world_component(world: World): i53

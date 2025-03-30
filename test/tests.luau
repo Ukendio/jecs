@@ -1665,11 +1665,20 @@ TEST("Hooks", function()
 		local Number = world:component()
 		local e1 = world:entity()
 
+		local call = 0
 		world:set(Number, jecs.OnChange, function(entity, data)
 			CHECK(e1 == entity)
-			CHECK(world:get(entity, Number) == nil)
+			if call == 1 then
+				CHECK(false)
+			elseif call == 2 then
+				CHECK(world:get(entity, Number) == data)
+			end
 			CHECK(data == 1)
 		end)
+
+		call = 1
+		world:set(e1, Number, 1)
+		call = 2
 		world:set(e1, Number, 1)
 	end
 
