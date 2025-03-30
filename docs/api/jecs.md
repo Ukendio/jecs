@@ -45,6 +45,6 @@ function jecs.pair(
 ```
 ::: info
 
-Note that while relationship pairs can be used as components, meaning you can add data with it as an ID, however they cannot be used as entities. Meaning you cannot add components to a pair as the source of a binding.
+While relationship pairs can be used as components and have data associated with an ID, they cannot be used as entities. Meaning you cannot add components to a pair as the source of a binding.
 
 :::
