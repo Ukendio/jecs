@@ -61,8 +61,8 @@ type ecs_id_record_t = {
 	flags: number,
 	size: number,
 	hooks: {
-		on_add: ((entity: i53) -> ())?,
-		on_set: ((entity: i53, data: any) -> ())?,
+		on_add: ((entity: i53, data: any?) -> ())?,
+		on_change: ((entity: i53, data: any) -> ())?,
 		on_remove: ((entity: i53) -> ())?,
 	},
 }
@@ -111,7 +111,7 @@ local HI_COMPONENT_ID = _G.__JECS_HI_COMPONENT_ID or 256
 -- stylua: ignore start
 local EcsOnAdd =                    HI_COMPONENT_ID +  1
 local EcsOnRemove =                 HI_COMPONENT_ID +  2
-local EcsOnSet =                    HI_COMPONENT_ID +  3
+local EcsOnChange =                 HI_COMPONENT_ID +  3
 local EcsWildcard =                 HI_COMPONENT_ID +  4
 local EcsChildOf =                  HI_COMPONENT_ID +  5
 local EcsComponent =                HI_COMPONENT_ID +  6
@@ -572,9 +572,11 @@ local function id_record_ensure(world: ecs_world_t, id: number): ecs_id_record_t
 			has_delete = true
 		end
 
-		local on_add, on_set, on_remove = world_get(world, relation, EcsOnAdd, EcsOnSet, EcsOnRemove)
+		local on_add, on_change, on_remove = world_get(world,
+			relation, EcsOnAdd, EcsOnChange, EcsOnRemove)
 
-		local is_tag = not world_has_one_inline(world, relation, EcsComponent)
+		local is_tag = not world_has_one_inline(world,
+			relation, EcsComponent)
 
 		if is_tag and is_pair then
 			is_tag = not world_has_one_inline(world, target, EcsComponent)
@@ -582,9 +584,6 @@ local function id_record_ensure(world: ecs_world_t, id: number): ecs_id_record_t
 
 		flags = bit32.bor(
 			flags,
-			if on_add then ECS_ID_HAS_ON_ADD else 0,
-			if on_remove then ECS_ID_HAS_ON_REMOVE else 0,
-			if on_set then ECS_ID_HAS_ON_SET else 0,
 			if has_delete then ECS_ID_DELETE else 0,
 			if is_tag then ECS_ID_IS_TAG else 0
 		)
@@ -596,7 +595,7 @@ local function id_record_ensure(world: ecs_world_t, id: number): ecs_id_record_t
 			flags = flags,
 			hooks = {
 				on_add = on_add,
-				on_set = on_set,
+				on_change = on_change,
 				on_remove = on_remove,
 			},
 		}
@@ -737,13 +736,13 @@ local function find_archetype_with(world: ecs_world_t, node: ecs_archetype_t, id
 	-- them each time would be expensive. Instead this insertion sort can find the insertion
 	-- point in the types array.
 
+	local dst = table.clone(node.types) :: { i53 }
 	local at = find_insert(id_types, id)
 	if at == -1 then
 		-- If it finds a duplicate, it just means it is the same archetype so it can return it
 		-- directly instead of needing to hash types for a lookup to the archetype.
 		return node
 	end
-	local dst = table.clone(id_types) :: { i53 }
 	table.insert(dst, at, id)
 
 	return archetype_ensure(world, dst)
@@ -933,14 +932,14 @@ local function world_set(world: ecs_world_t, entity: i53, id: i53, data: unknown
 	if from == to then
 		-- If the archetypes are the same it can avoid moving the entity
 		-- and just set the data directly.
+		local on_change = idr_hooks.on_change
+		if on_change then
+			on_change(entity, data)
+		end
+
 		local tr = to.records[id]
 		local column = from.columns[tr]
 		column[record.row] = data
-		local on_set = idr_hooks.on_set
-		if on_set then
-			on_set(entity, data)
-		end
-
 		return
 	end
 
@@ -961,13 +960,10 @@ local function world_set(world: ecs_world_t, entity: i53, id: i53, data: unknown
 
 	local on_add = idr_hooks.on_add
 	if on_add then
-		on_add(entity)
+		on_add(entity, data)
 	end
 
-	local on_set = idr_hooks.on_set
-	if on_set then
-		on_set(entity, data)
-	end
+
 end
 
 local function world_component(world: World): i53
@@ -2471,7 +2467,7 @@ local function world_new()
 	end
 
 	world_add(self, EcsName, EcsComponent)
-	world_add(self, EcsOnSet, EcsComponent)
+	world_add(self, EcsOnChange, EcsComponent)
 	world_add(self, EcsOnAdd, EcsComponent)
 	world_add(self, EcsOnRemove, EcsComponent)
 	world_add(self, EcsWildcard, EcsComponent)
@@ -2479,7 +2475,7 @@ local function world_new()
 
 	world_set(self, EcsOnAdd, EcsName, "jecs.OnAdd")
 	world_set(self, EcsOnRemove, EcsName, "jecs.OnRemove")
-	world_set(self, EcsOnSet, EcsName, "jecs.OnSet")
+	world_set(self, EcsOnChange, EcsName, "jecs.OnChange")
 	world_set(self, EcsWildcard, EcsName, "jecs.Wildcard")
 	world_set(self, EcsChildOf, EcsName, "jecs.ChildOf")
 	world_set(self, EcsComponent, EcsName, "jecs.Component")
@@ -2612,7 +2608,7 @@ return {
 
 	OnAdd = EcsOnAdd :: Entity<(entity: Entity) -> ()>,
 	OnRemove = EcsOnRemove :: Entity<(entity: Entity) -> ()>,
-	OnSet = EcsOnSet :: Entity<(entity: Entity, data: any) -> ()>,
+	OnChange = EcsOnChange :: Entity<(entity: Entity, data: any) -> ()>,
 	ChildOf = EcsChildOf :: Entity,
 	Component = EcsComponent :: Entity,
 	Wildcard = EcsWildcard :: Entity,
