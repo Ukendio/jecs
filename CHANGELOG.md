@@ -11,29 +11,46 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 ## [Unreleased]
 
 -   `[world]`:
-    -   16% faster `world:get`
-    -   `world:has` no longer typechecks components after the 8th one.
--   `[typescript]`
+    -   Changed `world:clear` to also look through the component record for the cleared `ID`
+        -   Removes the cleared ID from every entity that has it
+    -   Changed entity ID layouts by putting the index in the lower bits, which should make every world function 1-5 nanoseconds faster
+    -   Fixed `world:delete` not removing every pair with an unalive target
+        -   Specifically happened when you had at least two pairs of different relations with multiple targets each
+-   `[hooks]`:
+    -   Replaced `OnSet` with `OnChange`
+        -   The former was used to detect emplace/move actions. Now the behaviour for `OnChange` is that it will run only when the value is about to be changed allowing you to retrieve the old value when needed
+    -   Changed `OnAdd` to specifically run after the data has been set for non-zero-sized components. Also returns the value that the component was set to
+        -   This should allow a more lenient window for modifying data
+    -   Changed `OnRemove` to lazily lookup which archetype the entity will move to
+        -   Can now have interior structural changes within `OnRemove` hooks
 
-    -   Fixed Entity type to default to `undefined | unknown` instead of just `undefined`
+## [0.5.0] - 2024-12-26
 
+-   `[world]`:
+    -   Fixed `world:target` not giving adjacent pairs
+    -   Added `world:each` to find entities with a specific Tag
+    -   Added `world:children` to find children of entity
 -   `[query]`:
-    -   Fixed bug where `world:clear` did not invoke `jecs.OnRemove` hooks
-    -   Changed `query.__iter` to drain on iteration
-        -   It will initialize once wherever you left iteration off at last time
-    -   Changed `query:iter` to restart the iterator
-    -   Removed `query:drain` and `query:next`
-        -   If you want to get individual results outside of a for-loop, you need to call `query:iter` to initialize the iterator and then call the iterator function manually
-        ```lua
-        local it = world:query(A, B, C):iter()
-        local entity, a, b, c = it()
-        entity, a, b, c = it() -- get next results
-        ```
--   `[world`
-    -   Fixed a bug with `world:clear` not invoking `jecs.OnRemove` hooks
--   `[typescript]`:
-    -   Changed pair to accept generics
-    -   Improved handling of Tags
+    -   Added `query:cached`
+        -   Adds query cache that updates itself when an archetype matching the query gets created or deleted.
+-   `[luau]`:
+    -   Changed how entities' types are inferred with user-defined type functions
+    -   Changed `Pair<First, Second>` to return `Second` if `First` is a `Tag`; otherwise, returns `First`.
+
+## [0.4.0] - 2024-11-17
+
+-   `[world]`:
+    -   Added recycling to `world:entity`
+        -   If you see much larger entity ids, that is because its generation has been incremented
+-   `[query]`:
+    -   Removed `query:drain`
+        -   The default behaviour is simply to drain the iterator
+    -   Removed `query:next`
+        -   Just call the iterator function returned by `query:iter` directly if you want to get the next results
+    -   Removed `query:replace`
+-   `[luau]`:
+    -   Fixed `query:archetypes` not taking `self`
+    -   Changed so that the `jecs.Pair` type now returns the first element's type so you won't need to typecast anymore.
 
 ## [0.3.2] - 2024-10-01
 
