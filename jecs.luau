@@ -120,15 +120,17 @@ local EcsOnDeleteTarget =           HI_COMPONENT_ID +  8
 local EcsDelete =                   HI_COMPONENT_ID +  9
 local EcsRemove =                   HI_COMPONENT_ID + 10
 local EcsName =                     HI_COMPONENT_ID + 11
-local EcsOnArchetypeCreate =        HI_COMPONENT_ID + 12
-local EcsOnArchetypeDelete =        HI_COMPONENT_ID + 13
-local EcsRest =                     HI_COMPONENT_ID + 14
+local EcsExclusive =                HI_COMPONENT_ID + 12
+local EcsOnArchetypeCreate =        HI_COMPONENT_ID + 13
+local EcsOnArchetypeDelete =        HI_COMPONENT_ID + 14
+local EcsRest =                     HI_COMPONENT_ID + 15
 
 local ECS_ID_DELETE =                        0b0000_0001
 local ECS_ID_IS_TAG =                        0b0000_0010
 local ECS_ID_HAS_ON_ADD =                    0b0000_0100
 local ECS_ID_HAS_ON_SET =                    0b0000_1000
 local ECS_ID_HAS_ON_REMOVE =                 0b0001_0000
+local ECS_ID_EXCLUSIVE =                     0b0010_0000
 local ECS_ID_MASK =                          0b0000_0000
 
 local ECS_ENTITY_MASK =              bit32.lshift(1, 24)
@@ -575,6 +577,7 @@ local function id_record_ensure(world: ecs_world_t, id: number): ecs_id_record_t
 		local on_add, on_set, on_remove = world_get(world, relation, EcsOnAdd, EcsOnSet, EcsOnRemove)
 
 		local is_tag = not world_has_one_inline(world, relation, EcsComponent)
+		local is_exclusive = world_has_one_inline(world, relation, EcsExclusive)
 
 		if is_tag and is_pair then
 			is_tag = not world_has_one_inline(world, target, EcsComponent)
@@ -586,7 +589,8 @@ local function id_record_ensure(world: ecs_world_t, id: number): ecs_id_record_t
 			if on_remove then ECS_ID_HAS_ON_REMOVE else 0,
 			if on_set then ECS_ID_HAS_ON_SET else 0,
 			if has_delete then ECS_ID_DELETE else 0,
-			if is_tag then ECS_ID_IS_TAG else 0
+			if is_tag then ECS_ID_IS_TAG else 0,
+			if is_exclusive then ECS_ID_EXCLUSIVE else 0
 		)
 
 		idr = {
@@ -736,6 +740,23 @@ local function find_archetype_with(world: ecs_world_t, node: ecs_archetype_t, id
 	-- Component IDs are added incrementally, so inserting and sorting
 	-- them each time would be expensive. Instead this insertion sort can find the insertion
 	-- point in the types array.
+
+	if ECS_IS_PAIR(id) then
+		local relation = ECS_PAIR_FIRST(id)
+		local idr = id_record_ensure(world, ECS_PAIR(relation, EcsWildcard))
+
+		if bit32.band(idr.flags, ECS_ID_EXCLUSIVE) ~= 0 then
+			-- Relationship is exclusive, check if archetype already has it
+			local tr = idr.cache[node.id]
+			if tr then
+				-- Archetype already has an instance of the relationship, create
+				-- a new id sequence with the existing id replaced
+				local dst = table.clone(id_types)
+				dst[tr] = id
+				return archetype_ensure(world, dst)
+			end
+		end
+	end
 
 	local at = find_insert(id_types, id)
 	if at == -1 then
@@ -2475,12 +2496,14 @@ local function world_new()
 	world_add(self, EcsOnAdd, EcsComponent)
 	world_add(self, EcsOnRemove, EcsComponent)
 	world_add(self, EcsWildcard, EcsComponent)
+	world_add(self, EcsExclusive, EcsComponent)
 	world_add(self, EcsRest, EcsComponent)
 
 	world_set(self, EcsOnAdd, EcsName, "jecs.OnAdd")
 	world_set(self, EcsOnRemove, EcsName, "jecs.OnRemove")
 	world_set(self, EcsOnSet, EcsName, "jecs.OnSet")
 	world_set(self, EcsWildcard, EcsName, "jecs.Wildcard")
+	world_set(self, EcsExclusive, EcsName, "jecs.Exclusive")
 	world_set(self, EcsChildOf, EcsName, "jecs.ChildOf")
 	world_set(self, EcsComponent, EcsName, "jecs.Component")
 	world_set(self, EcsOnDelete, EcsName, "jecs.OnDelete")
@@ -2490,6 +2513,7 @@ local function world_new()
 	world_set(self, EcsName, EcsName, "jecs.Name")
 	world_set(self, EcsRest, EcsRest, "jecs.Rest")
 
+	world_add(self, EcsChildOf, EcsExclusive)
 	world_add(self, EcsChildOf, ECS_PAIR(EcsOnDeleteTarget, EcsDelete))
 
 	return self
@@ -2622,6 +2646,7 @@ return {
 	Delete = EcsDelete :: Entity,
 	Remove = EcsRemove :: Entity,
 	Name = EcsName :: Entity<string>,
+	Exclusive = EcsExclusive :: Entity,
 	Rest = EcsRest :: Entity,
 
 	pair = (ECS_PAIR :: any) :: <P, O>(first: Id<P>, second: Id<O>) -> Pair<P, O>,

@@ -1947,4 +1947,25 @@ TEST("world:delete() invokes OnRemove hook", function()
 		CHECK(called)
 	end
 end)
+
+TEST("exclusive relationships", function()
+	local world = world_new()
+	local pair = jecs.pair
+
+	local child = world:entity()
+
+	for _ = 1, 10 do
+		local A = world:entity()
+		local B = world:entity()
+
+		world:add(child, pair(world:entity(), child)) -- noise
+		world:add(child, pair(ChildOf, A))
+		world:add(child, pair(child, world:entity())) -- noise
+		world:add(child, pair(ChildOf, B))
+
+		CHECK(world:has(child, pair(ChildOf, B)))
+		CHECK(not world:has(child, pair(ChildOf, A)))
+	end
+end)
+
 FINISH()
