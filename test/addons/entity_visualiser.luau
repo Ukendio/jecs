@@ -1,8 +1,7 @@
 local jecs = require("@jecs")
 local pair = jecs.pair
 local ChildOf = jecs.ChildOf
-local lifetime_tracker_add = require("@tools/lifetime_tracker")
-local pe = require("@tools/entity_visualiser").prettify
+local lifetime_tracker_add = require("@addons/lifetime_tracker")
 local world = lifetime_tracker_add(jecs.world(), {padding_enabled=false})
 local FriendsWith = world:component()
 world:print_snapshot()

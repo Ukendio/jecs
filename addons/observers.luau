@@ -1,11 +1,9 @@
 local jecs = require("@jecs")
 local testkit = require("@testkit")
 
-local function observers_new(description)
-	local event = description.event
+local function observers_new(world, description)
 	local query = description.query
 	local callback = description.callback
-	local world = query.world
 	local terms = query.filter_with
 	if not terms then
 		local ids = query.ids
@@ -26,11 +24,8 @@ local function observers_new(description)
 	end
 
 	for _, term in terms do
-		if event == jecs.OnAdd then
-			world:added(term, emplaced)
-		elseif event == jecs.OnSet then
-			world:emplaced(term, emplaced)
-		end
+		world:added(term, emplaced)
+		world:changed(term, emplaced)
  	end
 end
 
@@ -67,12 +62,11 @@ local function world_track(world, ...)
 
 	for _, term in terms do
 		world:added(term, emplaced)
-		world:emplaced(term, emplaced)
+		world:changed(term, emplaced)
  	end
 
 	local function iter()
 		local i = n
-		print(i, "i")
 		return function()
 			local row = i
 			if row == 0 then
@@ -84,12 +78,16 @@ local function world_track(world, ...)
 	end
 
 	local it = {
-		__iter = iter
+		__iter = iter,
+		without = function(self, ...)
+			q_shim.filter_without = { ... }
+			return self
+		end
 	}
 	return setmetatable(it, it)
 end
 
-local function observers_init(world)
+local function observers_add(world)
 	local signals = {
 		added = {},
 		emplaced = {},
@@ -110,13 +108,13 @@ local function observers_init(world)
 		table.insert(listeners, fn)
 	end
 
-	world.emplaced = function(_, component, fn)
+	world.changed = function(_, component, fn)
 		local listeners = signals.emplaced[component]
 		if not listeners then
 			listeners = {}
 			signals.emplaced[component] = listeners
 			local idr = jecs.id_record_ensure(world, component)
-			idr.hooks.on_set = function(entity, value)
+			idr.hooks.on_change = function(entity, value)
 				for _, listener in listeners do
 					listener(entity, value)
 				end
@@ -143,46 +141,9 @@ local function observers_init(world)
 	world.signals = signals
 
 	world.track = world_track
-	return
+
+	world.observer = observers_new
+	return world
 end
 
-local world = jecs.world()
-observers_init(world)
-
-local A = world:component()
-local B = world:component()
-
-world:added(A, print)
-world:added(A, function(entity)
-	print(entity, 2)
-end)
-
-local observer = observers_new({
-	event = jecs.OnAdd,
-	query = world:query(A, B),
-	callback = function(entity)
-		print(entity, 3)
-	end
-})
-
-local e = world:entity()
-local Test = world:track(A, B)
-for a in Test do
-	print(a)
-	assert(false)
-end
-world:add(e, A)
-
--- Output:
---  271
---  271, 2
-for _ in Test do
-	assert(false)
-end
-world:add(e, B)
-for a in Test do
-	print("lol")
-	assert(true)
-end
--- Output:
---  271, 3
+return observers_add

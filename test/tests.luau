@@ -133,6 +133,8 @@ TEST("#adding a recycled target", function()
 
 end)
 
+local entity_visualizer = require("@addons/entity_visualiser")
+
 TEST("#repro2", function()
 	local world = world_new()
 	local Lifetime = world:component() :: jecs.Id<number>
@@ -144,7 +146,6 @@ TEST("#repro2", function()
 	world:set(entity, pair(Lifetime, Beam), 2)
 	world:set(entity, pair(4, 5), 6) -- noise
 
-	local entity_visualizer = require("@tools/entity_visualiser")
 	-- entity_visualizer.components(world, entity)
 
 	for e in world:each(pair(Lifetime, __)) do
@@ -169,7 +170,7 @@ TEST("#repro2", function()
 	CHECK(world:get(entity, pair(Lifetime, Beam)) == 1)
 end)
 
-local lifetime_tracker_add = require("@tools/lifetime_tracker")
+local lifetime_tracker_add = require("@addons/lifetime_tracker")
 
 TEST("another", function()
 	local world = world_new()
@@ -306,8 +307,8 @@ TEST("world:cleanup()", function()
 	CHECK(#archetype_index["1_2_3"].entities == 1)
 end)
 
-local pe = require("@tools/entity_visualiser").prettify
-local lifetime_tracker_add = require("@tools/lifetime_tracker")
+local pe = require("@addons/entity_visualiser").prettify
+local lifetime_tracker_add = require("@addons/lifetime_tracker")
 
 TEST("world:entity()", function()
 	do

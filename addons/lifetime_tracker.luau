@@ -4,10 +4,9 @@ local ECS_ID = jecs.ECS_ID
 local __ = jecs.Wildcard
 local pair = jecs.pair
 
-local prettify = require("@tools/entity_visualiser").prettify
+local prettify = require("@addons/entity_visualiser").prettify
 
 local pe = prettify
-local ansi = require("@tools/ansi")
 
 function print_centered_entity(entity, width: number)
 	local entity_str = tostring(entity)
@@ -40,12 +39,10 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 
 	local ENTITY_RANGE = (jecs.Rest :: any) + 1
 
-	local w = setmetatable({}, { __index = world })
-
 	padding_enabled = opt.padding_enabled
 
 	local world_entity = world.entity
-	w.entity = function(self, entity)
+	world.entity = function(_, entity)
 		if entity then
 			return world_entity(world, entity)
 		end
@@ -59,7 +56,7 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 		pad()
 		return e
 	end
-	w.print_entity_index = function(self)
+	world.print_entity_index = function()
 		local max_id = entity_index.max_id
 		local alive_count = entity_index.alive_count
 		local alive = table.move(dense_array, 1 + jecs.Rest :: any, alive_count, 1, {})
@@ -86,7 +83,7 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 		pad()
 	end
 	local timelines = {}
-	w.print_snapshot = function(self)
+	world.print_snapshot = function(_)
 		local timeline = #timelines + 1
 		local entity_column_width = 10
 		local status_column_width = 8
@@ -161,7 +158,7 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 	end
 	local world_add = world.add
 	local relations = {}
-	w.add = function(self, entity: any, component: any)
+	world.add = function(_, entity: any, component: any)
 		world_add(world, entity, component)
 		if jecs.IS_PAIR(component) then
 			local relation = jecs.pair_first(world, component)
@@ -172,7 +169,7 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 	end
 
 	local world_delete = world.delete
-	w.delete = function(self, e)
+	world.delete = function(world, e)
 		world_delete(world, e)
 
 		local idr_t = component_index[pair(__, e)]
@@ -210,7 +207,7 @@ local function lifetime_tracker_add(world: jecs.World, opt)
 		print(`*deleted {pe(e)}`)
 		pad()
 	end
-	return w
+	return world
 end
 
 return lifetime_tracker_add
