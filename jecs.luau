@@ -1,2666 +1,2420 @@
---!optimize 2
---!native
---!strict
---draft 4
+--------------------------------------------------------------------------------
+-- ecr.luau
+-- v0.9.0
+--------------------------------------------------------------------------------
 
-type i53 = number
-type i24 = number
+local ID_SIZE = 4
+local MAX_ENTITIES = 0x0000_FFFF
 
-type Ty = { i53 }
-type ArchetypeId = number
+--------------------------------------------------------------------------------
+-- types
+--------------------------------------------------------------------------------
 
-type Column = { any }
+export type entity = number
 
-type Map<K, V> = { [K]: V }
+type Array<T> = { [number]: T }
+type Map<T, U> = { [T]: U }
+type Listener<T> = (id: entity, value: T) -> ()
+type CType = unknown
 
-type ecs_graph_edge_t = {
-	from: ecs_archetype_t,
-	to: ecs_archetype_t?,
-	id: number,
-	prev: ecs_graph_edge_t?,
-	next: ecs_graph_edge_t?,
+export type Signal<T...> = {
+    connect: (self: Signal<T...>, listener: (T...) -> ()) -> Connection,
 }
 
-type ecs_graph_edges_t = Map<i53, ecs_graph_edge_t>
-
-type ecs_graph_node_t = {
-	add: ecs_graph_edges_t,
-	remove: ecs_graph_edges_t,
-	refs: ecs_graph_edge_t,
+export type Connection = {
+    disconnect: (self: Connection) -> (),
+    reconnect: (self: Connection) -> ()
 }
 
-type ecs_archetype_t = {
-	id: number,
-	types: Ty,
-	type: string,
-	entities: { number },
-	columns: { Column },
-	records: { [i53]: number },
-	counts: { [i53]: number },
-} & ecs_graph_node_t
+type Pool<T> = {
+    -- sparse
+    map_max: number, -- largest key that can fit
+    map: buffer, -- maps keys to internal indexes
 
-export type Archetype = {
-	id: number,
-	types: Ty,
-	type: string,
-	entities: { number },
-	columns: { Column },
-	records: { [Id]: number },
-	counts: { [Id]: number },
+    -- dense
+    capacity: number, -- allocated amount
+    size: number, -- entities in pool
+    entities: buffer, -- all entities (0-indexed)
+    values: Array<T>, -- all values (1-indexed)
+
+    on_add: Array<Listener<T>> | false,
+    on_change: Array<Listener<T>> | false,
+    on_remove: Array<Listener<nil>> | false,
+    on_clear: Array<() -> ()> | false,
+    after_clear: Array<() -> ()> | false,
+
+    group: GroupData<T> | false,
+
+    reserve: (self: Pool<T>, size: number) -> ()
 }
 
-type ecs_record_t = {
-	archetype: ecs_archetype_t,
-	row: number,
-	dense: i24,
+type EntityList = {
+    data: buffer,
+    capacity: number,
+    free: number,
 }
 
-type ecs_id_record_t = {
-	cache: { number },
-	counts: { number },
-	flags: number,
-	size: number,
-	hooks: {
-		on_add: ((entity: i53, data: any?) -> ())?,
-		on_change: ((entity: i53, data: any) -> ())?,
-		on_remove: ((entity: i53) -> ())?,
-	},
+type GroupData<T = unknown> = {
+    size: number, -- entities in group
+    added: boolean, -- flag to detect iter invalidation
+    connections: Array<Connection>, -- listeners to add and remove from group
+    [number]: Pool<T> -- all pools in group
 }
 
-type ecs_id_index_t = Map<i53, ecs_id_record_t>
+export type Handle = typeof(setmetatable(
+    {} :: { world: Registry, entity: entity },
+    {} :: HandleMT
+))
 
-type ecs_archetypes_map_t = { [string]: ecs_archetype_t }
-
-type ecs_archetypes_t = { ecs_archetype_t }
-
-type ecs_entity_index_t = {
-	dense_array: Map<number, i53>,
-	sparse_array: Map<i24, ecs_record_t>,
-	alive_count: number,
-	max_id: number,
+type HandleMT = {
+    __index: HandleMT,
+    destroy: (self: Handle) -> (),
+    has_none: (self: Handle) -> boolean,
+    add: <T...>(self: Handle, T...) -> (),
+    set: <T>(self: Handle, ctype: T, value: T) -> Handle,
+    insert: <T>(self: Handle, ctype: Array<T>, value: T) -> Handle,
+    patch: <T>(self: Handle, ctype: T, fn: ((T) -> T)?) -> T,
+    has: <T...>(self: Handle, T...) -> boolean,
+    get: <T...>(self: Handle, T...) -> T...,
+    try_get: <T>(self: Handle, T) -> T?,
+    remove: <T...>(self: Handle, T...) -> (),
 }
 
-type ecs_query_data_t = {
-	compatible_archetypes: { ecs_archetype_t },
-	ids: { i53 },
-	filter_with: { i53 },
-	filter_without: { i53 },
-	next: () -> (number, ...any),
-	world: ecs_world_t,
+export type View<T...> = typeof(setmetatable({} :: {
+    withou: <U...>(self: View<T...>, U...) -> View<T...>,
+    patch: (self: View<T...>, fn: (T...) -> T...) -> (),
+    iter: (self: View<T...>) -> () -> (entity, T...)
+}, {} :: {
+    __len: (self: View<T...>) -> number ,
+    __iter: (self: View<T...>) -> () -> (entity, T...)
+}))
+
+export type Observer<T...> = typeof(setmetatable({} :: {
+    withou: <U...>(self: Observer<T...>, U...) -> Observer<T...>,
+    disconnect: (self: Observer<T...>) -> Observer<T...>,
+    reconnect: (self: Observer<T...>) -> Observer<T...>,
+    clear: (self: Observer<T...>) -> Observer<T...>,
+    iter: (self: Observer<T...>) -> () -> (entity, T...)
+}, {} :: {
+    __len: (self: Observer<T...>) -> number,
+    __iter: (self: Observer<T...>) -> () -> (entity, T...)
+}))
+
+export type Group<T...> = typeof(setmetatable({} :: {
+    iter: (self: Group<T...>) -> () -> (entity, T...)
+}, {} :: {
+    __len: (self: Group<T...>) -> number,
+    __iter: (self: Group<T...>) -> () -> (entity, T...)
+}))
+
+export type Registry = {
+    create: ((self: Registry, id: entity) -> entity) & ((self: Registry) -> entity),
+    release: (self: Registry, id: entity) -> (),
+    destroy: (self: Registry, id: entity) -> (),
+    contains: (self: Registry, id: entity) -> boolean,
+
+    has_none: (self: Registry, id: entity) -> boolean,
+    add: <T...>(self: Registry, id: entity, T...) -> (),
+    set: <T>(self: Registry, id: entity, ctype: T, value: T) -> (),
+    insert: <T>(self: Registry, id: entity, ctype: Array<T>, value: T) -> (),
+    patch: <T>(self: Registry, id: entity, ctype: T, fn: ((T) -> T)?) -> T,
+    has: <T...>(self: Registry, id: entity, T...) -> boolean,
+    get: <T...>(self: Registry, id: entity, T...) -> T...,
+    try_get: <T>(self: Registry, id: entity, T) -> T?,
+    remove: <T...>(self: Registry, id: entity, T...) -> (),
+    find: <T>(self: Registry, ctype: T, value: T) -> entity?,
+    copy: <T>(self: Registry, a: T, b: T) -> (),
+
+    query: <T...>(self: Registry, T...) -> View<T...>,
+    track: <T...>(self: Registry, T...) -> Observer<T...>,
+    group: <T...>(self: Registry, T...) -> Group<T...>,
+
+    clear: <T...>(self: Registry, T...) -> (),
+    storage: (<T>(self: Registry, ctype: T) -> Pool<T>) & (<T>(self: Registry) -> () -> (unknown, Pool<unknown>)),
+
+    on_add: <T>(self: Registry, ctype: T) -> Signal<entity, T>,
+    on_change: <T>(self: Registry, ctype: T) -> Signal<entity, T>,
+    on_remove: <T>(self: Registry, ctype: T) -> Signal<entity, nil>,
+    on_clear: <T>(self: Registry, ctype: T) -> Signal<>,
+    after_clear: <T>(self: Registry, ctype: T) -> Signal<>,
+
+    handle: ((self: Registry, id: entity) -> Handle) & ((self: Registry) -> Handle),
+    context: (self: Registry) -> Handle
 }
 
-type ecs_observer_t = {
-	callback: (archetype: ecs_archetype_t) -> (),
-	query: ecs_query_data_t,
-}
+export type Queue<T...> = typeof(setmetatable({} :: {
+    add: (self: Queue<T...>, T...) -> (),
+    clear: (self: Queue<T...>) -> (),
+    iter: (self: Queue<T...>) -> () -> (T...)
+}, {} :: {
+    __len: (self: Queue<T...>) -> number,
+    __iter: (self: Queue<T...>) -> () -> (T...)
+}))
 
-type ecs_observable_t = Map<i53, Map<i53, { ecs_observer_t }>>
+local NIL = nil :: any
 
-type ecs_world_t = {
-	entity_index: ecs_entity_index_t,
-	component_index: ecs_id_index_t,
-	archetypes: ecs_archetypes_t,
-	archetype_index: ecs_archetypes_map_t,
-	max_archetype_id: number,
-	max_component_id: number,
-	ROOT_ARCHETYPE: ecs_archetype_t,
-	observable: Map<i53, Map<i53, { ecs_observer_t }>>,
-}
-
-local HI_COMPONENT_ID = _G.__JECS_HI_COMPONENT_ID or 256
--- stylua: ignore start
-local EcsOnAdd =                    HI_COMPONENT_ID +  1
-local EcsOnRemove =                 HI_COMPONENT_ID +  2
-local EcsOnChange =                 HI_COMPONENT_ID +  3
-local EcsWildcard =                 HI_COMPONENT_ID +  4
-local EcsChildOf =                  HI_COMPONENT_ID +  5
-local EcsComponent =                HI_COMPONENT_ID +  6
-local EcsOnDelete =                 HI_COMPONENT_ID +  7
-local EcsOnDeleteTarget =           HI_COMPONENT_ID +  8
-local EcsDelete =                   HI_COMPONENT_ID +  9
-local EcsRemove =                   HI_COMPONENT_ID + 10
-local EcsName =                     HI_COMPONENT_ID + 11
-local EcsOnArchetypeCreate =        HI_COMPONENT_ID + 12
-local EcsOnArchetypeDelete =        HI_COMPONENT_ID + 13
-local EcsRest =                     HI_COMPONENT_ID + 14
-
-local ECS_ID_DELETE =                        		0b01
-local ECS_ID_IS_TAG =                        		0b10
-local ECS_ID_MASK =                          		0b00
-
-local ECS_ENTITY_MASK =              bit32.lshift(1, 24)
-local ECS_GENERATION_MASK =          bit32.lshift(1, 16)
-
-local NULL_ARRAY = table.freeze({})
-local ECS_INTERNAL_ERROR = [[
-	This is an internal error, please file a bug report via the following link:
-
-	https://github.com/Ukendio/jecs/issues/new?template=BUG-REPORT.md
-]]
-
-local function ECS_COMBINE(id: number, generation: number): i53
-	return id + (generation * ECS_ENTITY_MASK)
-end
-local ECS_PAIR_OFFSET = 2^48
-
-local function ECS_IS_PAIR(e: number): boolean
-	return e > ECS_PAIR_OFFSET
-end
-
-local function ECS_GENERATION_INC(e: i53): i53
-	if e > ECS_ENTITY_MASK then
-		local id = e % ECS_ENTITY_MASK
-		local generation = e // ECS_ENTITY_MASK
-
-		local next_gen = generation + 1
-		if next_gen >= ECS_GENERATION_MASK then
-			return id
-		end
-
-		return ECS_COMBINE(id, next_gen)
-	end
-	return ECS_COMBINE(e, 1)
-end
-
-local function ECS_ENTITY_T_LO(e: i53): i24
-	return e % ECS_ENTITY_MASK
-end
-
-local function ECS_GENERATION(e: i53)
-	return e // ECS_ENTITY_MASK
-end
-
-local function ECS_ENTITY_T_HI(e: i53): i24
-	return e // ECS_ENTITY_MASK
-end
-
-local function ECS_PAIR(pred: i53, obj: i53): i53
-	pred %= ECS_ENTITY_MASK
-	obj %= ECS_ENTITY_MASK
-
-	return obj + (pred * ECS_ENTITY_MASK) + ECS_PAIR_OFFSET
-end
-
-local function ECS_PAIR_FIRST(e: i53): i24
-	return (e - ECS_PAIR_OFFSET) // ECS_ENTITY_MASK
-end
-
-local function ECS_PAIR_SECOND(e: i53): i24
-	return (e - ECS_PAIR_OFFSET) % ECS_ENTITY_MASK
-end
-
-local function entity_index_try_get_any(
-	entity_index: ecs_entity_index_t,
-	entity: number
-): ecs_record_t?
-	local r = entity_index.sparse_array[ECS_ENTITY_T_LO(entity)]
-
-	if not r or r.dense == 0 then
-		return nil
-	end
-
-	return r
-end
-
-local function entity_index_try_get(entity_index: ecs_entity_index_t, entity: number): ecs_record_t?
-	local r = entity_index_try_get_any(entity_index, entity)
-	if r then
-		local r_dense = r.dense
-		if r_dense > entity_index.alive_count then
-			return nil
-		end
-		if entity_index.dense_array[r_dense] ~= entity then
-			return nil
-		end
-	end
-	return r
-end
-
-local function entity_index_try_get_fast(entity_index: ecs_entity_index_t, entity: number): ecs_record_t?
-	local r = entity_index.sparse_array[ECS_ENTITY_T_LO(entity)]
-	if r then
-		if entity_index.dense_array[r.dense] ~= entity then
-			return nil
-		end
-	end
-	return r
-end
-
-local function entity_index_is_alive(entity_index: ecs_entity_index_t, entity: i53)
-	return entity_index_try_get(entity_index, entity) ~= nil
-end
-
-local function entity_index_get_alive(index: ecs_entity_index_t, entity: i53): i53?
-	local r = entity_index_try_get_any(index, entity)
-	if r then
-		return index.dense_array[r.dense]
-	end
-	return nil
-end
-
-local function ecs_get_alive(world, entity)
-	if entity == 0 then
-		return 0
-	end
-
-	local eindex = world.entity_index
-
-	if entity_index_is_alive(eindex, entity) then
-		return entity
-	end
-
-	if entity > ECS_ENTITY_MASK then
-		return 0
-	end
-
-	local current = entity_index_get_alive(eindex, entity)
-	if not current or not entity_index_is_alive(eindex, current) then
-		return 0
-	end
-
-	return current
-end
-
-local function entity_index_new_id(entity_index: ecs_entity_index_t): i53
-	local dense_array = entity_index.dense_array
-	local alive_count = entity_index.alive_count
-	local max_id = entity_index.max_id
-	if alive_count ~= max_id then
-		alive_count += 1
-		entity_index.alive_count = alive_count
-		local id = dense_array[alive_count]
-		return id
-	end
-
-	local id = max_id + 1
-	entity_index.max_id = id
-	alive_count += 1
-	entity_index.alive_count = alive_count
-	dense_array[alive_count] = id
-	entity_index.sparse_array[id] = { dense = alive_count } :: ecs_record_t
-
-	return id
-end
-
-local function ecs_pair_first(world: ecs_world_t, e: i53)
-	local pred = ECS_PAIR_FIRST(e)
-	return ecs_get_alive(world, pred)
-end
-
-local function ecs_pair_second(world: ecs_world_t, e: i53)
-	local obj = ECS_PAIR_SECOND(e)
-	return ecs_get_alive(world, obj)
-end
-
-local function query_match(query: ecs_query_data_t,
-	archetype: ecs_archetype_t)
-	local records = archetype.records
-	local with = query.filter_with
-
-	for _, id in with do
-		if not records[id] then
-			return false
-		end
-	end
-
-	local without = query.filter_without
-	if without then
-		for _, id in without do
-			if records[id] then
-				return false
-			end
-		end
-	end
-
-	return true
-end
-
-local function find_observers(world: ecs_world_t, event: i53,
-	component: i53): { ecs_observer_t }?
-	local cache = world.observable[event]
-	if not cache then
-		return nil
-	end
-	return cache[component] :: any
-end
-
-local function archetype_move(
-	entity_index: ecs_entity_index_t,
-	to: ecs_archetype_t,
-	dst_row: i24,
-	from: ecs_archetype_t,
-	src_row: i24
-)
-	local src_columns = from.columns
-	local dst_columns = to.columns
-	local dst_entities = to.entities
-	local src_entities = from.entities
-
-	local last = #src_entities
-	local id_types = from.types
-	local records = to.records
-
-	for i, column in src_columns do
-		if column == NULL_ARRAY then
-			continue
-		end
-		-- Retrieves the new column index from the source archetype's record from each component
-		-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
-		local tr = records[id_types[i]]
-
-		-- Sometimes target column may not exist, e.g. when you remove a component.
-		if tr then
-			dst_columns[tr][dst_row] = column[src_row]
-		end
-
-		-- If the entity is the last row in the archetype then swapping it would be meaningless.
-		if src_row ~= last then
-			-- Swap rempves columns to ensure there are no holes in the archetype.
-			column[src_row] = column[last]
-		end
-		column[last] = nil
-	end
-
-	local moved = #src_entities
-
-	-- Move the entity from the source to the destination archetype.
-	-- Because we have swapped columns we now have to update the records
-	-- corresponding to the entities' rows that were swapped.
-	local e1 = src_entities[src_row]
-	local e2 = src_entities[moved]
-
-	if src_row ~= moved then
-		src_entities[src_row] = e2
-	end
-
-	src_entities[moved] = nil :: any
-	dst_entities[dst_row] = e1
-
-	local sparse_array = entity_index.sparse_array
-
-	local record1 = sparse_array[ECS_ENTITY_T_LO(e1)]
-	local record2 = sparse_array[ECS_ENTITY_T_LO(e2)]
-	record1.row = dst_row
-	record2.row = src_row
-end
-
-local function archetype_append(
-	entity: i53,
-	archetype: ecs_archetype_t
-): number
-	local entities = archetype.entities
-	local length = #entities + 1
-	entities[length] = entity
-	return length
-end
-
-local function new_entity(
-	entity: i53,
-	record: ecs_record_t,
-	archetype: ecs_archetype_t
-): ecs_record_t
-	local row = archetype_append(entity, archetype)
-	record.archetype = archetype
-	record.row = row
-	return record
-end
-
-local function entity_move(
-	entity_index: ecs_entity_index_t,
-	entity: i53,
-	record: ecs_record_t,
-	to: ecs_archetype_t
-)
-	local sourceRow = record.row
-	local from = record.archetype
-	local dst_row = archetype_append(entity, to)
-	archetype_move(entity_index, to, dst_row, from, sourceRow)
-	record.archetype = to
-	record.row = dst_row
-end
-
-local function hash(arr: { number }): string
-	return table.concat(arr, "_")
-end
-
-local function fetch(id: i53, records: { number },
-	columns: { Column }, row: number): any
-	local tr = records[id]
-
-	if not tr then
-		return nil
-	end
-
-	return columns[tr][row]
-end
-
-local function world_get(world: ecs_world_t, entity: i53,
-	a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
-	local record = entity_index_try_get_fast(world.entity_index, entity)
-	if not record then
-		return nil
-	end
-
-	local archetype = record.archetype
-	if not archetype then
-		return nil
-	end
-
-	local records = archetype.records
-	local columns = archetype.columns
-	local row = record.row
-
-	local va = fetch(a, records, columns, row)
-
-	if not b then
-		return va
-	elseif not c then
-		return va, fetch(b, records, columns, row)
-	elseif not d then
-		return va, fetch(b, records, columns, row), fetch(c, records, columns, row)
-	elseif not e then
-		return va, fetch(b, records, columns, row), fetch(c, records, columns, row), fetch(d, records, columns, row)
-	else
-		error("args exceeded")
-	end
-end
-
-local function world_has_one_inline(world: ecs_world_t, entity: i53, id: i53): boolean
-	local record = entity_index_try_get_fast(world.entity_index, entity)
-	if not record then
-		return false
-	end
-
-	local archetype = record.archetype
-	if not archetype then
-		return false
-	end
-
-	local records = archetype.records
-
-	return records[id] ~= nil
-end
-
-local function world_has(world: ecs_world_t, entity: i53, ...: i53): boolean
-	local record = entity_index_try_get_fast(world.entity_index, entity)
-	if not record then
-		return false
-	end
-
-	local archetype = record.archetype
-	if not archetype then
-		return false
-	end
-
-	local records = archetype.records
-
-	for i = 1, select("#", ...) do
-		if not records[select(i, ...)] then
-			return false
-		end
-	end
-
-	return true
-end
-
-local function world_target(world: ecs_world_t, entity: i53, relation: i24, index: number?): i24?
-	local nth = index or 0
-	local record = entity_index_try_get_fast(world.entity_index, entity)
-	if not record then
-		return nil
-	end
-
-	local archetype = record.archetype
-	if not archetype then
-		return nil
-	end
-
-	local r = ECS_PAIR(relation, EcsWildcard)
-
-	local count = archetype.counts[r]
-	if not count then
-		return nil
-	end
-
-	if nth >= count then
-		nth = nth + count + 1
-	end
-
-	nth = archetype.types[nth + archetype.records[r]]
-	if not nth then
-		return nil
-	end
-
-	return entity_index_get_alive(world.entity_index,
-	    ECS_PAIR_SECOND(nth))
-end
-
-local function ECS_ID_IS_WILDCARD(e: i53): boolean
-	local first = ECS_ENTITY_T_HI(e)
-	local second = ECS_ENTITY_T_LO(e)
-	return first == EcsWildcard or second == EcsWildcard
-end
-
-local function id_record_ensure(world: ecs_world_t, id: number): ecs_id_record_t
-	local component_index = world.component_index
-	local entity_index = world.entity_index
-	local idr: ecs_id_record_t = component_index[id]
-
-	if not idr then
-		local flags = ECS_ID_MASK
-		local relation = id
-		local target = 0
-		local is_pair = ECS_IS_PAIR(id)
-		if is_pair then
-			relation = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id)) :: i53
-			assert(relation and entity_index_is_alive(
-				entity_index, relation), ECS_INTERNAL_ERROR)
-			target = entity_index_get_alive(entity_index, ECS_PAIR_SECOND(id)) :: i53
-			assert(target and entity_index_is_alive(
-				entity_index, target), ECS_INTERNAL_ERROR)
-		end
-
-		local cleanup_policy = world_target(world, relation, EcsOnDelete, 0)
-		local cleanup_policy_target = world_target(world, relation, EcsOnDeleteTarget, 0)
-
-		local has_delete = false
-
-		if cleanup_policy == EcsDelete or cleanup_policy_target == EcsDelete then
-			has_delete = true
-		end
-
-		local on_add, on_change, on_remove = world_get(world,
-			relation, EcsOnAdd, EcsOnChange, EcsOnRemove)
-
-		local is_tag = not world_has_one_inline(world,
-			relation, EcsComponent)
-
-		if is_tag and is_pair then
-			is_tag = not world_has_one_inline(world, target, EcsComponent)
-		end
-
-		flags = bit32.bor(
-			flags,
-			if has_delete then ECS_ID_DELETE else 0,
-			if is_tag then ECS_ID_IS_TAG else 0
-		)
-
-		idr = {
-			size = 0,
-			cache = {},
-			counts = {},
-			flags = flags,
-			hooks = {
-				on_add = on_add,
-				on_change = on_change,
-				on_remove = on_remove,
-			},
-		}
-
-		component_index[id] = idr
-	end
-
-	return idr
-end
-
-local function archetype_append_to_records(
-	idr: ecs_id_record_t,
-	archetype: ecs_archetype_t,
-	id: i53,
-	index: number
-)
-	local archetype_id = archetype.id
-	local archetype_records = archetype.records
-	local archetype_counts = archetype.counts
-	local idr_columns = idr.cache
-	local idr_counts = idr.counts
-	local tr = idr_columns[archetype_id]
-	if not tr then
-		idr_columns[archetype_id] = index
-		idr_counts[archetype_id] = 1
-
-		archetype_records[id] = index
-		archetype_counts[id] = 1
-	else
-		local max_count = idr_counts[archetype_id] + 1
-		idr_counts[archetype_id] = max_count
-		archetype_counts[id] = max_count
-	end
-end
-
-local function archetype_create(world: ecs_world_t, id_types: { i24 }, ty, prev: i53?): ecs_archetype_t
-	local archetype_id = (world.max_archetype_id :: number) + 1
-	world.max_archetype_id = archetype_id
-
-	local length = #id_types
-	local columns = (table.create(length) :: any) :: { Column }
-
-	local records: { number } = {}
-	local counts: {number} = {}
-
-	local archetype: ecs_archetype_t = {
-		columns = columns,
-		entities = {},
-		id = archetype_id,
-		records = records,
-		counts = counts,
-		type = ty,
-		types = id_types,
-
-		add = {},
-		remove = {},
-		refs = {} :: ecs_graph_edge_t,
-	}
-
-	for i, component_id in id_types do
-		local idr = id_record_ensure(world, component_id)
-		archetype_append_to_records(idr, archetype, component_id, i)
-
-		if ECS_IS_PAIR(component_id) then
-			local relation = ECS_PAIR_FIRST(component_id)
-			local object = ECS_PAIR_SECOND(component_id)
-			local r = ECS_PAIR(relation, EcsWildcard)
-			local idr_r = id_record_ensure(world, r)
-			archetype_append_to_records(idr_r, archetype, r, i)
-
-			local t = ECS_PAIR(EcsWildcard, object)
-			local idr_t = id_record_ensure(world, t)
-			archetype_append_to_records(idr_t, archetype, t, i)
-		end
-
-		if bit32.band(idr.flags, ECS_ID_IS_TAG) == 0 then
-			columns[i] = {}
-		else
-			columns[i] = NULL_ARRAY
-		end
-	end
-
-	for id in records do
-		local observer_list = find_observers(world, EcsOnArchetypeCreate, id)
-		if not observer_list then
-			continue
-		end
-		for _, observer in observer_list do
-			if query_match(observer.query, archetype) then
-				observer.callback(archetype)
-			end
-		end
-	end
-
-	world.archetype_index[ty] = archetype
-	world.archetypes[archetype_id] = archetype
-
-	return archetype
-end
-
-local function world_entity(world: ecs_world_t): i53
-	return entity_index_new_id(world.entity_index)
-end
-
-local function world_parent(world: ecs_world_t, entity: i53)
-	return world_target(world, entity, EcsChildOf, 0)
-end
-
-local function archetype_ensure(world: ecs_world_t, id_types): ecs_archetype_t
-	if #id_types < 1 then
-		return world.ROOT_ARCHETYPE
-	end
-
-	local ty = hash(id_types)
-	local archetype = world.archetype_index[ty]
-	if archetype then
-		return archetype
-	end
-
-	return archetype_create(world, id_types, ty)
-end
-
-local function find_insert(id_types: { i53 }, toAdd: i53): number
-	for i, id in id_types do
-		if id == toAdd then
-			return -1
-		end
-		if id > toAdd then
-			return i
-		end
-	end
-	return #id_types + 1
-end
-
-local function find_archetype_with(world: ecs_world_t, node: ecs_archetype_t, id: i53): ecs_archetype_t
-	local id_types = node.types
-	-- Component IDs are added incrementally, so inserting and sorting
-	-- them each time would be expensive. Instead this insertion sort can find the insertion
-	-- point in the types array.
-
-	local dst = table.clone(node.types) :: { i53 }
-	local at = find_insert(id_types, id)
-	if at == -1 then
-		-- If it finds a duplicate, it just means it is the same archetype so it can return it
-		-- directly instead of needing to hash types for a lookup to the archetype.
-		return node
-	end
-	table.insert(dst, at, id)
-
-	return archetype_ensure(world, dst)
-end
-
-local function find_archetype_without(
-	world: ecs_world_t,
-	node: ecs_archetype_t,
-	id: i53
-): ecs_archetype_t
-	local id_types = node.types
-	local at = table.find(id_types, id)
-	if at == nil then
-		return node
-	end
-
-	local dst = table.clone(id_types)
-	table.remove(dst, at)
-
-	return archetype_ensure(world, dst)
-end
-
-local function archetype_init_edge(
-	archetype: ecs_archetype_t,
-	edge: ecs_graph_edge_t,
-	id: i53,
-	to: ecs_archetype_t
-)
-	edge.from = archetype
-	edge.to = to
-	edge.id = id
-end
-
-local function archetype_ensure_edge(
-	world: ecs_world_t,
-	edges: ecs_graph_edges_t,
-	id: i53
-): ecs_graph_edge_t
-	local edge = edges[id]
-	if not edge then
-		edge = {} :: ecs_graph_edge_t
-		edges[id] = edge
-	end
-
-	return edge
-end
-
-local function init_edge_for_add(world, archetype: ecs_archetype_t, edge: ecs_graph_edge_t, id, to: ecs_archetype_t)
-	archetype_init_edge(archetype, edge, id, to)
-	archetype_ensure_edge(world, archetype.add, id)
-	if archetype ~= to then
-		local to_refs = to.refs
-		local next_edge = to_refs.next
-
-		to_refs.next = edge
-		edge.prev = to_refs
-		edge.next = next_edge
-
-		if next_edge then
-			next_edge.prev = edge
-		end
-	end
-end
-
-local function init_edge_for_remove(
-	world: ecs_world_t,
-	archetype: ecs_archetype_t,
-	edge: ecs_graph_edge_t,
-	id: number,
-	to: ecs_archetype_t
-)
-	archetype_init_edge(archetype, edge, id, to)
-	archetype_ensure_edge(world, archetype.remove, id)
-	if archetype ~= to then
-		local to_refs = to.refs
-		local prev_edge = to_refs.prev
-
-		to_refs.prev = edge
-		edge.next = to_refs
-		edge.prev = prev_edge
-
-		if prev_edge then
-			prev_edge.next = edge
-		end
-	end
-end
-
-local function create_edge_for_add(
-	world: ecs_world_t,
-	node: ecs_archetype_t,
-	edge: ecs_graph_edge_t,
-	id: i53
-): ecs_archetype_t
-	local to = find_archetype_with(world, node, id)
-	init_edge_for_add(world, node, edge, id, to)
-	return to
-end
-
-local function create_edge_for_remove(
-	world: ecs_world_t,
-	node: ecs_archetype_t,
-	edge: ecs_graph_edge_t,
-	id: i53
-): ecs_archetype_t
-	local to = find_archetype_without(world, node, id)
-	init_edge_for_remove(world, node, edge, id, to)
-	return to
-end
-
-local function archetype_traverse_add(
-	world: ecs_world_t,
-	id: i53,
-	from: ecs_archetype_t
-): ecs_archetype_t
-	from = from or world.ROOT_ARCHETYPE
-	local edge = archetype_ensure_edge(world, from.add, id)
-
-	local to = edge.to
-	if not to then
-		to = create_edge_for_add(world, from, edge, id)
-	end
-
-	return to :: ecs_archetype_t
-end
-
-local function archetype_traverse_remove(
-	world: ecs_world_t,
-	id: i53,
-	from: ecs_archetype_t
-): ecs_archetype_t
-	from = from or world.ROOT_ARCHETYPE
-
-	local edge = archetype_ensure_edge(world, from.remove, id)
-
-	local to = edge.to
-	if not to then
-		to = create_edge_for_remove(world, from, edge, id)
-	end
-
-	return to :: ecs_archetype_t
-end
-
-local function world_add(
-	world: ecs_world_t,
-	entity: i53,
-	id: i53
-): ()
-	local entity_index = world.entity_index
-	local record = entity_index_try_get_fast(entity_index, entity)
-	if not record then
-		return
-	end
-
-	local from = record.archetype
-	local to = archetype_traverse_add(world, id, from)
-	if from == to then
-		return
-	end
-	if from then
-		entity_move(entity_index, entity, record, to)
-	else
-		if #to.types > 0 then
-			new_entity(entity, record, to)
-		end
-	end
-
-	local idr = world.component_index[id]
-	local on_add = idr.hooks.on_add
-
-	if on_add then
-		on_add(entity)
-	end
-end
-
-local function world_set(world: ecs_world_t, entity: i53, id: i53, data: unknown): ()
-	local entity_index = world.entity_index
-	local record = entity_index_try_get_fast(entity_index, entity)
-	if not record then
-		return
-	end
-
-	local from: ecs_archetype_t = record.archetype
-	local to: ecs_archetype_t = archetype_traverse_add(world, id, from)
-	local idr = world.component_index[id]
-	local idr_hooks = idr.hooks
-
-	if from == to then
-		local tr = to.records[id]
-		local column = from.columns[tr]
-		column[record.row] = data
-
-		-- If the archetypes are the same it can avoid moving the entity
-		-- and just set the data directly.
-		local on_change = idr_hooks.on_change
-		if on_change then
-			on_change(entity, data)
-		end
-
-		return
-	end
-
-	if from then
-		-- If there was a previous archetype, then the entity needs to move the archetype
-		entity_move(entity_index, entity, record, to)
-	else
-		if #to.types > 0 then
-			-- When there is no previous archetype it should create the archetype
-			new_entity(entity, record, to)
-		end
-	end
-
-	local tr = to.records[id]
-	local column = to.columns[tr]
-
-	column[record.row] = data
-
-	local on_add = idr_hooks.on_add
-	if on_add then
-		on_add(entity, data)
-	end
-end
-
-local function world_component(world: World): i53
-	local id = (world.max_component_id :: number) + 1
-	if id > HI_COMPONENT_ID then
-		-- IDs are partitioned into ranges because component IDs are not nominal,
-		-- so it needs to error when IDs intersect into the entity range.
-		error("Too many components, consider using world:entity() instead to create components.")
-	end
-	world.max_component_id = id
-
-	return id
+-- error but stack trace always starts at first callsite outside of this file
+local function throw(msg: string)
+    local s = 1
+    repeat s += 1 until debug.info(s, "s") ~= debug.info(1, "s") 
+    error(msg, s)
 end
-
-local function world_remove(world: ecs_world_t, entity: i53, id: i53)
-	local entity_index = world.entity_index
-	local record = entity_index_try_get_fast(entity_index, entity)
-	if not record then
-		return
-	end
-	local from = record.archetype
-
-	if not from then
-		return
-	end
 
-	if from.records[id] then
-		local idr = world.component_index[id]
-		local on_remove = idr.hooks.on_remove
-		if on_remove then
-			on_remove(entity)
-		end
+local ASSERT = function<T>(v: T, msg: string): T
+    if v then return v end
+    return throw(msg)
+end :: typeof(assert)
 
-		local to = archetype_traverse_remove(world, id, record.archetype)
+--------------------------------------------------------------------------------
+-- entity id
+--------------------------------------------------------------------------------
 
-		entity_move(entity_index, entity, record, to)
-	end
-end
+local RESERVED_BITS = 0
 
-local function archetype_fast_delete_last(columns: { Column }, column_count: number, types: { i53 }, entity: i53)
-	for i, column in columns do
-		if column ~= NULL_ARRAY then
-			column[column_count] = nil
-		end
-	end
-end
+local ID_SIZE_BITS = ID_SIZE * 8
+local ID_MAX = 2^(ID_SIZE_BITS - RESERVED_BITS) - 1
 
-local function archetype_fast_delete(columns: { Column }, column_count: number, row, types, entity)
-	for i, column in columns do
-		if column ~= NULL_ARRAY then
-			column[row] = column[column_count]
-			column[column_count] = nil
-		end
-	end
-end
+local ID_MASK_RES = 0xFFFF_FFFF - ID_MAX
+local ID_MASK_KEY = MAX_ENTITIES
+local ID_MASK_VER = ID_MAX - ID_MASK_KEY
+local ID_MASK_VER_RES = ID_MASK_VER + ID_MASK_RES
 
-local function archetype_delete(world: ecs_world_t, archetype: ecs_archetype_t, row: number)
-	local entity_index = world.entity_index
-	local component_index = world.component_index
-	local columns = archetype.columns
-	local id_types = archetype.types
-	local entities = archetype.entities
-	local column_count = #entities
-	local last = #entities
-	local move = entities[last]
-	-- We assume first that the entity is the last in the archetype
-	local delete = move
+local ID_LSHIFT = ID_MASK_KEY + 1
+local ID_RSHIFT = 1/ID_LSHIFT
 
-	if row ~= last then
-		local record_to_move = entity_index_try_get_any(entity_index, move)
-		if record_to_move then
-			record_to_move.row = row
-		end
+local ID_NULL_KEY = ID_MASK_KEY
+local ID_CTX_KEY = 0
 
-		delete = entities[row]
-		entities[row] = move
-	end
+local ID_NULL_VER = 0
+local ID_MIN_VER = 1 * ID_LSHIFT
 
-	for _, id in id_types do
-		local idr = component_index[id]
-		local on_remove = idr.hooks.on_remove
-		if on_remove then
-			on_remove(delete)
-		end
-	end
+local ID_MAX_VALID_KEY = ID_MASK_KEY - 1
 
-	entities[last] = nil :: any
+assert(ID_SIZE <= 4 and ID_SIZE >= 1)
+assert(MAX_ENTITIES <= ID_MAX/2 and MAX_ENTITIES > 0)
+assert(bit32.band(MAX_ENTITIES + 1, MAX_ENTITIES) == 0)
 
-	if row == last then
-		archetype_fast_delete_last(columns, column_count, id_types, delete)
-	else
-		archetype_fast_delete(columns, column_count, row, id_types, delete)
-	end
+local function ID_CREATE(key: number, ver: number): number
+    return ver + key
 end
-
-local function world_clear(world: ecs_world_t, entity: i53)
-	local entity_index = world.entity_index
-	local component_index = world.component_index
-	local archetypes = world.archetypes
-	local tgt = ECS_PAIR(EcsWildcard, entity)
-	local idr_t = component_index[tgt]
-	local idr = component_index[entity]
-	local rel = ECS_PAIR(entity, EcsWildcard)
-	local idr_r = component_index[rel]
-
-	if idr then
-		local count = 0
-		local queue = {}
-		for archetype_id in idr.cache do
-			local idr_archetype = archetypes[archetype_id]
-			local entities = idr_archetype.entities
-			local n = #entities
-			count += n
-			table.move(entities, 1, n, #queue + 1, queue)
-		end
-		for _, e in queue do
-			world_remove(world, e, entity)
-		end
-	end
-
-	if idr_t then
-		local queue
-		local ids
 
-		local count = 0
-		local archetype_ids = idr_t.cache
-		for archetype_id in archetype_ids do
-			local idr_t_archetype = archetypes[archetype_id]
-			local idr_t_types = idr_t_archetype.types
-			local entities = idr_t_archetype.entities
-			local removal_queued = false
-
-			for _, id in idr_t_types do
-				if not ECS_IS_PAIR(id) then
-					continue
-				end
-				local object = entity_index_get_alive(
-				    entity_index, ECS_PAIR_SECOND(id))
-				if object ~= entity then
-					continue
-				end
-				if not ids then
-					ids = {}
-				end
-				ids[id] = true
-				removal_queued = true
-			end
-
-			if not removal_queued then
-				continue
-			end
-
-			if not queue then
-				queue = {}
-			end
-
-			local n = #entities
-			table.move(entities, 1, n, count + 1, queue)
-			count += n
-		end
-
-		for id in ids do
-			for _, child in queue do
-				world_remove(world, child, id)
-			end
-		end
-	end
-
-	if idr_r then
-		local count = 0
-		local archetype_ids = idr_r.cache
-		local ids = {}
-		local queue = {}
-		for archetype_id in archetype_ids do
-			local idr_r_archetype = archetypes[archetype_id]
-			local entities = idr_r_archetype.entities
-			local tr = idr_r_archetype.records[rel]
-			local tr_count = idr_r_archetype.counts[rel]
-			local types = idr_r_archetype.types
-			for i = tr, tr + tr_count - 1 do
-				ids[types[i]] = true
-			end
-			local n = #entities
-			table.move(entities, 1, n, count + 1, queue)
-			count += n
-		end
-
-		for _, e in queue do
-			for id in ids do
-				world_remove(world, e, id)
-			end
-		end
-	end
+local function ID_KEY(id: number): number
+    return bit32.band(id, ID_MASK_KEY)
 end
 
-local function archetype_disconnect_edge(edge: ecs_graph_edge_t)
-	local edge_next = edge.next
-	local edge_prev = edge.prev
-	if edge_next then
-		edge_next.prev = edge_prev
-	end
-	if edge_prev then
-		edge_prev.next = edge_next
-	end
+local function ID_VER(id: number): number
+    return bit32.band(id, ID_MASK_VER)
 end
 
-local function archetype_remove_edge(edges: ecs_graph_edges_t, id: i53, edge: ecs_graph_edge_t)
-	archetype_disconnect_edge(edge)
-	edges[id] = nil :: any
+local function ID_REPLACE(id: number, new_key: number): number
+    return ID_VER(id) + new_key
 end
-
-local function archetype_clear_edges(archetype: ecs_archetype_t)
-	local add: ecs_graph_edges_t = archetype.add
-	local remove: ecs_graph_edges_t = archetype.remove
-	local node_refs = archetype.refs
-	for id, edge in add do
-		archetype_disconnect_edge(edge)
-		add[id] = nil :: any
-	end
-	for id, edge in remove do
-		archetype_disconnect_edge(edge)
-		remove[id] = nil :: any
-	end
 
-	local cur = node_refs.next
-	while cur do
-		local edge = cur :: ecs_graph_edge_t
-		local next_edge = edge.next
-		archetype_remove_edge(edge.from.add, edge.id, edge)
-		cur = next_edge
-	end
-
-	cur = node_refs.prev
-	while cur do
-		local edge: ecs_graph_edge_t = cur
-		local next_edge = edge.prev
-		archetype_remove_edge(edge.from.remove, edge.id, edge)
-		cur = next_edge
-	end
-
-	node_refs.next = nil
-	node_refs.prev = nil
+local function ID_VERSION_NOT_EQUAL(id1: number, id2: number)
+    return ID_VER(id1) ~= ID_VER(id2)
 end
-
-local function archetype_destroy(world: ecs_world_t, archetype: ecs_archetype_t)
-	if archetype == world.ROOT_ARCHETYPE then
-		return
-	end
 
-	local component_index = world.component_index
-	archetype_clear_edges(archetype)
-	local archetype_id = archetype.id
-	world.archetypes[archetype_id] = nil :: any
-	world.archetype_index[archetype.type] = nil :: any
-	local records = archetype.records
-
-	for id in records do
-		local observer_list = find_observers(world, EcsOnArchetypeDelete, id)
-		if not observer_list then
-			continue
-		end
-		for _, observer in observer_list do
-			if query_match(observer.query, archetype) then
-				observer.callback(archetype)
-			end
-		end
-	end
-
-	for id in records do
-		local idr = component_index[id]
-		idr.cache[archetype_id] = nil :: any
-		idr.counts[archetype_id] = nil
-		idr.size -= 1
-		records[id] = nil :: any
-		if idr.size == 0 then
-			component_index[id] = nil :: any
-		end
-	end
+local function ID_ASSERT_VERSION_EQUAL(id1: number, id2: number)
+    if ID_VERSION_NOT_EQUAL(id1, id2) then
+        throw("invalid entity")
+    end
 end
-
-local function world_cleanup(world: ecs_world_t)
-	local archetypes = world.archetypes
 
-	for _, archetype in archetypes do
-		if #archetype.entities == 0 then
-			archetype_destroy(world, archetype)
-		end
-	end
+local ID_NULL = ID_CREATE(ID_NULL_KEY, ID_NULL_VER)
+local ID_CTX = ID_CREATE(ID_CTX_KEY, ID_MIN_VER)
 
-	local new_archetypes = table.create(#archetypes) :: { ecs_archetype_t }
-	local new_archetype_map = {}
+--------------------------------------------------------------------------------
+-- component type
+--------------------------------------------------------------------------------
 
-	for index, archetype in archetypes do
-		new_archetypes[index] = archetype
-		new_archetype_map[archetype.type] = archetype
-	end
+-- a ctor set to `true` indicates component is a tag
+local ctype_ctors: Map<CType, (boolean | () -> unknown)> = {}
+local ctype_names: Map<CType, string?> = {}
+local ctype_n = 0
 
-	world.archetypes = new_archetypes
-	world.archetype_index = new_archetype_map
+local function ctype_create<T>(ctor: boolean | () -> unknown): CType
+    ctype_n += 1
+    ctype_ctors[ctype_n] = ctor
+    return ctype_n
 end
-
-local function world_delete(world: ecs_world_t, entity: i53)
-	local entity_index = world.entity_index
-	local record = entity_index_try_get(entity_index, entity)
-	if not record then
-		return
-	end
-
-	local archetype = record.archetype
-	local row = record.row
-
-	if archetype then
-		-- In the future should have a destruct mode for
-		-- deleting archetypes themselves. Maybe requires recycling
-		archetype_delete(world, archetype, row)
-	end
-
-	local delete = entity
-	local component_index = world.component_index
-	local archetypes = world.archetypes
-	local tgt = ECS_PAIR(EcsWildcard, delete)
-	local rel = ECS_PAIR(delete, EcsWildcard)
-
-	local idr_t = component_index[tgt]
-	local idr = component_index[delete]
-	local idr_r = component_index[rel]
-
-	if idr then
-		local flags = idr.flags
-		if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
-			for archetype_id in idr.cache do
-				local idr_archetype = archetypes[archetype_id]
-
-				local entities = idr_archetype.entities
-				local n = #entities
-				for i = n, 1, -1 do
-					world_delete(world, entities[i])
-				end
-
-				archetype_destroy(world, idr_archetype)
-			end
-		else
-			for archetype_id in idr.cache do
-				local idr_archetype = archetypes[archetype_id]
-				local entities = idr_archetype.entities
-				local n = #entities
-				for i = n, 1, -1 do
-					world_remove(world, entities[i], delete)
-				end
-
-				archetype_destroy(world, idr_archetype)
-			end
-		end
-	end
 
-	if idr_t then
-		local children
-		local ids
-
-		local count = 0
-		local archetype_ids = idr_t.cache
-		for archetype_id in archetype_ids do
-			local idr_t_archetype = archetypes[archetype_id]
-			local idr_t_types = idr_t_archetype.types
-			local entities = idr_t_archetype.entities
-			local removal_queued = false
-
-			for _, id in idr_t_types do
-				if not ECS_IS_PAIR(id) then
-					continue
-				end
-				local object = entity_index_get_alive(
-				    entity_index, ECS_PAIR_SECOND(id))
-				if object ~= delete then
-					continue
-				end
-				local id_record = component_index[id]
-				local flags = id_record.flags
-				local flags_delete_mask: number = bit32.band(flags, ECS_ID_DELETE)
-				if flags_delete_mask ~= 0 then
-					for i = #entities, 1, -1 do
-						local child = entities[i]
-						world_delete(world, child)
-					end
-					break
-				else
-					if not ids then
-						ids = {}
-					end
-					ids[id] = true
-					removal_queued = true
-				end
-			end
-
-			if not removal_queued then
-				continue
-			end
-			if not children then
-				children = {}
-			end
-			local n = #entities
-			table.move(entities, 1, n, count + 1, children)
-			count += n
-		end
-
-		if ids then
-			for _, child in children do
-				for id in ids do
-					world_remove(world, child, id)
-				end
-			end
-		end
-
-		for archetype_id in archetype_ids do
-			archetype_destroy(world, archetypes[archetype_id])
-		end
-	end
-
-	if idr_r then
-		local archetype_ids = idr_r.cache
-		local flags = idr_r.flags
-		if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
-			for archetype_id in archetype_ids do
-				local idr_r_archetype = archetypes[archetype_id]
-				local entities = idr_r_archetype.entities
-				local n = #entities
-				for i = n, 1, -1 do
-					world_delete(world, entities[i])
-				end
-				archetype_destroy(world, idr_r_archetype)
-			end
-		else
-			local children = {}
-			local count = 0
-			local ids = {}
-			for archetype_id in archetype_ids do
-				local idr_r_archetype = archetypes[archetype_id]
-				local entities = idr_r_archetype.entities
-				local tr = idr_r_archetype.records[rel]
-				local tr_count = idr_r_archetype.counts[rel]
-				local types = idr_r_archetype.types
-				for i = tr, tr_count - 1 do
-					ids[types[tr]] = true
-				end
-				local n = #entities
-				table.move(entities, 1, n, count + 1, children)
-				count += n
-			end
-
-			for _, child in children do
-				for id in ids do
-					world_remove(world, child, id)
-				end
-			end
-
-			for archetype_id in archetype_ids do
-				archetype_destroy(world, archetypes[archetype_id])
-			end
-		end
-	end
-
-	local dense_array = entity_index.dense_array
-	local index_of_deleted_entity = record.dense
-	local index_of_last_alive_entity = entity_index.alive_count
-	entity_index.alive_count = index_of_last_alive_entity - 1
-
-	local last_alive_entity = dense_array[index_of_last_alive_entity]
-	local r_swap = entity_index_try_get_any(entity_index, last_alive_entity) :: ecs_record_t
-	r_swap.dense = index_of_deleted_entity
-	record.archetype = nil :: any
-	record.row = nil :: any
-	record.dense = index_of_last_alive_entity
-
-	dense_array[index_of_deleted_entity] = last_alive_entity
-	dense_array[index_of_last_alive_entity] = ECS_GENERATION_INC(entity)
+local function ctype_is_tag(ctype: CType): boolean
+    return ctype_ctors[ctype] == true
 end
 
-local function world_contains(world: ecs_world_t, entity): boolean
-	return entity_index_is_alive(world.entity_index, entity)
+local function ctype_set_name(ctype: CType, name: unknown)
+    ctype_names[ctype] = tostring(name)
 end
-
-local function NOOP() end
-
-export type QueryInner = {
-	compatible_archetypes: { Archetype },
-	ids: { i53 },
-	filter_with: { i53 },
-	filter_without: { i53 },
-	next: () -> (number, ...any),
-	world: World,
-}
-
-local function query_iter_init(query: ecs_query_data_t): () -> (number, ...any)
-	local world_query_iter_next
-
-	local compatible_archetypes = query.compatible_archetypes
-	local lastArchetype = 1
-	local archetype = compatible_archetypes[1]
-	if not archetype then
-		return NOOP :: () -> (number, ...any)
-	end
-	local columns = archetype.columns
-	local entities = archetype.entities
-	local i = #entities
-	local records = archetype.records
-
-	local ids = query.ids
-	local A, B, C, D, E, F, G, H, I = unpack(ids)
-	local a: Column, b: Column, c: Column, d: Column
-	local e: Column, f: Column, g: Column, h: Column
-
-	if not B then
-		a = columns[records[A]]
-	elseif not C then
-		a = columns[records[A]]
-		b = columns[records[B]]
-	elseif not D then
-		a = columns[records[A]]
-		b = columns[records[B]]
-		c = columns[records[C]]
-	elseif not E then
-		a = columns[records[A]]
-		b = columns[records[B]]
-		c = columns[records[C]]
-		d = columns[records[D]]
-	elseif not F then
-		a = columns[records[A]]
-		b = columns[records[B]]
-		c = columns[records[C]]
-		d = columns[records[D]]
-		e = columns[records[E]]
-	elseif not G then
-		a = columns[records[A]]
-		b = columns[records[B]]
-		c = columns[records[C]]
-		d = columns[records[D]]
-		e = columns[records[E]]
-		f = columns[records[F]]
-	elseif not H then
-		a = columns[records[A]]
-		b = columns[records[B]]
-		c = columns[records[C]]
-		d = columns[records[D]]
-		e = columns[records[E]]
-		f = columns[records[F]]
-		g = columns[records[G]]
-	elseif not I then
-		a = columns[records[A]]
-		b = columns[records[B]]
-		c = columns[records[C]]
-		d = columns[records[D]]
-		e = columns[records[E]]
-		f = columns[records[F]]
-		g = columns[records[G]]
-		h = columns[records[H]]
-	end
-
-	if not B then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row]
-		end
-	elseif not C then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-			end
-
-			local row = i
-			i -= 1
 
-			return entity, a[row], b[row]
-		end
-	elseif not D then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-				c = columns[records[C]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row], c[row]
-		end
-	elseif not E then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-				c = columns[records[C]]
-				d = columns[records[D]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row], c[row], d[row]
-		end
-	elseif not F then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-				c = columns[records[C]]
-				d = columns[records[D]]
-				e = columns[records[E]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row], c[row], d[row], e[row]
-		end
-	elseif not G then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-				c = columns[records[C]]
-				d = columns[records[D]]
-				e = columns[records[E]]
-				f = columns[records[F]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row], c[row], d[row], e[row], f[row]
-		end
-	elseif not H then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-				c = columns[records[C]]
-				d = columns[records[D]]
-				e = columns[records[E]]
-				f = columns[records[F]]
-				g = columns[records[G]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row], c[row], d[row], e[row], f[row], g[row]
-		end
-	elseif not I then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-				c = columns[records[C]]
-				d = columns[records[D]]
-				e = columns[records[E]]
-				f = columns[records[F]]
-				g = columns[records[G]]
-				h = columns[records[H]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row], c[row], d[row], e[row], f[row], g[row], h[row]
-		end
-	else
-		local output = {}
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-			end
-
-			local row = i
-			i -= 1
-
-			for j, id in ids do
-				output[j] = columns[records[id]][row]
-			end
-
-			return entity, unpack(output)
-		end
-	end
-
-	query.next = world_query_iter_next
-	return world_query_iter_next
-end
+--[[NO INLINE]] local ctype_debug: (ctype: CType?, idx: number?) -> string = (function()
+    return function(ctype: CType?, idx: number?)
+        local name = ctype_names[ctype]
+        return
+            if name then `component "{name}"`
+            elseif idx then `component (arg #{idx})`
+            else "component (unknown)"
+    end
+end)()
 
-local function query_iter(query): () -> (number, ...any)
-	local query_next = query.next
-	if not query_next then
-		query_next = query_iter_init(query)
-	end
-	return query_next
+local function CTYPE_VALID(v: unknown): boolean
+    return type(v) == "number" and math.floor(v) == v and v > 0 and v <= ctype_n  
 end
 
-local function query_without(query: ecs_query_data_t, ...: i53)
-	local without = { ... }
-	query.filter_without = without
-	local compatible_archetypes = query.compatible_archetypes
-	for i = #compatible_archetypes, 1, -1 do
-		local archetype = compatible_archetypes[i]
-		local records = archetype.records
-		local matches = true
-
-		for _, id in without do
-			if records[id] then
-				matches = false
-				break
-			end
-		end
-
-		if matches then
-			continue
-		end
-
-		local last = #compatible_archetypes
-		if last ~= i then
-			compatible_archetypes[i] = compatible_archetypes[last]
-		end
-		compatible_archetypes[last] = nil :: any
-	end
-
-	return query :: any
+local function ASSERT_CTYPE_VALID(ctype: unknown, idx: number?)
+    if not CTYPE_VALID(ctype) then
+        throw(`invalid component {idx and `arg #{idx}` or ""}`)
+    end
 end
-
-local function query_with(query: ecs_query_data_t, ...: i53)
-	local compatible_archetypes = query.compatible_archetypes
-	local with = { ... }
-	query.filter_with = with
 
-	for i = #compatible_archetypes, 1, -1 do
-		local archetype = compatible_archetypes[i]
-		local records = archetype.records
-		local matches = true
+local ctype_entity = ctype_create(false)
+ctype_set_name(ctype_entity, "entity")
 
-		for _, id in with do
-			if not records[id] then
-				matches = false
-				break
-			end
-		end
+--------------------------------------------------------------------------------
+-- pool
+--------------------------------------------------------------------------------
 
-		if matches then
-			continue
-		end
-
-		local last = #compatible_archetypes
-		if last ~= i then
-			compatible_archetypes[i] = compatible_archetypes[last]
-		end
-		compatible_archetypes[last] = nil :: any
-	end
-
-	return query :: any
+local function next_pow_of_2(x: number)
+    assert(x > 0 and x <= 2^32)
+    x -= 1
+    x = bit32.bor(x, bit32.rshift(x, 1))
+    x = bit32.bor(x, bit32.rshift(x, 2))
+    x = bit32.bor(x, bit32.rshift(x, 4))
+    x = bit32.bor(x, bit32.rshift(x, 8))
+    x = bit32.bor(x, bit32.rshift(x, 16))
+    return x + 1
 end
 
--- Meant for directly iterating over archetypes to minimize
--- function call overhead. Should not be used unless iterating over
--- hundreds of thousands of entities in bulk.
-local function query_archetypes(query)
-	return query.compatible_archetypes
+local function fire<T>(listeners: Array<Listener<T>>, id: entity, value: T)
+    for i = #listeners, 1, -1 do
+        listeners[i](id, value)         
+    end 
 end
-
-local function query_cached(query: ecs_query_data_t)
-	local with = query.filter_with
-	local ids = query.ids
-	if with then
-		table.move(ids, 1, #ids, #with + 1, with)
-	else
-		query.filter_with = ids
-	end
-
-	local compatible_archetypes = query.compatible_archetypes
-	local lastArchetype = 1
-
-	local A, B, C, D, E, F, G, H, I = unpack(ids)
-	local a: Column, b: Column, c: Column, d: Column
-	local e: Column, f: Column, g: Column, h: Column
-
-	local world_query_iter_next
-	local columns: { Column }
-	local entities: { number }
-	local i: number
-	local archetype: ecs_archetype_t
-	local records: { number }
-	local archetypes = query.compatible_archetypes
-
-	local world = query.world :: { observable: ecs_observable_t }
-	-- Only need one observer for EcsArchetypeCreate and EcsArchetypeDelete respectively
-	-- because the event will be emitted for all components of that Archetype.
-	local observable = world.observable :: ecs_observable_t
-	local on_create_action = observable[EcsOnArchetypeCreate]
-	if not on_create_action then
-		on_create_action = {}
-		observable[EcsOnArchetypeCreate] = on_create_action
-	end
-	local query_cache_on_create = on_create_action[A]
-	if not query_cache_on_create then
-		query_cache_on_create = {}
-		on_create_action[A] = query_cache_on_create
-	end
-
-	local on_delete_action = observable[EcsOnArchetypeDelete]
-	if not on_delete_action then
-		on_delete_action = {}
-		observable[EcsOnArchetypeDelete] = on_delete_action
-	end
-	local query_cache_on_delete = on_delete_action[A]
-	if not query_cache_on_delete then
-		query_cache_on_delete = {}
-		on_delete_action[A] = query_cache_on_delete
-	end
-
-	local function on_create_callback(archetype)
-		table.insert(archetypes, archetype)
-	end
-
-	local function on_delete_callback(archetype)
-		local i = table.find(archetypes, archetype) :: number
-		local n = #archetypes
-		archetypes[i] = archetypes[n]
-		archetypes[n] = nil
-	end
-
-	local observer_for_create = { query = query, callback = on_create_callback }
-	local observer_for_delete = { query = query, callback = on_delete_callback }
-
-	table.insert(query_cache_on_create, observer_for_create)
-	table.insert(query_cache_on_delete, observer_for_delete)
-
-	local function cached_query_iter()
-		lastArchetype = 1
-		archetype = compatible_archetypes[lastArchetype]
-		if not archetype then
-			return NOOP
-		end
-		entities = archetype.entities
-		i = #entities
-		records = archetype.records
-		columns = archetype.columns
-		if not B then
-			a = columns[records[A]]
-		elseif not C then
-			a = columns[records[A]]
-			b = columns[records[B]]
-		elseif not D then
-			a = columns[records[A]]
-			b = columns[records[B]]
-			c = columns[records[C]]
-		elseif not E then
-			a = columns[records[A]]
-			b = columns[records[B]]
-			c = columns[records[C]]
-			d = columns[records[D]]
-		elseif not F then
-			a = columns[records[A]]
-			b = columns[records[B]]
-			c = columns[records[C]]
-			d = columns[records[D]]
-			e = columns[records[E]]
-		elseif not G then
-			a = columns[records[A]]
-			b = columns[records[B]]
-			c = columns[records[C]]
-			d = columns[records[D]]
-			e = columns[records[E]]
-			f = columns[records[F]]
-		elseif not H then
-			a = columns[records[A]]
-			b = columns[records[B]]
-			c = columns[records[C]]
-			d = columns[records[D]]
-			e = columns[records[E]]
-			f = columns[records[F]]
-			g = columns[records[G]]
-		elseif not I then
-			a = columns[records[A]]
-			b = columns[records[B]]
-			c = columns[records[C]]
-			d = columns[records[D]]
-			e = columns[records[E]]
-			f = columns[records[F]]
-			g = columns[records[G]]
-			h = columns[records[H]]
-		end
-
-		return world_query_iter_next
-	end
-
-	if not B then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row]
-		end
-	elseif not C then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row]
-		end
-	elseif not D then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-				c = columns[records[C]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row], c[row]
-		end
-	elseif not E then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-				c = columns[records[C]]
-				d = columns[records[D]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row], c[row], d[row]
-		end
-	elseif not F then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-				c = columns[records[C]]
-				d = columns[records[D]]
-				e = columns[records[E]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row], c[row], d[row], e[row]
-		end
-	elseif not G then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-				c = columns[records[C]]
-				d = columns[records[D]]
-				e = columns[records[E]]
-				f = columns[records[F]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row], c[row], d[row], e[row], f[row]
-		end
-	elseif not H then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-				c = columns[records[C]]
-				d = columns[records[D]]
-				e = columns[records[E]]
-				f = columns[records[F]]
-				g = columns[records[G]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row], c[row], d[row], e[row], f[row], g[row]
-		end
-	elseif not I then
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-				a = columns[records[A]]
-				b = columns[records[B]]
-				c = columns[records[C]]
-				d = columns[records[D]]
-				e = columns[records[E]]
-				f = columns[records[F]]
-				g = columns[records[G]]
-				h = columns[records[H]]
-			end
-
-			local row = i
-			i -= 1
-
-			return entity, a[row], b[row], c[row], d[row], e[row], f[row], g[row], h[row]
-		end
-	else
-		local queryOutput = {}
-		function world_query_iter_next(): any
-			local entity = entities[i]
-			while entity == nil do
-				lastArchetype += 1
-				archetype = compatible_archetypes[lastArchetype]
-				if not archetype then
-					return nil
-				end
-
-				entities = archetype.entities
-				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
-				columns = archetype.columns
-				records = archetype.records
-			end
-
-			local row = i
-			i -= 1
 
-			if not F then
-				return entity, a[row], b[row], c[row], d[row], e[row]
-			elseif not G then
-				return entity, a[row], b[row], c[row], d[row], e[row], f[row]
-			elseif not H then
-				return entity, a[row], b[row], c[row], d[row], e[row], f[row], g[row]
-			elseif not I then
-				return entity, a[row], b[row], c[row], d[row], e[row], f[row], g[row], h[row]
-			end
-
-			for j, id in ids do
-				queryOutput[j] = columns[records[id]][row]
-			end
-
-			return entity, unpack(queryOutput)
-		end
-	end
-
-	local cached_query = query :: any
-	cached_query.archetypes = query_archetypes
-	cached_query.__iter = cached_query_iter
-	cached_query.iter = cached_query_iter
-	setmetatable(cached_query, cached_query)
-	return cached_query
+local function BUFFER_CREATE(size: number): buffer
+    return buffer.create(size * ID_SIZE)
 end
-
-local Query = {}
-Query.__index = Query
-Query.__iter = query_iter
-Query.iter = query_iter_init
-Query.without = query_without
-Query.with = query_with
-Query.archetypes = query_archetypes
-Query.cached = query_cached
-
-local function world_query(world: ecs_world_t, ...)
-	local compatible_archetypes = {}
-	local length = 0
-
-	local ids = { ... }
-
-	local archetypes = world.archetypes
-
-	local idr: ecs_id_record_t?
-	local component_index = world.component_index
-
-	local q = setmetatable({
-		ids = ids,
-		compatible_archetypes = compatible_archetypes,
-		world = world,
-	}, Query)
-
-	for _, id in ids do
-		local map = component_index[id]
-		if not map then
-			return q
-		end
-
-		if idr == nil or map.size < idr.size then
-			idr = map
-		end
-	end
 
-	if not idr then
-		return q
-	end
-
-	for archetype_id in idr.cache do
-		local compatibleArchetype = archetypes[archetype_id]
-		if #compatibleArchetype.entities == 0 then
-			continue
-		end
-		local records = compatibleArchetype.records
-
-		local skip = false
-
-		for i, id in ids do
-			local tr = records[id]
-			if not tr then
-				skip = true
-				break
-			end
-		end
-
-		if skip then
-			continue
-		end
-
-		length += 1
-		compatible_archetypes[length] = compatibleArchetype
-	end
-
-	return q
+local function BUFFER_GET(b: buffer, i: number): number
+    return buffer.readu32(b, i * ID_SIZE)
 end
 
-local function world_each(world: ecs_world_t, id: i53): () -> ()
-	local idr = world.component_index[id]
-	if not idr then
-		return NOOP
-	end
-
-	local idr_cache = idr.cache
-	local archetypes = world.archetypes
-	local archetype_id = next(idr_cache, nil) :: number
-	local archetype = archetypes[archetype_id]
-	if not archetype then
-		return NOOP
-	end
-
-	local entities = archetype.entities
-	local row = #entities
-
-	return function(): any
-		local entity = entities[row]
-		while not entity do
-			archetype_id = next(idr_cache, archetype_id) :: number
-			if not archetype_id then
-				return
-			end
-			archetype = archetypes[archetype_id]
-			entities = archetype.entities
-			row = #entities
-			entity = entities[row]
-		end
-		row -= 1
-		return entity
-	end
+local function BUFFER_SET(b: buffer, i: number, id: entity)
+    buffer.writeu32(b, i * ID_SIZE, id)
 end
 
-local function world_children(world: ecs_world_t, parent: i53)
-	return world_each(world, ECS_PAIR(EcsChildOf, parent))
+local function BUFFER_FILL(b: buffer, first: number, last: number, v: number)
+    assert(buffer.len(b) >= last * ID_SIZE)
+    for i = first * ID_SIZE, last * ID_SIZE, ID_SIZE do
+        buffer.writeu32(b, i, v)
+    end
 end
-
-export type Record = {
-	archetype: Archetype,
-	row: number,
-	dense: i24,
-}
-export type ComponentRecord = {
-	cache: { [Id]: number },
-	counts: { [Id]: number },
-	flags: number,
-	size: number,
-	hooks: {
-		on_add: ((entity: Entity) -> ())?,
-		on_set: ((entity: Entity, data: any) -> ())?,
-		on_remove: ((entity: Entity) -> ())?,
-	},
-}
-export type ComponentIndex = Map<Id, ComponentRecord>
-export type Archetypes = { [Id]: Archetype }
-
-export type EntityIndex = {
-	dense_array: Map<number, Entity>,
-	sparse_array: Map<i24, Record>,
-	alive_count: number,
-	max_id: number,
-}
-
-local World = {}
-World.__index = World
 
-World.entity = world_entity
-World.query = world_query
-World.remove = world_remove
-World.clear = world_clear
-World.delete = world_delete
-World.component = world_component
-World.add = world_add
-World.set = world_set
-World.get = world_get
-World.has = world_has
-World.target = world_target
-World.parent = world_parent
-World.contains = world_contains
-World.cleanup = world_cleanup
-World.each = world_each
-World.children = world_children
+local function BUFFER_RESIZE(b: buffer, size: number): buffer
+    local b_new = buffer.create(size * ID_SIZE)
+    local n_old = buffer.len(b)
+    
+    buffer.copy(b_new, 0, b)
 
-local function world_new()
-	local entity_index = {
-		dense_array = {},
-		sparse_array = {},
-		alive_count = 0,
-		max_id = 0,
-	} :: ecs_entity_index_t
-	local self = setmetatable({
-		archetype_index = {} :: { [string]: Archetype },
-		archetypes = {} :: Archetypes,
-		component_index = {} :: ComponentIndex,
-		entity_index = entity_index,
-		ROOT_ARCHETYPE = (nil :: any) :: Archetype,
+    for i = n_old, size * ID_SIZE - 1, ID_SIZE do
+        buffer.writeu32(b_new, i, ID_NULL)
+    end
 
-		max_archetype_id = 0,
-		max_component_id = 0,
-
-		observable = {} :: Observable,
-	}, World) :: any
-
-	self.ROOT_ARCHETYPE = archetype_create(self, {}, "")
-
-	for i = 1, HI_COMPONENT_ID do
-		local e = entity_index_new_id(entity_index)
-		world_add(self, e, EcsComponent)
-	end
-
-	for i = HI_COMPONENT_ID + 1, EcsRest do
-		-- Initialize built-in components
-		entity_index_new_id(entity_index)
-	end
-
-	world_add(self, EcsName, EcsComponent)
-	world_add(self, EcsOnChange, EcsComponent)
-	world_add(self, EcsOnAdd, EcsComponent)
-	world_add(self, EcsOnRemove, EcsComponent)
-	world_add(self, EcsWildcard, EcsComponent)
-	world_add(self, EcsRest, EcsComponent)
-
-	world_set(self, EcsOnAdd, EcsName, "jecs.OnAdd")
-	world_set(self, EcsOnRemove, EcsName, "jecs.OnRemove")
-	world_set(self, EcsOnChange, EcsName, "jecs.OnChange")
-	world_set(self, EcsWildcard, EcsName, "jecs.Wildcard")
-	world_set(self, EcsChildOf, EcsName, "jecs.ChildOf")
-	world_set(self, EcsComponent, EcsName, "jecs.Component")
-	world_set(self, EcsOnDelete, EcsName, "jecs.OnDelete")
-	world_set(self, EcsOnDeleteTarget, EcsName, "jecs.OnDeleteTarget")
-	world_set(self, EcsDelete, EcsName, "jecs.Delete")
-	world_set(self, EcsRemove, EcsName, "jecs.Remove")
-	world_set(self, EcsName, EcsName, "jecs.Name")
-	world_set(self, EcsRest, EcsRest, "jecs.Rest")
-
-	world_add(self, EcsChildOf, ECS_PAIR(EcsOnDeleteTarget, EcsDelete))
-
-	return self
+    return b_new
 end
-
-World.new = world_new
-
-export type Entity<T = unknown> = { __T: T }
-export type Id<T = unknown> = { __T: T }
-export type Pair<P, O> = Id<P>
-type ecs_id_t<T=unknown> = Id<T> | Pair<T, "Tag"> | Pair<"Tag", T>
-export type Item<T...> = (self: Query<T...>) -> (Entity, T...)
-export type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
-
-export type Query<T...> = typeof(setmetatable({}, {
-	__iter = (nil :: any) :: Iter<T...>,
-})) & {
-	iter: Iter<T...>,
-	with: (self: Query<T...>, ...Id) -> Query<T...>,
-	without: (self: Query<T...>, ...Id) -> Query<T...>,
-	archetypes: (self: Query<T...>) -> { Archetype },
-	cached: (self: Query<T...>) -> Query<T...>,
-}
-
-export type Observer = {
- 	callback: (archetype: Archetype) -> (),
-   	query: QueryInner,
-}
-
-export type Observable = {
-	[Id]: {
-		[Id]: {
-			{ Observer }
-		}
-	}
-}
-
-export type World = {
-	archetype_index: { [string]: Archetype },
-	archetypes: Archetypes,
-	component_index: ComponentIndex,
-	entity_index: EntityIndex,
-	ROOT_ARCHETYPE: Archetype,
-
-	max_component_id: number,
-	max_archetype_id: number,
-
-	observable: any,
-
-	--- Creates a new entity
-	entity: (self: World, id: Entity?) -> Entity,
-	--- Creates a new entity located in the first 256 ids.
-	--- These should be used for static components for fast access.
-	component: <T>(self: World) -> Entity<T>,
-	--- Gets the target of an relationship. For example, when a user calls
-	--- `world:target(id, ChildOf(parent), 0)`, you will obtain the parent entity.
-	target: (self: World, id: Entity, relation: Id, index: number?) -> Entity?,
-	--- Deletes an entity and all it's related components and relationships.
-	delete: (self: World, id: Entity) -> (),
-
-	--- Adds a component to the entity with no value
-	add: <T>(self: World, id: Entity, component: Id) -> (),
-	--- Assigns a value to a component on the given entity
-	set: <T>(self: World, id: Entity, component: Id<T>, data: T) -> (),
-
-	cleanup: (self: World) -> (),
-	-- Clears an entity from the world
-	clear: (self: World, id: Entity) -> (),
-	--- Removes a component from the given entity
-	remove: (self: World, id: Entity, component: Id) -> (),
-	--- Retrieves the value of up to 4 components. These values may be nil.
-	get: (<A>(self: World, id: Entity, Id<A>) -> A?)
-		& (<A, B>(self: World, id: Entity, Id<A>, Id<B>) -> (A?, B?))
-		& (<A, B, C>(self: World, id: Entity, Id<A>, Id<B>, Id<C>) -> (A?, B?, C?))
-		& <A, B, C, D>(self: World, id: Entity, Id<A>, Id<B>, Id<C>, Id<D>) -> (A?, B?, C?, D?),
-
-	--- Returns whether the entity has the ID.
-	has: (self: World, entity: Entity, ...Id) -> boolean,
-
-	--- Get parent (target of ChildOf relationship) for entity. If there is no ChildOf relationship pair, it will return nil.
-	parent:(self: World, entity: Entity) -> Entity,
-
-	--- Checks if the world contains the given entity
-	contains:(self: World, entity: Entity) -> boolean,
-
-	each: (self: World, id: Id) -> () -> Entity,
-
-	children: (self: World, id: Id) -> () -> Entity,
 
-	--- Searches the world for entities that match a given query
-	query: (<A>(World, Id<A>) -> Query<A>)
-		& (<A, B>(World, Id<A>, Id<B>) -> Query<A, B>)
-		& (<A, B, C>(World, Id<A>, Id<B>, Id<C>) -> Query<A, B, C>)
-		& (<A, B, C, D>(World, Id<A>, Id<B>, Id<C>, Id<D>) -> Query<A, B, C, D>)
-		& (<A, B, C, D, E>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>) -> Query<A, B, C, D, E>)
-		& (<A, B, C, D, E, F>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>, Id<F>) -> Query<A, B, C, D, E, F>)
-		& (<A, B, C, D, E, F, G>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>, Id<F>, Id<G>) -> Query<A, B, C, D, E, F, G>)
-		& (<A, B, C, D, E, F, G, H>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>, Id<F>, Id<G>, Id<H>, ...Id<any>) -> Query<A, B, C, D, E, F, G, H>)
-}
--- type function ecs_id_t(entity)
--- 	local ty = entity:components()[2]
--- 	local __T = ty:readproperty(types.singleton("__T"))
--- 	if not __T then
--- 		return ty:readproperty(types.singleton("__jecs_pair_value"))
--- 	end
--- 	return __T
+-- local function BUFFER_CLONE(b: buffer): buffer
+--     local b_new = buffer.create(buffer.len(b))
+--     buffer.copy(b_new, 0, b)
+--     return b_new
 -- end
 
--- type function ecs_pair_t(first, second)
--- 	if ecs_id_t(first):is("nil") then
--- 		return second
--- 	else
--- 		return first
--- 	end
--- end
+-- wrappers to treat arrays as 0-indexed
+local function ARRAY_SET<T>(t: Array<T>, i: number, v: T)
+    t[i + 1] = v
+end
 
-return {
-	World = World :: { new: () -> World },
-	world = World.new :: () -> World,
+local function ARRAY_GET<T>(t: Array<T>, i: number): T
+    return t[i + 1]
+end
 
-	OnAdd = EcsOnAdd :: Entity<(entity: Entity) -> ()>,
-	OnRemove = EcsOnRemove :: Entity<(entity: Entity) -> ()>,
-	OnChange = EcsOnChange :: Entity<(entity: Entity, data: any) -> ()>,
-	ChildOf = EcsChildOf :: Entity,
-	Component = EcsComponent :: Entity,
-	Wildcard = EcsWildcard :: Entity,
-	w = EcsWildcard :: Entity,
-	OnDelete = EcsOnDelete :: Entity,
-	OnDeleteTarget = EcsOnDeleteTarget :: Entity,
-	Delete = EcsDelete :: Entity,
-	Remove = EcsRemove :: Entity,
-	Name = EcsName :: Entity<string>,
-	Rest = EcsRest :: Entity,
+local function ARRAY_SWAP<T>(t: Array<T>, a: number, b: number)
+    a += 1
+    b += 1
+    t[a], t[b] = t[b], t[a]
+end
 
-	pair = (ECS_PAIR :: any) :: <P, O>(first: Id<P>, second: Id<O>) -> Pair<P, O>,
+local function ARRAY_SWAP_REMOVE<T>(t: Array<T>, remove: number, swap: number)
+    swap += 1
+    t[remove + 1] = t[swap]
+    t[swap] = nil
+end
 
-	-- Inwards facing API for testing
-	ECS_ID = ECS_ENTITY_T_LO,
-	ECS_GENERATION_INC = ECS_GENERATION_INC,
-	ECS_GENERATION = ECS_GENERATION,
-	ECS_ID_IS_WILDCARD = ECS_ID_IS_WILDCARD,
+local function POOL_HAS<T>(pool: Pool<T>, key: number): boolean
+    return pool.map_max >= key and BUFFER_GET(pool.map, key) ~= ID_NULL
+end
 
-	ECS_ID_DELETE = ECS_ID_DELETE,
+local function POOL_NOT_HAS<T>(pool: Pool<T>, key: number): boolean
+    return pool.map_max < key or BUFFER_GET(pool.map, key) == ID_NULL
+end
 
-	IS_PAIR = ECS_IS_PAIR,
-	pair_first = ecs_pair_first,
-	pair_second = ecs_pair_second,
-	entity_index_get_alive = entity_index_get_alive,
+local function POOL_FIND(pool: Pool<any>, key: number): number
+    if key > pool.map_max then return ID_NULL end
+    return BUFFER_GET(pool.map, key)
+end
 
-	archetype_append_to_records = archetype_append_to_records,
-	id_record_ensure = id_record_ensure,
-	archetype_create = archetype_create,
-	archetype_ensure = archetype_ensure,
-	find_insert = find_insert,
-	find_archetype_with = find_archetype_with,
-	find_archetype_without = find_archetype_without,
-	archetype_init_edge = archetype_init_edge,
-	archetype_ensure_edge = archetype_ensure_edge,
-	init_edge_for_add = init_edge_for_add,
-	init_edge_for_remove = init_edge_for_remove,
-	create_edge_for_add = create_edge_for_add,
-	create_edge_for_remove = create_edge_for_remove,
-	archetype_traverse_add = archetype_traverse_add,
-	archetype_traverse_remove = archetype_traverse_remove,
+local function pool_resize_entities<T>(self: Pool<T>, size: number)
+    if self.capacity >= size then return end
+    local new_capacity = math.ceil(size * 1.5)
+    self.entities = BUFFER_RESIZE(self.entities, new_capacity)
+    self.capacity = new_capacity
+end
 
-	entity_move = entity_move,
+local function pool_resize_map<T>(self: Pool<T>, size: number)
+    if self.map_max + 1 >= size then return end
+    local new_map_capacity = math.ceil(size * 1.5)
+    self.map = BUFFER_RESIZE(self.map, new_map_capacity)
+    self.map_max = new_map_capacity - 1
+end
 
-	entity_index_try_get = entity_index_try_get,
-	entity_index_try_get_any = entity_index_try_get_any,
-	entity_index_try_get_fast = entity_index_try_get_fast,
-	entity_index_is_alive = entity_index_is_alive,
-	entity_index_new_id = entity_index_new_id,
+local function POOL_RESIZE_MAP_IF_NEEDED<T>(self: Pool<T>, key: number)
+    if self.map_max < key then
+        pool_resize_map(self, key + 1)
+    end
+end
 
-	query_iter = query_iter,
-	query_iter_init = query_iter_init,
-	query_with = query_with,
-	query_without = query_without,
-	query_archetypes = query_archetypes,
-	query_match = query_match,
+local function POOL_SWAP<T>(
+    self: Pool<T>,
+    idx: number,
+    idx_swap: number
+)
+    local map = self.map
+    local entities = self.entities
+    local values = self.values
 
-	find_observers = find_observers,
+    local id = BUFFER_GET(entities, idx)
+    local id_swap = BUFFER_GET(entities, idx_swap)
+
+    BUFFER_SET(entities, idx_swap, id)
+    BUFFER_SET(entities, idx, id_swap)
+
+    BUFFER_SET(map, ID_KEY(id), ID_REPLACE(id, idx_swap))
+    BUFFER_SET(map, ID_KEY(id_swap), ID_REPLACE(id_swap, idx))
+    
+    ARRAY_SWAP(values, idx_swap, idx)
+end
+
+local function GROUP_ADD<T>(group: GroupData<T>, key: number)
+    group.added = true -- used to test for invalidation
+    local n = group.size
+    group.size = n + 1
+    for _, pool in ipairs(group) do
+        POOL_SWAP(pool, ID_KEY(BUFFER_GET(pool.map, key)), n)
+    end
+end
+
+local function GROUP_CAN_ADD<T>(group: GroupData<T>, key: number): boolean
+    for _, pool in ipairs(group) do
+        if POOL_NOT_HAS(pool, key) then
+            return false
+        end
+    end
+    return true
+end
+
+local function GROUP_REMOVE<T>(group: GroupData<T>, idx: number)
+    local n = group.size - 1
+    group.size = n
+    for _, pool in ipairs(group) do        
+        POOL_SWAP(pool, idx, n)
+    end
+end
+
+local function POOL_TRY_GROUP<T>(pool: Pool<T>, id: number)
+    local group = pool.group :: GroupData<T>
+    local key = ID_KEY(id)
+    if GROUP_CAN_ADD(group, key) then
+        GROUP_ADD(group, key)  
+    end
+end
+
+local function POOL_TRY_UNGROUP<T>(pool: Pool<T>, id: entity)
+    local group = pool.group :: GroupData<T>
+    local idx = ID_KEY(BUFFER_GET(pool.map, ID_KEY(id)))
+    if idx < group.size then
+        GROUP_REMOVE(group, idx)
+    end
+end
+
+local function POOL_RESIZE_ENTITIES_IF_NEEDED<T>(self: Pool<T>, size: number)
+    if size >= self.capacity then
+        pool_resize_entities(self, size + 1)
+    end
+end
+
+-- separated to encourage compiler to inline
+local function _POOL_ADD(self, i, id, v)
+    BUFFER_SET(self.map, ID_KEY(id), ID_REPLACE(id, i))
+    BUFFER_SET(self.entities, i, id)
+    ARRAY_SET(self.values, i, v)
+end
+local function POOL_ADD<T>(self: Pool<T>, id: entity, v: T)
+    local n = self.size
+    POOL_RESIZE_ENTITIES_IF_NEEDED(self, n)
+    self.size = n + 1
+    _POOL_ADD(self, n, id, v)
+    if self.on_add then fire(self.on_add, id, v) end
+end
+
+local function _POOL_ADD_ID(self, i, id)
+    BUFFER_SET(self.map, ID_KEY(id), ID_REPLACE(id, i))
+    BUFFER_SET(self.entities, i, id)
+end
+local function POOL_ADD_ID<T>(self: Pool<T>, id: entity)
+    local n = self.size
+    POOL_RESIZE_ENTITIES_IF_NEEDED(self, n)
+    self.size = n + 1
+    _POOL_ADD_ID(self, n, id)
+    if self.on_add then fire(self.on_add, id, NIL) end
+end
+
+local function POOL_REMOVE<T>(self: Pool<T>, key, id)
+    local map = self.map
+
+    if self.on_remove then fire(self.on_remove, id) end
+
+    local idx_ver = BUFFER_GET(map, key)
+    local idx = ID_KEY(idx_ver)
+
+    if ID_VERSION_NOT_EQUAL(idx_ver, id) then return end
+
+    local n = self.size - 1
+    self.size = n
+    local entities = self.entities
+    local values = self.values
+
+    local id_last = BUFFER_GET(entities, n)
+
+    BUFFER_SET(map, ID_KEY(id_last), ID_REPLACE(id_last, idx))
+    BUFFER_SET(map, key, ID_NULL)
+
+    BUFFER_SET(entities, idx, id_last)
+    --BUFFER_SET(entities, n, ID_NULL)
+
+    ARRAY_SWAP_REMOVE(values, idx, n)
+end
+local function POOL_TRY_REMOVE<T>(self: Pool<T>, id: entity)
+    local key = ID_KEY(id)
+    if POOL_HAS(self, key) then
+        POOL_REMOVE(self, key, id)
+    end
+end
+
+local function POOL_COPY<T>(self: Pool<T>, into: Pool<T>)
+    if into.on_add or into.on_change or into.on_remove or into.on_clear then throw("cannot paste into component with signals") end
+
+    POOL_RESIZE_MAP_IF_NEEDED(into, self.map_max)
+    POOL_RESIZE_ENTITIES_IF_NEEDED(into, self.capacity)
+    
+    into.size = self.size
+    
+    buffer.copy(into.map, 0, self.map, 0)
+    buffer.copy(into.entities, 0, self.entities, 0)
+    table.move(self.values, 1, math.max(self.size, into.size), 1, into.values)
+end
+
+local function pool_clear<T>(self: Pool<T>)
+    local entities = self.entities
+
+    local on_clear = self.on_clear :: Array<() -> ()>
+    if on_clear then
+        for _, listener in on_clear do listener() end
+    end
+
+    local on_remove = self.on_remove :: Array<Listener<nil>>
+    if on_remove then
+        for i = 0, self.size - 1 do
+            fire(on_remove, BUFFER_GET(entities, i))
+        end
+    end
+
+    local after_clear = self.after_clear :: Array<() -> ()>
+    if after_clear then
+        for _, listener in after_clear do listener() end
+    end
+
+    self.size = 0
+    BUFFER_FILL(self.map, 0, self.map_max, ID_NULL)
+    table.clear(self.values)
+end
+
+local function pool_create<T>(size: number?): Pool<T>
+    local n = size or 1
+
+    local map = BUFFER_CREATE(n)
+    BUFFER_FILL(map, 0, n - 1, ID_NULL)
+
+    return {
+        map_max = n - 1,
+        capacity = n,
+        size = 0,
+        map = map,
+        entities = BUFFER_CREATE(n),
+        values = table.create(n),
+
+        on_add = false,
+        on_change = false,
+        on_remove = false,
+        on_clear = false,
+        after_clear = false,
+        group = false,
+
+        reserve = function(self: Pool<T>, size: number)
+            pool_resize_map(self, size)
+            pool_resize_entities(self, size)
+
+            -- todo: why does this cause innacurate buffer alloc readings?
+            do -- force array reallocation
+                local values = self.values
+                local n = next_pow_of_2(size)
+
+                for i = self.size + 1, n do
+                    values[i] = true :: any
+                end
+
+                for i = n, self.size + 1, -1 do
+                    values[i] = nil
+                end
+            end
+        end
+    }
+end
+
+--------------------------------------------------------------------------------
+-- entity_list
+--------------------------------------------------------------------------------
+
+local function entity_list_create(): EntityList
+    return {
+        data = buffer.create(0),
+        capacity = 0,
+        free = ID_NULL_KEY
+    }
+end
+
+local function entity_list_get_prev_key(self: EntityList, key: number): number
+    local prev = self.free
+    local i = 0; repeat i += 1
+        local next = ID_KEY(BUFFER_GET(self.data, prev))
+        if next == key then break end
+        prev = next
+    until i == ID_MAX_VALID_KEY
+    assert(i < ID_MAX_VALID_KEY, "key not found") -- todo: is this a valid case?
+    return prev
+end
+
+local function entity_list_resize(self: EntityList, new_capacity: number, partition_start: number, partition_stop: number)
+    ASSERT(new_capacity > self.capacity, "new capacity must be greater than current capacity")
+    local new_max = new_capacity - 1
+    ASSERT(new_max <= ID_MAX_VALID_KEY)
+
+    local old_capacity = self.capacity
+    local old_max = old_capacity - 1
+    local old_data = self.data
+
+    local new_data = BUFFER_RESIZE(old_data, new_capacity)
+
+    if old_max < partition_stop and new_max >= partition_start then
+        local start = old_max < partition_start and partition_start or old_max + 1 -- todo: verify
+        local stop = new_max > partition_stop and partition_stop or new_max
+
+        if self.free == ID_NULL_KEY then
+            self.free = start
+        else
+            local tail = entity_list_get_prev_key(self, ID_NULL_KEY)
+            BUFFER_SET(new_data, tail, ID_CREATE(start, ID_VER(BUFFER_GET(new_data, tail))))
+        end
+
+        for i = start, stop - 1 do
+            BUFFER_SET(new_data, i, ID_CREATE(i + 1, ID_MIN_VER))
+        end
+        BUFFER_SET(new_data, stop, ID_CREATE(ID_NULL_KEY, ID_MIN_VER))
+    end
+    
+    self.data = new_data
+    self.capacity = new_capacity
+end
+
+local function entity_list_remove(self: EntityList, id: entity, partition_start: number, partition_stop: number)
+    local key = ID_KEY(id)
+    local ver = ID_VER(id)
+
+    if key >= partition_start and key <= partition_stop then
+        BUFFER_SET(self.data, key, ID_CREATE(self.free, ver < ID_MASK_VER and ver + 1 * ID_LSHIFT or ID_MIN_VER))
+        self.free = key
+    else
+        BUFFER_SET(self.data, key, ID_NULL)
+    end
+end
+
+local function entity_list_clear(self: EntityList, partition_start: number, partition_stop: number)
+    for i = self.capacity - 1, 0, -1 do
+        local key_ver = BUFFER_GET(self.data, i)
+        if ID_KEY(key_ver) == i then -- is in use
+            entity_list_remove(self, key_ver, partition_start, partition_stop)
+        end
+    end
+end
+
+local function ENTITY_LIST_ID_IN_USE(self: EntityList, id: entity): boolean
+    local key = ID_KEY(id)
+    return key < self.capacity and BUFFER_GET(self.data, ID_KEY(id)) == id
+end
+
+--------------------------------------------------------------------------------
+-- query
+--------------------------------------------------------------------------------
+
+local query_create, observer_create, group_create do
+
+type IRegistry = {
+    storage: <T>(self: IRegistry, ctype: T) -> Pool<T>,
+    on_add: <T>(self: IRegistry, ctype: T) -> Signal<entity, T>,
+    on_change: <T>(self: IRegistry, ctype: T) -> Signal<entity, T>,
+    on_remove: <T>(self: IRegistry, ctype: T) -> Signal<entity, nil>,
+    on_clear: <T>(self: IRegistry, ctype: T) -> Signal<>,
+    after_clear: <T>(self: IRegistry, ctype: T) -> Signal<>,
 }
+
+local function HAS_ANY(pools: Array<Pool<unknown>>, key: number): boolean
+    for _, pool in next, pools do
+        if POOL_HAS(pool, key) then return true end
+    end
+    return false
+end
+
+local function get_smallest(pools: Array<Pool<unknown>>): (Pool<unknown>, number)
+    local pool: Pool<unknown>?
+    local pos = 0
+
+    for i, p in next, pools do
+        if pool == nil or p.size < pool.size then
+            pool = p
+            pos = i
+        end
+    end
+
+    return assert(pool, "no pools given"), pos
+end
+
+local get_smallest_first_tuple = {}
+local function get_smallest_first(pools: Array<Pool<unknown>>): (number, ...Pool<unknown>)
+    table.clear(get_smallest_first_tuple)
+    local s, s_pos = get_smallest(pools)
+    for i, p in next, pools do
+        if p ~= s then
+            table.insert(get_smallest_first_tuple, p)
+        end
+    end
+    return s_pos, s, unpack(get_smallest_first_tuple)
+end
+
+local function get_pools(world: IRegistry, ctypes: Array<CType>): Array<Pool<unknown>>
+    local pools = table.create(#ctypes)
+    for i, ctype in next, ctypes do
+        pools[i] = world:storage(ctype)
+    end
+    return pools
+end
+
+local function disconnect_all(connections: Array<Connection>)
+    for _, connection in next, connections do
+        connection:disconnect()
+    end
+end
+
+local function clear_invalidation_flag<T>(pool: Pool<T>)
+    if pool.group then pool.group.added = false end
+end
+
+local function ASSERT_INVALIDATION<T>(pool: Pool<T>): ...any
+    if pool.group and pool.group.added then
+        throw("group reordered during iteration")
+    end
+end
+
+local function query_iter_1<A>(a: Pool<A>): () -> (entity, A)
+    local n = a.size
+    local entities = a.entities
+    local values = a.values
+
+    clear_invalidation_flag(a)
+
+    return function()
+        local i = n - 1; n = i
+
+        if i < 0 then
+            ASSERT_INVALIDATION(a)
+            return NIL, NIL
+        end
+
+        return BUFFER_GET(entities, i), ARRAY_GET(values, i)
+    end
+end
+
+local function query_iter_1_excl_1<A>(a: Pool<A>, b: Pool<unknown>): () -> (entity, A)
+    local n = a.size
+    local entities = a.entities
+    local values = a.values
+
+    clear_invalidation_flag(a)
+
+    return function()
+        for i = n - 1, 0, -1 do
+            local id = BUFFER_GET(entities, i)
+
+            if POOL_FIND(b, ID_KEY(id)) ~= ID_NULL then continue end
+            n = i
+
+            return id, ARRAY_GET(values, i)
+        end
+
+        ASSERT_INVALIDATION(a)
+        return NIL, NIL
+    end
+end
+
+local function query_iter_2<A, B>(a: Pool<A>, b: Pool<B>): () -> (entity, A, B)
+    local na, nb = a.size, b.size
+
+    if na <= nb then
+        local n = na
+        local entities = a.entities
+        local values = a.values
+
+        clear_invalidation_flag(a)
+
+        return function()
+            for i = n - 1, 0, -1 do
+                local id = BUFFER_GET(entities, i)
+                local idx_ver = POOL_FIND(b, ID_KEY(id))
+                if idx_ver == ID_NULL then continue end
+                n = i
+                return id, ARRAY_GET(values, i), ARRAY_GET(b.values, ID_KEY(idx_ver))
+            end
+    
+            ASSERT_INVALIDATION(a)
+            return NIL, NIL, NIL
+        end
+    else
+        local n = nb
+        local entities = b.entities
+        local values = b.values
+
+        clear_invalidation_flag(b)
+
+        return function()
+            for i = n - 1, 0, -1 do
+                local id = BUFFER_GET(entities, i)
+                local idx_ver = POOL_FIND(a, ID_KEY(id))
+                if idx_ver == ID_NULL then continue end
+                n = i
+                return id, ARRAY_GET(a.values, ID_KEY(idx_ver)), ARRAY_GET(values, i)   
+            end
+    
+            ASSERT_INVALIDATION(b)
+            return NIL, NIL, NIL
+        end
+    end
+end
+
+local function query_iter_2_excl_1<A, B>(a: Pool<A>, b: Pool<B>, c: Pool<unknown>): () -> (entity, A, B)
+    local na, nb = a.size, b.size
+
+    if na <= nb then
+        local n = na
+        local entities = a.entities
+        local values = a.values
+
+        clear_invalidation_flag(a)
+
+        return function()
+            for i = n - 1, 0, -1 do
+                local id = BUFFER_GET(entities, i)
+                local key = ID_KEY(id)
+                if POOL_FIND(c, key) ~= ID_NULL then continue end
+                local idx_ver = POOL_FIND(b, key)
+                if idx_ver == ID_NULL then continue end
+                n = i
+                return id, ARRAY_GET(values, i), ARRAY_GET(b.values, ID_KEY(idx_ver))
+            end
+    
+            ASSERT_INVALIDATION(a)
+            return NIL, NIL, NIL
+        end
+    else
+        local n = nb
+        local entities = b.entities
+        local values = b.values
+
+        clear_invalidation_flag(b)
+
+        return function()
+            for i = n - 1, 0, -1 do
+                local id = BUFFER_GET(entities, i)
+                local key = ID_KEY(id)
+                if POOL_FIND(c, key) ~= ID_NULL then continue end
+                local idx_ver = POOL_FIND(a, key)
+                if idx_ver == ID_NULL then continue end
+                n = i
+                return id, ARRAY_GET(a.values, ID_KEY(idx_ver)), ARRAY_GET(values, i)   
+            end
+    
+            ASSERT_INVALIDATION(b)
+            return NIL, NIL, NIL
+        end
+    end
+end
+
+local function query_iter_3(includes: Array<Pool<unknown>>): () -> (entity, ...any)
+    local s_pos, s, a, b = get_smallest_first(includes)
+
+    local n = s.size
+    local entities = s.entities
+    local values = s.values
+
+    clear_invalidation_flag(s)
+
+    return function()
+        for i = n - 1, 0, -1 do
+            local id = BUFFER_GET(entities, i)
+            local key = ID_KEY(id)
+            
+            local a_idx_ver = POOL_FIND(a, key)
+            if a_idx_ver == ID_NULL then continue end
+            local va = ARRAY_GET(a.values, ID_KEY(a_idx_ver))
+
+            local b_idx_ver = POOL_FIND(b, key)
+            if b_idx_ver == ID_NULL then continue end
+            local vb = ARRAY_GET(b.values, ID_KEY(b_idx_ver))
+
+            local sv = ARRAY_GET(values, i)
+
+            n = i
+            if s_pos == 1 then
+                return id, sv, va, vb
+            elseif s_pos == 2 then
+                return id, va, sv, vb
+            else
+                return id, va, vb, sv
+            end
+        end
+
+        ASSERT_INVALIDATION(s)
+        return NIL
+    end
+end
+
+local function query_iter_4(includes: Array<Pool<unknown>>): () -> (entity, ...any)
+    local s_pos, s, a, b, c = get_smallest_first(includes)
+
+    local n = s.size
+    local entities = s.entities
+    local values = s.values
+
+    clear_invalidation_flag(s)
+
+    return function()
+        for i = n - 1, 0, -1 do
+            local id = BUFFER_GET(entities, i)
+            local key = ID_KEY(id)
+            
+            local a_idx_ver = POOL_FIND(a, key)
+            if a_idx_ver == ID_NULL then continue end
+            local va = ARRAY_GET(a.values, ID_KEY(a_idx_ver))
+
+            local b_idx_ver = POOL_FIND(b, key)
+            if b_idx_ver == ID_NULL then continue end
+            local vb = ARRAY_GET(b.values, ID_KEY(b_idx_ver))
+
+            local c_idx_ver = POOL_FIND(c, key)
+            if c_idx_ver == ID_NULL then continue end
+            local vc = ARRAY_GET(c.values, ID_KEY(c_idx_ver))
+
+            local sv = ARRAY_GET(values, i)
+
+            n = i
+            if s_pos == 1 then
+                return id, sv, va, vb, vc
+            elseif s_pos == 2 then
+                return id, va, sv, vb, vc
+            elseif s_pos == 3 then
+                return id, va, vb, sv, vc
+            else
+                return id, va, vb, vc, sv
+            end
+        end
+
+        ASSERT_INVALIDATION(s)
+        return NIL
+    end
+end
+
+local function query_iter_general(
+    includes: Array<Pool<unknown>>,
+    withouts: Array<Pool<unknown>>?,
+    lead: Pool<unknown>?
+): () -> (entity, ...any)
+    local source = lead or get_smallest(includes)
+    local source_pos: number?
+    for i, pool in next, includes do
+        if pool == source then
+            source_pos = i
+            break
+        end
+    end
+    assert(source_pos)
+
+    local n = source.size
+    local entities = source.entities
+    local values = source.values
+
+    local last_pos = #includes
+    local tuple = table.create(last_pos)
+
+    clear_invalidation_flag(source)
+
+    return function()
+        for i = n - 1, 0, -1 do
+            local id = BUFFER_GET(entities, i)
+            local key = ID_KEY(id)
+            
+            if withouts and HAS_ANY(withouts, key) then continue end
+
+            local has_all = true
+
+            for pos = 1, source_pos - 1 do
+                local pool = includes[pos]
+                local idx_ver = POOL_FIND(pool, key)
+                if idx_ver == ID_NULL then has_all = false; break end
+                tuple[pos] = ARRAY_GET(pool.values, ID_KEY(idx_ver))
+            end
+
+            if has_all == false then continue end
+            
+            for pos = source_pos + 1, last_pos do
+                local pool = includes[pos]
+                local idx_ver = POOL_FIND(pool, key)
+                if idx_ver == ID_NULL then has_all = false; break end
+                tuple[pos] = ARRAY_GET(pool.values, ID_KEY(idx_ver))
+            end
+
+            if has_all == false then continue end
+
+            tuple[source_pos] = ARRAY_GET(values, i)
+            n = i
+            return id, unpack(tuple)
+        end
+
+        ASSERT_INVALIDATION(source)
+        return NIL
+    end
+end
+
+local function query_patch_1<A>(a: Pool<A>, fn: (A) -> A)
+    local entities = a.entities
+    local values = a.values
+
+    local on_change = a.on_change :: Array<Listener<A>>
+    if on_change then
+        for i, v in values do
+            local v_new = fn(v)
+            fire(on_change, BUFFER_GET(entities, i - 1), v_new)
+            values[i] = v_new
+        end
+    else
+        for i, v in values do
+            values[i] = fn(v)
+        end
+    end
+end
+
+local function query_patch_2<A, B>(a: Pool<A>, b: Pool<B>, fn: (A, B) -> (A, B))
+    local na, nb = a.size, b.size
+
+    local a_on_change = a.on_change :: Array<Listener<A>>
+    local b_on_change = b.on_change :: Array<Listener<B>>
+
+    if na <= nb then
+        local n = na
+        local entities = a.entities
+        local values = a.values
+
+        for i = 0, n - 1 do
+            local id = BUFFER_GET(entities, i)
+            local idx_ver = POOL_FIND(b, ID_KEY(id))
+            if idx_ver == ID_NULL then continue end
+            local idx = ID_KEY(idx_ver)
+
+            local va_new, vb_new = fn(ARRAY_GET(values, i), ARRAY_GET(b.values, idx))
+
+            if a_on_change then fire(a_on_change, id, va_new) end
+            if b_on_change then fire(b_on_change, id, vb_new) end
+
+            ARRAY_SET(values, i, va_new)
+            ARRAY_SET(b.values, idx, vb_new)
+        end
+
+    else
+        local n = nb
+        local entities = b.entities
+        local values = b.values
+
+        for i = 0, n - 1 do
+            local id = BUFFER_GET(entities, i)
+            local idx_ver = POOL_FIND(a, ID_KEY(id))
+            if idx_ver == ID_NULL then continue end
+            local idx = ID_KEY(idx_ver)
+
+            local va_new, vb_new = fn(ARRAY_GET(a.values, idx), ARRAY_GET(values, i))
+
+            if a_on_change then fire(a_on_change, id, va_new) end
+            if b_on_change then fire(b_on_change, id, vb_new) end
+
+            ARRAY_SET(a.values, idx, va_new)
+            ARRAY_SET(values, i, vb_new)
+        end
+    end
+end
+
+local function query_patch_general(
+    includes: Array<Pool<unknown>>,
+    withouts: Array<Pool<unknown>>?,
+    fn: (...unknown) -> ...unknown
+)
+    ASSERT(#includes <= 4, "cannot patch a query with more than 4 component types")
+    local source = get_smallest(includes)
+    local source_pos: number?
+    for i, pool in next, includes do
+        if pool == source then
+            source_pos = i
+            break
+        end
+    end
+    assert(source_pos)
+
+    local n = source.size
+    local entities = source.entities
+    local values = source.values
+
+    local last_pos = #includes
+    local tuple = table.create(last_pos)
+    local idxs = table.create(last_pos)
+
+    for i = 0, n - 1 do
+        local id = BUFFER_GET(entities, i)
+        local key = ID_KEY(id)
+        
+        if withouts and HAS_ANY(withouts, key) then continue end
+
+        local has_all = true
+
+        for pos = 1, source_pos - 1 do
+            local pool = includes[pos]
+            local idx_ver = POOL_FIND(pool, key)
+            if idx_ver == ID_NULL then has_all = false; break end
+            local idx = ID_KEY(idx_ver)
+            tuple[pos] = ARRAY_GET(pool.values, idx)
+            idxs[pos] = idx
+        end
+
+        if has_all == false then continue end
+        
+        for pos = source_pos + 1, last_pos do
+            local pool = includes[pos]
+            local idx_ver = POOL_FIND(pool, key)
+            if idx_ver == ID_NULL then has_all = false; break end
+            local idx = ID_KEY(idx_ver)
+            tuple[pos] = ARRAY_GET(pool.values, idx)
+            idxs[pos] = idx
+        end
+
+        if has_all == false then continue end
+
+        tuple[source_pos] = ARRAY_GET(values, i)
+        idxs[source_pos] = i
+
+        tuple[1], tuple[2], tuple[3], tuple[4] =
+            fn(tuple[1], tuple[2], tuple[3], tuple[4])
+
+        for pos, pool in includes do
+            local on_change = pool.on_change :: Array<Listener<unknown>>
+            if on_change then fire(on_change, id, tuple[pos]) end
+            ARRAY_SET(pool.values, idxs[pos], tuple[pos])
+        end
+    end
+
+    return NIL
+end
+
+type _View<T...> = typeof(setmetatable({} :: {
+    world: IRegistry,
+    includes: Array<CType>,
+    withouts: Array<CType>?,
+    
+    withou: <U...>(_View<T...>, U...) -> _View<T...>,
+    patch: (_View<T...>, fn: (T...) -> T...) -> (),
+    iter: (_View<T...>) -> () -> (entity, T...)
+}, {} :: {
+    __len: (_View<T...>) -> number,
+    __iter: (_View<T...>) -> () -> (entity, T...)
+}))
+
+function query_create<T...>(reg: IRegistry, ...: T...): View<T...>
+    local includes = {}
+
+    for i = 1, select("#", ...) do
+        local ctype = select(i, ...)
+        ASSERT_CTYPE_VALID(ctype, i)
+        table.insert(includes, ctype)
+    end
+
+    local function iter(self: _View<T...>): () -> (entity, T...)
+        local includes = get_pools(self.world, self.includes)
+        local withouts = self.withouts and get_pools(self.world, self.withouts)
+
+        return if #includes == 1 and not withouts then
+                query_iter_1(includes[1])
+            elseif #includes == 1 and withouts and #withouts == 1 then
+                query_iter_1_excl_1(includes[1], withouts[1])
+            elseif #includes == 2 and not withouts then 
+                query_iter_2(includes[1], includes[2])
+            elseif #includes == 2 and withouts and #withouts == 1 then
+                query_iter_2_excl_1(includes[1], includes[2], withouts[1])
+            elseif #includes == 3 and not withouts then
+                query_iter_3(includes)
+            elseif #includes == 4 and not withouts then
+                query_iter_4(includes)
+            else
+                query_iter_general(includes, withouts)   
+    end
+
+    local self = {
+        world = reg,
+        includes = includes,
+        withouts = nil,
+
+        withou = function<E...>(self: _View<T...>, ...: E...): _View<T...>
+            local includes = self.includes
+            local withouts = self.withouts or (function()
+                local t = {} 
+                self.withouts = t
+                return t
+            end)()
+
+            for i = 1, select("#", ...) do
+                local ctype = select(i, ...)
+                ASSERT_CTYPE_VALID(ctype, i)
+                ASSERT(not table.find(includes, ctype), `cannot withou {ctype_debug(ctype, i)}, component is a part of the query`)
+                if table.find(withouts, ctype) then continue end
+                table.insert(withouts, ctype)
+            end
+
+            return self
+        end,
+
+        patch = function(self: _View<T...>, fn: (T...) -> T...)
+            local includes = get_pools(self.world, self.includes)
+            local withouts = self.withouts and get_pools(self.world, self.withouts)
+
+            if #includes == 1 and not withouts then
+                query_patch_1(includes[1], fn :: any)
+            elseif #includes == 2 and not withouts then
+                query_patch_2(includes[1], includes[2], fn :: any)
+            else
+                query_patch_general(includes, withouts, fn :: any)
+            end
+        end,
+
+        iter = iter,
+
+        __len = function(self: _View<T...>): number
+            return get_smallest(get_pools(self.world, self.includes)).size
+        end,
+
+        __iter = iter
+    }
+
+    setmetatable(self, self)
+
+    return self :: _View<T...>
+end
+
+type _Observer<T...> = typeof(setmetatable({} :: {
+    world: IRegistry,
+    pool: Pool<unknown>,
+    includes: Array<CType>,
+    withouts: Array<CType>?,
+    connections: Array<Connection>?,
+
+    withou: <U...>(_Observer<T...>, U...) -> _Observer<T...>,
+    disconnect: (_Observer<T...>) -> _Observer<T...>,
+    reconnect: (_Observer<T...>) -> _Observer<T...>,
+
+    clear: (_Observer<T...>) -> _Observer<T...>,
+    iter: (_Observer<T...>) -> () -> (entity, T...)
+}, {} :: {
+    __len: (_Observer<T...>) -> number,
+    __iter: (_Observer<T...>) -> () -> (entity, T...)
+}))
+
+function observer_create<T...>(reg: IRegistry, ...: T...): Observer<T...>
+    local includes = {}
+
+    for i = 1, select("#", ...) do
+        local ctype = select(i, ...)
+        ASSERT_CTYPE_VALID(ctype, i)
+        table.insert(includes, ctype)
+    end
+
+    local function iter(self: _Observer<T...>): () -> (entity, T...)
+        local pool = self.pool
+        local reg = self.world
+        local includes = get_pools(reg, self.includes)
+        local withouts = self.withouts and get_pools(reg, self.withouts)
+    
+        local n = pool.size
+        local entities = pool.entities
+    
+        local reg_pool = includes[1]
+        local reg_map = reg_pool.map
+        local reg_values = reg_pool.values
+    
+        local tuple = table.create(#includes) :: Array<any>
+    
+        return if #includes == 1 and not withouts then 
+                function()
+                    local i = n - 1
+                    n = i
+
+                    if i < 0 then
+                        self:clear()
+                        return NIL
+                    end
+
+                    local id = BUFFER_GET(entities, i)
+
+                    return id, ARRAY_GET(
+                        reg_values,
+                        ID_KEY(BUFFER_GET(reg_map, ID_KEY(id)))
+                    ) :: any
+                end 
+            else
+                function()
+                    for i = n - 1, 0, -1 do
+                        local id = BUFFER_GET(entities, i)
+                        local key = ID_KEY(id)
+    
+                        if withouts and HAS_ANY(withouts, key) then continue end
+    
+                        local has_all = true
+                        for pos, pool in next, includes do
+                            local idx_ver = POOL_FIND(pool, key) -- todo: guarantee
+                            if idx_ver == ID_NULL then has_all = false; break end
+                            tuple[pos] = ARRAY_GET(pool.values, ID_KEY(idx_ver))
+                        end
+
+                        if has_all == false then continue end
+    
+                        n = i
+                        return id, unpack(tuple)
+                    end
+
+                    self:clear()
+                return nil :: any, nil :: any
+            end
+    end
+
+    local self = {
+        world = reg,
+        pool = pool_create(), -- treat all initial ids as changed
+        includes = includes,
+        withouts = nil,
+        connections = nil,
+
+        withou = function<E...>(self: _Observer<T...>, ...: E...): _Observer<T...>
+            local withouts = self.withouts or (function()
+                local t = {} 
+                self.withouts = t
+                return t
+            end)()
+        
+            for i = 1, select("#", ...) do
+                local ctype = select(i, ...)
+                ASSERT_CTYPE_VALID(ctype, i)
+                ASSERT(not table.find(self.includes, ctype), `cannot withou {ctype_debug(ctype, i)}, component is being tracked`)
+                if table.find(withouts, ctype) then continue end
+                table.insert(withouts, ctype)
+            end
+        
+            return self
+        end,
+
+        disconnect = function(self: _Observer<T...>): _Observer<T...>
+            ASSERT(self.pool.size == 0, "attempt to disconnect a non-empty observer")
+            if not self.connections then return self end
+            disconnect_all(self.connections)
+            self.connections = nil
+            return self
+        end,
+
+        reconnect = function(self: _Observer<T...>): _Observer<T...>
+            if self.connections then return self end
+
+            local reg = self.world
+            local pool = self.pool
+            local includes = self.includes
+
+            local all_connections = {}
+            local remove_connections = {}
+
+            for i, ctype in includes do
+                local function added_or_changed_listener(id)
+                    local key = ID_KEY(id)
+                    POOL_RESIZE_MAP_IF_NEEDED(pool, key)
+                    local idx_ver = BUFFER_GET(pool.map, key)
+
+                    if idx_ver == ID_NULL then
+                        local n = pool.size
+                        POOL_RESIZE_ENTITIES_IF_NEEDED(pool, n)
+                        pool.size = n + 1
+                        BUFFER_SET(pool.map, key, ID_REPLACE(id, n))
+                        BUFFER_SET(pool.entities, n, id)
+                    end 
+                end
+
+                local function removed_listener(id: number)
+                    local map = pool.map
+                    local entities = pool.entities
+
+                    local key = ID_KEY(id)
+                    local idx_ver = POOL_FIND(pool, key)
+
+                    if idx_ver ~= ID_NULL then
+                        local n = pool.size - 1
+                        pool.size = n
+                        local idx = ID_KEY(idx_ver)
+                        local id_last = BUFFER_GET(entities, n)
+                
+                        BUFFER_SET(map, ID_KEY(id_last), ID_REPLACE(id_last, idx))
+                        BUFFER_SET(map, key, ID_NULL)
+                        
+                        BUFFER_SET(entities, idx, id_last)
+                        --BUFFER_SET(entities, n, ID_NULL)
+                    end
+                end
+                
+                table.insert(all_connections, reg:on_add(ctype):connect(added_or_changed_listener))
+                table.insert(all_connections, reg:on_change(ctype):connect(added_or_changed_listener))
+
+                local remove_connection = reg:on_remove(ctype):connect(removed_listener)
+                table.insert(all_connections, remove_connection)
+                table.insert(remove_connections, remove_connection)
+
+                table.insert(all_connections, reg:on_clear(ctype):connect(function()
+                    for _, cn in remove_connections do cn:disconnect() end
+                end))
+
+                table.insert(all_connections, reg:after_clear(ctype):connect(function()
+                    pool_clear(self.pool)
+                    for _, cn in remove_connections do cn:reconnect() end
+                end))
+            end
+
+            self.connections = all_connections
+
+            return self
+        end,
+
+        clear = function(self: _Observer<T...>): _Observer<T...>
+            pool_clear(self.pool)
+            return self
+        end,
+
+        iter = function(self) return iter(self) end,
+
+        __len = function(self: _Observer<T...>): number
+            return self.pool.size
+        end,
+
+        __iter = function(self) return iter(self) end
+    }
+
+    setmetatable(self, self)
+
+    return self:reconnect()  :: _Observer<T...>
+end
+
+type _Group<T...> = typeof(setmetatable({} :: {
+    data: GroupData,
+    pools: Array<Pool<unknown>>,
+
+    iter: (self: _Group<T...>) -> () -> (entity, T...)
+}, {} :: {
+    __len: (self: _Group<T...>) -> number,
+    __iter: (self: _Group<T...>) -> () -> (entity, T...)
+}))
+
+function group_create<T...>(reg: Registry, data: GroupData, ...: T...): Group<T...>
+    local pools = {}
+
+    for i = 1, select("#", ...) do
+        local ctype = select(i, ...)
+        local pool = reg:storage(ctype)
+        assert(table.find(data, pool), "component type is not in group")
+        pools[i] = pool 
+    end
+
+    local function iter(self: _Group<T...>): () -> (entity, T...)
+        local pools = self.pools
+        local n = self.data.size
+        local entities = pools[1].entities
+    
+        local values: Array<Array<unknown>> = table.create(#pools)
+        for i, pool in next, pools do
+            values[i] = pool.values
+        end
+    
+        if #pools == 1 then
+            local a = unpack(values)
+            return function()
+                local ia = n
+                if ia == 0 then return NIL end
+                local ib = ia - 1
+                n = ib
+                return BUFFER_GET(entities, ib), a[ia]  
+            end
+        elseif #pools == 2 then
+            local a, b = unpack(values)
+            return function()
+                local ia = n
+                if ia == 0 then return NIL end
+                local ib = ia - 1
+                n = ib
+                return BUFFER_GET(entities, ib), a[ia], b[ia] 
+            end
+        elseif #pools == 3 then
+            local a, b, c = unpack(values)
+            return function()
+                local ia = n
+                if ia == 0 then return NIL end
+                local ib = ia - 1
+                n = ib
+                return BUFFER_GET(entities, ib), a[ia], b[ia], c[ia]
+            end
+        elseif #pools == 4 then
+            local a, b, c, d = unpack(values)
+            return function()
+                local ia = n
+                if ia == 0 then return NIL end
+                local ib = ia - 1
+                n = ib
+                return BUFFER_GET(entities, ib), a[ia], b[ia], c[ia], d[ia]
+            end
+        else
+            local tuple = table.create(#values) :: Array<any>
+            return function()
+                local ia = n
+                if ia == 0 then return NIL end
+                local ib = ia - 1
+                n = ib
+                for pos, v in next, values do
+                    tuple[pos] = v[ia]
+                end
+                return BUFFER_GET(entities, ib), unpack(tuple)
+            end
+        end
+    end
+
+    local self = {
+        data = data,
+        pools = pools,
+
+        iter = iter,
+
+        __len = function(self: _Group<T...>): number
+            return self.data.size
+        end,
+
+        __iter = iter
+    }
+
+    setmetatable(self, self)
+
+    return self :: _Group<T...>
+end
+
+end
+
+--------------------------------------------------------------------------------
+-- signal
+--------------------------------------------------------------------------------
+
+local signal_create: <T...>() -> (Signal<T...>, Array<(T...) -> ()>) do
+    type _Signal<T...> = {
+        listeners: Array<(T...) -> ()>,
+
+        connect: (_Signal<T...>, (T...) -> ()) -> _Connection<T...>,
+        on_empty: () -> ()?,
+        on_not_empty: () -> ()?
+    }
+    
+    type _Connection<T... = ...unknown> = {
+        signal: _Signal<T...>,
+        listener: (T...) -> (),
+        connected: boolean,
+
+        disconnect: (_Connection<T...>) -> (),
+        reconnect: (_Connection<T...>) -> ()
+    }
+
+    local Connection = {}
+
+    function Connection.new<T...>(signal: _Signal<T...>, fn: (T...) -> ()): _Connection<T...>
+        return {
+            signal = signal,
+            listener = fn,
+            connected = true,
+
+            disconnect = function(self: _Connection<T...>)
+                if self.connected then
+                    local listeners = self.signal.listeners
+                    local n = #listeners
+                    local last = listeners[n]
+                    local idx = table.find(listeners, fn)
+                    assert(idx, "cannot find listener")
+
+                    listeners[idx] = last
+                    listeners[n] = nil
+
+                    self.connected = false
+
+                    if n == 1 and self.signal.on_empty then
+                        self.signal.on_empty()
+                    end
+
+                end
+            end,
+
+            reconnect = function(self: _Connection<T...>)
+                if not self.connected then
+                    local new = self.signal:connect(self.listener)
+                    self.idx = new.idx
+                    self.connected = true
+                end
+            end
+        }
+    end
+
+    local Signal = {}
+
+    function Signal.new<T...>(): _Signal<T...>
+        local self: _Signal<T...> = {
+            listeners = {},
+
+
+            on_empty = nil,
+            on_not_empty = nil,
+
+            connect = function(self: _Signal<T...>, listener: (T...) -> ()): _Connection<T...>
+                local n = #self.listeners
+
+                if n == 0 and self.on_not_empty then
+                    self.on_not_empty()
+                end
+
+                self.listeners[n + 1] = listener
+
+                return Connection.new(self, listener)
+            end
+        }
+
+        return self
+    end
+
+    function signal_create<T...>(): Signal<T...>
+        local signal = Signal.new()
+        return signal :: any -- todo
+    end
+end
+
+--------------------------------------------------------------------------------
+-- handle
+--------------------------------------------------------------------------------
+
+local Handle = (function(): HandleMT
+    local Handle = {}
+    Handle.__index = Handle
+
+    function Handle.destroy(self: Handle)
+        self.world:destroy(self.entity)
+    end
+
+    function Handle.has_none(self: Handle): boolean
+        return self.world:has_none(self.entity)
+    end
+
+    function Handle.add<T...>(self: Handle, ...: T...)
+        self.world:add(self.entity, ...)
+    end
+
+    function Handle.set<T>(self: Handle, ctype: T, value: T): Handle
+        self.world:set(self.entity, ctype, value)
+        return self
+    end
+
+    function Handle.insert<T>(self: Handle, ctype: Array<T>, value: T): Handle
+        self.world:insert(self.entity, ctype, value)
+        return self
+    end
+
+    function Handle.patch<T>(self: Handle, ctype: T, fn: ((T) -> T)?): T
+        return self.world:patch(self.entity, ctype, fn)
+    end
+
+    function Handle.has<T...>(self: Handle, ...: T...): boolean
+        return self.world:has(self.entity, ...)
+    end
+
+    function Handle.get<T...>(self: Handle, ...: T...): T...
+        return self.world:get(self.entity, ...)
+    end
+
+    function Handle.try_get<T>(self: Handle, ctype: T): T?
+        return self.world:try_get(self.entity, ctype)
+    end
+
+    function Handle.remove<T...>(self: Handle, ...: T...)
+        self.world:remove(self.entity, ...)
+    end
+
+    return Handle
+end)()
+
+--------------------------------------------------------------------------------
+-- world
+--------------------------------------------------------------------------------
+
+local function world_create(range_start: number?, range_stop: number?): Registry
+    local MAX_CTYPE = ctype_n
+
+    if range_start then
+        assert(range_stop)
+        ASSERT(range_start > 0, "start of partition must be at least 1")
+        ASSERT(range_stop >= range_start, "end of partition must be greater then start")
+        ASSERT(range_stop <= ID_MAX_VALID_KEY, `end of partition cannot be greater than {ID_MAX_VALID_KEY}`)
+    end
+
+    local partition_start = range_start and range_start or 1
+    local partition_stop = range_stop and range_stop or ID_MAX_VALID_KEY
+
+    local world = {}
+
+    local entity_list: EntityList = entity_list_create()
+    local entity_pool = pool_create()
+
+    local signals = {
+        on_add = {} :: Map<CType, Signal<entity, unknown>>,
+        on_change = {} :: Map<CType, Signal<entity, unknown>>,
+        on_remove = {} :: Map<CType, Signal<entity, nil>>,
+        on_clear = {} :: Map<CType, Signal<>>,
+        after_clear = {} :: Map<CType, Signal<>>
+    }
+    
+    local handle_cache = {} :: Map<entity?, Handle?>
+    setmetatable(handle_cache :: any, { __mode = "v" })
+    
+    local ctype_pools: Map<CType, Pool<unknown>> = table.create(MAX_CTYPE)
+    setmetatable(ctype_pools :: any, {
+        __index = function(self, ctype: CType): Pool<unknown>
+            ASSERT_CTYPE_VALID(ctype)
+            ASSERT(ctype ~= ctype_entity, "attempt to use entity type")
+            ASSERT((ctype :: number) <= MAX_CTYPE, `cannot use {ctype_debug(ctype)}, component must be created before world creation`)
+            local pool = pool_create(1)
+            self[ctype] = pool
+            return pool
+        end
+    })
+
+    local function STORAGE<T>(ctype: T): Pool<T>
+        return ctype_pools[ctype] :: Pool<any>
+    end
+
+    local function group_init(...: any): GroupData
+        local group = { size = 0, added = false, connections = {} }
+
+        for i = 1, select("#", ...) do
+            local ctype = select(i, ...)
+            local pool = STORAGE(ctype)
+            group[i] = pool
+            pool.group = group
+
+            table.insert(group.connections, world:on_add(ctype):connect(function(id)
+                POOL_TRY_GROUP(pool, id)
+            end))
+
+            table.insert(group.connections, world:on_remove(ctype):connect(function(id)
+                POOL_TRY_UNGROUP(pool, id)
+            end))
+
+            world:on_clear(ctype):connect(function()
+                for _, cn in group.connections do cn:disconnect() end
+            end)
+
+            world:after_clear(ctype):connect(function()
+                group.size = 0
+                for _, cn in group.connections do cn:reconnect() end
+            end)
+        end
+
+        local pool = STORAGE((...))
+        for i = 0, pool.size - 1 do
+            POOL_TRY_GROUP(pool, BUFFER_GET(pool.entities, i))
+        end
+
+        return group
+    end
+
+    local function ASSERT_VALID_ENTITY(id: entity)
+        ASSERT(ENTITY_LIST_ID_IN_USE(entity_list, id), "invalid entity")
+    end
+
+    function world.create(self: Registry, desired_id: entity?): entity
+        if not desired_id then
+            if entity_list.free == ID_NULL_KEY then
+                local old_capacity = entity_list.capacity
+                local old_max = old_capacity - 1
+                ASSERT(old_max < partition_stop, "cannot create entity; world is at max entities")
+
+                local new_capacity = math.ceil((old_capacity + 1) * 1.5)
+                local new_max = new_capacity - 1
+                if new_max > partition_stop then 
+                    new_capacity = partition_stop + 1
+                elseif new_max < partition_start then
+                    new_capacity = partition_start + 1
+                end
+
+                entity_list_resize(entity_list, new_capacity, partition_start, partition_stop)
+            end
+
+            assert(entity_list.free ~= ID_NULL_KEY)
+
+            local new_key = entity_list.free
+            local next_key_cur_ver = BUFFER_GET(entity_list.data, new_key)
+            local new_id = ID_CREATE(new_key, ID_VER(next_key_cur_ver))
+
+            BUFFER_SET(entity_list.data, new_key, new_id)
+            entity_list.free = ID_KEY(next_key_cur_ver)
+
+            POOL_RESIZE_MAP_IF_NEEDED(entity_pool, new_key)
+            POOL_ADD_ID(entity_pool, new_id)
+
+            return new_id
+        else
+            local desired_key = ID_KEY(desired_id)
+            local desired_ver = ID_VER(desired_id)
+
+            ASSERT(
+                desired_id < ID_MAX and
+                desired_key ~= ID_NULL_KEY and desired_key <= ID_MAX_VALID_KEY and
+                desired_ver ~= ID_NULL_VER and desired_ver <= ID_MASK_VER,
+                "malformed id"
+            )
+
+            if desired_key > entity_list.capacity - 1 then
+                local new_capacity = (desired_id + 1) * 1.5
+                if new_capacity - 1 > ID_MAX_VALID_KEY then new_capacity = ID_MAX_VALID_KEY + 1 end
+                entity_list_resize(entity_list, new_capacity, partition_start, partition_stop)
+            end
+
+            ASSERT(BUFFER_GET(entity_list.data, desired_key) ~= desired_id, "unable to create entity; key is already in use")
+
+            if entity_list.free == desired_key then
+                entity_list.free = ID_KEY(BUFFER_GET(entity_list.data, desired_key))
+            elseif BUFFER_GET(entity_list.data, desired_key) ~= ID_NULL then -- is somewhere along linked list
+                local prev = entity_list_get_prev_key(entity_list, desired_key)
+                BUFFER_SET(entity_list.data, prev, ID_CREATE( -- a -> b -> c, remove b, link a -> c
+                    ID_KEY(BUFFER_GET(entity_list.data, desired_key)),
+                    ID_VER(BUFFER_GET(entity_list.data, prev))
+                ))
+            end
+
+            BUFFER_SET(entity_list.data, desired_key, desired_id)
+
+            POOL_RESIZE_MAP_IF_NEEDED(entity_pool, desired_key)
+            POOL_ADD_ID(entity_pool, desired_id)
+
+            return desired_id
+        end
+    end
+
+    function world.release(self: Registry, id: entity)
+        ASSERT_VALID_ENTITY(id)
+        if entity_pool.on_remove then fire(entity_pool.on_remove, id) end
+        entity_list_remove(entity_list, id, partition_start, partition_stop)
+        POOL_REMOVE(entity_pool, ID_KEY(id), id)
+    end
+
+    function world.destroy(self: Registry, id: entity)
+        ASSERT_VALID_ENTITY(id)
+        local key = ID_KEY(id)
+
+        for _, pool in ctype_pools do
+            if POOL_HAS(pool, key) then
+                POOL_REMOVE(pool, key, id)
+            end
+        end
+
+        if entity_pool.on_remove then fire(entity_pool.on_remove, id) end
+        entity_list_remove(entity_list, id, partition_start, partition_stop)
+        POOL_REMOVE(entity_pool, ID_KEY(id), id)
+    end
+
+    function world.contains(self: Registry, id: entity): boolean
+        return ENTITY_LIST_ID_IN_USE(entity_list, id)
+    end
+
+    function world.has_none(self: Registry, id: entity): boolean
+        ASSERT_VALID_ENTITY(id)
+        local key = ID_KEY(id)
+
+        for _, pool in next, ctype_pools do
+            if POOL_HAS(pool, key) then return false end
+        end
+
+        return true
+    end
+
+    function world.add<T...>(self: Registry, id: entity, ...: T...)
+        ASSERT_VALID_ENTITY(id)
+        local key = ID_KEY(id)
+
+        for i = 1, select("#", ...) do
+            local ctype = select(i, ...)
+            local pool = STORAGE(ctype)
+
+            POOL_RESIZE_MAP_IF_NEEDED(pool, key)
+            if BUFFER_GET(pool.map, key) ~= ID_NULL then continue end
+
+            local ctor = ctype_ctors[ctype]
+
+            if ctor == true then
+                POOL_ADD_ID(pool, id)
+            elseif ctor == false then
+                throw(`no constructor defined for {ctype_debug(ctype, i)}`)
+            else
+                local value = (ctor :: () -> unknown)()
+                if value == nil then throw(`{ctype_debug(ctype, i)} constructor did not return a value`) end   
+                POOL_ADD(pool, id, value)
+            end
+        end
+    end
+    
+    function world.set<T>(self: Registry, id: entity, ctype: T, value: T)        
+        local pool = STORAGE(ctype)
+
+        local key = ID_KEY(id)
+        POOL_RESIZE_MAP_IF_NEEDED(pool, key)
+        local idx_ver = BUFFER_GET(pool.map, key)
+
+        if value ~= nil then -- valued component
+            if idx_ver ~= ID_NULL then -- already added, change value
+                ID_ASSERT_VERSION_EQUAL(idx_ver, id)
+                if pool.on_change then fire(pool.on_change, id, value) end
+                ARRAY_SET(pool.values, ID_KEY(idx_ver), value)
+            else -- not added, add value
+                ASSERT_VALID_ENTITY(id)
+                POOL_ADD(pool, id, value)
+            end
+        else -- tag component
+            ASSERT_VALID_ENTITY(id)
+            ASSERT(ctype_is_tag(ctype), "cannot set component value to nil")
+            if idx_ver ~= ID_NULL then return end
+            POOL_ADD_ID(pool, id)
+        end
+    end
+
+    function world.insert<T>(self: Registry, id: entity, ctype: Array<T>, value: T)
+        local pool = STORAGE(ctype)
+
+        local key = ID_KEY(id)
+        POOL_RESIZE_MAP_IF_NEEDED(pool, key)
+        local idx_ver = BUFFER_GET(pool.map, key)
+
+        if idx_ver ~= ID_NULL then
+            ID_ASSERT_VERSION_EQUAL(idx_ver, id)
+            local idx = ID_KEY(idx_ver)
+            local t = ARRAY_GET(pool.values, idx)
+            table.insert(t, value)
+            if pool.on_change then fire(pool.on_change, id, t) end
+        else
+            ASSERT_VALID_ENTITY(id)
+            local t = {value}
+            POOL_ADD(pool, id, t)
+        end
+    end
+    
+    function world.patch<T>(self: Registry, id: entity, ctype: T, fn: ((T) -> T)?): T
+        local pool = STORAGE(ctype)
+
+        local key = ID_KEY(id)
+        POOL_RESIZE_MAP_IF_NEEDED(pool, key)
+        local idx_ver = BUFFER_GET(pool.map, key)
+
+        if idx_ver ~= ID_NULL then
+            ID_ASSERT_VERSION_EQUAL(idx_ver, id)
+            local idx = ID_KEY(idx_ver)
+            if fn then
+                local value = fn(ARRAY_GET(pool.values, idx))
+                ASSERT(value ~= nil, "function cannot return nil")
+                if pool.on_change then fire(pool.on_change, id, value) end
+                ARRAY_SET(pool.values, idx, value)
+                return value
+            else
+                local value = ARRAY_GET(pool.values, idx)
+                if pool.on_change then fire(pool.on_change, id, value) end
+                return value
+            end
+        else
+            ASSERT_VALID_ENTITY(id)
+            local ctor = ctype_ctors[ctype]
+            if ctor == false or ctor == true then throw(`entity does not have component and no constructor for {ctype_debug(ctype)}`) end
+            local value = (ctor :: () -> T)()
+            if fn then value = fn(value) end
+            ASSERT(value ~= nil, "function cannot return nil")
+            POOL_ADD(pool, id, value)
+            return value
+        end
+    end
+
+    world.has = (function(self: Registry, id: entity, a, b, c, d, e): boolean
+        local key = ID_KEY(id)
+        local idx_ver = POOL_FIND(STORAGE(a), key)
+        return
+            idx_ver ~= ID_NULL and ID_VER(idx_ver) == ID_VER(id) and
+            (b == nil or POOL_FIND(STORAGE(b), key) ~= ID_NULL) and
+            (c == nil or POOL_FIND(STORAGE(c), key) ~= ID_NULL) and
+            (d == nil or POOL_FIND(STORAGE(d), key) ~= ID_NULL) and
+            (e == nil or throw("args exceeded") :: never)
+    end :: any) :: <T...>(self: Registry, id: entity, T...) -> boolean
+
+    local function UNSAFE_GET(ctype: CType, key: number): unknown
+        local pool = STORAGE(ctype)
+        local idx_ver = POOL_FIND(pool, key)
+        if idx_ver == ID_NULL then throw("entity does not have " .. ctype_debug(ctype)) end
+        return ARRAY_GET(pool.values, ID_KEY(idx_ver)) 
+    end
+
+    world.get = (function(self: Registry, id: entity, a, b, c, d, e): ...unknown
+        local pool = STORAGE(a)
+    
+        local key = ID_KEY(id)
+        local idx_ver = POOL_FIND(pool, key)
+        if idx_ver == ID_NULL then throw(`entity does not have {ctype_debug(a, 1)}`) end
+
+        ID_ASSERT_VERSION_EQUAL(idx_ver, id)
+        local va = ARRAY_GET(pool.values, ID_KEY(idx_ver))
+
+        if b == nil then
+            return va
+        elseif c == nil then
+            return va, UNSAFE_GET(b, key)
+        elseif d == nil then
+            return va, UNSAFE_GET(b, key), UNSAFE_GET(c, key)
+        elseif e == nil then
+            return va, UNSAFE_GET(b, key), UNSAFE_GET(c, key), UNSAFE_GET(d, key)
+        else throw("args exceeded") end
+    end :: any) :: <T...>(self: Registry, id: entity, T...) -> T...
+
+    function world.try_get<T>(self: Registry, id: entity, ctype: T): T?
+        local pool = STORAGE(ctype)
+        local idx_ver = POOL_FIND(pool, ID_KEY(id))
+        if idx_ver == ID_NULL or ID_VERSION_NOT_EQUAL(idx_ver, id) then return nil end
+        return ARRAY_GET(pool.values, ID_KEY(idx_ver))
+    end
+
+    function world.remove<T...>(self: Registry, id: entity, ...: T...)
+        for i = 1, select("#", ...) do
+            local pool = STORAGE(select(i, ...))
+            POOL_TRY_REMOVE(pool, id)
+        end
+    end
+
+    function world.clear<T...>(self: Registry, ...: T...)
+        local argn = select("#", ...)
+        if argn > 0 then
+            for i = 1, argn do pool_clear(STORAGE(select(i, ...))) end
+        else
+            for _, pool in next, ctype_pools do pool_clear(pool) end
+    
+            pool_clear(entity_pool)
+            entity_list_clear(entity_list, partition_start, partition_stop)
+        end 
+    end
+
+    function world.find<T>(self: Registry, ctype: T, value: T): entity?
+        local pool = STORAGE(ctype)
+
+        if value == nil then
+            if pool.size == 0 then return nil end
+            return BUFFER_GET(pool.entities, 0)
+        else
+            local arr_idx = table.find(pool.values, value)
+            return arr_idx and BUFFER_GET(pool.entities, arr_idx - 1)
+        end
+    end
+
+    function world.copy<T>(self: Registry, copy: T, paste: T)
+        local pool_a = STORAGE(copy)
+        local pool_b = STORAGE(paste)
+
+        POOL_COPY(pool_a, pool_b)
+    end
+
+    function world.query<T...>(self: Registry, ...: T...): View<T...>
+        ASSERT(select("#", ...) > 0, "query must contain at least 1 component")
+        return query_create(world, ...)
+    end 
+
+    function world.track<T...>(self: Registry, ...: T...): Observer<T...>
+        ASSERT(select("#", ...) > 0, "observer must contain at least 1 component")
+        return observer_create(world, ...)
+    end
+
+    world.group = nil :: any -- todo: why?
+    function world.group<T...>(self: Registry, ...: T...): Group<T...>
+        local argn = select("#", ...)
+        ASSERT(argn > 1, "group must contain at least 2 components")
+        local group = STORAGE((select(1, ...))).group :: GroupData<unknown>
+
+        for i = 1, argn do
+            local ctype = select(i, ...)
+            ASSERT_CTYPE_VALID(ctype, i)
+            ASSERT(STORAGE(ctype).group == group, `cannot create group; {ctype_debug(ctype, i)} is not owned by the same group as previous args`)
+        end
+
+        return group_create(world, group or group_init(...), ...)
+    end
+
+    local function STORAGE_OR_ENTITY_POOL<T>(ctype: T): Pool<T>
+        return ctype == ctype_entity and entity_pool :: Pool<any> or STORAGE(ctype)
+    end
+
+    function world.storage<T>(self: Registry, ctype: T?): any
+        if ctype == "list" then
+            return entity_list
+        elseif ctype then
+            return STORAGE_OR_ENTITY_POOL(ctype)
+        else
+            return coroutine.wrap(function()
+                for ctype, pool in next, ctype_pools do
+                    coroutine.yield(ctype, pool)
+                end
+            end)
+        end
+    end
+
+    function world.on_add<T>(self: Registry, ctype: T): Signal<entity, T>
+        return (signals.on_add[ctype] or (function() 
+            local signal = signal_create() :: any
+            signals.on_add[ctype] = signal
+            function signal.on_empty() STORAGE_OR_ENTITY_POOL(ctype).on_add = false end
+            function signal.on_not_empty() STORAGE_OR_ENTITY_POOL(ctype).on_add = signal.listeners end
+            return signal
+        end)()) :: Signal<entity, T>
+    end
+
+    function world.on_change<T>(self: Registry, ctype: T): Signal<entity, T>
+        return (signals.on_change[ctype] or (function() 
+            local signal = signal_create() :: any
+            signals.on_change[ctype] = signal
+            function signal.on_empty() STORAGE_OR_ENTITY_POOL(ctype).on_change = false end
+            function signal.on_not_empty() STORAGE_OR_ENTITY_POOL(ctype).on_change = signal.listeners end
+            return signal    
+        end)()) :: Signal<entity, T>    
+    end
+
+    function world.on_remove<T>(self: Registry, ctype: T): Signal<entity, nil>
+        return signals.on_remove[ctype] or (function() 
+            local signal = signal_create() :: any
+            signals.on_remove[ctype] = signal
+            function signal.on_empty() STORAGE_OR_ENTITY_POOL(ctype).on_remove = false end
+            function signal.on_not_empty() STORAGE_OR_ENTITY_POOL(ctype).on_remove = signal.listeners end
+            return signal
+        end)() :: Signal<entity, nil>
+    end
+
+    function world.on_clear<T>(self: Registry, ctype: T): Signal<>
+        return signals.on_clear[ctype] or (function() 
+            local signal = signal_create() :: any
+            signals.on_clear[ctype] = signal
+            function signal.on_empty() STORAGE_OR_ENTITY_POOL(ctype).on_clear = false end
+            function signal.on_not_empty() STORAGE_OR_ENTITY_POOL(ctype).on_clear = signal.listeners end
+            return signal
+        end)() :: Signal<>
+    end
+
+    function world.after_clear<T>(self: Registry, ctype: T): Signal<>
+        return signals.after_clear[ctype] or (function() 
+            local signal = signal_create() :: any
+            signals.after_clear[ctype] = signal
+            function signal.on_empty() STORAGE_OR_ENTITY_POOL(ctype).after_clear = false end
+            function signal.on_not_empty() STORAGE_OR_ENTITY_POOL(ctype).after_clear = signal.listeners end
+            return signal
+        end)() :: Signal<>
+    end
+
+    function world.handle(self: Registry, id: entity?): Handle
+        id = id or world:create()
+
+        local handle = handle_cache[id]
+
+        if not handle then
+            handle = table.freeze(setmetatable({
+                world = world,
+                entity = id :: entity
+            }, Handle))
+
+            handle_cache[id] = handle
+        end
+
+        return assert(handle)
+    end
+
+    function world.context(self: Registry): Handle
+        if not ENTITY_LIST_ID_IN_USE(entity_list, ID_CTX) then world:create(ID_CTX) end
+        return world:handle(ID_CTX)  
+    end
+
+    return table.freeze(world)
+end
+
+--------------------------------------------------------------------------------
+-- queue
+--------------------------------------------------------------------------------
+
+local Queue = {} do
+    Queue.__index = Queue
+
+    type _Queue = Queue<...any> & {
+        size: number,
+        columns: Array<Array<unknown>>
+    }
+
+    function Queue.new<T...>(): Queue<T...>
+        local self: _Queue = setmetatable({
+            size = 0,
+            columns = {}
+        }, Queue) :: any
+
+        setmetatable(self.columns, {
+            __index = function(columns: Array<Array<unknown>>, idx: number)
+                columns[idx] = {}
+                return columns[idx]
+            end
+        })
+
+        return self :: Queue<T...>
+    end
+
+    function Queue.add(self: _Queue, ...: unknown)
+        -- iteration will stop if first value is `nil`
+        ASSERT((...) ~= nil, "first argument cannot be nil")
+
+        local columns = self.columns
+        local n = self.size + 1
+        self.size = n
+
+        for i = 1, select("#", ...) do
+            columns[i][n] = select(i, ...)
+        end
+    end
+
+    function Queue.clear(self: _Queue)
+        self.size = 0
+        for _, column in next, self.columns do
+            table.clear(column)
+        end
+    end
+
+    local function iter(self: _Queue)
+        local columns = self.columns
+        local n = self.size
+        local i = 0
+
+        if #columns <= 1 then
+            local column = columns[1]
+            return function()
+                i += 1
+                local value = column[i]
+                if i == n then self:clear() end
+                return value
+            end
+        else
+            local tuple = table.create(#columns)
+            return function()
+                i += 1
+                for ci, column in next, columns do
+                    tuple[ci] = column[i]
+                end
+                if i == n then self:clear() end
+                return unpack(tuple)
+            end
+        end
+    end
+
+    Queue.iter = function(self) return iter(self) end
+    Queue.__iter = function(self) return iter(self) end
+
+    function Queue.__len(self: _Queue)
+        return self.size
+    end
+end
+
+type ISignal<T...> = {
+    connect: (self: any, listener: (T...) -> ()) -> ()
+} | {
+    Connect: (self: any, listener: (T...) -> ()) -> ()
+} | (listener: (T...) -> ()) -> ()
+
+local queue_create = function<T...>(signal: ISignal<T...>?): Queue<T...>
+    local queue = Queue.new()
+
+    if signal then
+        local function listener(...: T...) queue:add(...) end
+
+        if type(signal) == "function" then
+            signal(listener)
+        else
+            local connector = (signal :: any).connect or (signal :: any).Connect
+            ASSERT(connector, "signal has no member `connect()`")
+            connector(signal, listener)
+        end
+    end
+
+    return queue
+end :: ( <T...>() -> Queue<T...> ) & ( <T...>(signal: ISignal<T...>) -> Queue<T...> )
+
+--------------------------------------------------------------------------------
+-- buffer util
+--------------------------------------------------------------------------------
+
+local function buffer_to_array(buf: buffer, size: number, arr: Array<entity>?): Array<entity>
+    ASSERT(size * ID_SIZE <= buffer.len(buf), "buffer is smaller than given size")
+
+    arr = arr or table.create(size); assert(arr)
+
+    for i = 0, size - 1 do
+        arr[i + 1] = BUFFER_GET(buf, i)
+    end
+
+    return arr
+end
+
+local function array_to_buffer(arr: Array<entity>, size: number, buf: buffer?): buffer
+    buf = buf or buffer.create(size * ID_SIZE); assert(buf)
+
+    ASSERT(size * ID_SIZE <= buffer.len(buf), "size is larger than buffer size")
+
+    for i = 1, size do
+        BUFFER_SET(buf, (i - 1), arr[i])
+    end
+
+    return buf
+end
+
+local function buffer_to_buffer(buf_src: buffer, size: number, buf_tar: buffer?): buffer
+    buf_tar = buf_tar or buffer.create(size * ID_SIZE); assert(buf_tar)
+
+    ASSERT(size * ID_SIZE <= buffer.len(buf_tar), "size is larger than buffer size")
+
+    buffer.copy(buf_tar, 0, buf_src, 0, size * ID_SIZE)
+
+    return buf_tar
+end
+
+--------------------------------------------------------------------------------
+-- export
+--------------------------------------------------------------------------------
+
+local ecr = {
+    world = world_create,
+
+    component = function(constructor: () -> ()?)
+        ASSERT(constructor == nil or type(constructor) == "function", "constructor must be a function")
+        return ctype_create(constructor or false)
+    end :: (() -> unknown) & (<T>(constructor: () -> T) -> T),
+
+    tag = function() return ctype_create(true) end :: () -> nil,
+
+    is_tag = function<T>(ctype: T): boolean
+        ASSERT_CTYPE_VALID(ctype)
+        return ctype_is_tag(ctype)
+    end,
+    
+    name = function<T>(v: T): T | string?
+        if type(v) == "table" then
+            for name, ctype in next, v do
+                ASSERT(CTYPE_VALID(ctype), `{name} refers to an invalid component`)
+                ctype_set_name(ctype, name)
+            end
+            return v
+        else
+            ASSERT_CTYPE_VALID(v)
+            return ctype_names[v]
+        end
+    end :: (<T>(names: T & {}) -> T) & (<T>(ctype: T) -> string?),
+    
+    queue = queue_create,
+    
+    array_to_buffer = array_to_buffer,
+    buffer_to_array = buffer_to_array,
+    buffer_to_buffer = buffer_to_buffer,
+
+    is_pair = function() return false end,
+
+    entity = ctype_entity,
+    null = ID_NULL,
+    context = ID_CTX,
+    id_size = ID_SIZE,
+
+    inspect = function(id: entity): (number, number)
+        local key, ver = ID_KEY(id), ID_VER(id)
+        return key, ver * ID_RSHIFT
+    end,
+    
+    _test = {
+        ver_shift = ID_LSHIFT,
+        max_ver = ID_MASK_VER * ID_RSHIFT,
+        max_creatable = ID_MASK_KEY - 1,
+
+        create_id = function(key: number, ver: number)
+            return ID_CREATE(key, ver * ID_LSHIFT)
+        end,
+
+        set_key_version = function(reg: Registry, key: number, ver: number)
+            local list = reg:storage("list") :: any
+            local key_ver = BUFFER_GET(list.data, key)
+            if ENTITY_LIST_ID_IN_USE(list, key_ver) then ASSERT(false, "attempt to set version of in-use entity") end
+            BUFFER_SET(list.data, key, ID_CREATE(ID_KEY(key_ver), ver * ID_LSHIFT))
+        end,
+    
+        get_key_version = function(reg: Registry, key: number): number
+            local list = reg:storage("list") :: any
+            ASSERT(list.capacity > key, "not contained")
+            return ID_VER(BUFFER_GET(list.data, key)) * ID_RSHIFT
+        end
+    }
+}
+
+return table.freeze(ecr)
+
