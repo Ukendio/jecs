@@ -923,16 +923,25 @@ local function world_add(
 	if from == to then
 		return
 	end
+
+	local idr = world.component_index[id]
+	local idr_hooks = idr.hooks
+	local on_add = idr_hooks.on_add
+
 	if from then
+		if ECS_IS_PAIR(id) and bit32.band(idr.flags, ECS_ID_EXCLUSIVE) ~= 0 then
+			local on_remove = idr_hooks.on_remove
+			if on_remove then
+				on_remove(entity)
+			end
+		end
+
 		entity_move(entity_index, entity, record, to)
 	else
 		if #to.types > 0 then
 			new_entity(entity, record, to)
 		end
 	end
-
-	local idr = world.component_index[id]
-	local on_add = idr.hooks.on_add
 
 	if on_add then
 		on_add(entity)
@@ -966,6 +975,13 @@ local function world_set(world: ecs_world_t, entity: i53, id: i53, data: unknown
 	end
 
 	if from then
+		if ECS_IS_PAIR(id) and bit32.band(idr.flags, ECS_ID_EXCLUSIVE) ~= 0 then
+			local on_remove = idr_hooks.on_remove
+			if on_remove then
+				on_remove(entity)
+			end
+		end
+
 		-- If there was a previous archetype, then the entity needs to move the archetype
 		entity_move(entity_index, entity, record, to)
 	else

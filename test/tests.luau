@@ -1949,22 +1949,67 @@ TEST("world:delete() invokes OnRemove hook", function()
 end)
 
 TEST("exclusive relationships", function()
-	local world = world_new()
-	local pair = jecs.pair
+	do CASE "enforce exclusivity"
+		local world = world_new()
+		local pair = jecs.pair
 
-	local child = world:entity()
+		local e = world:entity()
 
-	for _ = 1, 10 do
+		for _ = 1, 10 do
+			local A = world:entity()
+			local B = world:entity()
+
+			world:add(e, pair(world:entity(), e)) -- noise
+			world:add(e, pair(ChildOf, A))
+			world:add(e, pair(ChildOf, B))
+
+			CHECK(not world:has(e, pair(ChildOf, A)))
+			CHECK(world:has(e, pair(ChildOf, B)))
+		end
+	end
+	do CASE "invoke OnRemove when overwritten using world:add()"
+		local world = world_new()
+		local pair = jecs.pair
+
+		local relation = world:component()
+		world:add(relation, jecs.Exclusive)
+
+		local e = world:entity()
 		local A = world:entity()
 		local B = world:entity()
 
-		world:add(child, pair(world:entity(), child)) -- noise
-		world:add(child, pair(ChildOf, A))
-		world:add(child, pair(child, world:entity())) -- noise
-		world:add(child, pair(ChildOf, B))
+		local called = false
+		world:set(relation, jecs.OnRemove, function(e)
+			called = true
+			CHECK(world:target(e, relation) == A)
+		end)
 
-		CHECK(world:has(child, pair(ChildOf, B)))
-		CHECK(not world:has(child, pair(ChildOf, A)))
+		world:add(e, pair(relation, A))
+		world:add(e, pair(relation, B))
+
+		CHECK(called)
+	end
+	do CASE "invoke OnRemove when overwritten using world:set()"
+		local world = world_new()
+		local pair = jecs.pair
+
+		local relation = world:component()
+		world:add(relation, jecs.Exclusive)
+
+		local e = world:entity()
+		local A = world:entity()
+		local B = world:entity()
+
+		local called = false
+		world:set(relation, jecs.OnRemove, function(e)
+			called = true
+			CHECK(world:target(e, relation) == A)
+		end)
+
+		world:set(e, pair(relation, A), nil)
+		world:set(e, pair(relation, B), nil)
+
+		CHECK(called)
 	end
 end)
 
