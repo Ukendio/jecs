@@ -258,7 +258,7 @@ export function pair_second<P, O>(world: World, p: Pair<P, O>): Entity<O>;
 
 export declare const OnAdd: Entity<(e: Entity) => void>;
 export declare const OnRemove: Entity<(e: Entity) => void>;
-export declare const OnSet: Entity<(e: Entity, value: unknown) => void>;
+export declare const OnChange: Entity<(e: Entity, value: unknown) => void>;
 export declare const ChildOf: Tag;
 export declare const Wildcard: Entity;
 export declare const w: Entity;
