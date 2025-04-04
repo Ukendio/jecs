@@ -117,6 +117,103 @@ local function name(world, e)
 	return world:get(e, jecs.Name)
 end
 
+
+local function worldReset(world)
+	local entity_index = world.entity_index
+	for i = jecs.Rest, entity_index.max_id do
+		local entity = entity_index.dense_array[i]
+		world:delete(entity)
+	end
+	for i = jecs.Rest, entity_index.max_id do
+		local sparse = entity_index.dense_array[i]
+		entity_index.sparse_array[sparse] = nil
+		entity_index.dense_array[i] = nil
+	end
+	entity_index.alive_count = jecs.Rest
+	entity_index.max_id = jecs.Rest
+end
+
+local lifetime_tracker_add = require("@tools/lifetime_tracker")
+TEST("the great reset", function()
+	local world = world_new()
+	lifetime_tracker_add(world, {padding_enabled=false})
+	local A = world:component()
+	local B = world:component()
+
+	for i = 1, 10 do
+		local e = world:entity()
+		world:set(e, A, true)
+		world:set(e, B, true)
+	end
+	world:print_entity_index()
+	worldReset(world)
+	CHECK(world:contains(A))
+	CHECK(world:contains(B))
+	world:print_entity_index()
+end)
+
+TEST("#repro3", function()
+	local world = world_new()
+	local Model = world:component()
+	local ModelBase = world:component()
+
+	local systems = {}
+
+	local function progress()
+		for _, system in systems do
+			system()
+		end
+	end
+
+	local newQuery = nil
+	local oldQuery = nil
+
+	local function modelBase()
+		if not newQuery then
+			newQuery = world:query(Model):without(ModelBase):cached()
+		end
+		if not oldQuery then
+			oldQuery = world:query(ModelBase):without(Model):cached()
+		end
+		for e, model in newQuery do
+			world:set(e, ModelBase, { "part base" })
+		end
+		for e, model in oldQuery do
+			world:remove(e, ModelBase)
+		end
+	end
+
+	table.insert(systems, modelBase)
+
+	do CASE("should add the correct ModelBase for parts")
+		local e = world:entity()
+		world:set(e, Model, { instance = "Model" })
+		progress()
+		CHECK(world:get(e, ModelBase)[1] == "part base" )
+	end
+
+	do CASE("should add the correct ModelBase for parts")
+		local e = world:entity()
+		world:set(e, Model, { instance = "Model "})
+		progress()
+		CHECK(world:get(e, ModelBase)[1] == "part base")
+	end
+
+
+
+	do CASE("")
+		local e = world:entity()
+		world:set(e, Model, { instance = "Model "})
+		progress()
+		CHECK(world:get(e, ModelBase)[1] == "part base")
+		world:remove(e, Model)
+		progress()
+		CHECK(world:get(e, ModelBase) == nil)
+
+
+	end
+end)
+
 TEST("#adding a recycled target", function()
     local world = world_new()
     local R = world:component()

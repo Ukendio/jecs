@@ -16,6 +16,10 @@ local function observers_new(world, description)
 		local r = jecs.entity_index_try_get_fast(
 			entity_index, entity)
 
+		if not r then
+			return
+		end
+
 		local archetype = r.archetype
 
 		if jecs.query_match(query, archetype) then
@@ -42,9 +46,13 @@ local function world_track(world, ...)
 		local r = jecs.entity_index_try_get_fast(
 			entity_index, entity)
 
+		if not r then
+			return
+		end
+
 		local archetype = r.archetype
 
-		if jecs.query_match(q_shim, archetype) then
+		if jecs.query_match(q_shim :: any, archetype) then
 			n += 1
 			dense_array[n] = entity
 			sparse_array[entity] = n
@@ -73,7 +81,7 @@ local function world_track(world, ...)
 				return nil
 			end
 			i -= 1
-			return dense_array[row]
+			return dense_array[row] :: any
 		end
 	end
 

@@ -124,9 +124,9 @@ local EcsOnArchetypeCreate =        HI_COMPONENT_ID + 12
 local EcsOnArchetypeDelete =        HI_COMPONENT_ID + 13
 local EcsRest =                     HI_COMPONENT_ID + 14
 
-local ECS_ID_DELETE =                        		0b01
-local ECS_ID_IS_TAG =                        		0b10
-local ECS_ID_MASK =                          		0b00
+local ECS_ID_DELETE =                        	    0b01
+local ECS_ID_IS_TAG =                        	    0b10
+local ECS_ID_MASK =                          	    0b00
 
 local ECS_ENTITY_MASK =              bit32.lshift(1, 24)
 local ECS_GENERATION_MASK =          bit32.lshift(1, 16)
@@ -2600,7 +2600,7 @@ export type World = {
 
 return {
 	World = World :: { new: () -> World },
-	world = World.new :: () -> World,
+	world = world_new :: () -> World,
 
 	OnAdd = EcsOnAdd :: Entity<(entity: Entity) -> ()>,
 	OnRemove = EcsOnRemove :: Entity<(entity: Entity) -> ()>,
