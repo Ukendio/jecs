@@ -1,6 +1,6 @@
 # Queries
 
-## Introductiuon
+## Introduction
 
 Queries enable games to quickly find entities that satifies provided conditions.
 
