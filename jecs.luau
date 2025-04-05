@@ -13,22 +13,6 @@ type Column = { any }
 
 type Map<K, V> = { [K]: V }
 
-type ecs_graph_edge_t = {
-	from: ecs_archetype_t,
-	to: ecs_archetype_t?,
-	id: number,
-	prev: ecs_graph_edge_t?,
-	next: ecs_graph_edge_t?,
-}
-
-type ecs_graph_edges_t = Map<i53, ecs_graph_edge_t>
-
-type ecs_graph_node_t = {
-	add: ecs_graph_edges_t,
-	remove: ecs_graph_edges_t,
-	refs: ecs_graph_edge_t,
-}
-
 type ecs_archetype_t = {
 	id: number,
 	types: Ty,
@@ -37,7 +21,7 @@ type ecs_archetype_t = {
 	columns: { Column },
 	records: { [i53]: number },
 	counts: { [i53]: number },
-} & ecs_graph_node_t
+}
 
 export type Archetype = {
 	id: number,
@@ -97,6 +81,7 @@ type ecs_observer_t = {
 type ecs_observable_t = Map<i53, Map<i53, { ecs_observer_t }>>
 
 type ecs_world_t = {
+	archetype_edges: Map<i53, Map<i53, ecs_archetype_t>>,
 	entity_index: ecs_entity_index_t,
 	component_index: ecs_id_index_t,
 	archetypes: ecs_archetypes_t,
@@ -646,10 +631,6 @@ local function archetype_create(world: ecs_world_t, id_types: { i24 }, ty, prev:
 		counts = counts,
 		type = ty,
 		types = id_types,
-
-		add = {},
-		remove = {},
-		refs = {} :: ecs_graph_edge_t,
 	}
 
 	for i, component_id in id_types do
@@ -689,6 +670,7 @@ local function archetype_create(world: ecs_world_t, id_types: { i24 }, ty, prev:
 
 	world.archetype_index[ty] = archetype
 	world.archetypes[archetype_id] = archetype
+	world.archetype_edges[archetype.id] = {}
 
 	return archetype
 end
@@ -718,6 +700,7 @@ end
 local function find_insert(id_types: { i53 }, toAdd: i53): number
 	for i, id in id_types do
 		if id == toAdd then
+			error("Duplicate component id")
 			return -1
 		end
 		if id > toAdd then
@@ -727,25 +710,6 @@ local function find_insert(id_types: { i53 }, toAdd: i53): number
 	return #id_types + 1
 end
 
-local function find_archetype_with(world: ecs_world_t, node: ecs_archetype_t, id: i53): ecs_archetype_t
-	local id_types = node.types
-	-- Component IDs are added incrementally, so inserting and sorting
-	-- them each time would be expensive. Instead this insertion sort can find the insertion
-	-- point in the types array.
-
-	local at = find_insert(id_types, id)
-	if at == -1 then
-		-- If it finds a duplicate, it just means it is the same archetype so it can return it
-		-- directly instead of needing to hash types for a lookup to the archetype.
-		return node
-	end
-
-	local dst = table.clone(node.types) :: { i53 }
-	table.insert(dst, at, id)
-
-	return archetype_ensure(world, dst)
-end
-
 local function find_archetype_without(
 	world: ecs_world_t,
 	node: ecs_archetype_t,
@@ -753,9 +717,6 @@ local function find_archetype_without(
 ): ecs_archetype_t
 	local id_types = node.types
 	local at = table.find(id_types, id)
-	if at == nil then
-		return node
-	end
 
 	local dst = table.clone(id_types)
 	table.remove(dst, at)
@@ -763,107 +724,19 @@ local function find_archetype_without(
 	return archetype_ensure(world, dst)
 end
 
-local function archetype_init_edge(
-	archetype: ecs_archetype_t,
-	edge: ecs_graph_edge_t,
-	id: i53,
-	to: ecs_archetype_t
-)
-	edge.from = archetype
-	edge.to = to
-	edge.id = id
-end
-
-local function archetype_ensure_edge(
-	world: ecs_world_t,
-	edges: ecs_graph_edges_t,
-	id: i53
-): ecs_graph_edge_t
-	local edge = edges[id]
-	if not edge then
-		edge = {} :: ecs_graph_edge_t
-		edges[id] = edge
-	end
-
-	return edge
-end
-
-local function init_edge_for_add(world, archetype: ecs_archetype_t, edge: ecs_graph_edge_t, id, to: ecs_archetype_t)
-	archetype_init_edge(archetype, edge, id, to)
-	archetype_ensure_edge(world, archetype.add, id)
-	if archetype ~= to then
-		local to_refs = to.refs
-		local next_edge = to_refs.next
-
-		to_refs.next = edge
-		edge.prev = to_refs
-		edge.next = next_edge
-
-		if next_edge then
-			next_edge.prev = edge
-		end
-	end
-end
-
-local function init_edge_for_remove(
-	world: ecs_world_t,
-	archetype: ecs_archetype_t,
-	edge: ecs_graph_edge_t,
-	id: number,
-	to: ecs_archetype_t
-)
-	archetype_init_edge(archetype, edge, id, to)
-	archetype_ensure_edge(world, archetype.remove, id)
-	if archetype ~= to then
-		local to_refs = to.refs
-		local prev_edge = to_refs.prev
-
-		to_refs.prev = edge
-		edge.next = to_refs
-		edge.prev = prev_edge
-
-		if prev_edge then
-			prev_edge.next = edge
-		end
-	end
-end
-
-local function create_edge_for_add(
-	world: ecs_world_t,
-	node: ecs_archetype_t,
-	edge: ecs_graph_edge_t,
-	id: i53
-): ecs_archetype_t
-	local to = find_archetype_with(world, node, id)
-	init_edge_for_add(world, node, edge, id, to)
-	return to
-end
 
 local function create_edge_for_remove(
 	world: ecs_world_t,
 	node: ecs_archetype_t,
-	edge: ecs_graph_edge_t,
+	edge: Map<number, ecs_archetype_t>,
 	id: i53
 ): ecs_archetype_t
 	local to = find_archetype_without(world, node, id)
-	init_edge_for_remove(world, node, edge, id, to)
+	local edges = world.archetype_edges
+	local archetype_id = node.id
+	edges[archetype_id][id] = to
+	edges[to.id][id] = node
 	return to
-end
-
-local function archetype_traverse_add(
-	world: ecs_world_t,
-	id: i53,
-	from: ecs_archetype_t
-): ecs_archetype_t
-	from = from or world.ROOT_ARCHETYPE
-	local edge = archetype_ensure_edge(world, from.add, id)
-
-	local to = edge.to
-	if not to then
-		to = create_edge_for_add(world, from, edge, id)
-	end
-
-	return to :: ecs_archetype_t
 end
 
 local function archetype_traverse_remove(
@@ -871,16 +744,45 @@ local function archetype_traverse_remove(
 	id: i53,
 	from: ecs_archetype_t
 ): ecs_archetype_t
-	from = from or world.ROOT_ARCHETYPE
+	local edges = world.archetype_edges
+	local edge = edges[from.id]
 
-	local edge = archetype_ensure_edge(world, from.remove, id)
-
-	local to = edge.to
+	local to = edge[id]
 	if not to then
-		to = create_edge_for_remove(world, from, edge, id)
+		to = find_archetype_without(world, from, id)
+		edge[id] = to
+		edges[to.id][id] = from
 	end
 
 	return to :: ecs_archetype_t
+end
+
+local function find_archetype_with(world, id, from)
+	local id_types = from.types
+
+	local at = find_insert(id_types, id)
+	local dst = table.clone(id_types) :: { i53 }
+	table.insert(dst, at, id)
+
+	return archetype_ensure(world, dst)
+end
+
+local function archetype_traverse_add(world, id, from: ecs_archetype_t)
+	from = from or world.ROOT_ARCHETYPE
+	if from.records[id] then
+		return from
+	end
+	local edges = world.archetype_edges
+	local edge = edges[from.id]
+
+	local to = edge[id]
+	if not to then
+		to = find_archetype_with(world, id, from)
+		edge[id] = to
+		edges[to.id][id] = from
+	end
+
+	return to
 end
 
 local function world_add(
@@ -1156,62 +1058,18 @@ local function world_clear(world: ecs_world_t, entity: i53)
 	end
 end
 
-local function archetype_disconnect_edge(edge: ecs_graph_edge_t)
-	local edge_next = edge.next
-	local edge_prev = edge.prev
-	if edge_next then
-		edge_next.prev = edge_prev
-	end
-	if edge_prev then
-		edge_prev.next = edge_next
-	end
-end
-
-local function archetype_remove_edge(edges: ecs_graph_edges_t, id: i53, edge: ecs_graph_edge_t)
-	archetype_disconnect_edge(edge)
-	edges[id] = nil :: any
-end
-
-local function archetype_clear_edges(archetype: ecs_archetype_t)
-	local add: ecs_graph_edges_t = archetype.add
-	local remove: ecs_graph_edges_t = archetype.remove
-	local node_refs = archetype.refs
-	for id, edge in add do
-		archetype_disconnect_edge(edge)
-		add[id] = nil :: any
-	end
-	for id, edge in remove do
-		archetype_disconnect_edge(edge)
-		remove[id] = nil :: any
-	end
-
-	local cur = node_refs.next
-	while cur do
-		local edge = cur :: ecs_graph_edge_t
-		local next_edge = edge.next
-		archetype_remove_edge(edge.from.add, edge.id, edge)
-		cur = next_edge
-	end
-
-	cur = node_refs.prev
-	while cur do
-		local edge: ecs_graph_edge_t = cur
-		local next_edge = edge.prev
-		archetype_remove_edge(edge.from.remove, edge.id, edge)
-		cur = next_edge
-	end
-
-	node_refs.next = nil
-	node_refs.prev = nil
-end
-
 local function archetype_destroy(world: ecs_world_t, archetype: ecs_archetype_t)
 	if archetype == world.ROOT_ARCHETYPE then
 		return
 	end
 
 	local component_index = world.component_index
-	archetype_clear_edges(archetype)
+	local archetype_edges = world.archetype_edges
+
+	for id, edge in archetype_edges[archetype.id] do
+		archetype_edges[edge.id][id] = nil
+	end
+
 	local archetype_id = archetype.id
 	world.archetypes[archetype_id] = nil :: any
 	world.archetype_index[archetype.type] = nil :: any
@@ -2439,6 +2297,8 @@ local function world_new()
 		max_id = 0,
 	} :: ecs_entity_index_t
 	local self = setmetatable({
+		archetype_edges = {},
+
 		archetype_index = {} :: { [string]: Archetype },
 		archetypes = {} :: Archetypes,
 		component_index = {} :: ComponentIndex,
@@ -2639,11 +2499,6 @@ return {
 	find_insert = find_insert,
 	find_archetype_with = find_archetype_with,
 	find_archetype_without = find_archetype_without,
-	archetype_init_edge = archetype_init_edge,
-	archetype_ensure_edge = archetype_ensure_edge,
-	init_edge_for_add = init_edge_for_add,
-	init_edge_for_remove = init_edge_for_remove,
-	create_edge_for_add = create_edge_for_add,
 	create_edge_for_remove = create_edge_for_remove,
 	archetype_traverse_add = archetype_traverse_add,
 	archetype_traverse_remove = archetype_traverse_remove,

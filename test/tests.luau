@@ -347,7 +347,7 @@ TEST("archetype", function()
 
 	local a1 = archetype_traverse_add(world, c1, nil :: any)
 	local a2 = archetype_traverse_remove(world, c1, a1)
-	CHECK(root.add[c1].to == a1)
+	-- CHECK(root.add[c1].to == a1)
 	CHECK(root == a2)
 end)
 
@@ -580,8 +580,12 @@ TEST("world:add()", function()
 		local e = world:entity()
 		world:add(e, _1)
 		world:add(e, _2)
+
+		print("----idempotent")
+		print(d.archetype(e))
 		world:add(e, _2) -- should have 0 effects
 		CHECK(d.archetype(e) == "1_2")
+		print(d.archetype(e))
 	end
 
 	do
