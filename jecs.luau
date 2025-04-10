@@ -2487,9 +2487,9 @@ return {
 
 	ECS_ID_DELETE = ECS_ID_DELETE,
 
-	IS_PAIR = ECS_IS_PAIR,
-	pair_first = ecs_pair_first,
-	pair_second = ecs_pair_second,
+	IS_PAIR = (ECS_IS_PAIR :: any) :: <P, O>(pair: Pair<P, O>) -> boolean,
+	pair_first = (ecs_pair_first :: any) :: <P, O>(world: World, pair: Pair<P, O>) -> Id<P>,
+	pair_second = (ecs_pair_second :: any) :: <P, O>(world: World, pair: Pair<P, O>) -> Id<O>,
 	entity_index_get_alive = entity_index_get_alive,
 
 	archetype_append_to_records = archetype_append_to_records,

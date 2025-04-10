@@ -1,46 +1,89 @@
 local jecs = require("@jecs")
-local observers_add = require("@addons/observers")
+local testkit = require("@testkit")
+local test = testkit.test()
+local CASE, TEST, FINISH, CHECK = test.CASE, test.TEST, test.FINISH, test.CHECK
+local observers = require("@addons/observers")
+local observers_add = observers.add
 
-local world = jecs.world()
-observers_add(world)
 
-local A = world:component()
-local B = world:component()
-local C = world:component()
+TEST("addons/observers", function()
+	local world = observers_add(jecs.world())
 
-world:observer({
-	query = world:query(),
-	callback = function(entity)
-		buf ..= debug.info(2, "sl")
+
+	do CASE "Ensure ordering between signals and observers"
+		local A = world:component()
+		local B = world:component()
+
+		local count = 0
+		local function counter()
+			count += 1
+		end
+		world:observer({
+			callback = counter,
+			query = world:query(A, B),
+		})
+
+		world:added(A, counter)
+		world:added(A, counter)
+
+		world:removed(A, counter)
+
+		local e = world:entity()
+		world:add(e, A)
+		CHECK(count == 2)
+
+		world:add(e, B)
+		CHECK(count == 3)
+
+		world:remove(e, A)
+		CHECK(count == 4)
 	end
-})
 
-local i = 0
-world:added(A, function(entity)
-	assert(i == 0)
-	i += 1
-end)
-world:added(A, function(entity)
-	assert(i == 1)
-	i += 1
-end)
+	do CASE "Rematch entities in observers"
+		local A = world:component()
 
-world:removed(A, function(entity)
-	assert(false)
-end)
+		local count = 0
+		local function counter()
+			count += 1
+		end
+		world:observer({
+			query = world:query(A),
+			callback = counter
+		})
 
-local observer = world:observer({
-	query = world:query(A, B),
-	callback = function(entity)
-		assert(i == 2)
-		i += 1
+		local e = world:entity()
+		world:set(e, A, true)
+		CHECK(count == 1)
+		world:remove(e, A)
+		CHECK(count == 1)
+		world:set(e, A, true)
+		CHECK(count == 2)
+		world:set(e, A, true)
+		CHECK(count == 3)
 	end
-})
 
+	do CASE "Don't report changed components in monitor"
+		local A = world:component()
+		local count = 0
+		local function counter()
+			count += 1
+		end
 
-local e = world:entity()
-world:add(e, A)
-assert(i == 2)
+		world:monitor({
+			query = world:query(A),
+			callback = counter
+		})
 
-world:add(e, B)
-assert(i == 3)
+		local e = world:entity()
+		world:set(e, A, true)
+		CHECK(count == 1)
+		world:remove(e, A)
+		CHECK(count == 2)
+		world:set(e, A, true)
+		CHECK(count == 3)
+		world:set(e, A, true)
+		CHECK(count == 3)
+	end
+end)
+
+return FINISH()

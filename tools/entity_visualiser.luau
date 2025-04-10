@@ -70,7 +70,51 @@ local function components(world: jecs.World, entity: any)
 	return true
 end
 
+local entity_index_try_get_any = jecs.entity_index_try_get_any
+
+local function stringify(world: jecs.World)
+	local function record(e: jecs.Entity): jecs.Record
+		return entity_index_try_get_any(world.entity_index :: any, e :: any) :: any
+	end
+	local function tbl(e: jecs.Entity)
+		return record(e).archetype
+	end
+	local function archetype(e: jecs.Entity)
+		return tbl(e).type
+	end
+	local function records(e: jecs.Entity)
+		return tbl(e).records
+	end
+	local function columns(e: jecs.Entity)
+		return tbl(e).columns
+	end
+	local function row(e: jecs.Entity)
+		return record(e).row
+	end
+
+	-- Important to order them in the order of their columns
+	local function tuple(e, ...)
+		for i, column in columns(e) do
+			if select(i, ...) ~= column[row(e)] then
+				return false
+			end
+		end
+		return true
+	end
+
+	return {
+		record = record,
+		tbl = tbl,
+		archetype = archetype,
+		records = records,
+		row = row,
+		tuple = tuple,
+		columns = columns
+	}
+end
+
 return {
 	components = components,
 	prettify = pe,
+	stringify = stringify
 }

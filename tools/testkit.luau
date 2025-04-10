@@ -3,6 +3,10 @@
 -- v0.7.3
 -- MIT License
 -- Copyright (c) 2022 centau
+--
+-- Some changes that I have made to this module is to evaluate the tests lazily,
+-- this way only focused tests will actually be ran rather than just focusing their output.
+--
 --------------------------------------------------------------------------------
 
 local disable_ansi = false
@@ -248,7 +252,7 @@ local function FOCUS()
 	end
 end
 
-local function FINISH(): boolean
+local function FINISH(): number
 	local success = true
 	local total_cases = 0
 	local passed_cases = 0
@@ -311,7 +315,8 @@ local function FINISH(): boolean
 	print((fails > 0 and color.red or color.green)(`{fails} {fails == 1 and "fail" or "fails"}`))
 
 	check_for_focused = false
-	return success, table.clear(tests)
+	table.clear(tests)
+	return math.clamp(fails, 0, 1)
 end
 
 local function SKIP()

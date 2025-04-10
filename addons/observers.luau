@@ -1,20 +1,32 @@
 local jecs = require("@jecs")
-local testkit = require("@testkit")
+
+type Observer<T...> = {
+	callback: (jecs.Entity) -> (),
+	query: jecs.Query<T...>,
+}
+
+export type PatchedWorld = jecs.World & {
+	added: (PatchedWorld, jecs.Id, (e: jecs.Entity, id: jecs.Id, value: any) -> ()) -> (),
+	removed: (PatchedWorld, jecs.Id, (e: jecs.Entity, id: jecs.Id) -> ()) -> (),
+	changed: (PatchedWorld, jecs.Id, (e: jecs.Entity, id: jecs.Id) -> ()) -> (),
+	observer: (PatchedWorld, Observer<any>) -> (),
+	monitor: (PatchedWorld, Observer<any>) -> (),
+}
 
 local function observers_new(world, description)
 	local query = description.query
 	local callback = description.callback
-	local terms = query.filter_with
+	local terms = query.filter_with :: { jecs.Id }
 	if not terms then
 		local ids = query.ids
 		query.filter_with = ids
 		terms = ids
 	end
 
-	local entity_index = world.entity_index
-	local function emplaced(entity)
+	local entity_index = world.entity_index :: any
+	local function emplaced(entity: jecs.Entity)
 		local r = jecs.entity_index_try_get_fast(
-			entity_index, entity)
+			entity_index, entity :: any)
 
 		if not r then
 			return
@@ -33,18 +45,20 @@ local function observers_new(world, description)
  	end
 end
 
-local function world_track(world, ...)
-	local entity_index = world.entity_index
-	local terms = { ... }
-	local q_shim = { filter_with = terms }
+local function monitors_new(world, description)
+	local query = description.query
+	local callback = description.callback
+	local terms = query.filter_with :: { jecs.Id }
+	if not terms then
+		local ids = query.ids
+		query.filter_with = ids
+		terms = ids
+	end
 
-	local n = 0
-	local dense_array = {}
-	local sparse_array = {}
-
-	local function emplaced(entity)
+	local entity_index = world.entity_index :: any
+	local function emplaced(entity: jecs.Entity)
 		local r = jecs.entity_index_try_get_fast(
-			entity_index, entity)
+			entity_index, entity :: any)
 
 		if not r then
 			return
@@ -52,55 +66,39 @@ local function world_track(world, ...)
 
 		local archetype = r.archetype
 
-		if jecs.query_match(q_shim :: any, archetype) then
-			n += 1
-			dense_array[n] = entity
-			sparse_array[entity] = n
+		if jecs.query_match(query, archetype) then
+			callback(entity, jecs.OnAdd)
 		end
 	end
 
-	local function removed(entity)
-		local i = sparse_array[entity]
-		if i ~= n then
-			dense_array[i] = dense_array[n]
+	local function removed(entity: jecs.Entity, component: jecs.Id)
+		local r = jecs.entity_index_try_get_fast(
+			entity_index, entity :: any)
+
+		if not r then
+			return
 		end
 
-		dense_array[n] = nil
+		local archetype = r.archetype
+
+		if jecs.query_match(query, archetype) then
+			callback(entity, jecs.OnRemove)
+		end
 	end
 
 	for _, term in terms do
 		world:added(term, emplaced)
-		world:changed(term, emplaced)
+		world:removed(term, removed)
  	end
-
-	local function iter()
-		local i = n
-		return function()
-			local row = i
-			if row == 0 then
-				return nil
-			end
-			i -= 1
-			return dense_array[row] :: any
-		end
-	end
-
-	local it = {
-		__iter = iter,
-		without = function(self, ...)
-			q_shim.filter_without = { ... }
-			return self
-		end
-	}
-	return setmetatable(it, it)
 end
 
-local function observers_add(world)
+local function observers_add(world: jecs.World & { [string]: any }): PatchedWorld
 	local signals = {
 		added = {},
 		emplaced = {},
 		removed = {}
 	}
+
 	world.added = function(_, component, fn)
 		local listeners = signals.added[component]
 		if not listeners then
@@ -109,7 +107,7 @@ local function observers_add(world)
 			local idr = jecs.id_record_ensure(world, component)
 			idr.hooks.on_add = function(entity)
 				for _, listener in listeners do
-					listener(entity)
+					listener(entity, component)
 				end
 			end
 		end
@@ -124,7 +122,7 @@ local function observers_add(world)
 			local idr = jecs.id_record_ensure(world, component)
 			idr.hooks.on_change = function(entity, value)
 				for _, listener in listeners do
-					listener(entity, value)
+					listener(entity, component, value)
 				end
 			end
 		end
@@ -139,7 +137,7 @@ local function observers_add(world)
 			local idr = jecs.id_record_ensure(world, component)
 			idr.hooks.on_remove = function(entity)
 				for _, listener in listeners do
-					listener(entity)
+					listener(entity, component)
 				end
 			end
 		end
@@ -148,10 +146,24 @@ local function observers_add(world)
 
 	world.signals = signals
 
-	world.track = world_track
-
 	world.observer = observers_new
+
+	world.monitor = monitors_new
+
 	return world
 end
 
-return observers_add
+local world = jecs.world()
+
+observers_add(world):observer({
+	callback = function() end,
+	query = world:query(1 :: any)
+})
+
+observers_add(world):added(1 :: any, function()
+
+end)
+
+return {
+	add = observers_add
+}
