@@ -2,13 +2,11 @@ local jecs = require("@jecs")
 local testkit = require("@testkit")
 local test = testkit.test()
 local CASE, TEST, FINISH, CHECK = test.CASE, test.TEST, test.FINISH, test.CHECK
-local observers = require("@addons/observers")
-local observers_add = observers.add
+local observers_add = require("@addons/observers")
 
 
 TEST("addons/observers", function()
 	local world = observers_add(jecs.world())
-
 
 	do CASE "Ensure ordering between signals and observers"
 		local A = world:component()

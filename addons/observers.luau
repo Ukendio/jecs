@@ -153,17 +153,4 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 	return world
 end
 
-local world = jecs.world()
-
-observers_add(world):observer({
-	callback = function() end,
-	query = world:query(1 :: any)
-})
-
-observers_add(world):added(1 :: any, function()
-
-end)
-
-return {
-	add = observers_add
-}
+return observers_add
