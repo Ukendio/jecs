@@ -152,6 +152,8 @@ world.add(loot, pair(OwnedBy, player));
 world.delete(player);
 ```
 
+:::
+
 ### (OnDeleteTarget, Delete)
 
 ::: code-group
