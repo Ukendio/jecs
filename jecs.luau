@@ -2420,7 +2420,10 @@ export type World = {
 		& <A, B, C, D>(self: World, id: Entity, Id<A>, Id<B>, Id<C>, Id<D>) -> (A?, B?, C?, D?),
 
 	--- Returns whether the entity has the ID.
-	has: (self: World, entity: Entity, ...Id) -> boolean,
+	has: (<A>(World, Entity, A) -> boolean)
+		& (<A, B>(World, Entity, A, B) -> boolean)
+		& (<A, B, C>(World, Entity, A, B, C) -> boolean)
+		& <A, B, C, D>(World, Entity, A, B, C, D) -> boolean,
 
 	--- Get parent (target of ChildOf relationship) for entity. If there is no ChildOf relationship pair, it will return nil.
 	parent:(self: World, entity: Entity) -> Entity,
