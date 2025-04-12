@@ -23,6 +23,8 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
         -   This should allow a more lenient window for modifying data
     -   Changed `OnRemove` to lazily lookup which archetype the entity will move to
         -   Can now have interior structural changes within `OnRemove` hooks
+    -   Optimized `world:has` for both single component and multiple component presence.
+        -   This comes at the cost that it cannot check the component presence for more than 4 components at a time. If this is important, consider calling to this function multiple times.
 
 ## [0.5.0] - 2024-12-26
 

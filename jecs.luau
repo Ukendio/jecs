@@ -466,7 +466,9 @@ local function world_has_one_inline(world: ecs_world_t, entity: i53, id: i53): b
 	return records[id] ~= nil
 end
 
-local function world_has(world: ecs_world_t, entity: i53, ...: i53): boolean
+local function world_has(world: ecs_world_t, entity: i53,
+	a: i53, b: i53?, c: i53?, d: i53?, e: i53?): boolean
+
 	local record = entity_index_try_get_fast(world.entity_index, entity)
 	if not record then
 		return false
@@ -479,13 +481,11 @@ local function world_has(world: ecs_world_t, entity: i53, ...: i53): boolean
 
 	local records = archetype.records
 
-	for i = 1, select("#", ...) do
-		if not records[select(i, ...)] then
-			return false
-		end
-	end
-
-	return true
+	return records[a] ~= nil and
+		(b == nil or records[b] ~= nil) and
+		(c == nil or records[c] ~= nil) and
+		(d == nil or records[d] ~= nil) and
+		(e == nil or error("args exceeded"))
 end
 
 local function world_target(world: ecs_world_t, entity: i53, relation: i24, index: number?): i24?

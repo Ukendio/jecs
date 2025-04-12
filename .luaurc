@@ -4,7 +4,7 @@
         "testkit": "tools/testkit",
         "mirror": "mirror",
         "tools": "tools",
-        "addons": "addons",
+        "addons": "addons"
     },
     "languageMode": "strict"
 }

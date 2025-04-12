@@ -32,7 +32,12 @@ local function pad()
 	end
 end
 
-local function lifetime_tracker_add(world: jecs.World, opt)
+type PatchedWorld = jecs.World & {
+	print_entity_index: (world: PatchedWorld) -> (),
+	print_snapshot: (world: PatchedWorld) -> (),
+}
+
+local function lifetime_tracker_add(world: jecs.World, opt): PatchedWorld
 	local entity_index = world.entity_index
 	local dense_array = entity_index.dense_array
 	local component_index = world.component_index
