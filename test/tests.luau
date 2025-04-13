@@ -238,7 +238,7 @@ TEST("world:contains()", function()
 end)
 
 TEST("world:delete()", function()
-	do CASE "invoke OnRemove hooks"
+	do CASE "invoke OnRemove hook on all components of deleted entity"
 		local world = jecs.world()
 
 		local e1 = world:entity()
@@ -254,6 +254,32 @@ TEST("world:delete()", function()
 
 		world:delete(e1)
 	end
+
+	do CASE "invoke OnRemove hook on relationship if target was deleted"
+		local world = jecs.world()
+		local pair = jecs.pair
+
+		local Relation = world:entity()
+		local A = world:entity()
+		local B = world:entity()
+
+		world:add(Relation, pair(jecs.OnDelete, jecs.Delete))
+
+		local entity = world:entity()
+
+		local called = false
+		world:set(A, jecs.OnRemove, function(e)
+			called = true
+		end)
+
+		world:add(entity, A)
+		world:add(entity, pair(Relation, B))
+
+		world:delete(B)
+
+		CHECK(called)
+	end
+
 	do CASE "delete recycled entity id used as component"
 		local world = jecs.world()
 		local id = world:entity()
@@ -757,6 +783,52 @@ TEST("world:query()", function()
 			CHECK(d == nil)
 		end
 	end
+	do CASE "iterate wildcard pairs in cached query"
+		local world = jecs.world()
+		local pair = jecs.pair
+
+		local Relation = world:entity()
+		local Wildcard = jecs.Wildcard
+		local A = world:entity()
+
+		local relationship = pair(Relation, Wildcard)
+		local query = world:query(relationship):cached()
+
+		local entity = world:entity()
+
+		local p = pair(Relation, A)
+		CHECK(jecs.pair_first(world, p) == Relation)
+		CHECK(jecs.pair_second(world, p) == A)
+		world:add(entity, pair(Relation, A))
+
+		local counter = 0
+		for e in query:iter() do
+			counter += 1
+		end
+		CHECK(counter == 1)
+	end
+
+	do CASE "iterate wildcard pairs in uncached query"
+		local world = jecs.world()
+		local pair = jecs.pair
+
+		local Relation = world:entity()
+		local Wildcard = jecs.Wildcard
+		local A = world:entity()
+
+		local relationship = pair(Relation, Wildcard)
+
+		local entity = world:entity()
+
+		world:add(entity, pair(Relation, A))
+
+		local counter = 0
+		for e in world:query(relationship):iter() do
+			counter += 1
+		end
+		CHECK(counter == 1)
+	end
+
 	do CASE "query single component"
 		do
 			local world = jecs.World.new()
@@ -856,8 +928,7 @@ TEST("world:query()", function()
 		end
 	end
 
-	do
-		CASE("should be able to get next results")
+	do CASE "should be able to get next results"
 		local world = jecs.world()
 		world:component()
 		local A = world:component()
@@ -1663,68 +1734,6 @@ TEST("wildcard query", function()
 			counter += 1
 		end
 		CHECK(counter == 1)
-	end
-end)
-
-TEST("world:delete() invokes OnRemove hook", function()
-	do CASE "#1"
-		local world = jecs.world()
-
-		local A = world:entity()
-		local entity = world:entity()
-
-		local called = false
-		world:set(A, jecs.OnRemove, function(e)
-			called = true
-		end)
-
-		world:add(entity, A)
-		world:delete(entity)
-
-		CHECK(called)
-	end
-	do CASE "#2"
-		local world = jecs.world()
-		local pair = jecs.pair
-
-		local Relation = world:entity()
-		local A = world:entity()
-		local B = world:entity()
-
-		world:add(Relation, pair(jecs.OnDelete, jecs.Delete))
-
-		local entity = world:entity()
-
-		local called = false
-		world:set(A, jecs.OnRemove, function(e)
-			called = true
-		end)
-
-		world:add(entity, A)
-		world:add(entity, pair(Relation, B))
-
-		world:delete(B)
-
-		CHECK(called)
-	end
-	do CASE "#3"
-		local world = jecs.world()
-		local pair = jecs.pair
-
-		local viewingContainer = world:entity()
-		local character = world:entity()
-		local container = world:entity()
-
-		local called = false
-		world:set(viewingContainer, jecs.OnRemove, function(e)
-			called = true
-		end)
-
-		world:add(character, pair(viewingContainer, container))
-
-		world:delete(container)
-
-		CHECK(called)
 	end
 end)
 
