@@ -34,10 +34,8 @@ TEST("world:add()", function()
 		world:add(e, _1)
 		world:add(e, _2)
 
-		print("----idempotent")
 		world:add(e, _2) -- should have 0 effects
 		CHECK(d.archetype(e) == "1_2")
-		print(d.archetype(e))
 	end
 
 	do CASE("archetype move")
@@ -238,6 +236,25 @@ TEST("world:contains()", function()
 end)
 
 TEST("world:delete()", function()
+	do CASE "remove pair when relationship is deleted"
+		local world = jecs.world()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		world:add(e1, pair(A, e2))
+		world:add(e1, pair(B, e2))
+		world:add(e1, pair(C, e2))
+		world:delete(A)
+
+		CHECK(not world:has(e1, pair(A, e2)))
+		CHECK(world:has(e1, pair(B, e2)))
+		CHECK(world:has(e1, pair(C, e2)))
+	end
+
 	do CASE "invoke OnRemove hook on all components of deleted entity"
 		local world = jecs.world()
 

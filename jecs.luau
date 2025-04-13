@@ -1260,7 +1260,7 @@ local function world_delete(world: ecs_world_t, entity: i53)
 				local tr = idr_r_archetype.records[rel]
 				local tr_count = idr_r_archetype.counts[rel]
 				local types = idr_r_archetype.types
-				for i = tr, tr_count - 1 do
+				for i = tr, tr_count do
 					ids[types[tr]] = true
 				end
 				local n = #entities
