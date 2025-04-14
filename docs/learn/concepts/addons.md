@@ -41,4 +41,16 @@ Provides hooks and a scheduler that implements jabby and a topographical runtime
 An agnostic scheduler inspired by Bevy and Flecs, with core features including phases, pipelines, run conditions, and startup systems.
 Planck also provides plugins for Jabby, Matter Hooks, and more.
 
+# Replication
+
+## [feces](https://github.com/NeonD00m/feces)
+
+A generalized replication system for jecs
+
+# Input
+
+## [Axis](https://github.com/NeonD00m/axis)
+
+An agnostic, simple and versatile input library for ECS
+
 # Observers
