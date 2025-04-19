@@ -778,7 +778,7 @@ TEST("world:query()", function()
 		for x in q:iter() do
 			counter += 1
 		end
-		for x, tets in q do
+		for x in q:iter() do
 			counter += 1
 		end
 		CHECK(counter == 2)
