@@ -101,6 +101,8 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 
 	world.added = function(_, component, fn)
 		local listeners = signals.added[component]
+		local component_index = world.component_index :: jecs.ComponentIndex
+		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
 			listeners = {}
 			signals.added[component] = listeners
@@ -115,6 +117,8 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 
 	world.changed = function(_, component, fn)
 		local listeners = signals.emplaced[component]
+		local component_index = world.component_index :: jecs.ComponentIndex
+		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
 			listeners = {}
 			signals.emplaced[component] = listeners
@@ -130,6 +134,8 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 
 	world.removed = function(_, component, fn)
 		local listeners = signals.removed[component]
+		local component_index = world.component_index :: jecs.ComponentIndex
+		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
 			listeners = {}
 			signals.removed[component] = listeners
