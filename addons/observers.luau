@@ -104,13 +104,12 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 		if not listeners then
 			listeners = {}
 			signals.added[component] = listeners
-			local idr = jecs.id_record_ensure(world, component)
-			idr.hooks.on_add = function(entity)
-				for _, listener in listeners do
-					listener(entity, component)
+			local function on_add(entity: number, id: number, value: any)
+				for _, listener in listeners :: any do
+					listener(entity, id, value)
 				end
 			end
-		end
+			world:set(component, jecs.OnAdd, on_add)		end
 		table.insert(listeners, fn)
 	end
 
@@ -119,12 +118,12 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 		if not listeners then
 			listeners = {}
 			signals.emplaced[component] = listeners
-			local idr = jecs.id_record_ensure(world, component)
-			idr.hooks.on_change = function(entity, value)
-				for _, listener in listeners do
-					listener(entity, component, value)
+			local function on_change(entity: number, id: number, value: any)
+				for _, listener in listeners :: any do
+					listener(entity, id, value)
 				end
 			end
+			world:set(component, jecs.OnChange, on_change)
 		end
 		table.insert(listeners, fn)
 	end
@@ -134,12 +133,12 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 		if not listeners then
 			listeners = {}
 			signals.removed[component] = listeners
-			local idr = jecs.id_record_ensure(world, component)
-			idr.hooks.on_remove = function(entity)
-				for _, listener in listeners do
-					listener(entity, component)
+			local function on_remove(entity: number, id: number, value: any)
+				for _, listener in listeners :: any do
+					listener(entity, id, value)
 				end
 			end
+			world:set(component, jecs.OnRemove, on_remove)
 		end
 		table.insert(listeners, fn)
 	end
@@ -150,7 +149,7 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 
 	world.monitor = monitors_new
 
-	return world
+	return world :: PatchedWorld
 end
 
 return observers_add
