@@ -500,6 +500,14 @@ local function world_has_one_inline(world: ecs_world_t, entity: i53, id: i53): b
 	return records[id] ~= nil
 end
 
+local function ecs_is_tag(world: ecs_world_t, entity: i53): boolean
+	local idr = world.component_index[entity]
+	if idr then
+		return bit32.band(idr.flags, ECS_ID_IS_TAG) ~= 0
+	end
+	return not world_has_one_inline(world, entity, EcsComponent)
+end
+
 local function world_has(world: ecs_world_t, entity: i53,
 	a: i53, b: i53?, c: i53?, d: i53?, e: i53?): boolean
 
@@ -2523,6 +2531,7 @@ return {
 	component = (ECS_COMPONENT :: any) :: <T>() -> Entity<T>,
 	tag = (ECS_TAG :: any) :: <T>() -> Entity<T>,
 	meta = (ECS_META :: any) :: <T>(id: Entity, id: Id<T>, value: T) -> Entity<T>,
+	is_tag = (ecs_is_tag :: any) :: <T>(World, Id<T>) -> boolean,
 
 	OnAdd = EcsOnAdd :: Entity<(entity: Entity) -> ()>,
 	OnRemove = EcsOnRemove :: Entity<(entity: Entity) -> ()>,

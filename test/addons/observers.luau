@@ -82,6 +82,25 @@ TEST("addons/observers", function()
 		world:set(e, A, true)
 		CHECK(count == 3)
 	end
+
+	do CASE "Call on pairs"
+		local A = world:component()
+
+		local callcount = 0
+		world:added(A, function(entity)
+			callcount += 1
+		end)
+		world:added(A, function(entity)
+			callcount += 1
+		end)
+
+		local e = world:entity()
+		local e1 = world:entity()
+
+		world:add(e1, jecs.pair(A, e))
+		world:add(e, jecs.pair(A, e1))
+		CHECK(callcount == 4)
+	end
 end)
 
 return FINISH()
