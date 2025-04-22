@@ -789,28 +789,21 @@ local function world_entity(world: ecs_world_t, entity: i53?): i53
 				return entity
 			end
 
-			if any ~= 0 then
-				local e_swap = dense_array[alive_count]
-				local r_swap = sparse_array[alive_count]
+			-- assert(any ~= 0) should never happen
 
-				if dense > alive_count then
-					r_swap.dense = dense
-					r.dense = alive_count
-					dense_array[alive_count] = any
-					dense_array[dense] = e_swap
-				else
-					r_swap.dense = dense
-					-- alive_count += 1
-					alive_count += 1
-					entity_index.alive_count = alive_count
-					r.dense = alive_count
-					dense_array[alive_count] = any
-					dense_array[dense] = e_swap
-				end
-				return any
-			else
-				error("should never happen")
+			local e_swap = dense_array[alive_count]
+			local r_swap = sparse_array[alive_count]
+
+			if dense <= alive_count then
+				alive_count += 1
+				entity_index.alive_count = alive_count
 			end
+
+			r_swap.dense = dense
+			r.dense = alive_count
+			dense_array[alive_count] = any
+			dense_array[dense] = e_swap
+			return any
 		else
 			local range_end = entity_index.range_end
 			if range_end then
