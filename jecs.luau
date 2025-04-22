@@ -1041,7 +1041,7 @@ local function world_clear(world: ecs_world_t, entity: i53)
 					continue
 				end
 				if not ids then
-					ids = {}
+					ids = {} :: { [i53]: boolean }
 				end
 				ids[id] = true
 				removal_queued = true
@@ -1052,7 +1052,7 @@ local function world_clear(world: ecs_world_t, entity: i53)
 			end
 
 			if not queue then
-				queue = {}
+				queue = {} :: { i53 }
 			end
 
 			local n = #entities
@@ -1242,7 +1242,7 @@ local function world_delete(world: ecs_world_t, entity: i53)
 					break
 				else
 					if not ids then
-						ids = {}
+						ids = {} :: { [i53]: boolean }
 					end
 					ids[id] = true
 					removal_queued = true
@@ -1253,7 +1253,7 @@ local function world_delete(world: ecs_world_t, entity: i53)
 				continue
 			end
 			if not children then
-				children = {}
+				children = {} :: { i53 }
 			end
 			local n = #entities
 			table.move(entities, 1, n, count + 1, children)
