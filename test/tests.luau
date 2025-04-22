@@ -22,6 +22,7 @@ type Entity<T=nil> = jecs.Entity<T>
 type Id<T=unknown> = jecs.Id<T>
 
 local entity_visualiser = require("@tools/entity_visualiser")
+local lifetime_tracker_add = require("@tools/lifetime_tracker")
 local dwi = entity_visualiser.stringify
 
 TEST("world:add()", function()
@@ -62,8 +63,8 @@ end)
 
 TEST("world:children()", function()
 	local world = jecs.world()
-	local C = world:component()
-	local T = world:entity()
+	local C = jecs.component()
+	local T = jecs.tag()
 
 	local e1 = world:entity()
 	world:set(e1, C, true)
@@ -95,6 +96,8 @@ TEST("world:children()", function()
 	end
 
 	CHECK(count == 1)
+
+	jecs.ECS_META_RESET()
 end)
 
 TEST("world:clear()", function()
@@ -195,6 +198,26 @@ TEST("world:clear()", function()
 end)
 
 TEST("world:component()", function()
+	do CASE "allow IDs to be registered"
+		local A = jecs.component()
+		local B = jecs.component()
+
+		local world = jecs.world()
+		local C = world:component()
+		CHECK((A :: any) == 1)
+		CHECK((B :: any) == 2)
+		CHECK((C :: any) == 3)
+
+		local e = world:entity()
+
+		world:set(e, A, "foo")
+		world:set(e, B, "foo")
+		world:set(e, C, "foo")
+
+		CHECK(world:has(e, A, B, C))
+
+		jecs.ECS_META_RESET() -- Reset the ECS metadata because they may have side effects
+	end
 	do CASE "only components should have EcsComponent trait"
 		local world = jecs.world()
 		local A = world:component()
@@ -224,6 +247,7 @@ TEST("world:component()", function()
 end)
 
 TEST("world:contains()", function()
+	local tag = jecs.tag()
 	local world = jecs.world()
 	local id = world:entity()
 	CHECK(world:contains(id))
@@ -233,6 +257,9 @@ TEST("world:contains()", function()
 		world:delete(id)
 		CHECK(not world:contains(id))
 	end
+
+	CHECK(world:contains(tag))
+	jecs.ECS_META_RESET()
 end)
 
 TEST("world:delete()", function()
@@ -606,6 +633,7 @@ end)
 
 TEST("world:entity()", function()
 	local N = 2^8
+
 	do CASE "unique IDs"
 		local world = jecs.world()
 		local set = {}
@@ -720,21 +748,21 @@ TEST("world:query()", function()
 		local i = 0
 
 		local iter = 0
-		for _, e in q:iter() do
+		for _ in q:iter() do
 			iter += 1
 			i=1
 		end
 		CHECK (iter == 1)
 		CHECK(i == 1)
-		for _, e in q:iter() do
+		for _ in q:iter() do
 			i=2
 		end
 		CHECK(i == 2)
-		for _, e in q :: any do
+		for _ in q do
 			i=3
 		end
 		CHECK(i == 3)
-		for _, e in q :: any do
+		for _ in q do
 			i=4
 		end
 		CHECK(i == 4)
@@ -746,8 +774,8 @@ TEST("world:query()", function()
 	end
 	do CASE "multiple iter"
 		local world = jecs.World.new()
-		local A = world:component()
-		local B = world:component()
+		local A = world:component() :: jecs.Entity<string>
+		local B = world:component() :: jecs.Entity<string>
 		local e = world:entity()
 		world:add(e, A)
 		world:add(e, B)
@@ -1404,8 +1432,6 @@ TEST("#adding a recycled target", function()
     CHECK(world:target(e, R) ~= 0 :: any)
 
 end)
-
-
 
 TEST("#repro2", function()
 	local world = jecs.world()
