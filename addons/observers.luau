@@ -101,12 +101,14 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 
 	world.added = function(_, component, fn)
 		local listeners = signals.added[component]
+		local component_index = world.component_index :: jecs.ComponentIndex
+		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
 			listeners = {}
 			signals.added[component] = listeners
-			
+
 			local function on_add(entity: number, id: number, value: any)
-				for _, listener in listeners do
+				for _, listener in listeners :: any do
 					listener(entity, id, value)
 				end
 			end
@@ -117,11 +119,13 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 
 	world.changed = function(_, component, fn)
 		local listeners = signals.emplaced[component]
+		local component_index = world.component_index :: jecs.ComponentIndex
+		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
 			listeners = {}
 			signals.emplaced[component] = listeners
 			local function on_change(entity: number, id: number, value: any)
-				for _, listener in listeners do
+				for _, listener in listeners :: any do
 					listener(entity, id, value)
 				end
 			end
@@ -132,11 +136,13 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 
 	world.removed = function(_, component, fn)
 		local listeners = signals.removed[component]
+		local component_index = world.component_index :: jecs.ComponentIndex
+		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
 			listeners = {}
 			signals.removed[component] = listeners
 			local function on_remove(entity: number, id: number, value: any)
-				for _, listener in listeners do
+				for _, listener in listeners :: any do
 					listener(entity, id, value)
 				end
 			end
@@ -151,7 +157,7 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 
 	world.monitor = monitors_new
 
-	return world
+	return world :: PatchedWorld
 end
 
 return observers_add
