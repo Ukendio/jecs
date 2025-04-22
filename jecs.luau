@@ -45,9 +45,9 @@ type ecs_id_record_t = {
 	flags: number,
 	size: number,
 	hooks: {
-		on_add: ((entity: i53, data: any?) -> ())?,
-		on_change: ((entity: i53, data: any) -> ())?,
-		on_remove: ((entity: i53) -> ())?,
+		on_add: ((entity: i53, id: i53, data: any?) -> ())?,
+		on_change: ((entity: i53, id: i53, data: any) -> ())?,
+		on_remove: ((entity: i53, id: i53) -> ())?,
 	},
 }
 
@@ -144,7 +144,7 @@ end
 
 local function ECS_META(id: i53, ty: i53, value: any?)
 	local bundle = ecs_metadata[id]
-	if bundle then
+	if bundle == nil then
 		bundle = {}
 		ecs_metadata[id] = bundle
 	end
@@ -849,7 +849,7 @@ local function world_add(
 	local on_add = idr.hooks.on_add
 
 	if on_add then
-		on_add(entity)
+		on_add(entity, id)
 	end
 end
 
@@ -874,7 +874,7 @@ local function world_set(world: ecs_world_t, entity: i53, id: i53, data: unknown
 		-- and just set the data directly.
 		local on_change = idr_hooks.on_change
 		if on_change then
-			on_change(entity, data)
+			on_change(entity, id, data)
 		end
 
 		return
@@ -897,7 +897,7 @@ local function world_set(world: ecs_world_t, entity: i53, id: i53, data: unknown
 
 	local on_add = idr_hooks.on_add
 	if on_add then
-		on_add(entity, data)
+		on_add(entity, id, data)
 	end
 end
 
@@ -929,7 +929,7 @@ local function world_remove(world: ecs_world_t, entity: i53, id: i53)
 		local idr = world.component_index[id]
 		local on_remove = idr.hooks.on_remove
 		if on_remove then
-			on_remove(entity)
+			on_remove(entity, id)
 		end
 
 		local to = archetype_traverse_remove(world, id, record.archetype)
@@ -981,7 +981,7 @@ local function archetype_delete(world: ecs_world_t, archetype: ecs_archetype_t, 
 		local idr = component_index[id]
 		local on_remove = idr.hooks.on_remove
 		if on_remove then
-			on_remove(delete)
+			on_remove(delete, id)
 		end
 	end
 
