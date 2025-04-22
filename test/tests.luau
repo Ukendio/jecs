@@ -22,6 +22,7 @@ type Entity<T=nil> = jecs.Entity<T>
 type Id<T=unknown> = jecs.Id<T>
 
 local entity_visualiser = require("@tools/entity_visualiser")
+local lifetime_tracker_add = require("@tools/lifetime_tracker")
 local dwi = entity_visualiser.stringify
 
 TEST("world:add()", function()
@@ -246,6 +247,7 @@ TEST("world:component()", function()
 end)
 
 TEST("world:contains()", function()
+	local tag = jecs.tag()
 	local world = jecs.world()
 	local id = world:entity()
 	CHECK(world:contains(id))
@@ -255,6 +257,9 @@ TEST("world:contains()", function()
 		world:delete(id)
 		CHECK(not world:contains(id))
 	end
+
+	CHECK(world:contains(tag))
+	jecs.ECS_META_RESET()
 end)
 
 TEST("world:delete()", function()
@@ -628,6 +633,7 @@ end)
 
 TEST("world:entity()", function()
 	local N = 2^8
+
 	do CASE "unique IDs"
 		local world = jecs.world()
 		local set = {}
@@ -1426,8 +1432,6 @@ TEST("#adding a recycled target", function()
     CHECK(world:target(e, R) ~= 0 :: any)
 
 end)
-
-
 
 TEST("#repro2", function()
 	local world = jecs.world()
