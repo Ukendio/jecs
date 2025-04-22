@@ -253,7 +253,6 @@ local function FOCUS()
 end
 
 local function FINISH(): number
-	local success = true
 	local total_cases = 0
 	local passed_cases = 0
 	local passed_focus_cases = 0

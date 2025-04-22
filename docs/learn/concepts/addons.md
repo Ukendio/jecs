@@ -8,17 +8,17 @@ A collection of third-party jecs addons made by the community. If you would like
 
 A jecs debugger with a string-based query language and entity editing capabilities.
 
-## [jecs_entity_visualiser](https://github.com/Ukendio/jecs/tree/main/addons/entity_visualiser)
+## [jecs_entity_visualiser](https://github.com/Ukendio/jecs/blob/main/addons/entity_visualiser.luau)
 
 A simple entity and component visualiser in the output
 
-## [jecs_lifetime_tracker](https://github.com/Ukendio/jecs/tree/main/addons/lifetime_tracker)
+## [jecs_lifetime_tracker](https://github.com/Ukendio/jecs/blob/main/addons/lifetime_tracker.luau)
 
 A tool for inspecting entity lifetimes
 
 # Helpers
 
-## [jecs_observers](https://github.com/Ukendio/jecs/tree/main/addons/observers)
+## [jecs_observers](https://github.com/Ukendio/jecs/blob/main/addons/observers.luau)
 
 Observers for queries and signals for components
 
@@ -40,5 +40,17 @@ Provides hooks and a scheduler that implements jabby and a topographical runtime
 
 An agnostic scheduler inspired by Bevy and Flecs, with core features including phases, pipelines, run conditions, and startup systems.
 Planck also provides plugins for Jabby, Matter Hooks, and more.
+
+# Replication
+
+## [feces](https://github.com/NeonD00m/feces)
+
+A generalized replication system for jecs
+
+# Input
+
+## [Axis](https://github.com/NeonD00m/axis)
+
+An agnostic, simple and versatile input library for ECS
 
 # Observers

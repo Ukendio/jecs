@@ -14,6 +14,10 @@ A (component) ID can be marked with `Tag´ in which the component will never con
 
 Hooks are part of the "interface" of a component. You could consider hooks as the counterpart to OOP methods in ECS. They define the behavior of a component, but can only be invoked through mutations on the component data. You can only configure a single `OnAdd`, `OnRemove` and `OnSet` hook per component, just like you can only have a single constructor and destructor.
 
+::: warning
+Hooks, added to a component that has already been added to other entities/components, will not be called.
+:::
+
 ## Examples
 
 ::: code-group

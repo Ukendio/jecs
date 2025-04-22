@@ -633,15 +633,14 @@ TEST("world:each()", function()
 	end
 end)
 
-FOCUS()
 TEST("world:entity()", function()
-	do CASE "range" 
+	do CASE "range"
 		local world = jecs.world()
 		world = lifetime_tracker_add(world, {})
 		world:range(1000, 2000)
 
 		world:entity(1590)
-		CHECK_EXPECT_ERR(function() 
+		CHECK_EXPECT_ERR(function()
 
 			world:entity(5000)
 		end)
@@ -654,7 +653,6 @@ TEST("world:entity()", function()
 	end
 	do CASE "desired id"
 		local world = jecs.world()
-		world = lifetime_tracker_add(world, {})
 		local id = world:entity()
 		local e = world:entity(id + 5)
 		CHECK(e == id + 5)
@@ -671,8 +669,7 @@ TEST("world:entity()", function()
 		CHECK(e3 == world:entity(e3))
 
 		world:delete(e3)
-	
-		print("---------------------------")
+
 		local e3v1 = world:entity(275)
 		CHECK(not world:contains(275))
 		CHECK(jecs.ECS_GENERATION(e3v1) == 1)
@@ -681,11 +678,7 @@ TEST("world:entity()", function()
 
 		CHECK(world:contains(e3v1))
 		-- world:print_entity_index()
-		print("--------begin")
 		world:entity(e3)
-		print("-----end")
-
-		world:print_entity_index()
 
 		world:entity(e3)
 		world:entity(275)
