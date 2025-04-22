@@ -2,35 +2,25 @@
 --!native
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Matter = require(ReplicatedStorage.DevPackages.Matter)
-local ecr = require(ReplicatedStorage.DevPackages.ecr)
-local jecs = require(ReplicatedStorage.Lib)
-local newWorld = Matter.World.new()
+local jecs = require(ReplicatedStorage.Lib:Clone())
+local mirror = require(ReplicatedStorage.mirror:Clone())
+
 local ecs = jecs.World.new()
+local mcs = mirror.world()
 
 return {
 	ParameterGenerator = function()
-		local registry2 = ecr.registry()
-
-		return registry2
 	end,
 
 	Functions = {
-		Matter = function()
-			for i = 1, 1000 do
-				newWorld:spawn()
+		Mirror = function() 
+			for i = 1000, 1100 do 
+				mcs:entity(i)
 			end
 		end,
-
-		ECR = function(_, registry2)
-			for i = 1, 1000 do
-				registry2.create()
-			end
-		end,
-
 		Jecs = function()
 			for i = 1, 1000 do
-				ecs:entity()
+				ecs:entity(i)
 			end
 		end,
 	},

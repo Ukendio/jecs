@@ -45,9 +45,9 @@ type ecs_id_record_t = {
 	flags: number,
 	size: number,
 	hooks: {
-		on_add: ((entity: i53, data: any?) -> ())?,
-		on_change: ((entity: i53, data: any) -> ())?,
-		on_remove: ((entity: i53) -> ())?,
+		on_add: ((entity: i53, id: i53, data: any?) -> ())?,
+		on_change: ((entity: i53, id: i53, data: any) -> ())?,
+		on_remove: ((entity: i53, id: i53) -> ())?,
 	},
 }
 
@@ -62,6 +62,8 @@ type ecs_entity_index_t = {
 	sparse_array: Map<i24, ecs_record_t>,
 	alive_count: number,
 	max_id: number,
+	range_begin: number?,
+	range_end: number?
 }
 
 type ecs_query_data_t = {
@@ -118,6 +120,7 @@ local ECS_GENERATION_MASK =          bit32.lshift(1, 16)
 
 local NULL_ARRAY = table.freeze({}) :: Column
 local NULL = newproxy(false)
+local NULL_RECORD = table.freeze({ dense = 0 }) :: ecs_record_t
 
 local ECS_INTERNAL_ERROR = [[
 	This is an internal error, please file a bug report via the following link:
@@ -144,7 +147,7 @@ end
 
 local function ECS_META(id: i53, ty: i53, value: any?)
 	local bundle = ecs_metadata[id]
-	if bundle then
+	if bundle == nil then
 		bundle = {}
 		ecs_metadata[id] = bundle
 	end
@@ -182,6 +185,10 @@ local function ECS_GENERATION_INC(e: i53): i53
 end
 
 local function ECS_ENTITY_T_LO(e: i53): i24
+	return e % ECS_ENTITY_MASK
+end
+
+local function ECS_ID(e: i53)
 	return e % ECS_ENTITY_MASK
 end
 
@@ -249,10 +256,10 @@ local function entity_index_is_alive(entity_index: ecs_entity_index_t, entity: i
 	return entity_index_try_get(entity_index, entity) ~= nil
 end
 
-local function entity_index_get_alive(index: ecs_entity_index_t, entity: i53): i53?
-	local r = entity_index_try_get_any(index, entity)
+local function entity_index_get_alive(entity_index: ecs_entity_index_t, entity: i53): i53?
+	local r = entity_index_try_get_any(entity_index, entity)
 	if r then
-		return index.dense_array[r.dense]
+		return entity_index.dense_array[r.dense]
 	end
 	return nil
 end
@@ -283,8 +290,10 @@ end
 local function entity_index_new_id(entity_index: ecs_entity_index_t): i53
 	local dense_array = entity_index.dense_array
 	local alive_count = entity_index.alive_count
+	local sparse_array = entity_index.sparse_array
 	local max_id = entity_index.max_id
-	if alive_count ~= max_id then
+
+	if alive_count < max_id then
 		alive_count += 1
 		entity_index.alive_count = alive_count
 		local id = dense_array[alive_count]
@@ -292,11 +301,15 @@ local function entity_index_new_id(entity_index: ecs_entity_index_t): i53
 	end
 
 	local id = max_id + 1
+	local range_end = entity_index.range_end
+	if range_end then
+		assert(id < range_end)
+	end
 	entity_index.max_id = id
 	alive_count += 1
 	entity_index.alive_count = alive_count
 	dense_array[alive_count] = id
-	entity_index.sparse_array[id] = { dense = alive_count } :: ecs_record_t
+	sparse_array[id] = { dense = alive_count } :: ecs_record_t
 
 	return id
 end
@@ -498,6 +511,14 @@ local function world_has_one_inline(world: ecs_world_t, entity: i53, id: i53): b
 	local records = archetype.records
 
 	return records[id] ~= nil
+end
+
+local function ecs_is_tag(world: ecs_world_t, entity: i53): boolean
+	local idr = world.component_index[entity]
+	if idr then
+		return bit32.band(idr.flags, ECS_ID_IS_TAG) ~= 0
+	end
+	return not world_has_one_inline(world, entity, EcsComponent)
 end
 
 local function world_has(world: ecs_world_t, entity: i53,
@@ -711,8 +732,117 @@ local function archetype_create(world: ecs_world_t, id_types: { i24 }, ty, prev:
 	return archetype
 end
 
-local function world_entity(world: ecs_world_t): i53
-	return entity_index_new_id(world.entity_index)
+local function world_range(world: ecs_world_t, range_begin: number, range_end: number?)
+	local entity_index = world.entity_index
+	if range_end then
+		range_end += 1
+	end
+
+	entity_index.range_begin = range_begin
+	entity_index.range_end = range_end
+
+	local max_id = entity_index.max_id
+	local dense_array = entity_index.dense_array
+	local sparse_array = entity_index.sparse_array
+
+	if range_begin > max_id then
+		for i = max_id, range_begin - 1 do
+			dense_array[i] = 0
+			sparse_array[i] = NULL_RECORD
+		end
+		sparse_array[range_begin] = { dense = 0 } :: ecs_record_t
+	end
+
+	entity_index.max_id = range_begin
+	entity_index.alive_count = range_begin
+end
+
+local function world_entity(world: ecs_world_t, entity: i53?): i53
+	local entity_index = world.entity_index
+	if entity then
+		local index = ECS_ID(entity)
+		local range_begin = entity_index.range_begin
+		if range_begin then
+			assert(index > range_begin)
+		end
+		local max_id = entity_index.max_id
+		local sparse_array = entity_index.sparse_array
+		local dense_array = entity_index.dense_array
+		local alive_count = entity_index.alive_count
+		local r = sparse_array[index]
+		if r then
+			local dense = r.dense
+			if not dense or dense == 0 then
+				dense = index
+			end
+			local any = dense_array[dense]
+			if any == entity then
+				if alive_count > dense then
+					return entity
+				end
+				local e_swap = dense_array[alive_count]
+				local r_swap = sparse_array[alive_count]
+				r_swap.dense = dense
+				r.dense = alive_count
+				dense_array[alive_count] = entity
+				dense_array[dense] = e_swap
+				return entity
+			end
+
+			if any ~= 0 then
+				local e_swap = dense_array[alive_count]
+				local r_swap = sparse_array[alive_count]
+
+				if dense > alive_count then
+					r_swap.dense = dense
+					r.dense = alive_count
+					dense_array[alive_count] = any
+					dense_array[dense] = e_swap
+				else
+					r_swap.dense = dense
+					-- alive_count += 1
+					alive_count += 1
+					entity_index.alive_count = alive_count
+					r.dense = alive_count
+					dense_array[alive_count] = any
+					dense_array[dense] = e_swap
+				end
+				return any
+			else
+				error("should never happen")
+			end
+		else
+			local range_end = entity_index.range_end
+			if range_end then
+				assert(index < range_end)
+			end
+			for i = max_id + 1, index do
+				sparse_array[i]	= { dense = i } :: ecs_record_t
+				dense_array[i] = i
+			end
+			entity_index.max_id = index
+
+			local e_swap = dense_array[alive_count]
+			local r_swap = sparse_array[alive_count]
+			r_swap.dense = index
+
+			alive_count += 1
+			entity_index.alive_count = alive_count
+
+			r = sparse_array[index]
+
+			r.dense = alive_count
+
+			sparse_array[index] = r
+
+			dense_array[index] = e_swap
+			dense_array[alive_count] = entity
+
+
+			return entity
+		end
+	end
+	return entity_index_new_id(entity_index, entity)
 end
 
 local function world_parent(world: ecs_world_t, entity: i53)
@@ -849,7 +979,7 @@ local function world_add(
 	local on_add = idr.hooks.on_add
 
 	if on_add then
-		on_add(entity)
+		on_add(entity, id)
 	end
 end
 
@@ -874,7 +1004,7 @@ local function world_set(world: ecs_world_t, entity: i53, id: i53, data: unknown
 		-- and just set the data directly.
 		local on_change = idr_hooks.on_change
 		if on_change then
-			on_change(entity, data)
+			on_change(entity, id, data)
 		end
 
 		return
@@ -897,7 +1027,7 @@ local function world_set(world: ecs_world_t, entity: i53, id: i53, data: unknown
 
 	local on_add = idr_hooks.on_add
 	if on_add then
-		on_add(entity, data)
+		on_add(entity, id, data)
 	end
 end
 
@@ -929,7 +1059,7 @@ local function world_remove(world: ecs_world_t, entity: i53, id: i53)
 		local idr = world.component_index[id]
 		local on_remove = idr.hooks.on_remove
 		if on_remove then
-			on_remove(entity)
+			on_remove(entity, id)
 		end
 
 		local to = archetype_traverse_remove(world, id, record.archetype)
@@ -981,7 +1111,7 @@ local function archetype_delete(world: ecs_world_t, archetype: ecs_archetype_t, 
 		local idr = component_index[id]
 		local on_remove = idr.hooks.on_remove
 		if on_remove then
-			on_remove(delete)
+			on_remove(delete, id)
 		end
 	end
 
@@ -1041,7 +1171,7 @@ local function world_clear(world: ecs_world_t, entity: i53)
 					continue
 				end
 				if not ids then
-					ids = {}
+					ids = {} :: { [i53]: boolean }
 				end
 				ids[id] = true
 				removal_queued = true
@@ -1052,7 +1182,7 @@ local function world_clear(world: ecs_world_t, entity: i53)
 			end
 
 			if not queue then
-				queue = {}
+				queue = {} :: { i53 }
 			end
 
 			local n = #entities
@@ -1242,7 +1372,7 @@ local function world_delete(world: ecs_world_t, entity: i53)
 					break
 				else
 					if not ids then
-						ids = {}
+						ids = {} :: { [i53]: boolean }
 					end
 					ids[id] = true
 					removal_queued = true
@@ -1253,7 +1383,7 @@ local function world_delete(world: ecs_world_t, entity: i53)
 				continue
 			end
 			if not children then
-				children = {}
+				children = {} :: { i53 }
 			end
 			local n = #entities
 			table.move(entities, 1, n, count + 1, children)
@@ -2303,6 +2433,8 @@ export type EntityIndex = {
 	sparse_array: Map<i24, Record>,
 	alive_count: number,
 	max_id: number,
+	range_begin: number?,
+	range_end: number?
 }
 
 local World = {}
@@ -2324,6 +2456,7 @@ World.contains = world_contains
 World.cleanup = world_cleanup
 World.each = world_each
 World.children = world_children
+World.range = world_range
 
 local function world_new()
 	local entity_index = {
@@ -2364,16 +2497,6 @@ local function world_new()
 		entity_index_new_id(entity_index)
 	end
 
-	for i, bundle in ecs_metadata do
-		for ty, value in bundle do
-			if value == NULL then
-				world_add(self, i, ty)
-			else
-				world_set(self, i, ty, value)
-			end
-		end
-	end
-
 	world_add(self, EcsName, EcsComponent)
 	world_add(self, EcsOnChange, EcsComponent)
 	world_add(self, EcsOnAdd, EcsComponent)
@@ -2395,6 +2518,16 @@ local function world_new()
 	world_set(self, EcsRest, EcsRest, "jecs.Rest")
 
 	world_add(self, EcsChildOf, ECS_PAIR(EcsOnDeleteTarget, EcsDelete))
+
+	for i, bundle in ecs_metadata do
+		for ty, value in bundle do
+			if value == NULL then
+				world_add(self, i, ty)
+			else
+				world_set(self, i, ty, value)
+			end
+		end
+	end
 
 	return self
 end
@@ -2523,6 +2656,7 @@ return {
 	component = (ECS_COMPONENT :: any) :: <T>() -> Entity<T>,
 	tag = (ECS_TAG :: any) :: <T>() -> Entity<T>,
 	meta = (ECS_META :: any) :: <T>(id: Entity, id: Id<T>, value: T) -> Entity<T>,
+	is_tag = (ecs_is_tag :: any) :: <T>(World, Id<T>) -> boolean,
 
 	OnAdd = EcsOnAdd :: Entity<(entity: Entity) -> ()>,
 	OnRemove = EcsOnRemove :: Entity<(entity: Entity) -> ()>,
@@ -2549,6 +2683,8 @@ return {
 	ECS_META_RESET = ECS_META_RESET,
 
 	IS_PAIR = (ECS_IS_PAIR :: any) :: <P, O>(pair: Pair<P, O>) -> boolean,
+	ECS_PAIR_FIRST = ECS_PAIR_FIRST,
+	ECS_PAIR_SECOND = ECS_PAIR_SECOND,
 	pair_first = (ecs_pair_first :: any) :: <P, O>(world: World, pair: Pair<P, O>) -> Id<P>,
 	pair_second = (ecs_pair_second :: any) :: <P, O>(world: World, pair: Pair<P, O>) -> Id<O>,
 	entity_index_get_alive = entity_index_get_alive,

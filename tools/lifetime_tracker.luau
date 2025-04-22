@@ -28,7 +28,7 @@ end
 local padding_enabled = false
 local function pad()
 	if padding_enabled then
-		print("")
+		print("------------------")
 	end
 end
 
@@ -64,7 +64,8 @@ local function lifetime_tracker_add(world: jecs.World, opt): PatchedWorld
 	world.print_entity_index = function()
 		local max_id = entity_index.max_id
 		local alive_count = entity_index.alive_count
-		local alive = table.move(dense_array, 1 + jecs.Rest :: any, alive_count, 1, {})
+		local range_begin = entity_index.range_begin or jecs.Rest + 1
+		local alive = table.move(dense_array, range_begin :: any, alive_count, 1, {})
 		local dead = table.move(dense_array, alive_count + 1, max_id, 1, {})
 
 		local sep = "|--------|"

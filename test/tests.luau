@@ -22,6 +22,7 @@ type Entity<T=nil> = jecs.Entity<T>
 type Id<T=unknown> = jecs.Id<T>
 
 local entity_visualiser = require("@tools/entity_visualiser")
+local lifetime_tracker_add = require("@tools/lifetime_tracker")
 local dwi = entity_visualiser.stringify
 
 TEST("world:add()", function()
@@ -246,6 +247,8 @@ TEST("world:component()", function()
 end)
 
 TEST("world:contains()", function()
+
+	local tag = jecs.tag()
 	local world = jecs.world()
 	local id = world:entity()
 	CHECK(world:contains(id))
@@ -255,6 +258,10 @@ TEST("world:contains()", function()
 		world:delete(id)
 		CHECK(not world:contains(id))
 	end
+
+
+	CHECK(world:contains(tag))
+	jecs.ECS_META_RESET()
 end)
 
 TEST("world:delete()", function()
@@ -626,8 +633,65 @@ TEST("world:each()", function()
 	end
 end)
 
+FOCUS()
 TEST("world:entity()", function()
+	do CASE "range" 
+		local world = jecs.world()
+		world = lifetime_tracker_add(world, {})
+		world:range(1000, 2000)
+
+		world:entity(1590)
+		CHECK_EXPECT_ERR(function() 
+
+			world:entity(5000)
+		end)
+
+		CHECK(world:contains(1590))
+		world:set(591, jecs.Name, "9888")
+		CHECK(not world:contains(591))
+		CHECK(not world:contains(5000))
+		CHECK(not world:contains(988))
+	end
+	do CASE "desired id"
+		local world = jecs.world()
+		world = lifetime_tracker_add(world, {})
+		local id = world:entity()
+		local e = world:entity(id + 5)
+		CHECK(e == id + 5)
+		CHECK(world:contains(e))
+		local e2 = world:entity()
+		CHECK(world:contains(e2))
+
+		-- world:print_entity_index()
+		local e3 = world:entity(275)
+
+		CHECK(e3 == 275)
+		CHECK(world:contains(e3))
+
+		CHECK(e3 == world:entity(e3))
+
+		world:delete(e3)
+	
+		print("---------------------------")
+		local e3v1 = world:entity(275)
+		CHECK(not world:contains(275))
+		CHECK(jecs.ECS_GENERATION(e3v1) == 1)
+		CHECK(jecs.ECS_ID(e3v1) == 275)
+
+
+		CHECK(world:contains(e3v1))
+		-- world:print_entity_index()
+		print("--------begin")
+		world:entity(e3)
+		print("-----end")
+
+		world:print_entity_index()
+
+		world:entity(e3)
+		world:entity(275)
+	end
 	local N = 2^8
+
 	do CASE "unique IDs"
 		local world = jecs.world()
 		local set = {}
@@ -1426,8 +1490,6 @@ TEST("#adding a recycled target", function()
     CHECK(world:target(e, R) ~= 0 :: any)
 
 end)
-
-
 
 TEST("#repro2", function()
 	local world = jecs.world()

@@ -226,8 +226,9 @@ local function CHECK<T>(value: T, stack: number?): T?
 	return value
 end
 
-local function TEST(name: string, fn: () -> ())
+local test_focused = false
 
+local function TEST(name: string, fn: () -> ())
 	test = {
 		name = name,
 		cases = {},
@@ -235,21 +236,20 @@ local function TEST(name: string, fn: () -> ())
 		focus = false,
 		fn = fn
 	}
-
+	
 	local t = test
+
+	if check_for_focused and not test_focused then 
+		test.focus = true
+		test_focused = true
+	end
 
 	table.insert(tests, t)
 end
 
 local function FOCUS()
-	assert(test, "no active test")
-
 	check_for_focused = true
-	if test.case then
-		test.case.focus = true
-	else
-		test.focus = true
-	end
+	test_focused = false
 end
 
 local function FINISH(): number
