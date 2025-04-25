@@ -215,11 +215,11 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 			end
 			world:set(component, jecs.OnAdd, on_add)
 		end
-		local max = #listeners + 1
-		listeners[max] = fn
+		table.insert(listeners, fn)
 		return function()
 			local n = #listeners
-			listeners[max] = listeners[n]
+			local i = table.find(listeners, fn)
+			listeners[i] = listeners[n]
 			listeners[n] = nil
 		end
 	end
@@ -238,11 +238,11 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 			end
 			world:set(component, jecs.OnChange, on_change)
 		end
-		local max = #listeners + 1
-		listeners[max] = fn
+		table.insert(listeners, fn)
 		return function()
 			local n = #listeners
-			listeners[max] = listeners[n]
+			local i = table.find(listeners, fn)
+			listeners[i] = listeners[n]
 			listeners[n] = nil
 		end
 	end
@@ -261,11 +261,11 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 			end
 			world:set(component, jecs.OnRemove, on_remove)
 		end
-		local max = #listeners + 1
-		listeners[max] = fn
+		table.insert(listeners, fn)
 		return function()
 			local n = #listeners
-			listeners[max] = listeners[n]
+			local i = table.find(listeners, fn)
+			listeners[i] = listeners[n]
 			listeners[n] = nil
 		end
 	end
