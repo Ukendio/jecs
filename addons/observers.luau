@@ -116,7 +116,6 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 			end
 			world:set(component, jecs.OnAdd, on_add)
 		end
-		table.insert(listeners, fn)
 		listeners[max] = fn
 		return function()
 			local n = #listeners
