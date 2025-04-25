@@ -746,19 +746,19 @@ local function world_range(world: ecs_world_t, range_begin: number, range_end: n
 	entity_index.range_end = range_end
 
 	local max_id = entity_index.max_id
-	local dense_array = entity_index.dense_array
-	local sparse_array = entity_index.sparse_array
 
 	if range_begin > max_id then
+		local dense_array = entity_index.dense_array
+		local sparse_array = entity_index.sparse_array
+
 		for i = max_id, range_begin - 1 do
 			dense_array[i] = 0
 			sparse_array[i] = NULL_RECORD
 		end
 		sparse_array[range_begin] = { dense = 0 } :: ecs_record_t
+		entity_index.max_id = range_begin - 1
+		entity_index.alive_count = range_begin - 1
 	end
-
-	entity_index.max_id = range_begin - 1
-	entity_index.alive_count = range_begin - 1
 end
 
 local function world_entity(world: ecs_world_t, entity: i53?): i53
