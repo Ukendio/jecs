@@ -24,7 +24,7 @@ local function observers_new(world, description)
 	end
 
 	local entity_index = world.entity_index :: any
-	local function emplaced(entity: jecs.Entity)
+	local function emplaced(entity, id, value)
 		local r = jecs.entity_index_try_get_fast(
 			entity_index, entity :: any)
 
@@ -43,6 +43,112 @@ local function observers_new(world, description)
 		world:added(term, emplaced)
 		world:changed(term, emplaced)
  	end
+end
+
+
+local function join(world, component)
+	local sparse_array = {}
+	local dense_array = {}
+	local values = {}
+	local max_id = 0
+
+	world:added(component, function(entity, id, value)
+		max_id += 1
+		sparse_array[entity] = max_id
+		dense_array[max_id] = entity
+		values[max_id] = value
+	end)
+
+	world:removed(component, function(entity, id)
+		local e_swap = dense_array[max_id]
+		local v_swap = values[max_id]
+
+		local dense = sparse_array[entity]
+		dense_array[dense] = e_swap
+		values[dense] = v_swap
+
+		sparse_array[entity] = nil
+		dense_array[max_id] = nil
+		values[max_id] = nil
+	end)
+
+	world:changed(component, function(entity, id, value)
+		values[sparse_array[entity]] = value
+	end)
+
+	return function()
+		local i = max_id
+		return function(): ...any
+			i -= 1
+			if i == 0 then
+				return nil
+			end
+			local e = dense_array[i]
+			return e, values[i]
+		end
+	end
+end
+
+local positions_join = join(world, Position)
+
+for e, v in positions_join() do
+
+end
+
+local function query_changed(world, component)
+	assert(jecs.IS_PAIR(component) == false)
+	local callerid = debug.info(2, "sl")
+
+	local tracker = world.trackers[callerid]
+	if not tracker then
+		local records = {}
+		local connections = {}
+		tracker = {
+			records = records,
+			connections = connections
+		}
+		world.trackers[callerid] = tracker
+
+		table.insert(connections, world:added(component, function(entity, id, v)
+			tracker[entity] = {
+				new = v
+			}
+		end))
+		table.insert(connections, world:changed(component, function(entity, id, v)
+			local record = tracker[entity]
+			record.old = record.new
+			record.new = v
+		end))
+
+		table.insert(connections, world:removed(component, function(entity, id)
+			local record = tracker[entity]
+			record.old = record.new
+			record.new = nil
+		end))
+	end
+
+	local entity = nil
+	local record = nil
+	return function()
+		entity, record = next(tracker, entity)
+		if entity == nil then
+			return
+		end
+		return entity, record
+	end
+end
+
+local function spy_on_world_delete(world)
+	local world_delete = world.delete
+	world.delete = function(world, entity)
+		world_delete(world, entity)
+		for _, tracker in world.trackers do
+			tracker.records[entity] = nil
+			for _, connection in tracker.connections do
+				connection()
+			end
+		end
+	end
 end
 
 local function monitors_new(world, description)
@@ -178,6 +284,8 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 	world.observer = observers_new
 
 	world.monitor = monitors_new
+
+	world.trackers = {}
 
 	return world :: PatchedWorld
 end
