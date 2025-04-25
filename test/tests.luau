@@ -633,11 +633,13 @@ TEST("world:each()", function()
 	end
 end)
 
-TEST("world:entity()", function()
+TEST("world:range()", function()
 	do CASE "range"
 		local world = jecs.world()
 		world = lifetime_tracker_add(world, {})
 		world:range(1000, 2000)
+		local e = world:entity()
+		CHECK(e == 1000)
 
 		world:entity(1590)
 		CHECK_EXPECT_ERR(function()
@@ -650,7 +652,13 @@ TEST("world:entity()", function()
 		CHECK(not world:contains(591))
 		CHECK(not world:contains(5000))
 		CHECK(not world:contains(988))
+
+		local e = world:entity(2000)
+		CHECK(e == 2000)
 	end
+end)
+
+TEST("world:entity()", function()
 	do CASE "desired id"
 		local world = jecs.world()
 		local id = world:entity()

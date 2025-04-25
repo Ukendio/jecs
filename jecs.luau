@@ -128,6 +128,12 @@ local ECS_INTERNAL_ERROR = [[
 	https://github.com/Ukendio/jecs/issues/new?template=BUG-REPORT.md
 ]]
 
+local function ecs_assert(condition, msg: string?)
+	if not condition then
+		error(msg)
+	end
+end
+
 local ecs_metadata: Map<i53, Map<i53, any>> = {}
 local ecs_max_component_id = 0
 local ecs_max_tag_id = EcsRest
@@ -287,6 +293,8 @@ local function ecs_get_alive(world, entity)
 	return current
 end
 
+local ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY = "Entity is outside range"
+
 local function entity_index_new_id(entity_index: ecs_entity_index_t): i53
 	local dense_array = entity_index.dense_array
 	local alive_count = entity_index.alive_count
@@ -302,9 +310,8 @@ local function entity_index_new_id(entity_index: ecs_entity_index_t): i53
 
 	local id = max_id + 1
 	local range_end = entity_index.range_end
-	if range_end then
-		assert(id < range_end)
-	end
+	ecs_assert(range_end == nil or id < range_end, ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
+
 	entity_index.max_id = id
 	alive_count += 1
 	entity_index.alive_count = alive_count
@@ -596,10 +603,10 @@ local function id_record_ensure(world: ecs_world_t, id: number): ecs_id_record_t
 	local is_pair = ECS_IS_PAIR(id)
 	if is_pair then
 		relation = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id)) :: i53
-		assert(relation and entity_index_is_alive(
+		ecs_assert(relation and entity_index_is_alive(
 			entity_index, relation), ECS_INTERNAL_ERROR)
 		target = entity_index_get_alive(entity_index, ECS_PAIR_SECOND(id)) :: i53
-		assert(target and entity_index_is_alive(
+		ecs_assert(target and entity_index_is_alive(
 			entity_index, target), ECS_INTERNAL_ERROR)
 	end
 
@@ -734,9 +741,6 @@ end
 
 local function world_range(world: ecs_world_t, range_begin: number, range_end: number?)
 	local entity_index = world.entity_index
-	if range_end then
-		range_end += 1
-	end
 
 	entity_index.range_begin = range_begin
 	entity_index.range_end = range_end
@@ -753,8 +757,8 @@ local function world_range(world: ecs_world_t, range_begin: number, range_end: n
 		sparse_array[range_begin] = { dense = 0 } :: ecs_record_t
 	end
 
-	entity_index.max_id = range_begin
-	entity_index.alive_count = range_begin
+	entity_index.max_id = range_begin - 1
+	entity_index.alive_count = range_begin - 1
 end
 
 local function world_entity(world: ecs_world_t, entity: i53?): i53
@@ -762,9 +766,12 @@ local function world_entity(world: ecs_world_t, entity: i53?): i53
 	if entity then
 		local index = ECS_ID(entity)
 		local range_begin = entity_index.range_begin
-		if range_begin then
-			assert(index > range_begin)
-		end
+		local range_end = entity_index.range_end
+		ecs_assert(range_begin == nil or index >= range_begin,
+			ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
+		ecs_assert(range_end == nil or index <= range_end,
+			ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
+
 		local max_id = entity_index.max_id
 		local sparse_array = entity_index.sparse_array
 		local dense_array = entity_index.dense_array
@@ -805,10 +812,6 @@ local function world_entity(world: ecs_world_t, entity: i53?): i53
 			dense_array[dense] = e_swap
 			return any
 		else
-			local range_end = entity_index.range_end
-			if range_end then
-				assert(index < range_end)
-			end
 			for i = max_id + 1, index do
 				sparse_array[i]	= { dense = i } :: ecs_record_t
 				dense_array[i] = i
@@ -2571,6 +2574,9 @@ export type World = {
 	max_archetype_id: number,
 
 	observable: any,
+
+	--- Enforce a check on entities to be created within desired range
+	range: (self: World, range_begin: number, range_end: number?) -> (),
 
 	--- Creates a new entity
 	entity: (self: World, id: Entity?) -> Entity,
