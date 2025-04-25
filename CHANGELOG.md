@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 ## [Unreleased]
 
 -   `[world]`:
+    -   Added `world:range` to allow for creating
     -   Changed `world:clear` to also look through the component record for the cleared `ID`
         -   Removes the cleared ID from every entity that has it
     -   Changed entity ID layouts by putting the index in the lower bits, which should make every world function 1-5 nanoseconds faster

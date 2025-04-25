@@ -5,23 +5,29 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local jecs = require(ReplicatedStorage.Lib:Clone())
 local mirror = require(ReplicatedStorage.mirror:Clone())
 
-local ecs = jecs.World.new()
-local mcs = mirror.world()
+
 
 return {
 	ParameterGenerator = function()
+		local ecs = jecs.world()
+		ecs:range(1000, 20000)
+		local mcs = mirror.World.new()
+		return ecs, mcs
 	end,
 
 	Functions = {
-		Mirror = function() 
-			for i = 1000, 1100 do 
-				mcs:entity(i)
+		Mirror = function(_, ecs, mcs)
+			for i = 1, 100 do
+
+				mcs:entity()
 			end
 		end,
-		Jecs = function()
-			for i = 1, 1000 do
-				ecs:entity(i)
+
+		Jecs = function(_, ecs, mcs)
+			for i = 1, 100 do
+
+				ecs:entity()
 			end
 		end,
-	},
+},
 }

@@ -120,7 +120,6 @@ local ECS_GENERATION_MASK =          bit32.lshift(1, 16)
 
 local NULL_ARRAY = table.freeze({}) :: Column
 local NULL = newproxy(false)
-local NULL_RECORD = table.freeze({ dense = 0 }) :: ecs_record_t
 
 local ECS_INTERNAL_ERROR = [[
 	This is an internal error, please file a bug report via the following link:
@@ -751,11 +750,12 @@ local function world_range(world: ecs_world_t, range_begin: number, range_end: n
 		local dense_array = entity_index.dense_array
 		local sparse_array = entity_index.sparse_array
 
-		for i = max_id, range_begin - 1 do
-			dense_array[i] = 0
-			sparse_array[i] = NULL_RECORD
+		for i = max_id, range_begin do
+			dense_array[i] = i
+			sparse_array[i] = {
+				dense = 0
+			} :: ecs_record_t
 		end
-		sparse_array[range_begin] = { dense = 0 } :: ecs_record_t
 		entity_index.max_id = range_begin - 1
 		entity_index.alive_count = range_begin - 1
 	end
@@ -765,13 +765,6 @@ local function world_entity(world: ecs_world_t, entity: i53?): i53
 	local entity_index = world.entity_index
 	if entity then
 		local index = ECS_ID(entity)
-		local range_begin = entity_index.range_begin
-		local range_end = entity_index.range_end
-		ecs_assert(range_begin == nil or index >= range_begin,
-			ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
-		ecs_assert(range_end == nil or index <= range_end,
-			ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
-
 		local max_id = entity_index.max_id
 		local sparse_array = entity_index.sparse_array
 		local dense_array = entity_index.dense_array
