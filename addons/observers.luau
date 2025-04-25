@@ -93,14 +93,16 @@ local function monitors_new(world, description)
 end
 
 local function observers_add(world: jecs.World & { [string]: any }): PatchedWorld
+	type Signal = { [jecs.Entity]: { (...any) -> () } }
 	local signals = {
-		added = {},
-		emplaced = {},
-		removed = {}
+		added = {} :: Signal,
+		emplaced = {} :: Signal,
+		removed = {} :: Signal
 	}
 
 	world.added = function(_, component, fn)
 		local listeners = signals.added[component]
+		local max = #listeners + 1
 		local component_index = world.component_index :: jecs.ComponentIndex
 		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
@@ -115,14 +117,22 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 			world:set(component, jecs.OnAdd, on_add)
 		end
 		table.insert(listeners, fn)
+		listeners[max] = fn
+		return function()
+			local n = #listeners
+			listeners[max] = listeners[n]
+			listeners[n] = nil
+		end
 	end
 
 	world.changed = function(_, component, fn)
 		local listeners = signals.emplaced[component]
+		local max = 0
 		local component_index = world.component_index :: jecs.ComponentIndex
 		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
 			listeners = {}
+			max = 1
 			signals.emplaced[component] = listeners
 			local function on_change(entity: number, id: number, value: any)
 				for _, listener in listeners :: any do
@@ -130,12 +140,20 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 				end
 			end
 			world:set(component, jecs.OnChange, on_change)
+		else
+			max = #listeners + 1
 		end
-		table.insert(listeners, fn)
+		listeners[max] = fn
+		return function()
+			local n = #listeners
+			listeners[max] = listeners[n]
+			listeners[n] = nil
+		end
 	end
 
 	world.removed = function(_, component, fn)
 		local listeners = signals.removed[component]
+		local max = #listeners
 		local component_index = world.component_index :: jecs.ComponentIndex
 		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
@@ -148,7 +166,12 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 			end
 			world:set(component, jecs.OnRemove, on_remove)
 		end
-		table.insert(listeners, fn)
+		listeners[max] = fn
+		return function()
+			local n = #listeners
+			listeners[max] = listeners[n]
+			listeners[n] = nil
+		end
 	end
 
 	world.signals = signals
