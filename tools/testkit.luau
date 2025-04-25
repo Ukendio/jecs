@@ -229,7 +229,6 @@ end
 local test_focused = false
 
 local function TEST(name: string, fn: () -> ())
-
 	test = {
 		name = name,
 		cases = {},
@@ -237,19 +236,18 @@ local function TEST(name: string, fn: () -> ())
 		focus = false,
 		fn = fn
 	}
-
+	
 	local t = test
 
-	if check_for_focused and not test_focused then
+	if check_for_focused and not test_focused then 
 		test.focus = true
 		test_focused = true
 	end
+
 	table.insert(tests, t)
 end
 
 local function FOCUS()
-	assert(test, "no active test")
-
 	check_for_focused = true
 	test_focused = false
 end

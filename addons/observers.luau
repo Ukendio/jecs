@@ -89,12 +89,6 @@ local function join(world, component)
 	end
 end
 
-local positions_join = join(world, Position)
-
-for e, v in positions_join() do
-
-end
-
 local function query_changed(world, component)
 	assert(jecs.IS_PAIR(component) == false)
 	local callerid = debug.info(2, "sl")
@@ -208,12 +202,12 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 
 	world.added = function(_, component, fn)
 		local listeners = signals.added[component]
-		local max = #listeners + 1
 		local component_index = world.component_index :: jecs.ComponentIndex
 		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
 			listeners = {}
 			signals.added[component] = listeners
+
 			local function on_add(entity: number, id: number, value: any)
 				for _, listener in listeners :: any do
 					listener(entity, id, value)
@@ -221,22 +215,21 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 			end
 			world:set(component, jecs.OnAdd, on_add)
 		end
-		listeners[max] = fn
+		table.insert(listeners, fn)
 		return function()
 			local n = #listeners
-			listeners[max] = listeners[n]
+			local i = table.find(listeners, fn)
+			listeners[i] = listeners[n]
 			listeners[n] = nil
 		end
 	end
 
 	world.changed = function(_, component, fn)
 		local listeners = signals.emplaced[component]
-		local max = 0
 		local component_index = world.component_index :: jecs.ComponentIndex
 		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
 			listeners = {}
-			max = 1
 			signals.emplaced[component] = listeners
 			local function on_change(entity: number, id: number, value: any)
 				for _, listener in listeners :: any do
@@ -244,18 +237,18 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 				end
 			end
 			world:set(component, jecs.OnChange, on_change)
-		else
-			max = #listeners + 1
 		end
-		listeners[max] = fn
+		table.insert(listeners, fn)
 		return function()
-
+			local n = #listeners
+			local i = table.find(listeners, fn)
+			listeners[i] = listeners[n]
+			listeners[n] = nil
 		end
 	end
 
 	world.removed = function(_, component, fn)
 		local listeners = signals.removed[component]
-		local max = #listeners
 		local component_index = world.component_index :: jecs.ComponentIndex
 		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
@@ -268,10 +261,11 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 			end
 			world:set(component, jecs.OnRemove, on_remove)
 		end
-		listeners[max] = fn
+		table.insert(listeners, fn)
 		return function()
 			local n = #listeners
-			listeners[max] = listeners[n]
+			local i = table.find(listeners, fn)
+			listeners[i] = listeners[n]
 			listeners[n] = nil
 		end
 	end

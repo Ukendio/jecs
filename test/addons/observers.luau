@@ -87,10 +87,10 @@ TEST("addons/observers", function()
 		local A = world:component()
 
 		local callcount = 0
-		world:added(A, function(entity)
+		world:added(A, function(entity) 
 			callcount += 1
 		end)
-		world:added(A, function(entity)
+		world:added(A, function(entity) 
 			callcount += 1
 		end)
 

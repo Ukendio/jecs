@@ -4,10 +4,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Matter = require(ReplicatedStorage.DevPackages.Matter)
 local ecr = require(ReplicatedStorage.DevPackages.ecr)
-local jecs = require(ReplicatedStorage.Lib)
-local newWorld = Matter.World.new()
+local jecs = require(ReplicatedStorage.Lib:Clone())
 local ecs = jecs.World.new()
-local mirror = require(ReplicatedStorage.mirror)
+local mirror = require(ReplicatedStorage.mirror:Clone())
 local mcs = mirror.World.new()
 
 local A1 = Matter.component()

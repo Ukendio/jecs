@@ -247,6 +247,7 @@ TEST("world:component()", function()
 end)
 
 TEST("world:contains()", function()
+
 	local tag = jecs.tag()
 	local world = jecs.world()
 	local id = world:entity()
@@ -257,6 +258,7 @@ TEST("world:contains()", function()
 		world:delete(id)
 		CHECK(not world:contains(id))
 	end
+
 
 	CHECK(world:contains(tag))
 	jecs.ECS_META_RESET()
@@ -631,7 +633,62 @@ TEST("world:each()", function()
 	end
 end)
 
+TEST("world:range()", function()
+	do CASE ""
+		local world = jecs.world()
+		world = lifetime_tracker_add(world, {})
+		world:range(1000, 2000)
+		local e = world:entity()
+		CHECK(e == 1000)
+
+		world:entity(1590)
+
+		CHECK(world:entity(5000) == 5000)
+
+		CHECK(world:contains(1590))
+		world:set(591, jecs.Name, "9888")
+		CHECK(not world:contains(591))
+		CHECK(world:contains(5000))
+		CHECK(not world:contains(988))
+
+		local e = world:entity(2000)
+		CHECK(e == 2000)
+	end
+end)
+
 TEST("world:entity()", function()
+	do CASE "desired id"
+		local world = jecs.world()
+		local id = world:entity()
+		local e = world:entity(id + 5)
+		CHECK(e == id + 5)
+		CHECK(world:contains(e))
+		local e2 = world:entity()
+		CHECK(world:contains(e2))
+
+		-- world:print_entity_index()
+		local e3 = world:entity(275)
+
+		CHECK(e3 == 275)
+		CHECK(world:contains(e3))
+
+		CHECK(e3 == world:entity(e3))
+
+		world:delete(e3)
+
+		local e3v1 = world:entity(275)
+		CHECK(not world:contains(275))
+		CHECK(jecs.ECS_GENERATION(e3v1) == 1)
+		CHECK(jecs.ECS_ID(e3v1) == 275)
+
+
+		CHECK(world:contains(e3v1))
+		-- world:print_entity_index()
+		world:entity(e3)
+
+		world:entity(e3)
+		world:entity(275)
+	end
 	local N = 2^8
 
 	do CASE "unique IDs"
