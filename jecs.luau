@@ -778,6 +778,7 @@ local function world_entity(world: ecs_world_t, entity: i53?): i53
 			local any = dense_array[dense]
 			if any == entity then
 				if alive_count > dense then
+					r.dense = dense
 					return entity
 				end
 				local e_swap = dense_array[alive_count]
