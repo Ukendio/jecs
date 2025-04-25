@@ -750,7 +750,7 @@ local function world_range(world: ecs_world_t, range_begin: number, range_end: n
 		local dense_array = entity_index.dense_array
 		local sparse_array = entity_index.sparse_array
 
-		for i = max_id, range_begin do
+		for i = max_id + 1, range_begin do
 			dense_array[i] = i
 			sparse_array[i] = {
 				dense = 0
@@ -2485,6 +2485,7 @@ local function world_new()
 	for i = EcsRest + 1, ecs_max_tag_id do
 		-- Initialize built-in components
 		entity_index_new_id(entity_index)
+		print("hm...", i)
 	end
 
 	world_add(self, EcsName, EcsComponent)
