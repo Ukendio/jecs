@@ -2482,12 +2482,6 @@ local function world_new()
 		entity_index_new_id(entity_index)
 	end
 
-	for i = EcsRest + 1, ecs_max_tag_id do
-		-- Initialize built-in components
-		entity_index_new_id(entity_index)
-		print("hm...", i)
-	end
-
 	world_add(self, EcsName, EcsComponent)
 	world_add(self, EcsOnChange, EcsComponent)
 	world_add(self, EcsOnAdd, EcsComponent)
@@ -2509,6 +2503,10 @@ local function world_new()
 	world_set(self, EcsRest, EcsRest, "jecs.Rest")
 
 	world_add(self, EcsChildOf, ECS_PAIR(EcsOnDeleteTarget, EcsDelete))
+
+	for i = EcsRest + 1, ecs_max_tag_id do
+		entity_index_new_id(entity_index)
+	end
 
 	for i, bundle in ecs_metadata do
 		for ty, value in bundle do
