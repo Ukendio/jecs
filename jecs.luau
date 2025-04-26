@@ -1437,19 +1437,24 @@ local function world_delete(world: ecs_world_t, entity: i53)
 	end
 
 	local dense_array = entity_index.dense_array
-	local index_of_deleted_entity = record.dense
-	local index_of_last_alive_entity = entity_index.alive_count
-	entity_index.alive_count = index_of_last_alive_entity - 1
+	local dense = record.dense
+	local i_swap = entity_index.alive_count
+	entity_index.alive_count = i_swap - 1
 
-	local last_alive_entity = dense_array[index_of_last_alive_entity]
-	local r_swap = entity_index_try_get_any(entity_index, last_alive_entity) :: ecs_record_t
-	r_swap.dense = index_of_deleted_entity
+	local e_swap = dense_array[i_swap]
+	local r_swap = entity_index_try_get_any(entity_index, e_swap) :: ecs_record_t
+
+	r_swap.dense = dense
 	record.archetype = nil :: any
 	record.row = nil :: any
-	record.dense = index_of_last_alive_entity
+	record.dense = i_swap
 
-	dense_array[index_of_deleted_entity] = last_alive_entity
-	dense_array[index_of_last_alive_entity] = ECS_GENERATION_INC(entity)
+	dense_array[dense] = e_swap
+	dense_array[i_swap] = ECS_GENERATION_INC(entity)
+end
+
+local function world_exists(world, ecs_world_t, entity): boolean
+	return entity_index_try_get_any(world.entity_index, entity) ~= nil
 end
 
 local function world_contains(world: ecs_world_t, entity): boolean
@@ -2443,6 +2448,7 @@ World.has = world_has
 World.target = world_target
 World.parent = world_parent
 World.contains = world_contains
+World.exists = world_exists
 World.cleanup = world_cleanup
 World.each = world_each
 World.children = world_children
@@ -2609,6 +2615,9 @@ export type World = {
 
 	--- Checks if the world contains the given entity
 	contains:(self: World, entity: Entity) -> boolean,
+
+	--- Checks if the entity exists
+	exists: (self: World, entity: Entity) -> boolean,
 
 	each: <T>(self: World, id: Id<T>) -> () -> Entity,
 
