@@ -1453,7 +1453,7 @@ local function world_delete(world: ecs_world_t, entity: i53)
 	dense_array[i_swap] = ECS_GENERATION_INC(entity)
 end
 
-local function world_exists(world, ecs_world_t, entity): boolean
+local function world_exists(world: ecs_world_t, entity): boolean
 	return entity_index_try_get_any(world.entity_index, entity) ~= nil
 end
 
