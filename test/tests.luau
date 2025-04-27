@@ -634,37 +634,50 @@ TEST("world:each()", function()
 end)
 
 TEST("world:range()", function()
-	do CASE ""
-		local world = jecs.world()
-		world = lifetime_tracker_add(world, {})
-		world:range(1000, 2000)
-		local e = world:entity()
-		CHECK(e == 1000)
-
-		world:entity(1590)
-
-		CHECK(world:entity(5000) == 5000)
-
-		CHECK(world:contains(1590))
-		world:set(591, jecs.Name, "9888")
-		CHECK(not world:contains(591))
-		CHECK(world:contains(5000))
-		CHECK(not world:contains(988))
-
-		local e = world:entity(2000)
-		CHECK(e == 2000)
-	end
-end)
-
-TEST("world:entity()", function()
-	do CASE "desired id"
+	do CASE "under range start"
 		local world = jecs.world()
 		world:range(400, 1000)
 		local id = world:entity()
 		local e = world:entity(id + 5)
 		CHECK(e == id + 5)
 		CHECK(world:contains(e))
-		local e2 = world:entity()
+		local e2 = world:entity(399)
+		CHECK(world:contains(e2))
+		world:delete(e2)
+		CHECK(not world:contains(e2))
+		local e2v1 = world:entity(399)
+		CHECK(world:contains(e2v1))
+		CHECK(ECS_ID(e2v1) == 399)
+		CHECK(ECS_GENERATION(e2v1) == 1)
+	end
+
+	do CASE "over range start"
+		local world = jecs.world()
+		world:range(400, 1000)
+		local e2 = world:entity(405)
+		CHECK(world:contains(e2))
+		world:delete(e2)
+		CHECK(not world:contains(e2))
+		local e2v1 = world:entity(405)
+		CHECK(world:contains(e2v1))
+		CHECK(ECS_ID(e2v1) == 405)
+		CHECK(ECS_GENERATION(e2v1) == 1)
+
+		do
+			local _e2v1 = world:entity(405)
+			CHECK(_e2v1 == e2v1)
+		end
+	end
+end)
+
+TEST("world:entity()", function()
+	do CASE "desired id"
+		local world = jecs.world()
+		local id = world:entity()
+		local e = world:entity(id + 5)
+		CHECK(e == id + 5)
+		CHECK(world:contains(e))
+		local e2 = world:entity(399)
 		CHECK(world:contains(e2))
 	end
 	local N = 2^8

@@ -772,13 +772,15 @@ local function world_entity(world: ecs_world_t, entity: i53?): i53
 		local r = sparse_array[index]
 		if r then
 			local dense = r.dense
-			if dense and r.dense ~= 0 then
-				if dense < alive_count then
-					return entity
-				end
-			else
+
+			if not dense or r.dense == 0 then
 				r.dense = index
 				dense = index
+			end
+
+			local any = dense_array[dense]
+			if dense <= alive_count then
+				return any
 			end
 
 			local e_swap = dense_array[dense]
@@ -788,8 +790,9 @@ local function world_entity(world: ecs_world_t, entity: i53?): i53
 			r_swap.dense = dense
 			r.dense = alive_count
 			dense_array[dense] = e_swap
-			dense_array[alive_count] = entity
-			return entity
+			dense_array[alive_count] = any
+
+			return any
 		else
 			for i = max_id + 1, index do
 				sparse_array[i]	= { dense = i } :: ecs_record_t
