@@ -659,6 +659,7 @@ end)
 TEST("world:entity()", function()
 	do CASE "desired id"
 		local world = jecs.world()
+		world:range(400, 1000)
 		local id = world:entity()
 		local e = world:entity(id + 5)
 		CHECK(e == id + 5)
@@ -667,27 +668,39 @@ TEST("world:entity()", function()
 		CHECK(world:contains(e2))
 
 		-- world:print_entity_index()
-		local e3 = world:entity(275)
+		print("-----")
+		local e3 = world:entity(375)
+		world:entity(376)
+		print("-----")
 
-		CHECK(e3 == 275)
+		print(e3)
+		CHECK(e3 == 375)
 		CHECK(world:contains(e3))
-
-		CHECK(e3 == world:entity(e3))
 
 		world:delete(e3)
 
-		local e3v1 = world:entity(275)
-		CHECK(not world:contains(275))
+		print("-------call 1-------")
+		local e3v1 = world:entity(375)
+		CHECK(not world:contains(375))
 		CHECK(jecs.ECS_GENERATION(e3v1) == 1)
-		CHECK(jecs.ECS_ID(e3v1) == 275)
-
-
+		CHECK(jecs.ECS_ID(e3v1) == 375)
 		CHECK(world:contains(e3v1))
-		-- world:print_entity_index()
-		world:entity(e3)
-
-		world:entity(e3)
-		world:entity(275)
+		print("-------call 2-------")
+		world:entity(382)
+		world:delete(382)
+		world:entity(376)
+		world:delete(e3v1)
+		print("--------------------")
+		print("-------call 3-------")
+		local e3v2 = world:entity(375)
+		CHECK(jecs.ECS_GENERATION(e3v2) == 2)
+		CHECK(jecs.ECS_ID(e3v2) == 375)
+		CHECK(not world:contains(e3v1))
+		CHECK(world:contains(e3v2))
+		print("----------------------")
+		print("-----call 4-------")
+		CHECK(world:entity(375) == e3v2)
+		print("------call 5")
 	end
 	local N = 2^8
 
