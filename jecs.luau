@@ -2672,8 +2672,8 @@ return {
 	ECS_META_RESET = ECS_META_RESET,
 
 	IS_PAIR = (ECS_IS_PAIR :: any) :: <P, O>(pair: Pair<P, O>) -> boolean,
-	ECS_PAIR_FIRST = ECS_PAIR_FIRST,
-	ECS_PAIR_SECOND = ECS_PAIR_SECOND,
+	ECS_PAIR_FIRST = ECS_PAIR_FIRST :: <P, O>(pair: Pair<P, O>) -> Id<P>,
+	ECS_PAIR_SECOND = ECS_PAIR_SECOND :: <P, O>(pair: Pair<P, O>) -> Id<O>,
 	pair_first = (ecs_pair_first :: any) :: <P, O>(world: World, pair: Pair<P, O>) -> Id<P>,
 	pair_second = (ecs_pair_second :: any) :: <P, O>(world: World, pair: Pair<P, O>) -> Id<O>,
 	entity_index_get_alive = entity_index_get_alive,
