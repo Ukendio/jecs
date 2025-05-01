@@ -256,6 +256,9 @@ export function pair_first<P, O>(world: World, p: Pair<P, O>): Entity<P>;
  */
 export function pair_second<P, O>(world: World, p: Pair<P, O>): Entity<O>;
 
+export declare const is_tag: <T>(world: World,id:Id<T>)=>boolean;
+export declare const tag: <T>()=> Entity<T>;
+export declare const meta: <T>(id: Entity, uid: Entity, value?: T) => void;
 export declare const OnAdd: Entity<(e: Entity) => void>;
 export declare const OnRemove: Entity<(e: Entity) => void>;
 export declare const OnChange: Entity<(e: Entity, value: unknown) => void>;
