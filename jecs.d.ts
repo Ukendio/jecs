@@ -255,7 +255,7 @@ export function pair_first<P, O>(world: World, p: Pair<P, O>): Entity<P>;
  * @returns The second entity (object) of the pair
  */
 export function pair_second<P, O>(world: World, p: Pair<P, O>): Entity<O>;
-
+export declare const component: <T>() => Entity<T>;
 export declare const is_tag: <T>(world: World,id:Id<T>)=>boolean;
 export declare const tag: <T>()=> Entity<T>;
 export declare const meta: <T>(id: Entity, uid: Entity, value?: T) => void;
