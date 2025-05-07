@@ -2403,9 +2403,9 @@ export type ComponentRecord = {
 	flags: number,
 	size: number,
 	hooks: {
-		on_add: ((entity: Entity) -> ())?,
-		on_set: ((entity: Entity, data: any) -> ())?,
-		on_remove: ((entity: Entity) -> ())?,
+		on_add: (<T>(entity: Entity, id: Entity<T>, value: T) -> ())?,
+		on_change: (<T>(entity: Entity, id: Entity<T>, value: T) -> ())?,
+		on_remove: ((entity: Entity, id: Entity) -> ())?,
 	},
 }
 export type ComponentIndex = Map<Id, ComponentRecord>
