@@ -6,9 +6,9 @@ type Observer<T...> = {
 }
 
 export type PatchedWorld = jecs.World & {
-	added: (PatchedWorld, jecs.Id, (e: jecs.Entity, id: jecs.Id, value: any) -> ()) -> (),
-	removed: (PatchedWorld, jecs.Id, (e: jecs.Entity, id: jecs.Id) -> ()) -> (),
-	changed: (PatchedWorld, jecs.Id, (e: jecs.Entity, id: jecs.Id) -> ()) -> (),
+	added: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id, value: T) -> ()) -> () -> (),
+	removed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id) -> ()) -> () -> (),
+	changed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id, value: T) -> ()) -> () -> (),
 	observer: (PatchedWorld, Observer<any>) -> (),
 	monitor: (PatchedWorld, Observer<any>) -> (),
 }
@@ -70,6 +70,7 @@ local function join(world, component)
 		sparse_array[entity] = nil
 		dense_array[max_id] = nil
 		values[max_id] = nil
+		max_id -= 1
 	end)
 
 	world:changed(component, function(entity, id, value)
@@ -85,62 +86,6 @@ local function join(world, component)
 			end
 			local e = dense_array[i]
 			return e, values[i]
-		end
-	end
-end
-
-local function query_changed(world, component)
-	assert(jecs.IS_PAIR(component) == false)
-	local callerid = debug.info(2, "sl")
-
-	local tracker = world.trackers[callerid]
-	if not tracker then
-		local records = {}
-		local connections = {}
-		tracker = {
-			records = records,
-			connections = connections
-		}
-		world.trackers[callerid] = tracker
-
-		table.insert(connections, world:added(component, function(entity, id, v)
-			tracker[entity] = {
-				new = v
-			}
-		end))
-		table.insert(connections, world:changed(component, function(entity, id, v)
-			local record = tracker[entity]
-			record.old = record.new
-			record.new = v
-		end))
-
-		table.insert(connections, world:removed(component, function(entity, id)
-			local record = tracker[entity]
-			record.old = record.new
-			record.new = nil
-		end))
-	end
-
-	local entity = nil
-	local record = nil
-	return function()
-		entity, record = next(tracker, entity)
-		if entity == nil then
-			return
-		end
-		return entity, record
-	end
-end
-
-local function spy_on_world_delete(world)
-	local world_delete = world.delete
-	world.delete = function(world, entity)
-		world_delete(world, entity)
-		for _, tracker in world.trackers do
-			tracker.records[entity] = nil
-			for _, connection in tracker.connections do
-				connection()
-			end
 		end
 	end
 end
@@ -192,18 +137,23 @@ local function monitors_new(world, description)
  	end
 end
 
-local function observers_add(world: jecs.World & { [string]: any }): PatchedWorld
+local function observers_add(world: jecs.World): PatchedWorld
 	type Signal = { [jecs.Entity]: { (...any) -> () } }
+
+	local world_mut = world :: jecs.World & {[string]: any}
+
 	local signals = {
 		added = {} :: Signal,
 		emplaced = {} :: Signal,
 		removed = {} :: Signal
 	}
 
-	world.added = function(_, component, fn)
+	world_mut.added = function<T>(
+		_: jecs.World,
+		component: jecs.Id<T>,
+		fn: (e: jecs.Entity, id: jecs.Id, value: T) -> ()
+	)
 		local listeners = signals.added[component]
-		local component_index = world.component_index :: jecs.ComponentIndex
-		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
 			listeners = {}
 			signals.added[component] = listeners
@@ -213,7 +163,16 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 					listener(entity, id, value)
 				end
 			end
-			world:set(component, jecs.OnAdd, on_add)
+			local idr = world.component_index[component]
+			if idr then
+				local idr_hook_existing = idr.hooks.on_add
+				if idr_hook_existing then
+					table.insert(listeners, idr_hook_existing)
+				end
+				idr.hooks.on_add = on_add :: any
+			else
+				world:set(component, jecs.OnAdd, on_add)
+			end
 		end
 		table.insert(listeners, fn)
 		return function()
@@ -224,10 +183,12 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 		end
 	end
 
-	world.changed = function(_, component, fn)
+	world_mut.changed = function<T>(
+		_: jecs.World,
+		component: jecs.Id<T>,
+		fn: (e: jecs.Entity, id: jecs.Id, value: T) -> ()
+	)
 		local listeners = signals.emplaced[component]
-		local component_index = world.component_index :: jecs.ComponentIndex
-		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
 			listeners = {}
 			signals.emplaced[component] = listeners
@@ -236,7 +197,16 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 					listener(entity, id, value)
 				end
 			end
-			world:set(component, jecs.OnChange, on_change)
+			local idr = world.component_index[component]
+			if idr then
+				local idr_hook_existing = idr.hooks.on_change
+				if idr_hook_existing then
+					table.insert(listeners, idr_hook_existing)
+				end
+				idr.hooks.on_change = on_change :: any
+			else
+				world:set(component, jecs.OnChange, on_change)
+			end
 		end
 		table.insert(listeners, fn)
 		return function()
@@ -247,10 +217,12 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 		end
 	end
 
-	world.removed = function(_, component, fn)
+	world_mut.removed = function<T>(
+		_: jecs.World,
+		component: jecs.Id<T>,
+		fn: (e: jecs.Entity, id: jecs.Id) -> ()
+	)
 		local listeners = signals.removed[component]
-		local component_index = world.component_index :: jecs.ComponentIndex
-		assert(component_index[component] == nil, "You cannot use hooks on components you intend to use this signal with")
 		if not listeners then
 			listeners = {}
 			signals.removed[component] = listeners
@@ -259,7 +231,16 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 					listener(entity, id, value)
 				end
 			end
-			world:set(component, jecs.OnRemove, on_remove)
+			local idr = world.component_index[component]
+			if idr then
+				local idr_hook_existing = idr.hooks.on_remove
+				if idr_hook_existing then
+					table.insert(listeners, idr_hook_existing)
+				end
+				idr.hooks.on_remove = on_remove :: any
+			else
+				world:set(component, jecs.OnRemove, on_remove)
+			end
 		end
 		table.insert(listeners, fn)
 		return function()
@@ -270,15 +251,15 @@ local function observers_add(world: jecs.World & { [string]: any }): PatchedWorl
 		end
 	end
 
-	world.signals = signals
+	world_mut.signals = signals
 
-	world.observer = observers_new
+	world_mut.observer = observers_new
 
-	world.monitor = monitors_new
+	world_mut.monitor = monitors_new
 
-	world.trackers = {}
+	world_mut.trackers = {}
 
-	return world :: PatchedWorld
+	return world_mut :: PatchedWorld
 end
 
 return observers_add

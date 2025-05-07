@@ -25,6 +25,30 @@ local entity_visualiser = require("@tools/entity_visualiser")
 local lifetime_tracker_add = require("@tools/lifetime_tracker")
 local dwi = entity_visualiser.stringify
 
+TEST("repro", function()
+	local Model = jecs.component()
+	local Relation = jecs.component()
+	local Relation2 = jecs.component()
+
+	local world = jecs.world()
+
+	local e1 = world:entity()
+	world:set(e1, Model, 2)
+
+	local e2 = world:entity()
+	world:set(e2, Model, 2)
+	world:set(e2, jecs.pair(Relation, e1), 5)
+
+	local e3 = world:entity()
+	world:set(e3, Model, 2)
+	world:set(e3, jecs.pair(Relation, e1), 5)
+
+	world:delete(e1)
+
+	for _ in world:query(Model) do end
+	jecs.ECS_META_RESET()
+end)
+
 TEST("world:add()", function()
 	do CASE "idempotent"
 		local world = jecs.world()
