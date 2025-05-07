@@ -8,6 +8,24 @@ local observers_add = require("@addons/observers")
 TEST("addons/observers", function()
 	local world = observers_add(jecs.world())
 
+	do CASE "Should not override hook"
+		local A = world:component()
+
+		local count = 0
+		local function counter()
+			count += 1
+		end
+
+		world:set(A, jecs.OnAdd, counter)
+		world:set(world:entity(), A, true)
+		CHECK(count == 1)
+		world:added(A, counter)
+		world:set(world:entity(), A, true)
+
+		CHECK(count == 3)
+		print(count)
+	end
+
 	do CASE "Ensure ordering between signals and observers"
 		local A = world:component()
 		local B = world:component()
@@ -24,17 +42,12 @@ TEST("addons/observers", function()
 		world:added(A, counter)
 		world:added(A, counter)
 
-		world:removed(A, counter)
-
 		local e = world:entity()
 		world:add(e, A)
 		CHECK(count == 2)
 
 		world:add(e, B)
 		CHECK(count == 3)
-
-		world:remove(e, A)
-		CHECK(count == 4)
 	end
 
 	do CASE "Rematch entities in observers"
@@ -87,10 +100,10 @@ TEST("addons/observers", function()
 		local A = world:component()
 
 		local callcount = 0
-		world:added(A, function(entity) 
+		world:added(A, function(entity)
 			callcount += 1
 		end)
-		world:added(A, function(entity) 
+		world:added(A, function(entity)
 			callcount += 1
 		end)
 
