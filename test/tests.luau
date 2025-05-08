@@ -672,7 +672,7 @@ TEST("world:range()", function()
 		local e2v1 = world:entity(399)
 		CHECK(world:contains(e2v1))
 		CHECK(ECS_ID(e2v1) == 399)
-		CHECK(ECS_GENERATION(e2v1) == 1)
+		CHECK(ECS_GENERATION(e2v1) == 0)
 	end
 
 	do CASE "over range start"
@@ -685,12 +685,12 @@ TEST("world:range()", function()
 		local e2v1 = world:entity(405)
 		CHECK(world:contains(e2v1))
 		CHECK(ECS_ID(e2v1) == 405)
-		CHECK(ECS_GENERATION(e2v1) == 1)
+		CHECK(ECS_GENERATION(e2v1) == 0)
 
-		do
-			local _e2v1 = world:entity(405)
-			CHECK(_e2v1 == e2v1)
-		end
+		world:delete(e2v1)
+		local e2v2 = world:entity(e2v1)
+		CHECK(ECS_ID(e2v2) == 405)
+		CHECK(ECS_GENERATION(e2v2) == 0)
 	end
 end)
 

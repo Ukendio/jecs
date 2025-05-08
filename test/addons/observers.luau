@@ -23,7 +23,6 @@ TEST("addons/observers", function()
 		world:set(world:entity(), A, true)
 
 		CHECK(count == 3)
-		print(count)
 	end
 
 	do CASE "Ensure ordering between signals and observers"

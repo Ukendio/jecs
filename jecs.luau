@@ -780,7 +780,11 @@ local function world_entity(world: ecs_world_t, entity: i53?): i53
 
 			local any = dense_array[dense]
 			if dense <= alive_count then
-				return any
+				if any ~= entity then
+					error("Entity ID is already in use with a different generation")
+				else
+					return entity
+				end
 			end
 
 			local e_swap = dense_array[dense]
@@ -790,9 +794,9 @@ local function world_entity(world: ecs_world_t, entity: i53?): i53
 			r_swap.dense = dense
 			r.dense = alive_count
 			dense_array[dense] = e_swap
-			dense_array[alive_count] = any
+			dense_array[alive_count] = entity
 
-			return any
+			return entity
 		else
 			for i = max_id + 1, index do
 				sparse_array[i]	= { dense = i } :: ecs_record_t
