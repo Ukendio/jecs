@@ -109,6 +109,13 @@ export class World {
 	constructor();
 
 	/**
+	 * Enforces a check for entities to be created within a desired range.
+	 * @param range_begin The starting point
+	 * @param range_end The end point (optional)
+	 */
+	range(range_begin: number, range_end?: number): void;
+
+	/**
 	 * Creates a new entity.
 	 * @returns An entity (Tag) with no data.
 	 */
@@ -131,19 +138,6 @@ export class World {
 	target(entity: Entity, relation: Entity, index?: number): Entity | undefined;
 
 	/**
-	 * Cleans up the world by removing empty archetypes and rebuilding the archetype collections.
-	 * This helps maintain memory efficiency by removing unused archetype definitions.
-	 */
-	cleanup(): void;
-
-	/**
-	 * Clears all components and relationships from the given entity, but
-	 * does not delete the entity from the world.
-	 * @param entity The entity to clear.
-	 */
-	clear(entity: Entity): void;
-
-	/**
 	 * Deletes an entity (and its components/relationships) from the world entirely.
 	 * @param entity The entity to delete.
 	 */
@@ -163,6 +157,19 @@ export class World {
 	 * @param value The value to store with that component.
 	 */
 	set<E extends Id<unknown>>(entity: Entity, component: E, value: InferComponent<E>): void;
+
+	/**
+	 * Cleans up the world by removing empty archetypes and rebuilding the archetype collections.
+	 * This helps maintain memory efficiency by removing unused archetype definitions.
+	 */
+	cleanup(): void;
+
+	/**
+	 * Clears all components and relationships from the given entity, but
+	 * does not delete the entity from the world.
+	 * @param entity The entity to clear.
+	 */
+	clear(entity: Entity): void;
 
 	/**
 	 * Removes a component from the given entity.
@@ -192,12 +199,6 @@ export class World {
 	has(entity: Entity, ...components: Id[]): boolean;
 
 	/**
-	 * Checks if an entity exists in the world.
-	 * @param entity The entity to verify.
-	 */
-	contains(entity: Entity): boolean;
-
-	/**
 	 * Gets the parent (the target of a `ChildOf` relationship) for an entity,
 	 * if such a relationship exists.
 	 * @param entity The entity whose parent is queried.
@@ -205,11 +206,17 @@ export class World {
 	parent(entity: Entity): Entity | undefined;
 
 	/**
-	 * Searches the world for entities that match specified components.
-	 * @param components The list of components to query.
-	 * @returns A Query object to iterate over results.
+	 * Checks if an entity exists in the world.
+	 * @param entity The entity to verify.
 	 */
-	query<T extends Id[]>(...components: T): Query<InferComponents<T>>;
+	contains(entity: Entity): boolean;
+
+	/**
+	 * Checks if the entity exists.
+	 * @param entity The entity to verify.
+	 * @returns True if the entity exists
+	 */
+	exists(entity: Entity): boolean;
 
 	/**
 	 * Returns an iterator that yields all entities that have the specified component or relationship.
@@ -225,7 +232,23 @@ export class World {
 	 * @returns An iterator function that yields child entities
 	 */
 	children(parent: Entity): IterableFunction<Entity>;
+
+	/**
+	 * Searches the world for entities that match specified components.
+	 * @param components The list of components to query.
+	 * @returns A Query object to iterate over results.
+	 */
+	query<T extends Id[]>(...components: T): Query<InferComponents<T>>;
 }
+
+export function component<T>(): Entity<T>;
+
+export function tag<T>(): Entity<T>;
+
+// note: original types had id: Entity, id: Id<T>, which does not work with TS.
+export function meta<T>(e: Entity, id: Id<T>, value: T): Entity<T>
+
+export function is_tag<T>(world: World, id: Id<T>): boolean;
 
 /**
  * Creates a composite key (pair)
