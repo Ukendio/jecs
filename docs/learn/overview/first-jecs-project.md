@@ -70,5 +70,6 @@ If you are encountering problems, there are resources for you to get help:
 - [Open an issue](https://github.com/ukendio/jecs/issues) if you run into bugs or have feature requests
 - Dive into the nitty gritty in the [thesis paper](https://raw.githubusercontent.com/Ukendio/jecs/main/thesis/drafts/1/paper.pdf)
 
-## Benefits
+## 貴方が必要です
 uncという不快な称号を完全排除し、jecs教団の一員として偉大なる生き甲斐を与えます。
+消して、お忘れになりませんように。
