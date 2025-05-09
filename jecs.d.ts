@@ -212,9 +212,9 @@ export class World {
 	contains(entity: Entity): boolean;
 
 	/**
-	 * Checks if there is any entity alive right now, regardless of generation.
+	 * Checks if an entity with the given ID is currently alive, ignoring its generation.
 	 * @param entity The entity to verify.
-	 * @returns True if the entity is alive.
+	 * @returns boolean true if any entity with the given ID exists (ignoring generation), false otherwise
 	 */
 	exists(entity: Entity): boolean;
 
