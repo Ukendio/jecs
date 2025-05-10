@@ -10,9 +10,11 @@ The format is based on [Keep a Changelog][kac], and this project adheres to
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-05-10
+
 -   `[world]`:
     -   Added `world:range` to restrict entity range
-    -       Changed `world:entity` to accept the overload to create an entity at the desired index
+    -   Changed `world:entity` to accept the overload to create an entity at the desired id
     -   Changed `world:clear` to also look through the component record for the cleared `ID`
         -   Removes the cleared ID from every entity that has it
     -   Changed entity ID layouts by putting the index in the lower bits, which should make every world function 1-5 nanoseconds faster
