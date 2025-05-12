@@ -2651,9 +2651,9 @@ return {
 	meta = (ECS_META :: any) :: <T>(id: Entity, id: Id<T>, value: T) -> Entity<T>,
 	is_tag = (ecs_is_tag :: any) :: <T>(World, Id<T>) -> boolean,
 	
-    OnAdd = EcsOnAdd :: Entity<(entity: Entity, id: Id, data: any) -> ()>,
+    OnAdd = EcsOnAdd :: Entity<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
 	OnRemove = EcsOnRemove :: Entity<(entity: Entity, id: Id) -> ()>,
-	OnChange = EcsOnChange :: Entity<(entity: Entity, id: Id, data: any) -> ()>,
+	OnChange = EcsOnChange :: Entity<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
 	ChildOf = EcsChildOf :: Entity,
 	Component = EcsComponent :: Entity,
 	Wildcard = EcsWildcard :: Entity,
