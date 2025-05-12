@@ -148,7 +148,7 @@ export class World {
 	 * @param entity The target entity.
 	 * @param component The component (or tag) to add.
 	 */
-	add(entity: Entity, component: Id<undefined>): void;
+	add(entity: Entity, component: Id): void;
 
 	/**
 	 * Assigns a value to a component on the given entity.
