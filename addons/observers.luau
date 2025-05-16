@@ -1,16 +1,16 @@
 local jecs = require("@jecs")
 
-type Observer<T...> = {
+type Observer = {
 	callback: (jecs.Entity) -> (),
-	query: jecs.Query<T...>,
+	query: jecs.Query<...jecs.Id>,
 }
 
 export type PatchedWorld = jecs.World & {
-	added: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id, value: T) -> ()) -> () -> (),
-	removed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id) -> ()) -> () -> (),
-	changed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id, value: T) -> ()) -> () -> (),
-	observer: (PatchedWorld, Observer<any>) -> (),
-	monitor: (PatchedWorld, Observer<any>) -> (),
+	added: <T>(PatchedWorld, jecs.Id<T>, (jecs.Entity, jecs.Id, T) -> ()) -> () -> (),
+	removed: <T>(PatchedWorld, jecs.Id<T>, (jecs.Entity, jecs.Id) -> ()) -> () -> (),
+	changed: <T>(PatchedWorld, jecs.Id<T>, (jecs.Entity, jecs.Id, T) -> ()) -> () -> (),
+	observer: (PatchedWorld, Observer) -> (),
+	monitor: (PatchedWorld, Observer) -> (),
 }
 
 local function observers_new(world, description)

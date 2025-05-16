@@ -5,15 +5,19 @@ local collect = require("../collect")
 local client_ids = {}
 
 local function ecs_map_get(world: types.World, id: types.Entity)
-	local deserialised_id = 0
-
-	if not world:exists(id) or not world:contains(id) then
-		deserialised_id = world:entity(id)
+	local deserialised_id = client_ids[id]
+	if not deserialised_id then
+		if world:has(id, jecs.Name) then
+			deserialised_id = world:entity(id)
+		else
+			if world:exists(id) then
+				deserialised_id = world:entity()
+			else
+				deserialised_id = world:entity(id)
+			end
+		end
 		client_ids[id] = deserialised_id
-	else
-		deserialised_id = client_ids[id]
 	end
-
 	return deserialised_id
 end
 
