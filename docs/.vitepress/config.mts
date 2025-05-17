@@ -16,13 +16,20 @@ export default defineConfig({
 		sidebar: {
 			"/api/": [
 				{
+					text: "Introduction",
+					items: [
+						{ text: "Getting Started", link: "/learn/overview/get-started" },
+						{ text: "First Jecs Project", link: "/learn/overview/first-jecs-project" },
+					]
+				},
+				{
 					text: "API reference",
 					items: [
 						{ text: "jecs", link: "/api/jecs" },
 						{ text: "World", link: "/api/world" },
 						{ text: "Query", link: "/api/query" },
 					],
-				},
+				}
 			],
 			"/learn/": [
 				{
@@ -43,17 +50,35 @@ export default defineConfig({
 					],
 				},
 				{
-					text: "FAQ",
-					items: [{ text: "How can I contribute?", link: "/learn/faq/contributing" }],
+					text: "API Reference",
+					items: [
+						{ text: "jecs", link: "/api/jecs"},
+						{ text: "World", link: "/api/world"},
+						{ text: "Query", link: "/api/query"}
+					]
 				},
+				{
+					text: "Contribute",
+					items: [
+						{ text: "How Can I Contribute?", link: "/contributing/guidelines" }
+					]
+				}
 			],
 			"/contributing/": [
 				{
+					text: "Introduction",
+					items: [
+						{ text: "Getting Started", link: "/learn/overview/get-started" },
+						{ text: "First Jecs Project", link: "/learn/overview/first-jecs-project" },
+					],
+				},
+				{
 					text: "Contributing",
 					items: [
-						{ text: "Contribution Guidelines", link: "/learn/contributing/guidelines" },
-						{ text: "Submitting Issues", link: "/learn/contributing/issues" },
-						{ text: "Submitting Pull Requests", link: "/learn/contributing/pull-requests" },
+						{ text: "Contribution Guidelines", link: "/contributing/guidelines" },
+						{ text: "Submitting Issues", link: "/contributing/issues" },
+						{ text: "Submitting Pull Requests", link: "/contributing/pull-requests" },
+						{ text: "Code Coverage", link: "/contributing/coverage" },
 					],
 				},
 			],
