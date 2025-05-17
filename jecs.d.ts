@@ -149,7 +149,7 @@ export class World {
 	 * @param entity The target entity.
 	 * @param component The component (or tag) to add.
 	 */
-	add(entity: Entity, component: Id): void;
+	add<C>(entity: Entity, component: undefined extends InferComponent<C> ? C : Id<undefined>): void;
 
 	/**
 	 * Assigns a value to a component on the given entity.
