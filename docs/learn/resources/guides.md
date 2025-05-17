@@ -1,6 +1,6 @@
 # Guides
 
-ECS is a very foreign concept for those coming from an OOP background. Here's a few resources that the community has compiled about how to use ECS and some of its design choices.
+ECS is a very foreign concept. Here's a few resources that the community has compiled about how to use ECS and some of its design choices.
 
 See something missing? [Let us know.](/contributing/pull-requests)
 
