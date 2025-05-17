@@ -58,6 +58,12 @@ export default defineConfig({
 					]
 				},
 				{
+					text: "Resources",
+					items: [
+						{ text: "Guides", link: "/learn/resources/guides" }
+					]
+				},
+				{
 					text: "Contribute",
 					items: [
 						{ text: "How Can I Contribute?", link: "/contributing/guidelines" }
