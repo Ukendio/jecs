@@ -120,6 +120,7 @@ export class World {
 	 * @returns An entity (Tag) with no data.
 	 */
 	entity(): Tag;
+	entity<T extends Entity>(id: T): InferComponent<T> extends undefined ? Tag : T;
 
 	/**
 	 * Creates a new entity in the first 256 IDs, typically used for static
@@ -148,7 +149,7 @@ export class World {
 	 * @param entity The target entity.
 	 * @param component The component (or tag) to add.
 	 */
-	add(entity: Entity, component: Id<undefined>): void;
+	add<C>(entity: Entity, component: undefined extends InferComponent<C> ? C : Id<undefined>): void;
 
 	/**
 	 * Assigns a value to a component on the given entity.
