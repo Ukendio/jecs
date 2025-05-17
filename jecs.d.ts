@@ -120,7 +120,7 @@ export class World {
 	 * @returns An entity (Tag) with no data.
 	 */
 	entity(): Tag;
-	entity(id: number): Tag;
+	entity<T extends Entity>(id: T): InferComponent<T> extends undefined ? Tag : T;
 
 	/**
 	 * Creates a new entity in the first 256 IDs, typically used for static
