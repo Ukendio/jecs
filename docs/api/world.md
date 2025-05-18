@@ -34,24 +34,23 @@ const myOtherWorld = new World();
 
 ## entity
 
-Creates a new entity.
+Creates a new entity. It accepts the overload to create an entity with a specific ID.
 
 ```luau
-function World:entity(): Entity
+function World:entity<T>(
+	id: Entity<T>? -- The desired id
+): Entity<T>
 ```
 
 Example:
 
 ::: code-group
-
 ```luau [luau]
 local entity = world:entity()
 ```
-
 ```ts [typescript]
 const entity = world.entity();
 ```
-
 :::
 
 ## component
@@ -464,23 +463,19 @@ function World:each(
 ```
 
 Example:
-
 ::: code-group
-
 ```luau [luau]
 local id = world:entity()
 for entity in world:each(id) do
 	-- Do something
 end
 ```
-
 ```ts [typescript]
 const id = world.entity();
 for (const entity of world.each(id)) {
 	// Do something
 }
 ```
-
 :::
 
 ## children
@@ -497,4 +492,14 @@ This is the same as calling:
 
 ```luau
 world:each(pair(ChildOf, parent))
+```
+
+## range
+
+Enforces a check for entities to be created within a desired range.
+```luau
+function World:range(
+	range_begin: number -- The starting point,
+	range_begin: number? -- The end point (optional)
+)
 ```

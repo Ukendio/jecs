@@ -2,7 +2,7 @@
 Jecs is a standalone entity-component-system module written in Luau.
 ECS ("entity-component-system") describes one way to write games in a more data oriented design.
 
-# Hello World, Entity and Component
+## Hello World, Entity and Component
 It all has to start somewhere. A world stores entities and their components, and manages them. This tour will reference it for every operation.
 :::code-group
 ```luau [luau]
@@ -76,7 +76,6 @@ print(`{world:get(Position, jecs.Name)} is a Component: {world:has(Position, jec
 -- Output:
 --  Position is a Component: true
 ```
-
 ```typescript [typescript]
 const Position = world.component<Vector3>();
 world.set(Position, jecs.Name, "Position") // Using regular apis to set metadata on component entities!
@@ -84,6 +83,28 @@ world.set(Position, jecs.Name, "Position") // Using regular apis to set metadata
 print(`${world.get(Position, jecs.Name)} is a Component: ${world.has(Position, jecs.Component)}`);
 // Output:
 //  Position is a Component: true
+```
+:::
+
+### Entity ranges
+Jecs reserves entity ids under a threshold (HI_COMPONENT_ID, default is 256) for components. That means that regular entities will start after this number. This number can be further specified via the `range` member function.
+
+```luau [luau]
+world:range(1000, 5000) -- Defines the lower and upper bounds of the entity range respectively
+
+local e = world:entity()
+print(e)
+-- Output:
+--  1000
+```
+```typescript [typescript]
+world.range(1000, 5000) -- Defines the lower and upper bounds of the entity range respectively
+
+local e = world.entity()
+print(e)
+// Output:
+//  1000
+```
 ```
 :::
 
@@ -635,11 +656,6 @@ Ids represent anything that can be added to an entity. An ID that is not associa
 Relationships do not fundamentally change or extend the capabilities of the storage. Relationship pairs are two elements encoded into a single 53-bit ID, which means that on the storage level they are treated the same way as regular component IDs. What changes is the function that determines which type is associated with an id. For regular components this is simply a check on whether an entity has `Component`. To support relationships, new rules are added to determine the type of an id.
 
 Because of this, adding/removing relationships to entities has the same performance as adding/removing regular components. This becomes more obvious when looking more closely at a function that adds a relationship pair.
-
-### Id ranges
-Jecs reserves entity ids under a threshold (HI_COMPONENT_ID, default is 256) for components. This low id range is used by the storage to more efficiently encode graph edges between archetypes. Graph edges for components with low ids use direct array indexing, whereas graph edges for high ids use a hashmap. Graph edges are used to find the next archetype when adding/removing component ids, and are a contributing factor to the performance overhead of add/remove operations.
-
-Because of the way pair IDs are encoded, a pair will never be in the low id range. This means that adding/removing a pair ID always uses a hashmap to find the next archetype. This introduces a small overhead.
 
 ### Fragmentation
 Fragmentation is a property of archetype-based ECS implementations where entities are spread out over more archetypes as the number of different component combinations increases. The overhead of fragmentation is visible in two areas:

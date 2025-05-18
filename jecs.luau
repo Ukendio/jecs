@@ -2570,7 +2570,7 @@ export type World = {
 	range: (self: World, range_begin: number, range_end: number?) -> (),
 
 	--- Creates a new entity
-	entity: (self: World, id: Entity?) -> Entity,
+	entity: <T>(self: World, id: Entity<T>?) -> Entity<T>,
 	--- Creates a new entity located in the first 256 ids.
 	--- These should be used for static components for fast access.
 	component: <T>(self: World) -> Entity<T>,
