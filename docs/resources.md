@@ -41,10 +41,10 @@ A collection of third-party jecs addons made by the community. If you would like
 #### [jabby](https://github.com/alicesaidhi/jabby)
 A jecs debugger with a string-based query language and entity editing capabilities.
 
-#### [jecs_entity_visualiser](https://github.com/Ukendio/jecs/blob/main/addons/entity_visualiser.luau)
+#### [jecs_entity_visualiser](https://github.com/Ukendio/jecs/blob/main/tools/entity_visualiser.luau)
 A simple entity and component visualiser in the output
 
-#### [jecs_lifetime_tracker](https://github.com/Ukendio/jecs/blob/main/addons/lifetime_tracker.luau)
+#### [jecs_lifetime_tracker](https://github.com/Ukendio/jecs/blob/main/tools/lifetime_tracker.luau)
 A tool for inspecting entity lifetimes
 
 ### Helpers
