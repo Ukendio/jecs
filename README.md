@@ -2,7 +2,7 @@
   <img src="assets/image-5.png" width=35%/>
 </p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE) [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs) ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ukendio/jecs/unit-testing.yaml?&style=for-the-badge)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE) [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs) [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ukendio/jecs/unit-testing.yaml?&style=for-the-badge)](https://github.com/Ukendio/jecs/actions/workflows/unit-testing.yaml)
 
 Just a stupidly fast Entity Component System
 
