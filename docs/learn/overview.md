@@ -89,6 +89,7 @@ print(`${world.get(Position, jecs.Name)} is a Component: ${world.has(Position, j
 ### Entity ranges
 Jecs reserves entity ids under a threshold (HI_COMPONENT_ID, default is 256) for components. That means that regular entities will start after this number. This number can be further specified via the `range` member function.
 
+::: code-group
 ```luau [luau]
 world:range(1000, 5000) -- Defines the lower and upper bounds of the entity range respectively
 

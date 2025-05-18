@@ -32,8 +32,6 @@
 - [Awesome Entity Component System (link collection related to ECS) - Jeongseok Lee](https://github.com/jslee02/awesome-entity-component-system)
 - [Hibitset - DOCS.RS](https://docs.rs/hibitset/0.6.3/hibitset/)
 
-------------------
-
 ## Addons
 
 A collection of third-party jecs addons made by the community. If you would like to share what you're working on, [submit a pull request](/learn/contributing/pull-requests#addons)!
