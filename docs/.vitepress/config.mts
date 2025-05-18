@@ -26,10 +26,6 @@ export default defineConfig({
 			],
 			"/learn/": [
 				{
-					text: "Overview",
-					items: [{ text: "Overview", link: "/learn/overview" }],
-				},
-				{
 					text: "API Reference",
 					items: [
 						{ text: "jecs", link: "/api/jecs" },

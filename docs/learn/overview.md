@@ -99,13 +99,12 @@ print(e)
 --  1000
 ```
 ```typescript [typescript]
-world.range(1000, 5000) -- Defines the lower and upper bounds of the entity range respectively
+world.range(1000, 5000) // Defines the lower and upper bounds of the entity range respectively
 
-local e = world.entity()
+const e = world.entity()
 print(e)
 // Output:
 //  1000
-```
 ```
 :::
 
