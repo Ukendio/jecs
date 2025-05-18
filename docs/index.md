@@ -10,8 +10,8 @@ hero:
     alt: Jecs logo
   actions:
     - theme: brand
-      text: Get Started
-      link: learn/overview/get-started.md
+      text: Overview
+      link: learn/overview.md
     - theme: alt
       text: API References
       link: /api/jecs.md
@@ -19,7 +19,7 @@ hero:
 features:
   - title: Stupidly Fast
     icon: 🔥
-    details: Iterates 500,000 entities at 60 frames per second.
+    details: Iterates 800,000 entities at 60 frames per second.
   - title: Strictly Typed API
     icon: 🔒
     details: Has typings for both Luau and Typescript.

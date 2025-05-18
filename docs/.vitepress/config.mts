@@ -8,83 +8,42 @@ export default defineConfig({
 	themeConfig: {
 		// https://vitepress.dev/reference/default-theme-config
 		nav: [
-			{ text: "Learn", link: "/" },
+			{ text: "Learn", link: "/learn/overview.md" },
 			{ text: "API", link: "/api/jecs.md" },
-			{ text: "Examples", link: "https://github.com/Ukendio/jecs/tree/main/examples" },
+			{ text: "Resources", link: "/resources" },
 		],
 
 		sidebar: {
 			"/api/": [
 				{
-					text: "Introduction",
-					items: [
-						{ text: "Getting Started", link: "/learn/overview/get-started" },
-						{ text: "First Jecs Project", link: "/learn/overview/first-jecs-project" },
-					]
-				},
-				{
-					text: "API reference",
+					text: "Namespaces",
 					items: [
 						{ text: "jecs", link: "/api/jecs" },
 						{ text: "World", link: "/api/world" },
 						{ text: "Query", link: "/api/query" },
 					],
-				}
+				},
 			],
 			"/learn/": [
 				{
-					text: "Introduction",
-					items: [
-						{ text: "Getting Started", link: "/learn/overview/get-started" },
-						{ text: "First Jecs Project", link: "/learn/overview/first-jecs-project" },
-					],
-				},
-				{
-					text: "Concepts",
-					items: [
-						{ text: "Entities and Components", link: "/learn/concepts/entities-and-components" },
-						{ text: "Queries", link: "/learn/concepts/queries" },
-						{ text: "Relationships", link: "/learn/concepts/relationships" },
-						{ text: "Component Traits", link: "learn/concepts/component-traits" },
-						{ text: "Addons", link: "/learn/concepts/addons" },
-					],
+					text: "Overview",
+					items: [{ text: "Overview", link: "/learn/overview" }],
 				},
 				{
 					text: "API Reference",
 					items: [
-						{ text: "jecs", link: "/api/jecs"},
-						{ text: "World", link: "/api/world"},
-						{ text: "Query", link: "/api/query"}
-					]
-				},
-				{
-					text: "Resources",
-					items: [
-						{ text: "Guides", link: "/learn/resources/guides" }
-					]
-				},
-				{
-					text: "Contribute",
-					items: [
-						{ text: "How Can I Contribute?", link: "/contributing/guidelines" }
-					]
-				}
-			],
-			"/contributing/": [
-				{
-					text: "Introduction",
-					items: [
-						{ text: "Getting Started", link: "/learn/overview/get-started" },
-						{ text: "First Jecs Project", link: "/learn/overview/first-jecs-project" },
+						{ text: "jecs", link: "/api/jecs" },
+						{ text: "World", link: "/api/world" },
+						{ text: "Query", link: "/api/query" },
 					],
 				},
 				{
 					text: "Contributing",
 					items: [
-						{ text: "Contribution Guidelines", link: "/contributing/guidelines" },
-						{ text: "Submitting Issues", link: "/contributing/issues" },
-						{ text: "Submitting Pull Requests", link: "/contributing/pull-requests" },
-						{ text: "Code Coverage", link: "/contributing/coverage" },
+						{ text: "Contribution Guidelines", link: "/learn/contributing/guidelines" },
+						{ text: "Submitting Issues", link: "/learn/contributing/issues" },
+						{ text: "Submitting Pull Requests", link: "/learn/contributing/pull-requests" },
+						{ text: "Code Coverage", link: "/learn/contributing/coverage" },
 					],
 				},
 			],

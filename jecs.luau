@@ -2650,7 +2650,7 @@ return {
 	tag = (ECS_TAG :: any) :: <T>() -> Entity<T>,
 	meta = (ECS_META :: any) :: <T>(id: Entity, id: Id<T>, value: T) -> Entity<T>,
 	is_tag = (ecs_is_tag :: any) :: <T>(World, Id<T>) -> boolean,
-	
+
     OnAdd = EcsOnAdd :: Entity<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
 	OnRemove = EcsOnRemove :: Entity<(entity: Entity, id: Id) -> ()>,
 	OnChange = EcsOnChange :: Entity<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
