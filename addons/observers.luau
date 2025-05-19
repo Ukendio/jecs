@@ -2,15 +2,20 @@ local jecs = require("@jecs")
 
 type Observer = {
 	callback: (jecs.Entity) -> (),
-	query: jecs.Query<...jecs.Id>,
+	query: jecs.Query<...any>,
+}
+
+type Monitor = {
+	callback: (jecs.Entity, jecs.Entity) -> (),
+	queyr: jecs.Query<any>
 }
 
 export type PatchedWorld = jecs.World & {
-	added: <T>(PatchedWorld, jecs.Id<T>, (jecs.Entity, jecs.Id, T) -> ()) -> () -> (),
-	removed: <T>(PatchedWorld, jecs.Id<T>, (jecs.Entity, jecs.Id) -> ()) -> () -> (),
-	changed: <T>(PatchedWorld, jecs.Id<T>, (jecs.Entity, jecs.Id, T) -> ()) -> () -> (),
+	added: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id, value: T) -> ()) -> () -> (),
+	removed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id) -> ()) -> () -> (),
+	changed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id, value: T) -> ()) -> () -> (),
 	observer: (PatchedWorld, Observer) -> (),
-	monitor: (PatchedWorld, Observer) -> (),
+	monitor: (PatchedWorld, Monitor) -> (),
 }
 
 local function observers_new(world, description)
@@ -44,7 +49,6 @@ local function observers_new(world, description)
 		world:changed(term, emplaced)
  	end
 end
-
 
 local function join(world, component)
 	local sparse_array = {}
@@ -163,16 +167,16 @@ local function observers_add(world: jecs.World): PatchedWorld
 					listener(entity, id, value)
 				end
 			end
-			local idr = world.component_index[component]
-			if idr then
-				local idr_hook_existing = idr.hooks.on_add
-				if idr_hook_existing then
-					table.insert(listeners, idr_hook_existing)
+			local existing_hook = world:get(component, jecs.OnAdd)
+			if existing_hook then
+				table.insert(listeners, existing_hook)
+				local idr = world.component_index[component]
+				if idr then
+					idr.hooks.on_add = on_add
 				end
-				idr.hooks.on_add = on_add :: any
-			else
-				world:set(component, jecs.OnAdd, on_add)
 			end
+
+			world:set(component, jecs.OnAdd, on_add)
 		end
 		table.insert(listeners, fn)
 		return function()
@@ -197,16 +201,15 @@ local function observers_add(world: jecs.World): PatchedWorld
 					listener(entity, id, value)
 				end
 			end
-			local idr = world.component_index[component]
-			if idr then
-				local idr_hook_existing = idr.hooks.on_change
-				if idr_hook_existing then
-					table.insert(listeners, idr_hook_existing)
+			local existing_hook = world:get(component, jecs.OnChange)
+			if existing_hook then
+				table.insert(listeners, existing_hook)
+				local idr = world.component_index[component]
+				if idr then
+					idr.hooks.on_change = on_change
 				end
-				idr.hooks.on_change = on_change :: any
-			else
-				world:set(component, jecs.OnChange, on_change)
 			end
+			world:set(component, jecs.OnChange, on_change)
 		end
 		table.insert(listeners, fn)
 		return function()
@@ -231,16 +234,16 @@ local function observers_add(world: jecs.World): PatchedWorld
 					listener(entity, id, value)
 				end
 			end
-			local idr = world.component_index[component]
-			if idr then
-				local idr_hook_existing = idr.hooks.on_remove
-				if idr_hook_existing then
-					table.insert(listeners, idr_hook_existing)
+			local existing_hook = world:get(component, jecs.OnRemove)
+			if existing_hook then
+				table.insert(listeners, existing_hook)
+				local idr = world.component_index[component]
+				if idr then
+					idr.hooks.on_remove = on_remove
 				end
-				idr.hooks.on_remove = on_remove :: any
-			else
-				world:set(component, jecs.OnRemove, on_remove)
 			end
+
+			world:set(component, jecs.OnRemove, on_remove)
 		end
 		table.insert(listeners, fn)
 		return function()
