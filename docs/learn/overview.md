@@ -2,6 +2,23 @@
 Jecs is a standalone entity-component-system module written in Luau.
 ECS ("entity-component-system") describes one way to write games in a more data oriented design.
 
+## Installation
+
+Jecs supports the following installation methods using package managers:
+:::code-group
+```bash [wally]
+jecs = "ukendio/jecs@0.6.0" # Inside wally.toml
+```
+```bash [pesde]
+pesde add wally#ukendio/jecs@0.6.0
+```
+```bash [npm]
+npm i @rbxts/jecs
+```
+:::
+
+Additionally an `rbxm` is published with [each release under the assets submenu](https://github.com/Ukendio/jecs/releases/latest).
+
 ## Hello World, Entity and Component
 It all has to start somewhere. A world stores entities and their components, and manages them. This tour will reference it for every operation.
 :::code-group

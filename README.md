@@ -14,6 +14,21 @@ Just a stupidly fast Entity Component System
 -   Cache friendly [archetype/SoA](https://ajmmertens.medium.com/building-an-ecs-2-archetypes-and-vectorization-fe21690805f9) storage
 -   Rigorously [unit tested](https://github.com/Ukendio/jecs/actions/workflows/ci.yaml) for stability
 
+### Installation
+
+With [Wally](https://wally.run/):
+```bash
+jecs = "ukendio/jecs@0.6.0" # Inside wally.toml
+```
+With [pesde](https://pesde.dev/):
+```bash
+pesde add wally#ukendio/jecs@0.6.0
+```
+With [npm](https://www.npmjs.com/package/@rbxts/jecs) ([roblox-ts](https://roblox-ts.com/)):
+```bash
+npm i @rbxts/jecs
+```
+
 ### Example
 
 ```lua
