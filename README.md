@@ -12,7 +12,7 @@ Just a stupidly fast Entity Component System
 -   Zero-dependency package
 -   Optimized for column-major operations
 -   Cache friendly [archetype/SoA](https://ajmmertens.medium.com/building-an-ecs-2-archetypes-and-vectorization-fe21690805f9) storage
--   Rigorously [unit tested](https://github.com/Ukendio/jecs/actions/workflows/ci.yaml) for stability
+-   Rigorously [unit tested](https://github.com/Ukendio/jecs/actions/workflows/unit-testing.yaml) for stability
 
 ### Installation
 
@@ -69,6 +69,8 @@ end
 -- bob is the child of alice
 -- sara is the child of alice
 ```
+
+### Benchmarks
 
 21,000 entities 125 archetypes 4 random components queried.
 ![Queries](assets/image-3.png)
