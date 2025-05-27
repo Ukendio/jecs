@@ -7,7 +7,7 @@ type Observer = {
 
 type Monitor = {
 	callback: (jecs.Entity, jecs.Entity) -> (),
-	queyr: jecs.Query<any>
+	query: jecs.Query<any>
 }
 
 export type PatchedWorld = jecs.World & {
