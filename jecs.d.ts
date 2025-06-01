@@ -244,12 +244,12 @@ export class World {
 
 export function component<T>(): Entity<T>;
 
-export function tag<T>(): Entity<T>;
+export function tag(): Tag;
 
 // note: original types had id: Entity, id: Id<T>, which does not work with TS.
-export function meta<T>(e: Entity, id: Id<T>, value?: T): Entity<T>
+export function meta<T>(e: Entity, id: Id<T>, value?: T): Entity<T>;
 
-export function is_tag<T>(world: World, id: Id<T>): boolean;
+export function is_tag(world: World, id: Id): boolean;
 
 /**
  * Creates a composite key (pair)

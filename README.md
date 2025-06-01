@@ -12,7 +12,22 @@ Just a stupidly fast Entity Component System
 -   Zero-dependency package
 -   Optimized for column-major operations
 -   Cache friendly [archetype/SoA](https://ajmmertens.medium.com/building-an-ecs-2-archetypes-and-vectorization-fe21690805f9) storage
--   Rigorously [unit tested](https://github.com/Ukendio/jecs/actions/workflows/ci.yaml) for stability
+-   Rigorously [unit tested](https://github.com/Ukendio/jecs/actions/workflows/unit-testing.yaml) for stability
+
+### Installation
+
+With [Wally](https://wally.run/):
+```bash
+jecs = "ukendio/jecs@0.6.0" # Inside wally.toml
+```
+With [pesde](https://pesde.dev/):
+```bash
+pesde add wally#ukendio/jecs@0.6.0
+```
+With [npm](https://www.npmjs.com/package/@rbxts/jecs) ([roblox-ts](https://roblox-ts.com/)):
+```bash
+npm i @rbxts/jecs
+```
 
 ### Example
 
@@ -54,6 +69,8 @@ end
 -- bob is the child of alice
 -- sara is the child of alice
 ```
+
+### Benchmarks
 
 21,000 entities 125 archetypes 4 random components queried.
 ![Queries](assets/image-3.png)
