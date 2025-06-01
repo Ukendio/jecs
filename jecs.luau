@@ -1,3 +1,4 @@
+
 --!optimize 2
 --!native
 --!strict
@@ -117,6 +118,7 @@ local ECS_ID_MASK =                          	    0b00
 
 local ECS_ENTITY_MASK =              bit32.lshift(1, 24)
 local ECS_GENERATION_MASK =          bit32.lshift(1, 16)
+local ECS_PAIR_OFFSET = 						    2^48
 
 local NULL_ARRAY = table.freeze({}) :: Column
 local NULL = newproxy(false)
@@ -168,7 +170,6 @@ end
 local function ECS_COMBINE(id: number, generation: number): i53
 	return id + (generation * ECS_ENTITY_MASK)
 end
-local ECS_PAIR_OFFSET = 2^48
 
 local function ECS_IS_PAIR(e: number): boolean
 	return e > ECS_PAIR_OFFSET
@@ -2576,40 +2577,40 @@ export type World = {
 	component: <T>(self: World) -> Entity<T>,
 	--- Gets the target of an relationship. For example, when a user calls
 	--- `world:target(id, ChildOf(parent), 0)`, you will obtain the parent entity.
-	target: <T>(self: World, id: Entity, relation: Id<T>, index: number?) -> Entity?,
+	target: <T, a>(self: World, id: Entity<T>, relation: Id<a>, index: number?) -> Entity?,
 	--- Deletes an entity and all it's related components and relationships.
-	delete: (self: World, id: Entity) -> (),
+	delete: <T>(self: World, id: Entity<T>) -> (),
 
 	--- Adds a component to the entity with no value
-	add: <T>(self: World, id: Entity, component: Id<T>) -> (),
+	add: <T, a>(self: World, id: Entity<T>, component: Id<a>) -> (),
 	--- Assigns a value to a component on the given entity
-	set: <T>(self: World, id: Entity, component: Id<T>, data: T) -> (),
+	set: <T, a>(self: World, id: Entity<T>, component: Id<a>, data: a) -> (),
 
 	cleanup: (self: World) -> (),
 	-- Clears an entity from the world
-	clear: <T>(self: World, id: Id<T>) -> (),
+	clear: <a>(self: World, id: Id<a>) -> (),
 	--- Removes a component from the given entity
-	remove: <T>(self: World, id: Entity, component: Id<T>) -> (),
+	remove: <T, a>(self: World, id: Entity<T>, component: Id<a>) -> (),
 	--- Retrieves the value of up to 4 components. These values may be nil.
-	get: (<A>(self: World, id: Entity, Id<A>) -> A?)
-		& (<A, B>(self: World, id: Entity, Id<A>, Id<B>) -> (A?, B?))
-		& (<A, B, C>(self: World, id: Entity, Id<A>, Id<B>, Id<C>) -> (A?, B?, C?))
-		& <A, B, C, D>(self: World, id: Entity, Id<A>, Id<B>, Id<C>, Id<D>) -> (A?, B?, C?, D?),
+	get: & (<T, a>(World, Entity<T>, Id<a>) -> a?)
+		& (<T, a, b>(World, Entity<T>, Id<a>, Id<b>) -> (a?, b?))
+		& (<T, a, b, c>(World, Entity<T>, Id<a>, Id<b>, Id<c>) -> (a?, b?, c?))
+		& (<T, a, b, c, d>(World, Entity<T>, Id<a>, Id<b>, Id<c>, Id<d>) -> (a?, b?, c?, d?)),
 
 	--- Returns whether the entity has the ID.
-	has: (<A>(World, Entity, A) -> boolean)
-		& (<A, B>(World, Entity, A, B) -> boolean)
-		& (<A, B, C>(World, Entity, A, B, C) -> boolean)
-		& <A, B, C, D>(World, Entity, A, B, C, D) -> boolean,
+	has: (<T>(World, Entity<T>, Id) -> boolean)
+		& (<T>(World, Entity<T>, Id, Id) -> boolean)
+		& (<T>(World, Entity<T>, Id, Id, Id) -> boolean)
+		& <T>(World, Entity<T>, Id, Id, Id, Id) -> boolean,
 
 	--- Get parent (target of ChildOf relationship) for entity. If there is no ChildOf relationship pair, it will return nil.
-	parent:(self: World, entity: Entity) -> Entity,
+	parent: <T>(self: World, entity: Entity<T>) -> Entity,
 
 	--- Checks if the world contains the given entity
-	contains:(self: World, entity: Entity) -> boolean,
+	contains: <T>(self: World, entity: Entity<T>) -> boolean,
 
 	--- Checks if the entity exists
-	exists: (self: World, entity: Entity) -> boolean,
+	exists: <T>(self: World, entity: Entity<T>) -> boolean,
 
 	each: <T>(self: World, id: Id<T>) -> () -> Entity,
 
