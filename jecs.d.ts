@@ -157,8 +157,8 @@ export class World {
 	 * @param hook The hook to install.
 	 * @param value The hook callback.
 	 */
-	set<T>(component: Entity<T>, hook: StatefulHook<(e: Entity<T>, id: Id<T>, data: T) => void>, value: (e: Entity<T>, id: Id<T>, data: T) => void): void;
-	set<T>(component: Entity<T>, hook: StatelessHook<(e: Entity<T>, id: Id<T>) => void>, value: (e: Entity<T>, id: Id<T>) => void): void;
+	set<T>(component: Entity<T>, hook: StatefulHook, value: (e: Entity<T>, id: Id<T>, data: T) => void): void;
+	set<T>(component: Entity<T>, hook: StatelessHook, value: (e: Entity<T>, id: Id<T>) => void): void;
 	
 	/**
 	 * Assigns a value to a component on the given entity.
