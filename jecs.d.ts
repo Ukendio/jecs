@@ -289,10 +289,10 @@ export function pair_first<P, O>(world: World, p: Pair<P, O>): Entity<P>;
  */
 export function pair_second<P, O>(world: World, p: Pair<P, O>): Entity<O>;
 
-type StatefulHook<Cb = <T>(e: Entity<T>, id: Id<T>, data: T) => void> = Entity<Cb> & {
+type StatefulHook = Entity<<T>(e: Entity<T>, id: Id<T>, data: T) => void> & {
 	readonly __nominal_StatefulHook: unique symbol,
 }
-type StatelessHook<Cb = <T>(e: Entity<T>, id: Id<T>) => void> = Entity<Cb> & {
+type StatelessHook = Entity<<T>(e: Entity<T>, id: Id<T>) => void> & {
 	readonly __nominal_StatelessHook: unique symbol,
 }
 
