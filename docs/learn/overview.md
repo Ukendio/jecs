@@ -132,26 +132,26 @@ Component data generally need to adhere to a specific interface, and sometimes r
 ::: code-group
 ```luau [luau]
 local Transform = world:component()
-world:set(Transform, OnAdd, function(entity)
-    -- A transform component has been added to an entity
+world:set(Transform, OnAdd, function(entity, id, data)
+    -- A transform component `id` has been added with `data` to `entity`
 end)
-world:set(Transform, OnRemove, function(entity)
-    -- A transform component has been removed from the entity
+world:set(Transform, OnRemove, function(entity, id)
+    -- A transform component `id` has been removed from `entity`
 end)
-world:set(Transform, OnChange, function(entity, value)
-    -- A transform component has been changed to value on the entity
+world:set(Transform, OnChange, function(entity, id, data)
+    -- A transform component `id` has been changed to `data` on `entity`
 end)
 ```
 ```typescript [typescript]
 const Transform = world.component();
-world.set(Transform, OnAdd, (entity) => {
-	// A transform component has been added to an entity
+world.set(Transform, OnAdd, (entity, id, data) => {
+	// A transform component `id` has been added with `data` to `entity`
 });
-world.set(Transform, OnRemove, (entity) => {
-	// A transform component has been removed from the entity
+world.set(Transform, OnRemove, (entity, id) => {
+	// A transform component `id` has been removed from `entity`
 });
-world.set(Transform, OnChange, (entity, value) => {
-	// A transform component has been changed to value on the entity
+world.set(Transform, OnChange, (entity, id, data) => {
+	// A transform component `id` has been changed to `data` on `entity`
 });
 ```
 :::
