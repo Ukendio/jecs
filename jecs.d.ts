@@ -280,9 +280,9 @@ export function pair_first<P, O>(world: World, p: Pair<P, O>): Entity<P>;
  */
 export function pair_second<P, O>(world: World, p: Pair<P, O>): Entity<O>;
 
-export declare const OnAdd: Entity<(e: Entity) => void>;
-export declare const OnRemove: Entity<(e: Entity) => void>;
-export declare const OnChange: Entity<(e: Entity, value: unknown) => void>;
+export declare const OnAdd: Entity<<T>(e: Entity<T>, id: Id<T>, data: T) => void>;
+export declare const OnRemove: Entity<(e: Entity, id: Id) => void>;
+export declare const OnChange: Entity<<T>(e: Entity, id: Id<T>, data: T) => void>;
 export declare const ChildOf: Tag;
 export declare const Wildcard: Entity;
 export declare const w: Entity;
