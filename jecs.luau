@@ -1934,6 +1934,9 @@ local function query_cached(query: ecs_query_data_t)
 
 	local function on_delete_callback(archetype)
 		local i = table.find(archetypes, archetype) :: number
+		if i == nil then
+			return
+		end
 		local n = #archetypes
 		archetypes[i] = archetypes[n]
 		archetypes[n] = nil
