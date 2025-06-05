@@ -152,6 +152,15 @@ export class World {
 	add<C>(entity: Entity, component: undefined extends InferComponent<C> ? C : Id<undefined>): void;
 
 	/**
+	 * Installs a hook on the given component.
+	 * @param component The target component.
+	 * @param hook The hook to install.
+	 * @param value The hook callback.
+	 */
+	set<T>(component: Entity<T>, hook: StatefulHook<(e: Entity<T>, id: Id<T>, data: T) => void>, value: (e: Entity<T>, id: Id<T>, data: T) => void): void;
+	set<T>(component: Entity<T>, hook: StatelessHook<(e: Entity<T>, id: Id<T>) => void>, value: (e: Entity<T>, id: Id<T>) => void): void;
+	
+	/**
 	 * Assigns a value to a component on the given entity.
 	 * @param entity The target entity.
 	 * @param component The component definition (could be a Pair or Entity).
@@ -280,9 +289,16 @@ export function pair_first<P, O>(world: World, p: Pair<P, O>): Entity<P>;
  */
 export function pair_second<P, O>(world: World, p: Pair<P, O>): Entity<O>;
 
-export declare const OnAdd: Entity<<T>(e: Entity<T>, id: Id<T>, data: T) => void>;
-export declare const OnRemove: Entity<(e: Entity, id: Id) => void>;
-export declare const OnChange: Entity<<T>(e: Entity, id: Id<T>, data: T) => void>;
+type StatefulHook<Cb = <T>(e: Entity<T>, id: Id<T>, data: T) => void> = Entity<Cb> & {
+	readonly __nominal_StatefulHook: unique symbol,
+}
+type StatelessHook<Cb = <T>(e: Entity<T>, id: Id<T>) => void> = Entity<Cb> & {
+	readonly __nominal_StatelessHook: unique symbol,
+}
+
+export declare const OnAdd: StatefulHook;
+export declare const OnRemove: StatelessHook;
+export declare const OnChange: StatefulHook;
 export declare const ChildOf: Tag;
 export declare const Wildcard: Entity;
 export declare const w: Entity;
