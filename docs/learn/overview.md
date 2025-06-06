@@ -540,10 +540,10 @@ Test if entity has a relationship wildcard
 
 :::code-group
 ```luau [luau]
-world:has(bob, pair(Eats, jecs.Wildcard)
+world:has(bob, pair(Eats, jecs.Wildcard))
 ```
 ```typescript [typescript]
-world.has(bob, pair(Eats, jecs.Wildcard)
+world.has(bob, pair(Eats, jecs.Wildcard))
 ```
 :::
 
@@ -578,7 +578,7 @@ for id in world:query(pair(Eats, Apples)) do
 end
 ```
 ```typescript [typescript]
-for (const [id] of world.query(pair(Eats, Apples)) {
+for (const [id] of world.query(pair(Eats, Apples))) {
     // ...
 }
 ```
@@ -593,7 +593,7 @@ for id in world:query(pair(Eats, jecs.Wildcard)) do
 end
 ```
 ```typescript [typescript]
-for (const [id] of world.query(pair(Eats, jecs.Wildcard)) {
+for (const [id] of world.query(pair(Eats, jecs.Wildcard))) {
     const food = world.target(id, Eats) // Apples, ...
 }
 ```
@@ -608,7 +608,7 @@ for child in world:query(pair(jecs.ChildOf, parent)) do
 end
 ```
 ```typescript [typescript]
-for (const [child] of world.query(pair(jecs.ChildOf, parent)) {
+for (const [child] of world.query(pair(jecs.ChildOf, parent))) {
     // ...
 }
 ```
