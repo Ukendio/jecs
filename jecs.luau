@@ -1,4 +1,3 @@
-
 --!optimize 2
 --!native
 --!strict
@@ -95,30 +94,31 @@ type ecs_world_t = {
 	observable: Map<i53, Map<i53, { ecs_observer_t }>>,
 }
 
-local HI_COMPONENT_ID = _G.__JECS_HI_COMPONENT_ID or 256
 -- stylua: ignore start
-local EcsOnAdd =                    HI_COMPONENT_ID +  1
-local EcsOnRemove =                 HI_COMPONENT_ID +  2
-local EcsOnChange =                 HI_COMPONENT_ID +  3
-local EcsWildcard =                 HI_COMPONENT_ID +  4
-local EcsChildOf =                  HI_COMPONENT_ID +  5
-local EcsComponent =                HI_COMPONENT_ID +  6
-local EcsOnDelete =                 HI_COMPONENT_ID +  7
-local EcsOnDeleteTarget =           HI_COMPONENT_ID +  8
-local EcsDelete =                   HI_COMPONENT_ID +  9
-local EcsRemove =                   HI_COMPONENT_ID + 10
-local EcsName =                     HI_COMPONENT_ID + 11
-local EcsOnArchetypeCreate =        HI_COMPONENT_ID + 12
-local EcsOnArchetypeDelete =        HI_COMPONENT_ID + 13
-local EcsRest =                     HI_COMPONENT_ID + 14
 
-local ECS_ID_DELETE =                        	    0b01
-local ECS_ID_IS_TAG =                        	    0b10
-local ECS_ID_MASK =                          	    0b00
+local ECS_ENTITY_MASK =       bit32.lshift(1, 24)
+local ECS_GENERATION_MASK =   bit32.lshift(1, 16)
+local ECS_PAIR_OFFSET = 	                 2^48
 
-local ECS_ENTITY_MASK =              bit32.lshift(1, 24)
-local ECS_GENERATION_MASK =          bit32.lshift(1, 16)
-local ECS_PAIR_OFFSET = 						    2^48
+local ECS_ID_DELETE =                 	     0b01
+local ECS_ID_IS_TAG =                 	     0b10
+local ECS_ID_MASK =                   	     0b00
+
+local HI_COMPONENT_ID =                       256
+local EcsOnAdd =             HI_COMPONENT_ID +  1
+local EcsOnRemove =          HI_COMPONENT_ID +  2
+local EcsOnChange =          HI_COMPONENT_ID +  3
+local EcsWildcard =          HI_COMPONENT_ID +  4
+local EcsChildOf =           HI_COMPONENT_ID +  5
+local EcsComponent =         HI_COMPONENT_ID +  6
+local EcsOnDelete =          HI_COMPONENT_ID +  7
+local EcsOnDeleteTarget =    HI_COMPONENT_ID +  8
+local EcsDelete =            HI_COMPONENT_ID +  9
+local EcsRemove =            HI_COMPONENT_ID + 10
+local EcsName =              HI_COMPONENT_ID + 11
+local EcsOnArchetypeCreate = HI_COMPONENT_ID + 12
+local EcsOnArchetypeDelete = HI_COMPONENT_ID + 13
+local EcsRest =              HI_COMPONENT_ID + 14
 
 local NULL_ARRAY = table.freeze({}) :: Column
 local NULL = newproxy(false)
@@ -2655,19 +2655,19 @@ return {
 	meta = (ECS_META :: any) :: <T>(id: Entity, id: Id<T>, value: T) -> Entity<T>,
 	is_tag = (ecs_is_tag :: any) :: <T>(World, Id<T>) -> boolean,
 
-    OnAdd = EcsOnAdd :: Entity<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
-	OnRemove = EcsOnRemove :: Entity<(entity: Entity, id: Id) -> ()>,
-	OnChange = EcsOnChange :: Entity<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
-	ChildOf = EcsChildOf :: Entity,
-	Component = EcsComponent :: Entity,
-	Wildcard = EcsWildcard :: Entity,
-	w = EcsWildcard :: Entity,
-	OnDelete = EcsOnDelete :: Entity,
-	OnDeleteTarget = EcsOnDeleteTarget :: Entity,
-	Delete = EcsDelete :: Entity,
-	Remove = EcsRemove :: Entity,
-	Name = EcsName :: Entity<string>,
-	Rest = EcsRest :: Entity,
+    OnAdd = (EcsOnAdd :: any) :: Entity<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
+	OnRemove = (EcsOnRemove :: any) :: Entity<(entity: Entity, id: Id) -> ()>,
+	OnChange = (EcsOnChange :: any) :: Entity<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
+	ChildOf = (EcsChildOf :: any) :: Entity,
+	Component = (EcsComponent :: any) :: Entity,
+	Wildcard = (EcsWildcard :: any) :: Entity,
+	w = (EcsWildcard :: any) :: Entity,
+	OnDelete = (EcsOnDelete :: any) :: Entity,
+	OnDeleteTarget = (EcsOnDeleteTarget :: any) :: Entity,
+	Delete = (EcsDelete :: any) :: Entity,
+	Remove = (EcsRemove :: any) :: Entity,
+	Name = (EcsName :: any) :: Entity<string>,
+	Rest = (EcsRest :: any) :: Entity,
 
 	pair = (ECS_PAIR :: any) :: <P, O>(first: Id<P>, second: Id<O>) -> Pair<P, O>,
 

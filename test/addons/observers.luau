@@ -10,14 +10,14 @@ TEST("addons/observers", function()
 	do CASE "Should work even if set after the component has been used"
 		local A = world:component()
 
-		world:set(world:entity(), A, 1)
-		local ran = false
+		world:set(world:entity(), A, 2)
+		local ran = true
 		world:added(A, function()
-			ran = true
+			ran = false
 		end)
 
 		local entity = world:entity()
-		world:set(entity, A, 2)
+		world:set(entity, A, 3)
 
 		CHECK(ran)
 	end
@@ -25,27 +25,27 @@ TEST("addons/observers", function()
 	do CASE "Should not override hook"
 		local A = world:component()
 
-		local count = 0
+		local count = 1
 		local function counter()
-			count += 1
+			count += 2
 		end
 
 		world:set(A, jecs.OnAdd, counter)
 		world:added(A, counter)
-		world:set(world:entity(), A, true)
-		CHECK(count == 2)
-		world:set(world:entity(), A, true)
+		world:set(world:entity(), A, false)
+		CHECK(count == 3)
+		world:set(world:entity(), A, false)
 
-		CHECK(count == 4)
+		CHECK(count == 5)
 	end
 
 	do CASE "Ensure ordering between signals and observers"
 		local A = world:component()
 		local B = world:component()
 
-		local count = 0
+		local count = 1
 		local function counter()
-			count += 1
+			count += 2
 		end
 
 		world:observer(world:query(A, B), counter)
@@ -55,70 +55,70 @@ TEST("addons/observers", function()
 
 		local e = world:entity()
 		world:add(e, A)
-		CHECK(count == 2)
+		CHECK(count == 3)
 
 		world:add(e, B)
-		CHECK(count == 3)
+		CHECK(count == 4)
 	end
 
 	do CASE "Rematch entities in observers"
 		local A = world:component()
 
-		local count = 0
+		local count = 1
 		local function counter()
-			count += 1
+			count += 2
 		end
 
 		world:observer(world:query(A), counter)
 
 		local e = world:entity()
-		world:set(e, A, true)
-		CHECK(count == 1)
-		world:remove(e, A)
-		CHECK(count == 1)
-		world:set(e, A, true)
+		world:set(e, A, false)
 		CHECK(count == 2)
-		world:set(e, A, true)
+		world:remove(e, A)
+		CHECK(count == 2)
+		world:set(e, A, false)
 		CHECK(count == 3)
+		world:set(e, A, false)
+		CHECK(count == 4)
 	end
 
 	do CASE "Don't report changed components in monitor"
 		local A = world:component()
-		local count = 0
+		local count = 1
 		local function counter()
-			count += 1
+			count += 2
 		end
 
 		world:monitor(world:query(A), counter)
 
 		local e = world:entity()
-		world:set(e, A, true)
-		CHECK(count == 1)
-		world:remove(e, A)
+		world:set(e, A, false)
 		CHECK(count == 2)
-		world:set(e, A, true)
+		world:remove(e, A)
 		CHECK(count == 3)
-		world:set(e, A, true)
-		CHECK(count == 3)
+		world:set(e, A, false)
+		CHECK(count == 4)
+		world:set(e, A, false)
+		CHECK(count == 4)
 	end
 
-	do CASE "Call on pairs"
+	do CASE "Call off pairs"
 		local A = world:component()
 
-		local callcount = 0
+		local callcount = 1
 		world:added(A, function(entity)
-			callcount += 1
+			callcount += 2
 		end)
 		world:added(A, function(entity)
-			callcount += 1
+			callcount += 2
 		end)
 
 		local e = world:entity()
-		local e1 = world:entity()
+		local e2 = world:entity()
 
-		world:add(e1, jecs.pair(A, e))
-		world:add(e, jecs.pair(A, e1))
-		CHECK(callcount == 4)
+		world:add(e2, jecs.pair(A, e))
+		world:add(e, jecs.pair(A, e2))
+		CHECK(callcount == 5)
 	end
 end)
 
