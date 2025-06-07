@@ -4,9 +4,23 @@ local test = testkit.test()
 local CASE, TEST, FINISH, CHECK = test.CASE, test.TEST, test.FINISH, test.CHECK
 local observers_add = require("@addons/observers")
 
-
 TEST("addons/observers", function()
 	local world = observers_add(jecs.world())
+
+	do CASE "Should work even if set after the component has been used"
+		local A = world:component()
+
+		world:set(world:entity(), A, 1)
+		local ran = false
+		world:added(A, function()
+			ran = true
+		end)
+
+		local entity = world:entity()
+		world:set(entity, A, 2)
+
+		CHECK(ran)
+	end
 
 	do CASE "Should not override hook"
 		local A = world:component()
@@ -17,12 +31,12 @@ TEST("addons/observers", function()
 		end
 
 		world:set(A, jecs.OnAdd, counter)
-		world:set(world:entity(), A, true)
-		CHECK(count == 1)
 		world:added(A, counter)
 		world:set(world:entity(), A, true)
+		CHECK(count == 2)
+		world:set(world:entity(), A, true)
 
-		CHECK(count == 3)
+		CHECK(count == 4)
 	end
 
 	do CASE "Ensure ordering between signals and observers"
@@ -33,10 +47,8 @@ TEST("addons/observers", function()
 		local function counter()
 			count += 1
 		end
-		world:observer({
-			callback = counter,
-			query = world:query(A, B),
-		})
+
+		world:observer(world:query(A, B), counter)
 
 		world:added(A, counter)
 		world:added(A, counter)
@@ -56,10 +68,8 @@ TEST("addons/observers", function()
 		local function counter()
 			count += 1
 		end
-		world:observer({
-			query = world:query(A),
-			callback = counter
-		})
+
+		world:observer(world:query(A), counter)
 
 		local e = world:entity()
 		world:set(e, A, true)
@@ -79,10 +89,7 @@ TEST("addons/observers", function()
 			count += 1
 		end
 
-		world:monitor({
-			query = world:query(A),
-			callback = counter
-		})
+		world:monitor(world:query(A), counter)
 
 		local e = world:entity()
 		world:set(e, A, true)

@@ -1,26 +1,22 @@
 local jecs = require("@jecs")
 
-type Observer = {
-	callback: (jecs.Entity) -> (),
-	query: jecs.Query<...any>,
-}
-
-type Monitor = {
-	callback: (jecs.Entity, jecs.Entity) -> (),
-	query: jecs.Query<any>
-}
-
 export type PatchedWorld = jecs.World & {
 	added: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id, value: T) -> ()) -> () -> (),
 	removed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id) -> ()) -> () -> (),
 	changed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id, value: T) -> ()) -> () -> (),
-	observer: (PatchedWorld, Observer) -> (),
-	monitor: (PatchedWorld, Monitor) -> (),
+	observer: (
+		PatchedWorld,
+		any,
+		(jecs.Entity) -> ()
+	) -> (),
+	monitor: (
+		PatchedWorld,
+		any,
+		(jecs.Entity, jecs.Id) -> ()
+	) -> ()
 }
 
-local function observers_new(world, description)
-	local query = description.query
-	local callback = description.callback
+local function observers_new(world, query, callback)
 	local terms = query.filter_with :: { jecs.Id }
 	if not terms then
 		local ids = query.ids
@@ -94,9 +90,7 @@ local function join(world, component)
 	end
 end
 
-local function monitors_new(world, description)
-	local query = description.query
-	local callback = description.callback
+local function monitors_new(world, query, callback)
 	local terms = query.filter_with :: { jecs.Id }
 	if not terms then
 		local ids = query.ids
@@ -131,7 +125,8 @@ local function monitors_new(world, description)
 		local archetype = r.archetype
 
 		if jecs.query_match(query, archetype) then
-			callback(entity, jecs.OnRemove)
+			local EcsOnRemove = jecs.OnRemove :: jecs.Id
+			callback(entity, EcsOnRemove)
 		end
 	end
 
@@ -162,7 +157,7 @@ local function observers_add(world: jecs.World): PatchedWorld
 			listeners = {}
 			signals.added[component] = listeners
 
-			local function on_add(entity: number, id: number, value: any)
+			local function on_add(entity, id, value)
 				for _, listener in listeners :: any do
 					listener(entity, id, value)
 				end
@@ -170,13 +165,14 @@ local function observers_add(world: jecs.World): PatchedWorld
 			local existing_hook = world:get(component, jecs.OnAdd)
 			if existing_hook then
 				table.insert(listeners, existing_hook)
-				local idr = world.component_index[component]
-				if idr then
-					idr.hooks.on_add = on_add
-				end
 			end
 
-			world:set(component, jecs.OnAdd, on_add)
+			local idr = world.component_index[component]
+			if idr then
+				idr.hooks.on_add = on_add
+			else
+				world:set(component, jecs.OnAdd, on_add)
+			end
 		end
 		table.insert(listeners, fn)
 		return function()
@@ -196,7 +192,7 @@ local function observers_add(world: jecs.World): PatchedWorld
 		if not listeners then
 			listeners = {}
 			signals.emplaced[component] = listeners
-			local function on_change(entity: number, id: number, value: any)
+			local function on_change(entity, id, value: any)
 				for _, listener in listeners :: any do
 					listener(entity, id, value)
 				end
@@ -204,12 +200,13 @@ local function observers_add(world: jecs.World): PatchedWorld
 			local existing_hook = world:get(component, jecs.OnChange)
 			if existing_hook then
 				table.insert(listeners, existing_hook)
-				local idr = world.component_index[component]
-				if idr then
-					idr.hooks.on_change = on_change
-				end
 			end
-			world:set(component, jecs.OnChange, on_change)
+			local idr = world.component_index[component]
+			if idr then
+				idr.hooks.on_change = on_change
+			else
+				world:set(component, jecs.OnChange, on_change)
+			end
 		end
 		table.insert(listeners, fn)
 		return function()
@@ -229,23 +226,26 @@ local function observers_add(world: jecs.World): PatchedWorld
 		if not listeners then
 			listeners = {}
 			signals.removed[component] = listeners
-			local function on_remove(entity: number, id: number, value: any)
+			local function on_remove(entity, id)
 				for _, listener in listeners :: any do
-					listener(entity, id, value)
+					listener(entity, id)
 				end
 			end
 			local existing_hook = world:get(component, jecs.OnRemove)
 			if existing_hook then
 				table.insert(listeners, existing_hook)
-				local idr = world.component_index[component]
-				if idr then
-					idr.hooks.on_remove = on_remove
-				end
 			end
 
-			world:set(component, jecs.OnRemove, on_remove)
+			local idr = world.component_index[component]
+			if idr then
+				idr.hooks.on_remove = on_remove
+			else
+				world:set(component, jecs.OnRemove, on_remove)
+			end
 		end
+
 		table.insert(listeners, fn)
+
 		return function()
 			local n = #listeners
 			local i = table.find(listeners, fn)
