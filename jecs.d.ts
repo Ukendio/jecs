@@ -150,15 +150,6 @@ export class World {
 	 * @param component The component (or tag) to add.
 	 */
 	add<C>(entity: Entity, component: undefined extends InferComponent<C> ? C : Id<undefined>): void;
-
-	/**
-	 * Installs a hook on the given component.
-	 * @param component The target component.
-	 * @param hook The hook to install.
-	 * @param value The hook callback.
-	 */
-	set<T>(component: Entity<T>, hook: StatefulHook, value: (e: Entity<T>, id: Id<T>, data: T) => void): void;
-	set<T>(component: Entity<T>, hook: StatelessHook, value: (e: Entity<T>, id: Id<T>) => void): void;
 	
 	/**
 	 * Assigns a value to a component on the given entity.
@@ -167,6 +158,21 @@ export class World {
 	 * @param value The value to store with that component.
 	 */
 	set<E extends Id<unknown>>(entity: Entity, component: E, value: InferComponent<E>): void;
+
+	/**
+	 * Installs a hook on the given component.
+	 * @param component The target component.
+	 * @param hook The hook to install.
+	 * @param value The hook callback.
+	 */
+	set<T>(component: Entity<T>, hook: StatefulHook, value: (e: Entity<T>, id: Id<T>, data: T) => void): void;
+	/**
+	 * Installs a hook on the given component.
+	 * @param component The target component.
+	 * @param hook The hook to install.
+	 * @param value The hook callback.
+	 */
+	set<T>(component: Entity<T>, hook: StatelessHook, value: (e: Entity<T>, id: Id<T>) => void): void;
 
 	/**
 	 * Cleans up the world by removing empty archetypes and rebuilding the archetype collections.
