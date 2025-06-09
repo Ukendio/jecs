@@ -661,7 +661,7 @@ TEST("world:range()", function()
 	do CASE "under range start"
 		local world = jecs.world()
 		world:range(400, 1000)
-		local id = world:entity()
+		local id = world:entity() :: number
 		local e = world:entity(id + 5)
 		CHECK(e == id + 5)
 		CHECK(world:contains(e))
@@ -669,7 +669,7 @@ TEST("world:range()", function()
 		CHECK(world:contains(e2))
 		world:delete(e2)
 		CHECK(not world:contains(e2))
-		local e2v1 = world:entity(399)
+		local e2v1 = world:entity(399) :: number
 		CHECK(world:contains(e2v1))
 		CHECK(ECS_ID(e2v1) == 399)
 		CHECK(ECS_GENERATION(e2v1) == 0)
@@ -682,13 +682,13 @@ TEST("world:range()", function()
 		CHECK(world:contains(e2))
 		world:delete(e2)
 		CHECK(not world:contains(e2))
-		local e2v1 = world:entity(405)
+		local e2v1 = world:entity(405) :: number
 		CHECK(world:contains(e2v1))
 		CHECK(ECS_ID(e2v1) == 405)
 		CHECK(ECS_GENERATION(e2v1) == 0)
 
 		world:delete(e2v1)
-		local e2v2 = world:entity(e2v1)
+		local e2v2 = world:entity(e2v1) :: number
 		CHECK(ECS_ID(e2v2) == 405)
 		CHECK(ECS_GENERATION(e2v2) == 0)
 	end
@@ -697,7 +697,7 @@ end)
 TEST("world:entity()", function()
 	do CASE "desired id"
 		local world = jecs.world()
-		local id = world:entity()
+		local id = world:entity() :: number
 		local e = world:entity(id + 5)
 		CHECK(e == id + 5)
 		CHECK(world:contains(e))
@@ -767,11 +767,11 @@ TEST("world:entity()", function()
 			local e = world:entity()
 			world:delete(e)
 		end
-		local e = world:entity() :: any
+		local e = world:entity() :: number
 		CHECK(ECS_ID(e) == pin)
 		CHECK(ECS_GENERATION(e) == 2^16-1)
 		world:delete(e)
-		e = world:entity()
+		e = world:entity() :: number
 		CHECK(ECS_ID(e) == pin)
 		CHECK(ECS_GENERATION(e) == 0)
 	end

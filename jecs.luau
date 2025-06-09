@@ -2525,8 +2525,8 @@ end
 
 World.new = world_new
 
-export type Entity<T = any> = { __T: T }
-export type Id<T = any> = { __T: T }
+export type Entity<T = any> = number | { __T: T }
+export type Id<T = any> = number | { __T: T }
 export type Pair<P, O> = Id<P>
 type ecs_id_t<T=unknown> = Id<T> | Pair<T, "Tag"> | Pair<"Tag", T>
 export type Item<T...> = (self: Query<T...>) -> (Entity, T...)
@@ -2601,10 +2601,10 @@ export type World = {
 		& (<T, a, b, c, d>(World, Entity<T>, Id<a>, Id<b>, Id<c>, Id<d>) -> (a?, b?, c?, d?)),
 
 	--- Returns whether the entity has the ID.
-	has: (<T>(World, Entity<T>, Id) -> boolean)
-		& (<T>(World, Entity<T>, Id, Id) -> boolean)
-		& (<T>(World, Entity<T>, Id, Id, Id) -> boolean)
-		& <T>(World, Entity<T>, Id, Id, Id, Id) -> boolean,
+	has: (<T, a>(World, Entity<T>, Id<a>) -> boolean)
+		& (<T, a, b >(World, Entity<T>, Id<a>, Id<a>) -> boolean)
+		& (<T, a, b, c>(World, Entity<T>, Id<a>, Id<b>, Id<c>) -> boolean)
+		& <T, a, b, c, d>(World, Entity<T>, Id<a>, Id<b>, Id<c>, Id<d>) -> boolean,
 
 	--- Get parent (target of ChildOf relationship) for entity. If there is no ChildOf relationship pair, it will return nil.
 	parent: <T>(self: World, entity: Entity<T>) -> Entity,
