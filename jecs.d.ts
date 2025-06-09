@@ -157,7 +157,7 @@ export class World {
 	 * @param component The component definition (could be a Pair or Entity).
 	 * @param value The value to store with that component.
 	 */
-	set<E extends Id<unknown>>(entity: Entity, component: E, value: InferComponent<E>): void;
+	set<T>(entity: Entity, component: Id<T>, value: T): void;
 
 	/**
 	 * Installs a hook on the given component.
