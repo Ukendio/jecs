@@ -1413,11 +1413,11 @@ local function world_delete(world: ecs_world_t, entity: i53)
 				for i = tr, tr + tr_count - 1 do
 					ids[types[i]] = true
 				end
+
 				local n = #entities
 				table.move(entities, 1, n, count + 1, children)
 				count += n
 			end
-
 			for _, child in children do
 				for id in ids do
 					world_remove(world, child, id)

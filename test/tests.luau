@@ -289,6 +289,27 @@ TEST("world:contains()", function()
 end)
 
 TEST("world:delete()", function()
+	do CASE "remove (*, R) pairs when relationship is invalidated"
+		print("-------")
+		local world = jecs.world()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		world:add(e1, pair(e2, A))
+		world:add(e1, B) -- Some stable component that should not be removed in the process
+		world:add(e1, pair(e2, C))
+		world:delete(e2)
+
+		CHECK(not world:contains(e2))
+		CHECK(not world:has(e1, pair(e2, A)))
+		CHECK(world:has(e1, B))
+		CHECK(not world:has(e1, pair(e2, C)))
+		CHECK(world:contains(e1))
+	end
 	do CASE "remove pair when relationship is deleted"
 		local world = jecs.world()
 		local e1 = world:entity()
