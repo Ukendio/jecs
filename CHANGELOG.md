@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.6.1
+
+### Changed
+- Entity types now unions with numbers should allow for easier time casting while not causing regressing previous behaviours
+
+### Fixed
+- Fixed a critical bug with `(*, R)` pairs not being removed when `R` is deleted
+
 ## 0.6.0
 
 ### Added
