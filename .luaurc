@@ -1,6 +1,6 @@
 {
     "aliases": {
-        "jecs": "jecs",
+        "jecs": "jecs.luau",
         "testkit": "tools/testkit",
         "mirror": "mirror",
         "tools": "tools",
