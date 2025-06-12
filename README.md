@@ -46,4 +46,15 @@ end
 -- "alice"
 -- bob is the child of alice
 -- sara is the child of alice
+
+local Position = world:component()
+local Velocity = world:component()
+
+local function things_move(world, dt) 
+    for e, p, v in world:query(Position, Velocity) do 
+        world:set(e, Position, p + v * dt)
+    end
+end
+
+things_move(world, 1/60)
 ```
