@@ -38,8 +38,8 @@ world:set(sara, Name, "sara")
 
 print(getName(parent(sara)))
 
-for e in world:query(pair(ChildOf, alice)) do
-    print(getName(e), "is the child of alice")
+for e, name in world:query(Name, pair(ChildOf, alice)) do
+    print(name, "is the child of alice")
 end
 
 -- Output
