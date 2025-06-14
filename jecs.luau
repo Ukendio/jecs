@@ -1,3 +1,4 @@
+
 --!optimize 2
 --!native
 --!strict
@@ -825,7 +826,7 @@ local function world_entity(world: ecs_world_t, entity: i53?): i53
 			return entity
 		end
 	end
-	return entity_index_new_id(entity_index, entity)
+	return entity_index_new_id(entity_index)
 end
 
 local function world_parent(world: ecs_world_t, entity: i53)
@@ -1051,7 +1052,7 @@ local function world_remove(world: ecs_world_t, entity: i53, id: i53)
 	end
 end
 
-local function archetype_fast_delete_last(columns: { Column }, column_count: number, types: { i53 }, entity: i53)
+local function archetype_fast_delete_last(columns: { Column }, column_count: number)
 	for i, column in columns do
 		if column ~= NULL_ARRAY then
 			column[column_count] = nil
@@ -1059,7 +1060,7 @@ local function archetype_fast_delete_last(columns: { Column }, column_count: num
 	end
 end
 
-local function archetype_fast_delete(columns: { Column }, column_count: number, row, types, entity)
+local function archetype_fast_delete(columns: { Column }, column_count: number, row: number)
 	for i, column in columns do
 		if column ~= NULL_ARRAY then
 			column[row] = column[column_count]
@@ -1101,9 +1102,9 @@ local function archetype_delete(world: ecs_world_t, archetype: ecs_archetype_t, 
 	entities[last] = nil :: any
 
 	if row == last then
-		archetype_fast_delete_last(columns, column_count, id_types, delete)
+		archetype_fast_delete_last(columns, column_count)
 	else
-		archetype_fast_delete(columns, column_count, row, id_types, delete)
+		archetype_fast_delete(columns, column_count, row)
 	end
 end
 
@@ -1409,14 +1410,14 @@ local function world_delete(world: ecs_world_t, entity: i53)
 				local tr = idr_r_archetype.records[rel]
 				local tr_count = idr_r_archetype.counts[rel]
 				local types = idr_r_archetype.types
-				for i = tr, tr_count do
-					ids[types[tr]] = true
+				for i = tr, tr + tr_count - 1 do
+					ids[types[i]] = true
 				end
+
 				local n = #entities
 				table.move(entities, 1, n, count + 1, children)
 				count += n
 			end
-
 			for _, child in children do
 				for id in ids do
 					world_remove(world, child, id)
@@ -2525,8 +2526,8 @@ end
 
 World.new = world_new
 
-export type Entity<T = any> = { __T: T }
-export type Id<T = any> = { __T: T }
+export type Entity<T = any> = number | { __T: T }
+export type Id<T = any> = number | { __T: T }
 export type Pair<P, O> = Id<P>
 type ecs_id_t<T=unknown> = Id<T> | Pair<T, "Tag"> | Pair<"Tag", T>
 export type Item<T...> = (self: Query<T...>) -> (Entity, T...)
@@ -2601,10 +2602,10 @@ export type World = {
 		& (<T, a, b, c, d>(World, Entity<T>, Id<a>, Id<b>, Id<c>, Id<d>) -> (a?, b?, c?, d?)),
 
 	--- Returns whether the entity has the ID.
-	has: (<T>(World, Entity<T>, Id) -> boolean)
-		& (<T>(World, Entity<T>, Id, Id) -> boolean)
-		& (<T>(World, Entity<T>, Id, Id, Id) -> boolean)
-		& <T>(World, Entity<T>, Id, Id, Id, Id) -> boolean,
+	has: (<T, a>(World, Entity<T>, Id<a>) -> boolean)
+		& (<T, a, b >(World, Entity<T>, Id<a>, Id<a>) -> boolean)
+		& (<T, a, b, c>(World, Entity<T>, Id<a>, Id<b>, Id<c>) -> boolean)
+		& <T, a, b, c, d>(World, Entity<T>, Id<a>, Id<b>, Id<c>, Id<d>) -> boolean,
 
 	--- Get parent (target of ChildOf relationship) for entity. If there is no ChildOf relationship pair, it will return nil.
 	parent: <T>(self: World, entity: Entity<T>) -> Entity,

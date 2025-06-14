@@ -7,6 +7,17 @@ local observers_add = require("@addons/observers")
 TEST("addons/observers", function()
 	local world = observers_add(jecs.world())
 
+	local Test = world:component() :: jecs.Id<number>
+	type Q<T...> = () -> (jecs.Entity, T...)
+	local query:
+		(<A>(jecs.World, jecs.Id<A>) -> Q<A>)
+		& (<A, B>(jecs.World, jecs.Id<A>, jecs.Id<B>) -> Q<A, B>)
+		& (<A, B, C>(jecs.World, jecs.Id<A>, jecs.Id<B>, jecs.Id<C>) -> Q<A, B, C>)
+		= 1 :: never
+	for e, a in query(world, Test) do
+
+	end
+
 	do CASE "Should work even if set after the component has been used"
 		local A = world:component()
 

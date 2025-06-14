@@ -159,14 +159,13 @@ export class World {
 	 */
 	set<T>(component: Entity<T>, hook: StatefulHook, value: (e: Entity<T>, id: Id<T>, data: T) => void): void;
 	set<T>(component: Entity<T>, hook: StatelessHook, value: (e: Entity<T>, id: Id<T>) => void): void;
-	
 	/**
 	 * Assigns a value to a component on the given entity.
 	 * @param entity The target entity.
 	 * @param component The component definition (could be a Pair or Entity).
 	 * @param value The value to store with that component.
 	 */
-	set<E extends Id<unknown>>(entity: Entity, component: E, value: InferComponent<E>): void;
+	set<T>(entity: Entity, component: Id<T>, value: T): void;
 
 	/**
 	 * Cleans up the world by removing empty archetypes and rebuilding the archetype collections.

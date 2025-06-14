@@ -2,7 +2,7 @@ name: release
 
 on:
     push:
-        tags: ["v*"]
+        tags: ["v*", "workflow_dispatch"]
 
 jobs:
     build:
@@ -22,7 +22,7 @@ jobs:
               run: rojo build --output build.rbxm default.project.json
 
             - name: Upload Build Artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: build
                   path: build.rbxm
@@ -38,7 +38,7 @@ jobs:
               uses: actions/checkout@v4
 
             - name: Download Jecs Build
-              uses: actions/download-artifact@v3
+              uses: actions/download-artifact@v4
               with:
                   name: build
                   path: build
