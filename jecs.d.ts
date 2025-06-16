@@ -165,7 +165,7 @@ export class World {
 	 * @param component The component definition (could be a Pair or Entity).
 	 * @param value The value to store with that component.
 	 */
-	set<T>(entity: Entity, component: Id<T>, value: T): void;
+	set<E extends Id<unknown>>(entity: Entity, component: E, value: InferComponent<E>): void;
 
 	/**
 	 * Cleans up the world by removing empty archetypes and rebuilding the archetype collections.
