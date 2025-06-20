@@ -52,6 +52,9 @@ A tool for inspecting entity lifetimes
 #### [jecs_observers](https://github.com/Ukendio/jecs/blob/main/addons/observers.luau)
 Observers for queries and signals for components
 
+### [hammer](https://github.com/Mark-Marks/hammer)
+A set of utilities for Jecs
+
 ### Schedulers
 
 #### [lockstep scheduler](https://gist.github.com/1Axen/6d4f78b3454cf455e93794505588354b)
