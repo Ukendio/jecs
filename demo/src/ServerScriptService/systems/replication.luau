@@ -159,7 +159,7 @@ return function(world: ty.World)
 		            set_n += 1
 		            set_ids[set_n] = e
 		            set_values[set_n] = v or true
-		        elseif not world:contains(e) then
+		        elseif world:contains(e) then
 		            removed_n += 1
 		            removed_ids[removed_n] = e
 		        end

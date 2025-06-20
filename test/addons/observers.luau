@@ -7,24 +7,13 @@ local observers_add = require("@addons/observers")
 TEST("addons/observers", function()
 	local world = observers_add(jecs.world())
 
-	local Test = world:component() :: jecs.Id<number>
-	type Q<T...> = () -> (jecs.Entity, T...)
-	local query:
-		(<A>(jecs.World, jecs.Id<A>) -> Q<A>)
-		& (<A, B>(jecs.World, jecs.Id<A>, jecs.Id<B>) -> Q<A, B>)
-		& (<A, B, C>(jecs.World, jecs.Id<A>, jecs.Id<B>, jecs.Id<C>) -> Q<A, B, C>)
-		= 1 :: never
-	for e, a in query(world, Test) do
-
-	end
-
 	do CASE "Should work even if set after the component has been used"
 		local A = world:component()
 
 		world:set(world:entity(), A, 2)
-		local ran = true
+		local ran = false
 		world:added(A, function()
-			ran = false
+			ran = true
 		end)
 
 		local entity = world:entity()
@@ -38,16 +27,16 @@ TEST("addons/observers", function()
 
 		local count = 1
 		local function counter()
-			count += 2
+			count += 1
 		end
 
 		world:set(A, jecs.OnAdd, counter)
 		world:added(A, counter)
 		world:set(world:entity(), A, false)
-		CHECK(count == 3)
+		CHECK(count == (1 + 2))
 		world:set(world:entity(), A, false)
 
-		CHECK(count == 5)
+		CHECK(count == (1 + (2 * 2)))
 	end
 
 	do CASE "Ensure ordering between signals and observers"
@@ -56,7 +45,7 @@ TEST("addons/observers", function()
 
 		local count = 1
 		local function counter()
-			count += 2
+			count += 1
 		end
 
 		world:observer(world:query(A, B), counter)
@@ -77,7 +66,7 @@ TEST("addons/observers", function()
 
 		local count = 1
 		local function counter()
-			count += 2
+			count += 1
 		end
 
 		world:observer(world:query(A), counter)
@@ -97,7 +86,7 @@ TEST("addons/observers", function()
 		local A = world:component()
 		local count = 1
 		local function counter()
-			count += 2
+			count += 1
 		end
 
 		world:monitor(world:query(A), counter)
@@ -118,10 +107,10 @@ TEST("addons/observers", function()
 
 		local callcount = 1
 		world:added(A, function(entity)
-			callcount += 2
+			callcount += 1
 		end)
 		world:added(A, function(entity)
-			callcount += 2
+			callcount += 1
 		end)
 
 		local e = world:entity()
@@ -129,7 +118,7 @@ TEST("addons/observers", function()
 
 		world:add(e2, jecs.pair(A, e))
 		world:add(e, jecs.pair(A, e2))
-		CHECK(callcount == 5)
+		CHECK(callcount == 1 + 2 * 2)
 	end
 end)
 
