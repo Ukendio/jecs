@@ -74,11 +74,12 @@ return function(world: types.World)
             local removed = map.removed
 
             if removed then
-                for i, e in removed do
-                    if not world:contains(e) then
+                for _, entity in removed do
+                    entity = ecs_map_get(world, entity)
+                    if not world:contains(entity) then
                         continue
                     end
-                    world:remove(e, id)
+                    world:remove(entity, id)
                 end
             end
         end
