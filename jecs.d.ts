@@ -41,16 +41,15 @@ type Nullable<T extends unknown[]> = { [K in keyof T]: T[K] | undefined };
 type InferComponents<A extends Id[]> = { [K in keyof A]: InferComponent<A[K]> };
 
 type ArchetypeId = number;
-type Column = unknown[];
+export type Column<T> = T[];
 
-export type Archetype = {
+export type Archetype<T extends unknown[]> = {
 	id: number;
 	types: number[];
 	type: string;
 	entities: number[];
-	columns: Column[];
-	records: number[];
-	counts: number[];
+	columns: Column<unknown>[];
+	columns_map: { [K in keyof T]: Column<T[K]> }
 };
 
 type Iter<T extends unknown[]> = IterableFunction<LuaTuple<[Entity, ...T]>>;
@@ -65,7 +64,7 @@ export type CachedQuery<T extends unknown[]> = {
 	 * Returns the matched archetypes of the query
 	 * @returns An array of archetypes of the query
 	 */
-	archetypes(): Archetype[];
+	archetypes(): Archetype<T>[];
 } & Iter<T>;
 
 export type Query<T extends unknown[]> = {
@@ -99,7 +98,7 @@ export type Query<T extends unknown[]> = {
 	 * Returns the matched archetypes of the query
 	 * @returns An array of archetypes of the query
 	 */
-	archetypes(): Archetype[];
+	archetypes(): Archetype<T>[];
 } & Iter<T>;
 
 export class World {
@@ -310,3 +309,11 @@ export declare const Delete: Tag;
 export declare const Remove: Tag;
 export declare const Name: Entity<string>;
 export declare const Rest: Entity;
+
+export type ComponentRecord = {
+	records: Map<Id, number>,
+	counts: Map<Id, number>,
+	size: number,
+}
+
+export function component_record(world: World, id: Id): ComponentRecord

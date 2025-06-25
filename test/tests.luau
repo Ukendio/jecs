@@ -64,7 +64,7 @@ TEST("world:add()", function()
 	end
 
 	do CASE("archetype move")
-		local world = jecs.World.new()
+		local world = jecs.world()
 
 		local d = dwi(world)
 
@@ -609,7 +609,7 @@ TEST("world:delete()", function()
 	end
 
 	do CASE "fast delete"
-		local world = jecs.World.new()
+		local world = jecs.world()
 
 		local entities = {}
 		local Health = world:component()
@@ -635,7 +635,7 @@ TEST("world:delete()", function()
 	end
 
 	do CASE "cycle"
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local Likes = world:component()
 		world:add(Likes, pair(jecs.OnDeleteTarget, jecs.Delete))
 		local bob = world:entity()
@@ -800,7 +800,7 @@ end)
 
 TEST("world:has()", function()
 	do CASE "should find Tag on entity"
-		local world = jecs.World.new()
+		local world = jecs.world()
 
 		local Tag = world:entity()
 
@@ -811,7 +811,7 @@ TEST("world:has()", function()
 	end
 
 	do CASE "should return false when missing one tag"
-		local world = jecs.World.new()
+		local world = jecs.world()
 
 		local A = world:entity()
 		local B = world:entity()
@@ -866,7 +866,7 @@ TEST("world:query()", function()
 		CHECK(#q:archetypes() == 0)
 	end
 	do CASE "multiple iter"
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local A = world:component() :: jecs.Entity<string>
 		local B = world:component() :: jecs.Entity<string>
 		local e = world:entity()
@@ -883,7 +883,7 @@ TEST("world:query()", function()
 		CHECK(counter == 2)
 	end
 	do CASE "tag"
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local A = world:entity()
 		local e = world:entity()
 		CHECK_EXPECT_ERR(function()
@@ -897,7 +897,7 @@ TEST("world:query()", function()
 		CHECK(count == 1)
 	end
 	do CASE "pairs"
-		local world = jecs.World.new()
+		local world = jecs.world()
 
 		local C1 = world:component() :: jecs.Id<boolean>
 		local C2 = world:component() :: jecs.Id<boolean>
@@ -969,7 +969,7 @@ TEST("world:query()", function()
 
 	do CASE "query single component"
 		do
-			local world = jecs.World.new()
+			local world = jecs.world()
 			local A = world:component()
 			local B = world:component()
 
@@ -1125,7 +1125,7 @@ TEST("world:query()", function()
 	end
 
 	do CASE "should query all entities without B"
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local A = world:component()
 		local B = world:component()
 
@@ -1149,7 +1149,7 @@ TEST("world:query()", function()
 	end
 
 	do CASE "should allow querying for relations"
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local Eats = world:component()
 		local Apples = world:component()
 		local bob = world:entity()
@@ -1162,7 +1162,7 @@ TEST("world:query()", function()
 	end
 
 	do CASE "should allow wildcards in queries"
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local Eats = world:component()
 		local Apples = world:entity()
 		local bob = world:entity()
@@ -1181,7 +1181,7 @@ TEST("world:query()", function()
 	end
 
 	do CASE "should match against multiple pairs"
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local Eats = world:component()
 		local Apples = world:entity()
 		local Oranges = world:entity()
@@ -1213,7 +1213,7 @@ TEST("world:query()", function()
 	end
 
 	do CASE "should only relate alive entities"
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local Eats = world:entity()
 		local Apples = world:component()
 		local Oranges = world:component()
@@ -1241,7 +1241,7 @@ TEST("world:query()", function()
 
 	do
 		CASE("should error when setting invalid pair")
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local Eats = world:component()
 		local Apples = world:component()
 		local bob = world:entity()
@@ -1254,7 +1254,7 @@ TEST("world:query()", function()
 
 	do
 		CASE("should find target for ChildOf")
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local ChildOf = jecs.ChildOf
 
 		local Name = world:component()
@@ -1278,7 +1278,7 @@ TEST("world:query()", function()
 
 	do
 		CASE("despawning while iterating")
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local A = world:component()
 		local B = world:component()
 
@@ -1297,7 +1297,7 @@ TEST("world:query()", function()
 	end
 
 	do CASE "should not find any entities"
-		local world = jecs.World.new()
+		local world = jecs.world()
 
 		local Hello = world:component()
 		local Bob = world:component()
@@ -1316,7 +1316,7 @@ TEST("world:query()", function()
 
 	do CASE "world:query():without()"
 		-- REGRESSION TEST
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local _1, _2, _3 = world:component(), world:component(), world:component()
 
 		local counter = 0
@@ -1330,7 +1330,7 @@ end)
 TEST("world:remove()", function()
 	do
 		CASE("should allow remove a component that doesn't exist on entity")
-		local world = jecs.World.new()
+		local world = jecs.world()
 
 		local Health = world:component()
 		local Poison = world:component()
@@ -1444,10 +1444,15 @@ TEST("world:target", function()
 		CHECK(jecs.pair_first(world, pair(B, C)) == B)
 		local r = (jecs.entity_index_try_get(world.entity_index :: any, e :: any) :: any) :: jecs.Record
 		local archetype = r.archetype
-		local records = archetype.records
-		local counts = archetype.counts
-		CHECK(counts[pair(A, __)] == 4)
-		CHECK(records[pair(B, C)] > records[pair(A, E)])
+		local function cdr(id)
+			return assert(jecs.component_record(world, id))
+		end
+		local idr_b_c = cdr(pair(B, C))
+		local idr_a_wc = cdr(pair(A, __))
+		local idr_a_e = cdr(pair(A, E))
+
+		CHECK(idr_a_wc.counts[archetype.id] == 4)
+		CHECK(idr_b_c.records[archetype.id] > idr_a_e.records[archetype.id])
 		CHECK(world:target(e, A, 0) == B)
 		CHECK(world:target(e, A, 1) == C)
 		CHECK(world:target(e, A, 2) == D)
@@ -1457,10 +1462,10 @@ TEST("world:target", function()
 		CHECK(world:target(e, C, 0) == D)
 		CHECK(world:target(e, C, 1) == nil)
 
-		CHECK(archetype.records[pair(A, B):: any] == 1)
-		CHECK(archetype.records[pair(A, C):: any] == 2)
-		CHECK(archetype.records[pair(A, D):: any] == 3)
-		CHECK(archetype.records[pair(A, E):: any] == 4)
+		CHECK(cdr(pair(A, B)).records[archetype.id] == 1)
+		CHECK(cdr(pair(A, C)).records[archetype.id] == 2)
+		CHECK(cdr(pair(A, D)).records[archetype.id] == 3)
+		CHECK(cdr(pair(A, E)).records[archetype.id] == 4)
 
 		CHECK(world:target(e, C, 0) == D)
 		CHECK(world:target(e, C, 1) == nil)
@@ -1582,9 +1587,13 @@ TEST("#repro", function()
 	local function getTargets(relation)
 		local tgts = {}
 		local pairwildcard = pair(relation, jecs.Wildcard)
+		local idr = assert(jecs.component_record(world, pairwildcard))
+		local counts = idr.counts
+		local records = idr.records
 		for _, archetype in world:query(pairwildcard):archetypes() do
-			local tr = archetype.records[pairwildcard]
-			local count = archetype.counts[pairwildcard]
+			local archetype_id = archetype.id
+			local count = counts[archetype_id]
+			local tr = records[archetype_id]
 			local types = archetype.types
 			for _, entity in archetype.entities do
 			    for i = 0, count - 1 do

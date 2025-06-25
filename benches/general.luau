@@ -14,7 +14,7 @@ local pair = jecs.pair
 
 do
 	TITLE("create")
-	local world = jecs.World.new()
+	local world = jecs.world()
 
 	BENCH("entity", function()
 		for i = 1, START(N) do
@@ -35,7 +35,7 @@ end
 do
 	TITLE("set")
 
-	local world = jecs.World.new()
+	local world = jecs.world()
 	local A = world:component()
 
 	local entities = table.create(N)
@@ -69,7 +69,7 @@ end
 do
 	TITLE("set relationship")
 
-	local world = jecs.World.new()
+	local world = jecs.world()
 	local A = world:component()
 
 	local entities = table.create(N)
@@ -103,7 +103,7 @@ end
 do
 	TITLE("get")
 
-	local world = jecs.World.new()
+	local world = jecs.world()
 	local A = world:component()
 	local B = world:component()
 	local C = world:component()
@@ -147,7 +147,7 @@ do
 	TITLE("target")
 
 	BENCH("1st target", function()
-		local world = jecs.World.new()
+		local world = jecs.world()
 		local A = world:component()
 		local B = world:component()
 		local C = world:component()
@@ -179,7 +179,7 @@ do
 
 	local function view_bench(n: number)
 		BENCH(`{n} entities per archetype`, function()
-			local world = jecs.World.new()
+			local world = jecs.world()
 
 			local A = world:component()
 			local B = world:component()
@@ -205,7 +205,7 @@ do
 		end)
 
 		BENCH(`inlined query`, function()
-			local world = jecs.World.new()
+			local world = jecs.world()
 			local A = world:component()
 			local B = world:component()
 			local C = world:component()
@@ -225,12 +225,22 @@ do
 
 			local archetypes = world:query(A, B, C, D):archetypes()
 			START()
+			-- for _, archetype in archetypes do
+			-- 	local columns, records = archetype.columns, archetype.records
+			-- 	local a = columns[records[A]]
+			-- 	local b = columns[records[B]]
+			-- 	local c = columns[records[C]]
+			-- 	local d = columns[records[D]]
+			-- 	for row in archetype.entities do
+			-- 		local _1, _2, _3, _4 = a[row], b[row], c[row], d[row]
+			-- 	end
+			-- end
 			for _, archetype in archetypes do
-				local columns, records = archetype.columns, archetype.records
-				local a = columns[records[A]]
-				local b = columns[records[B]]
-				local c = columns[records[C]]
-				local d = columns[records[D]]
+				local columns_map = archetype.columns_map
+				local a = columns_map[A]
+				local b = columns_map[B]
+				local c = columns_map[C]
+				local d = columns_map[D]
 				for row in archetype.entities do
 					local _1, _2, _3, _4 = a[row], b[row], c[row], d[row]
 				end

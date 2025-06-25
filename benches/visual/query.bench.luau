@@ -2,14 +2,14 @@
 --!native
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Matter = require(ReplicatedStorage.DevPackages["_Index"]["matter-ecs_matter@0.8.1"].matter)
-local ecr = require(ReplicatedStorage.DevPackages["_Index"]["centau_ecr@0.8.0"].ecr)
+local Matter = require(ReplicatedStorage.DevPackages.matter)
+local ecr = require(ReplicatedStorage.DevPackages.ecr)
 local newWorld = Matter.World.new()
 
-local jecs = require(ReplicatedStorage.Lib)
-local mirror = require(ReplicatedStorage.mirror)
-local mcs = mirror.World.new()
-local ecs = jecs.World.new()
+local jecs = require(ReplicatedStorage.Lib:Clone())
+local mirror = require(ReplicatedStorage.mirror:Clone())
+local mcs = mirror.world()
+local ecs = jecs.world()
 
 local A1 = Matter.component()
 local A2 = Matter.component()
@@ -38,14 +38,14 @@ local D6 = ecs:component()
 local D7 = ecs:component()
 local D8 = ecs:component()
 
-local E1 = mcs:entity()
-local E2 = mcs:entity()
-local E3 = mcs:entity()
-local E4 = mcs:entity()
-local E5 = mcs:entity()
-local E6 = mcs:entity()
-local E7 = mcs:entity()
-local E8 = mcs:entity()
+local E1 = mcs:component()
+local E2 = mcs:component()
+local E3 = mcs:component()
+local E4 = mcs:component()
+local E5 = mcs:component()
+local E6 = mcs:component()
+local E7 = mcs:component()
+local E8 = mcs:component()
 
 local registry2 = ecr.registry()
 
@@ -146,13 +146,18 @@ return {
 	end,
 
 	Functions = {
-		Matter = function()
-			for entityId, firstComponent in newWorld:query(A2, A4, A6, A8) do
-			end
-		end,
+		-- Matter = function()
+		-- 	for entityId, firstComponent in newWorld:query(A2, A4, A6, A8) do
+		-- 	end
+		-- end,
 
-		ECR = function()
-			for entityId, firstComponent in registry2:view(B2, B4, B6, B8) do
+		-- ECR = function()
+		-- 	for entityId, firstComponent in registry2:view(B2, B4, B6, B8) do
+		-- 	end
+		-- end,
+		--
+		Mirror = function()
+			for entityId, firstComponent in mcs:query(E2, E4, E6, E8) do
 			end
 		end,
 

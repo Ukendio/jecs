@@ -6,8 +6,7 @@ local Matter = require(ReplicatedStorage.DevPackages.Matter)
 local ecr = require(ReplicatedStorage.DevPackages.ecr)
 local jecs = require(ReplicatedStorage.Lib)
 local pair = jecs.pair
-local newWorld = Matter.World.new()
-local ecs = jecs.World.new()
+local ecs = jecs.world()
 local mirror = require(ReplicatedStorage.mirror)
 local mcs = mirror.World.new()
 
@@ -25,8 +24,6 @@ local E3 = mcs:entity()
 mcs:add(E3, pair(jecs.OnDeleteTarget, jecs.Delete))
 local E4 = mcs:entity()
 mcs:add(E4, pair(jecs.OnDeleteTarget, jecs.Delete))
-
-local registry2 = ecr.registry()
 
 return {
 	ParameterGenerator = function()

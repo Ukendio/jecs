@@ -15,7 +15,7 @@ type i53 = number
 
 do
 	TITLE(testkit.color.white_underline("Jecs query"))
-	local ecs = jecs.World.new()
+	local ecs = jecs.world()
 	do
 		TITLE("one component in common")
 

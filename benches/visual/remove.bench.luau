@@ -6,7 +6,7 @@ local Matter = require(ReplicatedStorage.DevPackages.Matter)
 local ecr = require(ReplicatedStorage.DevPackages.ecr)
 local jecs = require(ReplicatedStorage.Lib)
 local pair = jecs.pair
-local ecs = jecs.World.new()
+local ecs = jecs.world()
 local mirror = require(ReplicatedStorage.mirror)
 local mcs = mirror.World.new()
 

@@ -2,30 +2,11 @@
 --!native
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Matter = require(ReplicatedStorage.DevPackages.Matter)
-local ecr = require(ReplicatedStorage.DevPackages.ecr)
 local jecs = require(ReplicatedStorage.Lib:Clone())
-local ecs = jecs.World.new()
+local ecs = jecs.world()
 local mirror = require(ReplicatedStorage.mirror:Clone())
 local mcs = mirror.World.new()
 
-local A1 = Matter.component()
-local A2 = Matter.component()
-local A3 = Matter.component()
-local A4 = Matter.component()
-local A5 = Matter.component()
-local A6 = Matter.component()
-local A7 = Matter.component()
-local A8 = Matter.component()
-
-local B1 = ecr.component()
-local B2 = ecr.component()
-local B3 = ecr.component()
-local B4 = ecr.component()
-local B5 = ecr.component()
-local B6 = ecr.component()
-local B7 = ecr.component()
-local B8 = ecr.component()
 
 local C1 = ecs:component()
 local C2 = ecs:component()
@@ -44,7 +25,6 @@ local E6 = mcs:component()
 local E7 = mcs:component()
 local E8 = mcs:component()
 
-local registry2 = ecr.registry()
 return {
 	ParameterGenerator = function()
 		return
