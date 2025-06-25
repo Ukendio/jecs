@@ -35,7 +35,7 @@ export type QueryInner = {
 export type Entity<T = any> = number | { __T: T }
 export type Id<T = any> = number | { __T: T }
 export type Pair<P, O> = Id<P>
-type ecs_id_t<T=unknown> = Id<T> | Pair<T, "Tag"> | Pair<"Tag", T>
+type ecs_id_t<T = unknown> = Id<T> | Pair<T, "Tag"> | Pair<"Tag", T>
 export type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 export type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 
@@ -48,13 +48,13 @@ export type Query<T...> = typeof(setmetatable(
 		cached: (self: Query<T...>) -> Query<T...>,
 	},
 	{} :: {
-		__iter: Iter<T...>
+		__iter: Iter<T...>,
 	}
 ))
 
 export type Observer = {
- 	callback: (archetype: Archetype) -> (),
-   	query: QueryInner,
+	callback: (archetype: Archetype) -> (),
+	query: QueryInner,
 }
 
 export type World = {
@@ -102,7 +102,7 @@ export type World = {
 
 	--- Returns whether the entity has the ID.
 	has: (<T, a>(World, Entity<T>, Id<a>) -> boolean)
-		& (<T, a, b >(World, Entity<T>, Id<a>, Id<a>) -> boolean)
+		& (<T, a, b>(World, Entity<T>, Id<a>, Id<a>) -> boolean)
 		& (<T, a, b, c>(World, Entity<T>, Id<a>, Id<b>, Id<c>) -> boolean)
 		& <T, a, b, c, d>(World, Entity<T>, Id<a>, Id<b>, Id<c>, Id<d>) -> boolean,
 
@@ -126,8 +126,28 @@ export type World = {
 		& (<A, B, C, D>(World, Id<A>, Id<B>, Id<C>, Id<D>) -> Query<A, B, C, D>)
 		& (<A, B, C, D, E>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>) -> Query<A, B, C, D, E>)
 		& (<A, B, C, D, E, F>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>, Id<F>) -> Query<A, B, C, D, E, F>)
-		& (<A, B, C, D, E, F, G>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>, Id<F>, Id<G>) -> Query<A, B, C, D, E, F, G>)
-		& (<A, B, C, D, E, F, G, H>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>, Id<F>, Id<G>, Id<H>, ...Id<any>) -> Query<A, B, C, D, E, F, G, H>)
+		& (<A, B, C, D, E, F, G>(
+			World,
+			Id<A>,
+			Id<B>,
+			Id<C>,
+			Id<D>,
+			Id<E>,
+			Id<F>,
+			Id<G>
+		) -> Query<A, B, C, D, E, F, G>)
+		& (<A, B, C, D, E, F, G, H>(
+			World,
+			Id<A>,
+			Id<B>,
+			Id<C>,
+			Id<D>,
+			Id<E>,
+			Id<F>,
+			Id<G>,
+			Id<H>,
+			...Id<any>
+		) -> Query<A, B, C, D, E, F, G, H>),
 }
 
 export type Record = {
@@ -155,7 +175,7 @@ export type EntityIndex = {
 	alive_count: number,
 	max_id: number,
 	range_begin: number?,
-	range_end: number?
+	range_end: number?,
 }
 
 -- stylua: ignore start
@@ -182,7 +202,8 @@ local EcsRemove =            HI_COMPONENT_ID + 10
 local EcsName =              HI_COMPONENT_ID + 11
 local EcsOnArchetypeCreate = HI_COMPONENT_ID + 12
 local EcsOnArchetypeDelete = HI_COMPONENT_ID + 13
-local EcsRest =              HI_COMPONENT_ID + 14
+local EcsTag =               HI_COMPONENT_ID + 14
+local EcsRest =              HI_COMPONENT_ID + 15
 
 local NULL_ARRAY = table.freeze({}) :: Column
 local NULL = newproxy(false)
@@ -822,7 +843,6 @@ end
 local function find_insert(id_types: { i53 }, toAdd: i53): number
 	for i, id in id_types do
 		if id == toAdd then
-			error("Duplicate component id")
 			return -1
 		end
 		if id > toAdd then
@@ -1943,6 +1963,134 @@ local function world_children<a>(world: World, parent: Id<a>)
 	return world_each(world, ECS_PAIR(EcsChildOf, parent::number))
 end
 
+local function ecs_bulk_insert(world: World, entity: Entity, ids: { Entity }, values: { any })
+	local entity_index = world.entity_index
+	local r = entity_index_try_get(entity_index, entity)
+	if not r then
+		return
+	end
+	local from = r.archetype
+	local component_index = world.component_index
+	if not from then
+		local dst_types = ids
+		local to = archetype_ensure(world, dst_types)
+		new_entity(entity, r, to)
+		local row = r.row
+		local columns_map = to.columns_map
+		for i, id in ids do
+			local value = values[i]
+			local cdr = component_index[id]
+
+			local on_add = cdr.hooks.on_add
+			if value then
+				columns_map[id][row] = value
+				if on_add then
+					on_add(entity, id, value :: any)
+				end
+			else
+				if on_add then
+					on_add(entity, id)
+				end
+			end
+		end
+		return
+	end
+
+	local dst_types = table.clone(from.types)
+
+	local emplaced: { [number]: boolean } = {}
+
+	for i, id in ids do
+	    local at = find_insert(dst_types :: { number }, id :: number)
+	    if at == -1 then
+			emplaced[i] = true
+			continue
+	    end
+
+		emplaced[i] = false
+
+	    table.insert(dst_types, at, id)
+	end
+
+	local to = archetype_ensure(world, dst_types)
+	local columns_map = to.columns_map
+
+	if from ~= to then
+		entity_move(entity_index, entity, r, to)
+	end
+	local row = r.row
+
+	for i, set in emplaced do
+		local id = ids[i]
+		local idr = component_index[id]
+
+		local value = values[i] :: any
+
+		local on_add = idr.hooks.on_add
+		local on_change = idr.hooks.on_change
+
+		if value then
+			columns_map[id][row] = value
+			local hook = if set then on_change else on_add
+			if hook then
+				hook(entity, id, value :: any)
+			end
+		else
+			if on_add then
+				on_add(entity, id, value)
+			end
+		end
+	end
+end
+
+local function ecs_bulk_remove(world: World, entity: Entity, ids: { Entity })
+	local entity_index = world.entity_index
+	local r = entity_index_try_get(entity_index, entity)
+	if not r then
+		return
+	end
+	local from = r.archetype
+	local component_index = world.component_index
+	if not from then
+		return
+	end
+
+	local remove: { [Entity]: boolean } = {}
+
+	local columns_map = from.columns_map
+
+	for i, id in ids do
+		if not columns_map[id] then
+			continue
+		end
+
+	    remove[id] = true
+		local idr = component_index[id]
+
+		local on_remove = idr.hooks.on_remove
+		if on_remove then
+			on_remove(entity, id)
+		end
+	end
+
+	local to = r.archetype
+	if from ~= to then
+		from = to
+	end
+
+	local dst_types = table.clone(from.types) :: { Entity }
+
+	for id in remove do
+		local at = table.find(dst_types, id)
+		table.remove(dst_types, at)
+	end
+
+	to = archetype_ensure(world, dst_types)
+	if from ~= to then
+		entity_move(entity_index, entity, r, to)
+	end
+end
+
 local function world_new()
 	local eindex_dense_array = {} :: { Entity }
 	local eindex_sparse_array = {} :: { Record }
@@ -2193,10 +2341,7 @@ local function world_new()
 			-- If there was a previous archetype, then the entity needs to move the archetype
 			entity_move(entity_index, entity, record, to)
 		else
-			if #to.types > 0 then
-				-- When there is no previous archetype it should create the archetype
-				new_entity(entity, record, to)
-			end
+			new_entity(entity, record, to)
 		end
 		local column = to.columns_map[id]
 		column[record.row] = data
@@ -2742,6 +2887,8 @@ return {
 	create_edge_for_remove = create_edge_for_remove,
 	archetype_traverse_add = archetype_traverse_add,
 	archetype_traverse_remove = archetype_traverse_remove,
+	bulk_insert = ecs_bulk_insert,
+	bulk_remove = ecs_bulk_remove,
 
 	entity_move = entity_move,
 

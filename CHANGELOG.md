@@ -5,6 +5,7 @@
 ### Added
 - `jecs.component_record` for retrieving the component_record of a component.
 - `Column<T>` and `ColumnsMap<T>` types for typescript.
+- `bulk_insert` and `bulk_remove` respectively for moving an entity to an archetype without intermediate steps.
 
 ### Changed
 - The fields `archetype.records[id]` and `archetype.counts[id` have been removed from the archetype struct and been moved to the component record `component_index[id].records[archetype.id]` and `component_index[id].counts[archetype.id]` respectively.

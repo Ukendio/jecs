@@ -25,6 +25,93 @@ local entity_visualiser = require("@tools/entity_visualiser")
 local lifetime_tracker_add = require("@tools/lifetime_tracker")
 local dwi = entity_visualiser.stringify
 
+TEST("bulk", function()
+	local world = jecs.world()
+	local A = world:component()
+	local B = world:component()
+	local C = world:component()
+
+	local D = world:component()
+	local E = world:entity()
+	local F = world:component()
+
+	local e = world:entity()
+	local r = jecs.entity_index_try_get(world.entity_index, e)
+	jecs.bulk_insert(world, e, { A, B, C }, { 1, 2, 3 })
+	CHECK(world:get(e, A) == 1)
+	CHECK(world:get(e, B) == 2)
+	CHECK(world:get(e, C) == 3)
+
+	jecs.bulk_insert(world, e, { D, E, F }, { 4, nil, 5 })
+	CHECK(world:get(e, A) == 1)
+	CHECK(world:get(e, B) == 2)
+	CHECK(world:get(e, C) == 3)
+
+	CHECK(world:get(e, D) == 4)
+	CHECK(world:get(e, E) == nil and world:has(e, E))
+	CHECK(world:get(e, F) == 5)
+
+	jecs.bulk_insert(world, e, { A, D, E, F, C }, { 10, 40, nil, 50, 30 })
+
+	CHECK(world:get(e, A) == 10)
+	CHECK(world:get(e, B) == 2)
+	CHECK(world:get(e, C) == 30)
+	CHECK(world:get(e, D) == 40)
+	CHECK(world:get(e, E) == nil and world:has(e, E))
+	CHECK(world:get(e, F) == 50)
+
+	local G = world:component()
+	world:set(e, G, 100)
+
+	CHECK(world:get(e, A) == 10)
+	CHECK(world:get(e, B) == 2)
+	CHECK(world:get(e, C) == 30)
+	CHECK(world:get(e, D) == 40)
+	CHECK(world:get(e, E) == nil and world:has(e, E))
+	CHECK(world:get(e, F) == 50)
+	CHECK(world:get(e, G) == 100)
+
+	world:remove(e, B)
+
+	CHECK(world:get(e, A) == 10)
+	CHECK(world:has(e, B) == false)
+	CHECK(world:get(e, C) == 30)
+	CHECK(world:get(e, D) == 40)
+	CHECK(world:get(e, E) == nil and world:has(e, E))
+	CHECK(world:get(e, F) == 50)
+	CHECK(world:get(e, G) == 100)
+
+	jecs.bulk_remove(world, e, { A, B, C, D })
+
+	CHECK(world:has(e, A) == false)
+	CHECK(world:has(e, B) == false)
+	CHECK(world:has(e, C) == false)
+	CHECK(world:has(e, D) == false)
+	CHECK(world:get(e, E) == nil and world:has(e, E))
+	CHECK(world:get(e, F) == 50)
+	CHECK(world:get(e, G) == 100)
+
+	jecs.bulk_insert(world, e, { D, G }, { 999, 1 })
+
+	CHECK(world:has(e, A) == false)
+	CHECK(world:has(e, B) == false)
+	CHECK(world:has(e, C) == false)
+	CHECK(world:get(e, D) == 999)
+	CHECK(world:get(e, E) == nil and world:has(e, E))
+	CHECK(world:get(e, F) == 50)
+	CHECK(world:get(e, G) == 1)
+
+	jecs.bulk_remove(world, e, { A, B, C, D, E, F, G })
+
+	CHECK(world:has(e, A) == false)
+	CHECK(world:has(e, B) == false)
+	CHECK(world:has(e, C) == false)
+	CHECK(world:has(e, D) == false)
+	CHECK(world:has(e, E) == false)
+	CHECK(world:has(e, F) == false)
+	CHECK(world:has(e, G) == false)
+end)
+
 TEST("repro", function()
 	local Model = jecs.component()
 	local Relation = jecs.component()
