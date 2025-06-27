@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.7.0
+
 ### Added
 - `jecs.component_record` for retrieving the component_record of a component.
 - `Column<T>` and `ColumnsMap<T>` types for typescript.
