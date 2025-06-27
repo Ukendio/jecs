@@ -10,7 +10,7 @@
 - `bulk_insert` and `bulk_remove` respectively for moving an entity to an archetype without intermediate steps.
 
 ### Changed
-- The fields `archetype.records[id]` and `archetype.counts[id` have been removed from the archetype struct and been moved to the component record `component_index[id].records[archetype.id]` and `component_index[id].counts[archetype.id]` respectively.
+- The fields `archetype.records[id]` and `archetype.counts[id]` have been removed from the archetype struct and been moved to the component record `component_index[id].records[archetype.id]` and `component_index[id].counts[archetype.id]` respectively.
 - Removed the metatable `jecs.World`. Use `jecs.world()` to create your World.
 - Archetypes will no longer be garbage collected when invalidated, allowing them to be recycled to save a lot of performance during frequent deletion.
 - Removed `jecs.entity_index_try_get_fast`. Use `jecs.entity_index_try_get` instead.
