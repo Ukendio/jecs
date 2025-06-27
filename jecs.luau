@@ -202,8 +202,7 @@ local EcsRemove =            HI_COMPONENT_ID + 10
 local EcsName =              HI_COMPONENT_ID + 11
 local EcsOnArchetypeCreate = HI_COMPONENT_ID + 12
 local EcsOnArchetypeDelete = HI_COMPONENT_ID + 13
-local EcsTag =               HI_COMPONENT_ID + 14
-local EcsRest =              HI_COMPONENT_ID + 15
+local EcsRest =              HI_COMPONENT_ID + 14
 
 local NULL_ARRAY = table.freeze({}) :: Column
 local NULL = newproxy(false)
