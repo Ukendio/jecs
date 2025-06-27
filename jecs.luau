@@ -563,7 +563,7 @@ local function world_get(world: World, entity: Entity,
 	if not b then
 		return va
 	elseif not c then
-		return va, fetch(a, columns_map, row)
+		return va, fetch(b, columns_map, row)
 	elseif not d then
 		return va, fetch(b, columns_map, row), fetch(c, columns_map, row)
 	elseif not e then
@@ -2217,7 +2217,7 @@ local function world_new()
 		if not b then
 			return va
 		elseif not c then
-			return va, fetch(a, columns_map, row)
+			return va, fetch(b, columns_map, row)
 		elseif not d then
 			return va, fetch(b, columns_map, row), fetch(c, columns_map, row)
 		elseif not e then
