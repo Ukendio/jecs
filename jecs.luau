@@ -2146,13 +2146,27 @@ local function world_new()
 		return r
 	end
 
-	local function inner_entity_index_try_get(entity: number): Record?
+	-- local function inner_entity_index_try_get(entity: number): Record?
+	-- 	local r = inner_entity_index_try_get_any(entity)
+	-- 	if r then
+	-- 		local r_dense = r.dense
+	-- 		if r_dense > entity_index.alive_count then
+	-- 			return nil
+	-- 		end
+	-- 		if eindex_dense_array[r_dense] ~= entity then
+	-- 			return nil
+	-- 		end
+	-- 	end
+	-- 	return r
+	-- end
+
+	local function inner_entity_index_try_get_unsafe(entity: number): Record?
 		local r = inner_entity_index_try_get_any(entity)
 		if r then
 			local r_dense = r.dense
-			if r_dense > entity_index.alive_count then
-				return nil
-			end
+			-- if r_dense > entity_index.alive_count then
+			-- 	return nil
+			-- end
 			if eindex_dense_array[r_dense] ~= entity then
 				return nil
 			end
@@ -2166,7 +2180,7 @@ local function world_new()
 		id: Id<a>
 	): ()
 		local entity_index = world.entity_index
-		local record = inner_entity_index_try_get(entity :: number)
+		local record = inner_entity_index_try_get_unsafe(entity :: number)
 		if not record then
 			return
 		end
@@ -2194,7 +2208,7 @@ local function world_new()
 
 	local function inner_world_get(world: World, entity: Entity,
 		a: Id, b: Id?, c: Id?, d: Id?, e: Id?): ...any
-		local record = inner_entity_index_try_get(entity::number)
+		local record = inner_entity_index_try_get_unsafe(entity::number)
 		if not record then
 			return nil
 		end
@@ -2225,7 +2239,7 @@ local function world_new()
 	local function inner_world_has(world: World, entity: i53,
 		a: i53, b: i53?, c: i53?, d: i53?, e: i53?): boolean
 
-		local record = inner_entity_index_try_get(entity)
+		local record = inner_entity_index_try_get_unsafe(entity)
 		if not record then
 			return false
 		end
@@ -2245,7 +2259,7 @@ local function world_new()
 	end
 
 	local function inner_world_target<T, a>(world: World, entity: Entity<T>, relation: Id<a>, index: number?): Entity?
-		local record = inner_entity_index_try_get(entity :: number)
+		local record = inner_entity_index_try_get_unsafe(entity :: number)
 		if not record then
 			return nil
 		end
@@ -2307,7 +2321,7 @@ local function world_new()
 	end
 
 	local function inner_world_set<T, a>(world: World, entity: Entity<T>, id: Id<a>, data: a): ()
-		local record = inner_entity_index_try_get(entity :: number)
+		local record = inner_entity_index_try_get_unsafe(entity :: number)
 		if not record then
 			return
 		end
@@ -2408,7 +2422,7 @@ local function world_new()
 	end
 
 	local function inner_world_remove<T, a>(world: World, entity: Entity<T>, id: Id<a>)
-		local record = inner_entity_index_try_get(entity :: number)
+		local record = inner_entity_index_try_get_unsafe(entity :: number)
 		if not record then
 			return
 		end
@@ -2533,7 +2547,7 @@ local function world_new()
 
 	local function inner_world_delete<T>(world: World, entity: Entity<T>)
 		local entity_index = world.entity_index
-		local record = inner_entity_index_try_get(entity::number)
+		local record = inner_entity_index_try_get_unsafe(entity::number)
 		if not record then
 			return
 		end
