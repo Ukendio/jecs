@@ -2146,30 +2146,19 @@ local function world_new()
 		return r
 	end
 
-	-- local function entity_index_try_get_safe(entity: number): Record?
-	-- 	local r = entity_index_try_get_any_fast(entity_index, entity)
-	-- 	if r then
-	-- 		local r_dense = r.dense
-	-- 		if r_dense > entity_index.alive_count then
-	-- 			return nil
-	-- 		end
-	-- 		if entity_index.dense_array[r_dense] ~= entity then
-	-- 			return nil
-	-- 		end
-	-- 	end
-	-- 	return r
-	-- end
-
 	local function inner_entity_index_try_get(entity: number): Record?
-		local r = eindex_sparse_array[ECS_ENTITY_T_LO(entity)]
+		local r = inner_entity_index_try_get_any(entity)
 		if r then
-			if eindex_dense_array[r.dense] ~= entity then
+			local r_dense = r.dense
+			if r_dense > entity_index.alive_count then
+				return nil
+			end
+			if eindex_dense_array[r_dense] ~= entity then
 				return nil
 			end
 		end
 		return r
 	end
-
 
 	local function inner_world_add<T, a>(
 		world: World,
