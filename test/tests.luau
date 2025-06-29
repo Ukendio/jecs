@@ -93,7 +93,10 @@ TEST("bulk", function()
 	CHECK(world:get(e, B) == 2)
 	CHECK(world:get(e, C) == 3)
 
-	jecs.bulk_insert(world, e, { D, E, F }, { 4, nil, 5 })
+	jecs.bulk_insert(world, e,
+		{ D, E, F },
+		{ 4, nil, 5 }
+	)
 	CHECK(world:get(e, A) == 1)
 	CHECK(world:get(e, B) == 2)
 	CHECK(world:get(e, C) == 3)
@@ -102,7 +105,10 @@ TEST("bulk", function()
 	CHECK(world:get(e, E) == nil and world:has(e, E))
 	CHECK(world:get(e, F) == 5)
 
-	jecs.bulk_insert(world, e, { A, D, E, F, C }, { 10, 40, nil, 50, 30 })
+	jecs.bulk_insert(world, e,
+		{ A, D, E, F, C },
+		{ 10, 40, nil, 50, 30 }
+	)
 
 	CHECK(world:get(e, A) == 10)
 	CHECK(world:get(e, B) == 2)

@@ -2034,18 +2034,16 @@ local function ecs_bulk_insert(world: World, entity: Entity, ids: { Entity }, va
 		local value = values[i] :: any
 
 		local on_add = idr.hooks.on_add
-		local on_change = idr.hooks.on_change
 
-		if value then
+		if value ~= nil then
 			columns_map[id][row] = value
+			local on_change = idr.hooks.on_change
 			local hook = if set then on_change else on_add
 			if hook then
 				hook(entity, id, value :: any)
 			end
-		else
-			if on_add then
-				on_add(entity, id, value)
-			end
+		elseif on_add then
+			on_add(entity, id)
 		end
 	end
 end
@@ -2812,7 +2810,7 @@ local function world_new()
 			if value == NULL then
 				inner_world_add(world, i, ty)
 			else
-				inner_world_add(world, i, ty, value)
+				inner_world_set(world, i, ty, value)
 			end
 		end
 	end
