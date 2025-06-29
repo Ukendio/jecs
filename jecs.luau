@@ -52,6 +52,8 @@ export type Query<T...> = typeof(setmetatable(
 	}
 ))
 
+type QueryArm<T...> = () -> ()
+
 export type Observer = {
 	callback: (archetype: Archetype) -> (),
 	query: QueryInner,
@@ -658,6 +660,9 @@ local function id_record_ensure(world: World, id: Entity): ComponentRecord
 	local relation = id
 	local target = 0
 	local is_pair = ECS_IS_PAIR(id :: number)
+
+	local has_delete = false
+
 	if is_pair then
 		relation = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id :: number)) :: i53
 		ecs_assert(relation and entity_index_is_alive(
@@ -665,15 +670,18 @@ local function id_record_ensure(world: World, id: Entity): ComponentRecord
 		target = entity_index_get_alive(entity_index, ECS_PAIR_SECOND(id :: number)) :: i53
 		ecs_assert(target and entity_index_is_alive(
 			entity_index, target), ECS_INTERNAL_ERROR)
-	end
 
-	local cleanup_policy = world_target(world, relation, EcsOnDelete, 0)
-	local cleanup_policy_target = world_target(world, relation, EcsOnDeleteTarget, 0)
+		local cleanup_policy_target = world_target(world, relation, EcsOnDeleteTarget, 0)
 
-	local has_delete = false
+		if cleanup_policy_target == EcsDelete then
+			has_delete = true
+		end
+	else
+		local cleanup_policy = world_target(world, relation, EcsOnDelete, 0)
 
-	if cleanup_policy == EcsDelete or cleanup_policy_target == EcsDelete then
-		has_delete = true
+		if cleanup_policy == EcsDelete then
+			has_delete = true
+		end
 	end
 
 	local on_add, on_change, on_remove = world_get(world,
@@ -2026,18 +2034,16 @@ local function ecs_bulk_insert(world: World, entity: Entity, ids: { Entity }, va
 		local value = values[i] :: any
 
 		local on_add = idr.hooks.on_add
-		local on_change = idr.hooks.on_change
 
-		if value then
+		if value ~= nil then
 			columns_map[id][row] = value
+			local on_change = idr.hooks.on_change
 			local hook = if set then on_change else on_add
 			if hook then
 				hook(entity, id, value :: any)
 			end
-		else
-			if on_add then
-				on_add(entity, id, value)
-			end
+		elseif on_add then
+			on_add(entity, id)
 		end
 	end
 end
@@ -2533,6 +2539,7 @@ local function world_new()
 				end
 			end
 		end
+
 	end
 
 	local function inner_world_delete<T>(world: World, entity: Entity<T>)
@@ -2803,7 +2810,7 @@ local function world_new()
 			if value == NULL then
 				inner_world_add(world, i, ty)
 			else
-				inner_world_add(world, i, ty, value)
+				inner_world_set(world, i, ty, value)
 			end
 		end
 	end

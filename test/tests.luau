@@ -25,6 +25,57 @@ local entity_visualiser = require("@tools/entity_visualiser")
 local lifetime_tracker_add = require("@tools/lifetime_tracker")
 local dwi = entity_visualiser.stringify
 
+TEST("repro#", function()
+	do CASE "pair(OnDelete, Delete)"
+	    local world = jecs.world()
+	    local ct = world:component()
+	    world:add(ct, jecs.pair(jecs.OnDelete, jecs.Delete))
+
+	    local e1 = world:entity()
+	    local e2 = world:entity()
+
+	    local dummy = world:entity()
+
+	    world:add(e1, ct)
+	    world:add(e2, jecs.pair(ct, dummy))
+
+	    world:delete(dummy)
+
+	    CHECK(world:contains(e2))
+
+	    world:delete(ct)
+
+	    CHECK(not world:contains(e1))
+	end
+
+	do CASE "pair(OnDeleteTarget, Delete)"
+		print("start")
+	    local world = jecs.world()
+	    local ct = world:component()
+	    world:add(ct, jecs.pair(jecs.OnDeleteTarget, jecs.Delete))
+
+	    local e1 = world:entity()
+	    local e2 = world:entity()
+
+	    -- local dummy = world:entity()
+
+		print("flags")
+	    world:add(e1, ct)
+
+		print(world.component_index[ct].flags)
+	    -- world:add(e2, jecs.pair(ct, dummy))
+
+	    -- world:delete(dummy)
+
+	    -- CHECK(not world:contains(e2))
+
+	    world:delete(ct)
+
+	    CHECK(world:contains(e1))
+	end
+
+end)
+
 TEST("bulk", function()
 	local world = jecs.world()
 	local A = world:component()
@@ -42,7 +93,10 @@ TEST("bulk", function()
 	CHECK(world:get(e, B) == 2)
 	CHECK(world:get(e, C) == 3)
 
-	jecs.bulk_insert(world, e, { D, E, F }, { 4, nil, 5 })
+	jecs.bulk_insert(world, e,
+		{ D, E, F },
+		{ 4, nil, 5 }
+	)
 	CHECK(world:get(e, A) == 1)
 	CHECK(world:get(e, B) == 2)
 	CHECK(world:get(e, C) == 3)
@@ -51,7 +105,10 @@ TEST("bulk", function()
 	CHECK(world:get(e, E) == nil and world:has(e, E))
 	CHECK(world:get(e, F) == 5)
 
-	jecs.bulk_insert(world, e, { A, D, E, F, C }, { 10, 40, nil, 50, 30 })
+	jecs.bulk_insert(world, e,
+		{ A, D, E, F, C },
+		{ 10, 40, nil, 50, 30 }
+	)
 
 	CHECK(world:get(e, A) == 10)
 	CHECK(world:get(e, B) == 2)
@@ -441,7 +498,7 @@ TEST("world:delete()", function()
 		local A = world:entity()
 		local B = world:entity()
 
-		world:add(Relation, pair(jecs.OnDelete, jecs.Delete))
+		world:add(Relation, pair(jecs.OnDeleteTarget, jecs.Delete))
 
 		local entity = world:entity()
 
