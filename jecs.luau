@@ -2146,30 +2146,19 @@ local function world_new()
 		return r
 	end
 
-	-- local function entity_index_try_get_safe(entity: number): Record?
-	-- 	local r = entity_index_try_get_any_fast(entity_index, entity)
-	-- 	if r then
-	-- 		local r_dense = r.dense
-	-- 		if r_dense > entity_index.alive_count then
-	-- 			return nil
-	-- 		end
-	-- 		if entity_index.dense_array[r_dense] ~= entity then
-	-- 			return nil
-	-- 		end
-	-- 	end
-	-- 	return r
-	-- end
-
 	local function inner_entity_index_try_get(entity: number): Record?
-		local r = eindex_sparse_array[ECS_ENTITY_T_LO(entity)]
+		local r = inner_entity_index_try_get_any(entity)
 		if r then
-			if eindex_dense_array[r.dense] ~= entity then
+			local r_dense = r.dense
+			if r_dense > entity_index.alive_count then
+				return nil
+			end
+			if eindex_dense_array[r_dense] ~= entity then
 				return nil
 			end
 		end
 		return r
 	end
-
 
 	local function inner_world_add<T, a>(
 		world: World,
@@ -2582,15 +2571,41 @@ local function world_new()
 					archetype_destroy(world, idr_archetype)
 				end
 			else
-				for archetype_id in idr.records do
-					local idr_archetype = archetypes[archetype_id]
-					local entities = idr_archetype.entities
-					local n = #entities
-					for i = n, 1, -1 do
-						inner_world_remove(world, entities[i], entity)
-					end
+				local on_remove = idr.hooks.on_remove
+				if on_remove then
+					for archetype_id in idr.records do
+						local idr_archetype = archetypes[archetype_id]
+						local to = archetype_traverse_remove(world, entity, idr_archetype)
+						local entities = idr_archetype.entities
+						local n = #entities
+						for i = n, 1, -1 do
+							local e = entities[i]
+							on_remove(e, entity)
+							local r = eindex_sparse_array[ECS_ID(e :: number)]
+							local from = r.archetype
+							if from ~= idr_archetype then
+								-- unfortunately the on_remove hook allows a window where `e` can have changed archetype
+								-- this is hypothetically not that expensive of an operation anyways
+								to = archetype_traverse_remove(world, entity, from)
+							end
+							entity_move(entity_index, e, r, to)
+						end
 
-					archetype_destroy(world, idr_archetype)
+						archetype_destroy(world, idr_archetype)
+					end
+				else
+					for archetype_id in idr.records do
+						local idr_archetype = archetypes[archetype_id]
+						local to = archetype_traverse_remove(world, entity, idr_archetype)
+						local entities = idr_archetype.entities
+						local n = #entities
+						for i = n, 1, -1 do
+							local e = entities[i]
+							entity_move(entity_index, e, eindex_sparse_array[ECS_ID(e :: number)], to)
+						end
+
+						archetype_destroy(world, idr_archetype)
+					end
 				end
 			end
 		end
