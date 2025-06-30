@@ -439,6 +439,7 @@ end
 
 local function archetype_move(
 	entity_index: EntityIndex,
+	entity: Entity,
 	to: Archetype,
 	dst_row: i24,
 	from: Archetype,
@@ -452,48 +453,58 @@ local function archetype_move(
 	local id_types = from.types
 	local columns_map = to.columns_map
 
-	for i, column in src_columns do
-		if column == NULL_ARRAY then
-			continue
-		end
-		-- Retrieves the new column index from the source archetype's record from each component
-		-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
-		local dst_column = columns_map[id_types[i]]
-
-		-- Sometimes target column may not exist, e.g. when you remove a component.
-		if dst_column then
-			dst_column[dst_row] = column[src_row]
-		end
-
+	if src_row ~= last then
 		-- If the entity is the last row in the archetype then swapping it would be meaningless.
-		if src_row ~= last then
+
+		for i, column in src_columns do
+			if column == NULL_ARRAY then
+				continue
+			end
+			-- Retrieves the new column index from the source archetype's record from each component
+			-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
+			local dst_column = columns_map[id_types[i]]
+
+			-- Sometimes target column may not exist, e.g. when you remove a component.
+			if dst_column then
+				dst_column[dst_row] = column[src_row]
+			end
+
 			-- Swap rempves columns to ensure there are no holes in the archetype.
 			column[src_row] = column[last]
+			column[last] = nil
 		end
-		column[last] = nil
-	end
 
-	local moved = #src_entities
 
-	-- Move the entity from the source to the destination archetype.
-	-- Because we have swapped columns we now have to update the records
-	-- corresponding to the entities' rows that were swapped.
-	local e1 = src_entities[src_row]
-	local e2 = src_entities[moved]
+		-- Move the entity from the source to the destination archetype.
+		-- Because we have swapped columns we now have to update the records
+		-- corresponding to the entities' rows that were swapped.
 
-	if src_row ~= moved then
+		local e2 = src_entities[last]
 		src_entities[src_row] = e2
+
+		local sparse_array = entity_index.sparse_array
+		local record2 = sparse_array[ECS_ENTITY_T_LO(e2 :: number)]
+		record2.row = src_row
+	else
+		for i, column in src_columns do
+			if column == NULL_ARRAY then
+				continue
+			end
+			-- Retrieves the new column index from the source archetype's record from each component
+			-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
+			local dst_column = columns_map[id_types[i]]
+
+			-- Sometimes target column may not exist, e.g. when you remove a component.
+			if dst_column then
+				dst_column[dst_row] = column[src_row]
+			end
+
+			column[last] = nil
+		end
 	end
 
-	src_entities[moved] = nil :: any
-	dst_entities[dst_row] = e1
-
-	local sparse_array = entity_index.sparse_array
-
-	local record1 = sparse_array[ECS_ENTITY_T_LO(e1 :: number)]
-	local record2 = sparse_array[ECS_ENTITY_T_LO(e2 :: number)]
-	record1.row = dst_row
-	record2.row = src_row
+	src_entities[last] = nil :: any
+	dst_entities[dst_row] = entity
 end
 
 local function archetype_append(
@@ -526,7 +537,7 @@ local function entity_move(
 	local sourceRow = record.row
 	local from = record.archetype
 	local dst_row = archetype_append(entity, to)
-	archetype_move(entity_index, to, dst_row, from, sourceRow)
+	archetype_move(entity_index, entity, to, dst_row, from, sourceRow)
 	record.archetype = to
 	record.row = dst_row
 end
@@ -2394,7 +2405,7 @@ local function world_new()
 				return entity
 			else
 				for i = eindex_max_id + 1, index do
-					eindex_sparse_array[i]	= { dense = i } :: Record
+					eindex_sparse_array[i]= { dense = i } :: Record
 					eindex_dense_array[i] = i
 				end
 				entity_index.max_id = index
@@ -2459,8 +2470,8 @@ local function world_new()
 				local idr_archetype = archetypes[archetype_id]
 				local entities = idr_archetype.entities
 				local n = #entities
+				table.move(entities, 1, n, count + 1, queue)
 				count += n
-				table.move(entities, 1, n, #queue + 1, queue)
 			end
 			for _, e in queue do
 				inner_world_remove(world, e, entity)

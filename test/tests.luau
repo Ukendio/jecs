@@ -22,57 +22,10 @@ type Entity<T=nil> = jecs.Entity<T>
 type Id<T=unknown> = jecs.Id<T>
 
 local entity_visualiser = require("@tools/entity_visualiser")
-local lifetime_tracker_add = require("@tools/lifetime_tracker")
 local dwi = entity_visualiser.stringify
 
-TEST("repro#", function()
-	do CASE "pair(OnDelete, Delete)"
-	    local world = jecs.world()
-	    local ct = world:component()
-	    world:add(ct, jecs.pair(jecs.OnDelete, jecs.Delete))
+TEST("repro", function()
 
-	    local e1 = world:entity()
-	    local e2 = world:entity()
-
-	    local dummy = world:entity()
-
-	    world:add(e1, ct)
-	    world:add(e2, jecs.pair(ct, dummy))
-
-	    world:delete(dummy)
-
-	    CHECK(world:contains(e2))
-
-	    world:delete(ct)
-
-	    CHECK(not world:contains(e1))
-	end
-
-	do CASE "pair(OnDeleteTarget, Delete)"
-		print("start")
-	    local world = jecs.world()
-	    local ct = world:component()
-	    world:add(ct, jecs.pair(jecs.OnDeleteTarget, jecs.Delete))
-
-	    local e1 = world:entity()
-	    local e2 = world:entity()
-
-	    -- local dummy = world:entity()
-
-		print("flags")
-	    world:add(e1, ct)
-
-		print(world.component_index[ct].flags)
-	    -- world:add(e2, jecs.pair(ct, dummy))
-
-	    -- world:delete(dummy)
-
-	    -- CHECK(not world:contains(e2))
-
-	    world:delete(ct)
-
-	    CHECK(world:contains(e1))
-	end
 
 end)
 
@@ -433,8 +386,51 @@ TEST("world:contains()", function()
 end)
 
 TEST("world:delete()", function()
+	do CASE "pair(OnDelete, Delete)"
+	    local world = jecs.world()
+	    local ct = world:component()
+	    world:add(ct, jecs.pair(jecs.OnDelete, jecs.Delete))
+
+	    local e1 = world:entity()
+	    local e2 = world:entity()
+
+	    local dummy = world:entity()
+
+	    world:add(e1, ct)
+	    world:add(e2, jecs.pair(ct, dummy))
+
+	    world:delete(dummy)
+
+	    CHECK(world:contains(e2))
+
+	    world:delete(ct)
+
+	    CHECK(not world:contains(e1))
+	end
+
+	do CASE "pair(OnDeleteTarget, Delete)"
+	    local world = jecs.world()
+	    local ct = world:component()
+	    world:add(ct, jecs.pair(jecs.OnDeleteTarget, jecs.Delete))
+
+	    local e1 = world:entity()
+	    local e2 = world:entity()
+
+	    local dummy = world:entity()
+
+	    world:add(e1, ct)
+
+	    world:add(e2, jecs.pair(ct, dummy))
+
+	    world:delete(dummy)
+
+	    CHECK(not world:contains(e2))
+
+	    world:delete(ct)
+
+	    CHECK(world:contains(e1))
+	end
 	do CASE "remove (*, R) pairs when relationship is invalidated"
-		print("-------")
 		local world = jecs.world()
 		local e1 = world:entity()
 		local e2 = world:entity()
