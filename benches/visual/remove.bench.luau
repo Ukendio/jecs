@@ -8,7 +8,7 @@ local jecs = require(ReplicatedStorage.Lib)
 local pair = jecs.pair
 local ecs = jecs.world()
 local mirror = require(ReplicatedStorage.mirror)
-local mcs = mirror.World.new()
+local mcs = mirror.world()
 
 local C1 = ecs:component()
 local C2 = ecs:entity()
@@ -32,7 +32,7 @@ return {
 	Functions = {
 		Mirror = function()
 			local m = mcs:entity()
-			for i = 1, 100 do
+			for i = 1, 1000 do
 				mcs:add(m, E3)
 				mcs:remove(m, E3)
 			end
@@ -40,7 +40,7 @@ return {
 
 		Jecs = function()
 			local j = ecs:entity()
-			for i = 1, 100 do
+			for i = 1, 1000 do
 				ecs:add(j, C3)
 				ecs:remove(j, C3)
 			end

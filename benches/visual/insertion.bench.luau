@@ -5,8 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local jecs = require(ReplicatedStorage.Lib:Clone())
 local ecs = jecs.world()
 local mirror = require(ReplicatedStorage.mirror:Clone())
-local mcs = mirror.World.new()
-
+local mcs = mirror.world()
 
 local C1 = ecs:component()
 local C2 = ecs:component()
