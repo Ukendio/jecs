@@ -105,7 +105,7 @@ export class World {
 	/**
 	 * Creates a new World.
 	 */
-	constructor();
+	private constructor();
 
 	/**
 	 * Enforces a check for entities to be created within a desired range.
@@ -248,6 +248,8 @@ export class World {
 	 */
 	query<T extends Id[]>(...components: T): Query<InferComponents<T>>;
 }
+
+export function world(): World;
 
 export function component<T>(): Entity<T>;
 

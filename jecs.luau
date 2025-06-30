@@ -52,6 +52,8 @@ export type Query<T...> = typeof(setmetatable(
 	}
 ))
 
+type QueryArm<T...> = () -> ()
+
 export type Observer = {
 	callback: (archetype: Archetype) -> (),
 	query: QueryInner,
@@ -437,6 +439,7 @@ end
 
 local function archetype_move(
 	entity_index: EntityIndex,
+	entity: Entity,
 	to: Archetype,
 	dst_row: i24,
 	from: Archetype,
@@ -450,48 +453,58 @@ local function archetype_move(
 	local id_types = from.types
 	local columns_map = to.columns_map
 
-	for i, column in src_columns do
-		if column == NULL_ARRAY then
-			continue
-		end
-		-- Retrieves the new column index from the source archetype's record from each component
-		-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
-		local dst_column = columns_map[id_types[i]]
-
-		-- Sometimes target column may not exist, e.g. when you remove a component.
-		if dst_column then
-			dst_column[dst_row] = column[src_row]
-		end
-
+	if src_row ~= last then
 		-- If the entity is the last row in the archetype then swapping it would be meaningless.
-		if src_row ~= last then
+
+		for i, column in src_columns do
+			if column == NULL_ARRAY then
+				continue
+			end
+			-- Retrieves the new column index from the source archetype's record from each component
+			-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
+			local dst_column = columns_map[id_types[i]]
+
+			-- Sometimes target column may not exist, e.g. when you remove a component.
+			if dst_column then
+				dst_column[dst_row] = column[src_row]
+			end
+
 			-- Swap rempves columns to ensure there are no holes in the archetype.
 			column[src_row] = column[last]
+			column[last] = nil
 		end
-		column[last] = nil
-	end
 
-	local moved = #src_entities
 
-	-- Move the entity from the source to the destination archetype.
-	-- Because we have swapped columns we now have to update the records
-	-- corresponding to the entities' rows that were swapped.
-	local e1 = src_entities[src_row]
-	local e2 = src_entities[moved]
+		-- Move the entity from the source to the destination archetype.
+		-- Because we have swapped columns we now have to update the records
+		-- corresponding to the entities' rows that were swapped.
 
-	if src_row ~= moved then
+		local e2 = src_entities[last]
 		src_entities[src_row] = e2
+
+		local sparse_array = entity_index.sparse_array
+		local record2 = sparse_array[ECS_ENTITY_T_LO(e2 :: number)]
+		record2.row = src_row
+	else
+		for i, column in src_columns do
+			if column == NULL_ARRAY then
+				continue
+			end
+			-- Retrieves the new column index from the source archetype's record from each component
+			-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
+			local dst_column = columns_map[id_types[i]]
+
+			-- Sometimes target column may not exist, e.g. when you remove a component.
+			if dst_column then
+				dst_column[dst_row] = column[src_row]
+			end
+
+			column[last] = nil
+		end
 	end
 
-	src_entities[moved] = nil :: any
-	dst_entities[dst_row] = e1
-
-	local sparse_array = entity_index.sparse_array
-
-	local record1 = sparse_array[ECS_ENTITY_T_LO(e1 :: number)]
-	local record2 = sparse_array[ECS_ENTITY_T_LO(e2 :: number)]
-	record1.row = dst_row
-	record2.row = src_row
+	src_entities[last] = nil :: any
+	dst_entities[dst_row] = entity
 end
 
 local function archetype_append(
@@ -524,7 +537,7 @@ local function entity_move(
 	local sourceRow = record.row
 	local from = record.archetype
 	local dst_row = archetype_append(entity, to)
-	archetype_move(entity_index, to, dst_row, from, sourceRow)
+	archetype_move(entity_index, entity, to, dst_row, from, sourceRow)
 	record.archetype = to
 	record.row = dst_row
 end
@@ -563,7 +576,7 @@ local function world_get(world: World, entity: Entity,
 	if not b then
 		return va
 	elseif not c then
-		return va, fetch(a, columns_map, row)
+		return va, fetch(b, columns_map, row)
 	elseif not d then
 		return va, fetch(b, columns_map, row), fetch(c, columns_map, row)
 	elseif not e then
@@ -658,6 +671,9 @@ local function id_record_ensure(world: World, id: Entity): ComponentRecord
 	local relation = id
 	local target = 0
 	local is_pair = ECS_IS_PAIR(id :: number)
+
+	local has_delete = false
+
 	if is_pair then
 		relation = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id :: number)) :: i53
 		ecs_assert(relation and entity_index_is_alive(
@@ -665,15 +681,18 @@ local function id_record_ensure(world: World, id: Entity): ComponentRecord
 		target = entity_index_get_alive(entity_index, ECS_PAIR_SECOND(id :: number)) :: i53
 		ecs_assert(target and entity_index_is_alive(
 			entity_index, target), ECS_INTERNAL_ERROR)
-	end
 
-	local cleanup_policy = world_target(world, relation, EcsOnDelete, 0)
-	local cleanup_policy_target = world_target(world, relation, EcsOnDeleteTarget, 0)
+		local cleanup_policy_target = world_target(world, relation, EcsOnDeleteTarget, 0)
 
-	local has_delete = false
+		if cleanup_policy_target == EcsDelete then
+			has_delete = true
+		end
+	else
+		local cleanup_policy = world_target(world, relation, EcsOnDelete, 0)
 
-	if cleanup_policy == EcsDelete or cleanup_policy_target == EcsDelete then
-		has_delete = true
+		if cleanup_policy == EcsDelete then
+			has_delete = true
+		end
 	end
 
 	local on_add, on_change, on_remove = world_get(world,
@@ -2026,18 +2045,16 @@ local function ecs_bulk_insert(world: World, entity: Entity, ids: { Entity }, va
 		local value = values[i] :: any
 
 		local on_add = idr.hooks.on_add
-		local on_change = idr.hooks.on_change
 
-		if value then
+		if value ~= nil then
 			columns_map[id][row] = value
+			local on_change = idr.hooks.on_change
 			local hook = if set then on_change else on_add
 			if hook then
 				hook(entity, id, value :: any)
 			end
-		else
-			if on_add then
-				on_add(entity, id, value)
-			end
+		elseif on_add then
+			on_add(entity, id)
 		end
 	end
 end
@@ -2140,30 +2157,33 @@ local function world_new()
 		return r
 	end
 
-	-- local function entity_index_try_get_safe(entity: number): Record?
-	-- 	local r = entity_index_try_get_any_fast(entity_index, entity)
+	-- local function inner_entity_index_try_get(entity: number): Record?
+	-- 	local r = inner_entity_index_try_get_any(entity)
 	-- 	if r then
 	-- 		local r_dense = r.dense
 	-- 		if r_dense > entity_index.alive_count then
 	-- 			return nil
 	-- 		end
-	-- 		if entity_index.dense_array[r_dense] ~= entity then
+	-- 		if eindex_dense_array[r_dense] ~= entity then
 	-- 			return nil
 	-- 		end
 	-- 	end
 	-- 	return r
 	-- end
 
-	local function inner_entity_index_try_get(entity: number): Record?
-		local r = eindex_sparse_array[ECS_ENTITY_T_LO(entity)]
+	local function inner_entity_index_try_get_unsafe(entity: number): Record?
+		local r = inner_entity_index_try_get_any(entity)
 		if r then
-			if eindex_dense_array[r.dense] ~= entity then
+			local r_dense = r.dense
+			-- if r_dense > entity_index.alive_count then
+			-- 	return nil
+			-- end
+			if eindex_dense_array[r_dense] ~= entity then
 				return nil
 			end
 		end
 		return r
 	end
-
 
 	local function inner_world_add<T, a>(
 		world: World,
@@ -2171,7 +2191,7 @@ local function world_new()
 		id: Id<a>
 	): ()
 		local entity_index = world.entity_index
-		local record = inner_entity_index_try_get(entity :: number)
+		local record = inner_entity_index_try_get_unsafe(entity :: number)
 		if not record then
 			return
 		end
@@ -2199,7 +2219,7 @@ local function world_new()
 
 	local function inner_world_get(world: World, entity: Entity,
 		a: Id, b: Id?, c: Id?, d: Id?, e: Id?): ...any
-		local record = inner_entity_index_try_get(entity::number)
+		local record = inner_entity_index_try_get_unsafe(entity::number)
 		if not record then
 			return nil
 		end
@@ -2217,7 +2237,7 @@ local function world_new()
 		if not b then
 			return va
 		elseif not c then
-			return va, fetch(a, columns_map, row)
+			return va, fetch(b, columns_map, row)
 		elseif not d then
 			return va, fetch(b, columns_map, row), fetch(c, columns_map, row)
 		elseif not e then
@@ -2230,7 +2250,7 @@ local function world_new()
 	local function inner_world_has(world: World, entity: i53,
 		a: i53, b: i53?, c: i53?, d: i53?, e: i53?): boolean
 
-		local record = inner_entity_index_try_get(entity)
+		local record = inner_entity_index_try_get_unsafe(entity)
 		if not record then
 			return false
 		end
@@ -2250,7 +2270,7 @@ local function world_new()
 	end
 
 	local function inner_world_target<T, a>(world: World, entity: Entity<T>, relation: Id<a>, index: number?): Entity?
-		local record = inner_entity_index_try_get(entity :: number)
+		local record = inner_entity_index_try_get_unsafe(entity :: number)
 		if not record then
 			return nil
 		end
@@ -2312,7 +2332,7 @@ local function world_new()
 	end
 
 	local function inner_world_set<T, a>(world: World, entity: Entity<T>, id: Id<a>, data: a): ()
-		local record = inner_entity_index_try_get(entity :: number)
+		local record = inner_entity_index_try_get_unsafe(entity :: number)
 		if not record then
 			return
 		end
@@ -2385,7 +2405,7 @@ local function world_new()
 				return entity
 			else
 				for i = eindex_max_id + 1, index do
-					eindex_sparse_array[i]	= { dense = i } :: Record
+					eindex_sparse_array[i]= { dense = i } :: Record
 					eindex_dense_array[i] = i
 				end
 				entity_index.max_id = index
@@ -2413,7 +2433,7 @@ local function world_new()
 	end
 
 	local function inner_world_remove<T, a>(world: World, entity: Entity<T>, id: Id<a>)
-		local record = inner_entity_index_try_get(entity :: number)
+		local record = inner_entity_index_try_get_unsafe(entity :: number)
 		if not record then
 			return
 		end
@@ -2450,8 +2470,8 @@ local function world_new()
 				local idr_archetype = archetypes[archetype_id]
 				local entities = idr_archetype.entities
 				local n = #entities
+				table.move(entities, 1, n, count + 1, queue)
 				count += n
-				table.move(entities, 1, n, #queue + 1, queue)
 			end
 			for _, e in queue do
 				inner_world_remove(world, e, entity)
@@ -2533,11 +2553,12 @@ local function world_new()
 				end
 			end
 		end
+
 	end
 
 	local function inner_world_delete<T>(world: World, entity: Entity<T>)
 		local entity_index = world.entity_index
-		local record = inner_entity_index_try_get(entity::number)
+		local record = inner_entity_index_try_get_unsafe(entity::number)
 		if not record then
 			return
 		end
@@ -2575,15 +2596,41 @@ local function world_new()
 					archetype_destroy(world, idr_archetype)
 				end
 			else
-				for archetype_id in idr.records do
-					local idr_archetype = archetypes[archetype_id]
-					local entities = idr_archetype.entities
-					local n = #entities
-					for i = n, 1, -1 do
-						inner_world_remove(world, entities[i], entity)
-					end
+				local on_remove = idr.hooks.on_remove
+				if on_remove then
+					for archetype_id in idr.records do
+						local idr_archetype = archetypes[archetype_id]
+						local to = archetype_traverse_remove(world, entity, idr_archetype)
+						local entities = idr_archetype.entities
+						local n = #entities
+						for i = n, 1, -1 do
+							local e = entities[i]
+							on_remove(e, entity)
+							local r = eindex_sparse_array[ECS_ID(e :: number)]
+							local from = r.archetype
+							if from ~= idr_archetype then
+								-- unfortunately the on_remove hook allows a window where `e` can have changed archetype
+								-- this is hypothetically not that expensive of an operation anyways
+								to = archetype_traverse_remove(world, entity, from)
+							end
+							entity_move(entity_index, e, r, to)
+						end
 
-					archetype_destroy(world, idr_archetype)
+						archetype_destroy(world, idr_archetype)
+					end
+				else
+					for archetype_id in idr.records do
+						local idr_archetype = archetypes[archetype_id]
+						local to = archetype_traverse_remove(world, entity, idr_archetype)
+						local entities = idr_archetype.entities
+						local n = #entities
+						for i = n, 1, -1 do
+							local e = entities[i]
+							entity_move(entity_index, e, eindex_sparse_array[ECS_ID(e :: number)], to)
+						end
+
+						archetype_destroy(world, idr_archetype)
+					end
 				end
 			end
 		end
@@ -2803,7 +2850,7 @@ local function world_new()
 			if value == NULL then
 				inner_world_add(world, i, ty)
 			else
-				inner_world_add(world, i, ty, value)
+				inner_world_set(world, i, ty, value)
 			end
 		end
 	end
