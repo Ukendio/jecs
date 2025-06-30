@@ -755,7 +755,7 @@ local function archetype_register(world: World, archetype: Archetype)
 	local columns = archetype.columns
 	for i, component_id in archetype.types do
 		local idr = id_record_ensure(world, component_id)
-		local is_tag = bit32.band(idr.flags, ECS_ID_IS_TAG) ~= 0
+		local is_tag = bit32.btest(idr.flags, ECS_ID_IS_TAG)
 		local column = if is_tag then NULL_ARRAY else {}
 		columns[i] = column
 
@@ -2583,7 +2583,7 @@ local function world_new()
 
 		if idr then
 			local flags = idr.flags
-			if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
+			if bit32.btest(flags, ECS_ID_DELETE) then
 				for archetype_id in idr.records do
 					local idr_archetype = archetypes[archetype_id]
 
@@ -2658,8 +2658,8 @@ local function world_new()
 					end
 					local id_record = component_index[id]
 					local flags = id_record.flags
-					local flags_delete_mask: number = bit32.band(flags, ECS_ID_DELETE)
-					if flags_delete_mask ~= 0 then
+					local flags_delete_mask = bit32.btest(flags, ECS_ID_DELETE)
+					if flags_delete_mask then
 						for i = #entities, 1, -1 do
 							local child = entities[i]
 							inner_world_delete(world, child)
@@ -2701,7 +2701,7 @@ local function world_new()
 		if idr_r then
 			local archetype_ids = idr_r.records
 			local flags = idr_r.flags
-			if (bit32.band(flags, ECS_ID_DELETE) :: number) ~= 0 then
+			if bit32.btest(flags, ECS_ID_DELETE) then
 				for archetype_id in archetype_ids do
 					local idr_r_archetype = archetypes[archetype_id]
 					local entities = idr_r_archetype.entities
@@ -2879,7 +2879,7 @@ end
 local function ecs_is_tag(world: World, entity: Entity): boolean
 	local idr = world.component_index[entity]
 	if idr then
-		return bit32.band(idr.flags, ECS_ID_IS_TAG) ~= 0
+		return bit32.btest(idr.flags, ECS_ID_IS_TAG)
 	end
 	return not world_has_one_inline(world, entity, EcsComponent)
 end
