@@ -977,8 +977,6 @@ local function world_component(world: World): i53
 	return id
 end
 
-
-
 local function archetype_fast_delete_last(columns: { Column }, column_count: number)
 	for i, column in columns do
 		if column ~= NULL_ARRAY then
