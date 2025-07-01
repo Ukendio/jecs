@@ -159,6 +159,7 @@ TEST("repro", function()
 end)
 
 TEST("world:add()", function()
+	print("-----")
 	do CASE "idempotent"
 		local world = jecs.world()
 		local d = dwi(world)
