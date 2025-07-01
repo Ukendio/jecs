@@ -1686,7 +1686,9 @@ end)
 TEST("#repro2", function()
 	local world = jecs.world()
 	local Lifetime = world:component() :: Id<number>
+	world:set(Lifetime, jecs.Name, "Lifetime")
 	local Particle = world:entity()
+	world:set(Particle, jecs.Name, "Particle")
 	local Beam = world:entity()
 
 	local entity = world:entity()
@@ -1694,19 +1696,24 @@ TEST("#repro2", function()
 	world:set(entity, pair(Lifetime, Beam), 2)
 	world:set(entity, pair(4 :: any, 5 :: any), 6) -- noise
 
+	CHECK(world:get(entity, pair(Lifetime, Particle)) == 1)
+	CHECK(world:get(entity, pair(Lifetime, Beam)) == 2)
+
+	CHECK(world:target(entity, Lifetime, 0) == Particle)
+	CHECK(world:target(entity, Lifetime, 1) == Beam)
+
 	-- entity_visualizer.components(world, entity)
+
+	-- print(CHECK(world:has(jecs.ChildOf, jecs.Exclusive)))
 
 	for e in world:each(pair(Lifetime, __)) do
 		local i = 0
 		local nth = world:target(e, Lifetime, i)
 		while nth do
 			-- entity_visualizer.components(world, e)
-
 			local data = world:get(e, pair(Lifetime, nth)) :: number
-			data -= 1
-		 	if data <= 0 then
-                world:remove(e, pair(Lifetime, nth))
-            else
+		 	if data > 0 then
+				data -= 1
                 world:set(e, pair(Lifetime, nth), data)
             end
 			i += 1
@@ -1714,7 +1721,7 @@ TEST("#repro2", function()
 		end
 	end
 
-	CHECK(not world:has(entity, pair(Lifetime, Particle)))
+	CHECK(world:get(entity, pair(Lifetime, Particle)) == 0)
 	CHECK(world:get(entity, pair(Lifetime, Beam)) == 1)
 end)
 
