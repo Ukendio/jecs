@@ -24,7 +24,6 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
-FOCUS()
 TEST("exclusive", function()
 	local world = jecs.world()
 	local A = world:component()
