@@ -42,8 +42,18 @@ export type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 export type Query<T...> = typeof(setmetatable(
 	{} :: {
 		iter: Iter<T...>,
-		with: (self: Query<T...>, ...Id) -> Query<T...>,
-		without: (self: Query<T...>, ...Id) -> Query<T...>,
+		with:
+			(<a>(Query<T...>, Id<a>) -> Query<T...>)
+			& (<a, b>(Query<T...>, Id<a>, Id<b>) -> Query<T...>)
+			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
+			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
+			& (<a, b, c, d>(Query<T...>, Id<a>, Id<b>, Id<c>, Id) -> Query<T...>),
+		without:
+			(<a>(Query<T...>, Id<a>) -> Query<T...>)
+			& (<a, b>(Query<T...>, Id<a>, Id<b>) -> Query<T...>)
+			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
+			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
+			& (<a, b, c, d>(Query<T...>, Id<a>, Id<b>, Id<c>, Id) -> Query<T...>),
 		archetypes: (self: Query<T...>) -> { Archetype },
 		cached: (self: Query<T...>) -> Query<T...>,
 	},
@@ -2888,7 +2898,7 @@ return {
 	world = world_new :: () -> World,
 	component = (ECS_COMPONENT :: any) :: <T>() -> Entity<T>,
 	tag = (ECS_TAG :: any) :: <T>() -> Entity<T>,
-	meta = (ECS_META :: any) :: <T>(id: Entity, id: Id<T>, value: T) -> Entity<T>,
+	meta = (ECS_META :: any) :: <T, a>(id: Entity<T>, id: Id<a>, value: a?) -> Entity<T>,
 	is_tag = (ecs_is_tag :: any) :: <T>(World, Id<T>) -> boolean,
 
     OnAdd = (EcsOnAdd :: any) :: Entity<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
