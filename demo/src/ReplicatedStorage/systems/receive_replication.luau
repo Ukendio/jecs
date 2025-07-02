@@ -2,45 +2,51 @@ local types = require("../types")
 local jecs = require(game:GetService("ReplicatedStorage").ecs)
 local remotes = require("../remotes")
 local collect = require("../collect")
-local client_ids = {}
+local components = require("../components")
 
 
-local function ecs_map_get(world, id)
-	local deserialised_id = client_ids[id]
+local client_ids: {[jecs.Entity]: jecs.Entity } = {}
 
-	if not deserialised_id then
-		if world:has(id, jecs.Name) then
-			deserialised_id = world:entity(id)
-		else
-			deserialised_id = world:entity()
+local function ecs_ensure_entity(world: jecs.World, id: jecs.Entity)
+	local e = 0
+
+	local ser_id = id
+	local deser_id = client_ids[ser_id]
+	if deser_id  then
+		if deser_id == 0 then
+			local new_id = world:entity()
+			client_ids[ser_id] = new_id
+			deser_id = new_id
 		end
-
-		client_ids[id] = deserialised_id
+	else
+		if not world:exists(ser_id)
+			or (world:contains(ser_id) and not world:get(ser_id, jecs.Name))
+		then
+			deser_id = world:entity()
+		else
+			if world:contains(ser_id) and world:get(ser_id, jecs.Name) then
+				deser_id = ser_id
+			else
+				deser_id = world:entity()
+			end
+		end
+		client_ids[ser_id] = deser_id
 	end
 
-	-- local deserialised_id = client_ids[id]
-	-- if not deserialised_id then
-	-- 	if world:has(id, jecs.Name) then
-	-- 		deserialised_id = world:entity(id)
-	-- 	else
-	-- 		if world:exists(id) then
-	-- 			deserialised_id = world:entity()
-	-- 		else
-	-- 			deserialised_id = world:entity(id)
-	-- 		end
-	-- 	end
-	-- 	client_ids[id] = deserialised_id
-	-- end
+	e = deser_id
 
-	return deserialised_id
+	return e
 end
 
-local function ecs_make_alive_id(world, id)
-	local rel = jecs.ECS_PAIR_FIRST(id)
-	local tgt = jecs.ECS_PAIR_SECOND(id)
+-- local rel_render = `e{jecs.ECS_ID(rel)}v{jecs.ECS_GENERATION(rel)}`
+-- local tgt_render = `e{jecs.ECS_ID(tgt)}v{jecs.ECS_GENERATION(tgt)}`
+local function ecs_deser_pairs(world, token)
+	local tokens = string.split(token, ",")
+	local rel = tonumber(tokens[1])
+	local tgt = tonumber(tokens[2])
 
-	rel = ecs_map_get(world, rel)
-	tgt = ecs_map_get(world, tgt)
+	rel = ecs_ensure_entity(world, rel)
+	tgt = ecs_ensure_entity(world, tgt)
 
 	return jecs.pair(rel, tgt)
 end
@@ -48,25 +54,31 @@ end
 local snapshots = collect(remotes.replication.OnClientEvent)
 
 return function(world: types.World)
+	for entity in world:each(components.Destroy) do
+		client_ids[entity] = nil
+	end
     for snapshot in snapshots do
-        for id, map in snapshot do
-        	id = tonumber(id)
-            if jecs.IS_PAIR(id) then
-            	id = ecs_make_alive_id(world, id)
+        for ser_id, map in snapshot do
+        	local id = tonumber(ser_id)
+            if not id then
+            	id = ecs_deser_pairs(world, ser_id)
+            else
+            	id = ecs_ensure_entity(world, id)
             end
 
             local set = map.set
             if set then
                 if jecs.is_tag(world, id) then
                    	for _, entity in set do
-                       	entity = ecs_map_get(world, entity)
+                       	entity = ecs_ensure_entity(world, entity)
                   		world:add(entity, id)
                    	end
                 else
+                	local t = os.clock()
 	                local values = map.values
 	                for i, entity in set do
-						entity = ecs_map_get(world, entity)
-                  		world:set(entity, id, values[i])
+						entity = ecs_ensure_entity(world, entity)
+						world:set(entity, id, values[i])
                    	end
 			    end
             end
@@ -75,7 +87,7 @@ return function(world: types.World)
 
             if removed then
                 for _, entity in removed do
-                    entity = ecs_map_get(world, entity)
+                    entity = ecs_ensure_entity(world, entity)
                     if not world:contains(entity) then
                         continue
                     end

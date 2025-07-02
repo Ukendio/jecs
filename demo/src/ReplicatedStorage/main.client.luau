@@ -10,4 +10,5 @@ local world = observers_add(jecs.world())
 
 local systems = ReplicatedStorage.systems
 SYSTEM(world, systems.receive_replication)
+SYSTEM(world, systems.entities_delete)
 RUN(world)

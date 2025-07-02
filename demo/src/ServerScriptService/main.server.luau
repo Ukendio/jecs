@@ -15,5 +15,8 @@ local systems = ServerScriptService.systems
 SYSTEM(world, systems.replication)
 SYSTEM(world, systems.players_added)
 SYSTEM(world, systems.poison_hurts)
+SYSTEM(world, systems.health_regen)
+SYSTEM(world, systems.lifetimes_expire)
 SYSTEM(world, systems.life_is_painful)
+SYSTEM(world, ReplicatedStorage.systems.entities_delete)
 RUN(world, 0)

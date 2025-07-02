@@ -12,9 +12,13 @@ return function(world: types.World, dt: number)
 
 	for entity, player in world:query(ct.Player):without(ct.Renderable) do
 		local character = player.Character
-		if character then
-		if not character.Parent then
-			world:set(entity, ct.Renderable, character)
+		if not character then
+			continue
 		end
+		if not character.Parent then
+			continue
+		end
+
+		world:set(entity, ct.Renderable, character)
 	end
 end

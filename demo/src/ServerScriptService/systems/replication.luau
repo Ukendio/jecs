@@ -1,9 +1,13 @@
+
+--!strict
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local types = require("../../ReplicatedStorage/types")
-local ct = require("../../ReplicatedStorage/components")
+local ct = require(ReplicatedStorage.components)
+local components = ct :: { [string]: jecs.Entity }
+local remotes = require(ReplicatedStorage.remotes)
 local jecs = require(ReplicatedStorage.ecs)
-local remotes = require("../../ReplicatedStorage/remotes")
-local components = ct :: {[string]: jecs.Entity }
+local collect = require(ReplicatedStorage.collect)
+local ty = require(ReplicatedStorage.types)
 
 return function(world: ty.World)
 
@@ -19,9 +23,10 @@ return function(world: ty.World)
     local networked_pairs = {}
 
     for component in world:each(ct.Networked) do
-    	local name = world:get(component, jecs.Name) :: string
+		local name = assert(world:get(component, jecs.Name), "Invalid component")
 		if components[name] == nil then
-			continue
+			error("Invalid component:"..name)
+
 		end
 
         storages[component] = {}
@@ -32,29 +37,30 @@ return function(world: ty.World)
 	for relation in world:each(ct.NetworkedPair) do
 		local name = world:get(relation, jecs.Name) :: string
 		if not components[name] then
-			continue
+			error("Invalid component")
 		end
 		table.insert(networked_pairs, relation)
 	end
 
 	for _, component in networked_components do
-		local name = world:get(component, jecs.Name) :: string
+		local name = world:get(component, jecs.Name)
 		if not components[name] then
+			-- error("Invalid component")
 			error(`Networked Component (%id{component}%name{name})`)
 		end
 		local is_tag = jecs.is_tag(world, component)
 		local storage = storages[component]
 		if is_tag then
-		    world:added(component, function(entity)
-		        storage[entity] = true
-		    end)
+			world:added(component, function(entity)
+				storage[entity] = true
+			end)
 		else
-		    world:added(component, function(entity, _, value)
-		        storage[entity] = value
-		    end)
-		    world:changed(component, function(entity, _, value)
-		        storage[entity] = value
-		    end)
+			world:added(component, function(entity, _, value)
+				storage[entity] = value
+			end)
+			world:changed(component, function(entity, _, value)
+				storage[entity] = value
+			end)
 		end
 
         world:removed(component, function(entity)
@@ -64,51 +70,55 @@ return function(world: ty.World)
 
 	for _, relation in networked_pairs do
 		world:added(relation, function(entity, id, value)
-	        local is_tag = jecs.is_tag(world, id)
-	        local storage = storages[id]
-	        if not storage then
-	            storage = {}
-	            storages[id] = storage
-	        end
-	        if is_tag then
-	            storage[entity] = true
-	        else
-	            storage[entity] = value
-	        end
-	    end)
+		local is_tag = jecs.is_tag(world, id)
+		local storage = storages[id]
+		if not storage then
+			storage = {}
+			storages[id] = storage
+		end
+		if is_tag then
+			storage[entity] = true
+		else
+			storage[entity] = value
+		end
+	end)
 
-	    world:changed(relation, function(entity, id, value)
-	        local is_tag = jecs.is_tag(world, id)
-	        if is_tag then
-	            return
-	        end
+	world:changed(relation, function(entity, id, value)
+		local is_tag = jecs.is_tag(world, id)
+		if is_tag then
+			return
+		end
 
-	        local storage = storages[id]
-	        if not storage then
-	            storage = {}
-	            storages[id] = storage
-	        end
+		local storage = storages[id]
+		if not storage then
+			storage = {}
+			storages[id] = storage
+		end
 
-	        storage[entity] = value
-	    end)
+		storage[entity] = value
+	end)
 
-	    world:removed(relation, function(entity, id)
-	        local storage = storages[id]
-	        if not storage then
-	            storage = {}
-	            storages[id] = storage
-	        end
+	world:removed(relation, function(entity, id)
+		local storage = storages[id]
+		if not storage then
+			storage = {}
+			storages[id] = storage
+		end
 
-	        storage[entity] = "jecs.Remove"
-	    end)
+		storage[entity] = "jecs.Remove"
+	end)
 	end
 
+    -- local requested_snapshots = collect(remotes.request_snapshot.OnServerEvent)
     local players_added = collect(Players.PlayerAdded)
 
     return function()
         local snapshot_lazy: ty.Snapshot
         local set_ids_lazy: { jecs.Entity }
 
+        -- In the future maybe it should be requested by the player instead when they
+        -- are ready to receive the replication. Otherwise streaming could be complicated
+        -- with intances references being nil.
 		for player in players_added do
 			if not snapshot_lazy then
 				snapshot_lazy, set_ids_lazy =  {}, {}
@@ -126,7 +136,7 @@ return function(world: ty.World)
 						if is_tag then
 							set_values = table.create(entities_len, true)
 						else
-							local column = archetype.columns[archetype.records[component]]
+							local column = archetype.columns_map[component]
 							table.move(column, 1, entities_len, set_n + 1, set_values)
 						end
 
@@ -135,10 +145,18 @@ return function(world: ty.World)
 
 					local set = table.move(set_ids_lazy, 1, set_n, 1, {})
 
-					snapshot_lazy[tostring(component)] = {
-					    set = if set_n > 0 then set else nil,
-					    values = if set_n > 0 then set_values else nil,
-					}
+					local ser_id: string = nil :: any
+
+					if jecs.IS_PAIR(component) then
+						ser_id = `{jecs.pair_first(world, component)},{jecs.pair_first(world, component)}`
+					else
+						ser_id = tostring(component)
+					end
+
+			    	snapshot_lazy[ser_id] = {
+	                    set = if set_n > 0 then set else nil,
+	                    values = if set_n > 0 then set_values else nil,
+	                }
 				end
 			end
 
@@ -159,7 +177,7 @@ return function(world: ty.World)
 		            set_n += 1
 		            set_ids[set_n] = e
 		            set_values[set_n] = v or true
-		        elseif world:contains(e) then
+		        elseif not world:contains(e) then
 		            removed_n += 1
 		            removed_ids[removed_n] = e
 		        end
@@ -176,7 +194,15 @@ return function(world: ty.World)
             if dirty then
             	local removed = table.move(removed_ids, 1, removed_n, 1, {}) :: { jecs.Entity }
              	local set = table.move(set_ids, 1, set_n, 1, {}) :: { jecs.Entity }
-	            snapshot[tostring(component)] = {
+	            local ser_id: string = nil :: any
+
+				if jecs.IS_PAIR(component) then
+					ser_id = `{jecs.pair_first(world, component)},{jecs.pair_second(world, component)}`
+				else
+					ser_id = tostring(component)
+				end
+
+	            snapshot[ser_id] = {
                     set = if set_n > 0 then set else nil,
                     values = if set_n > 0 then set_values else nil,
                     removed = if removed_n > 0 then removed else nil

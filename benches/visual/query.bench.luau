@@ -2,7 +2,7 @@
 --!native
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Matter = require(ReplicatedStorage.DevPackages.matter)
+local Matter = require(ReplicatedStorage.DevPackages.Matter)
 local ecr = require(ReplicatedStorage.DevPackages.ecr)
 local newWorld = Matter.World.new()
 
