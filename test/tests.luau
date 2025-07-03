@@ -159,7 +159,6 @@ TEST("repro", function()
 end)
 
 TEST("world:add()", function()
-	print("-----")
 	do CASE "idempotent"
 		local world = jecs.world()
 		local d = dwi(world)
@@ -210,6 +209,9 @@ TEST("world:children()", function()
 
 	local e3 = world:entity()
 	world:add(e3, pair(ChildOf, e1))
+
+	CHECK(world:has(e2, pair(ChildOf, e1)))
+	CHECK(world:has(e3, pair(ChildOf, e1)))
 
 	local count = 0
 	for entity in world:children(e1) do

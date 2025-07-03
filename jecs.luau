@@ -929,18 +929,6 @@ local function find_archetype_with(world: World, id: Id, from: Archetype): Arche
 	local id_types = from.types
 	local dst = table.clone(id_types)
 
-	if ECS_IS_PAIR(id::number) then
-		local first = ECS_PAIR_FIRST(id::number)
-		local idr = world.component_index[ECS_PAIR(first, EcsWildcard)]
-		if idr and bit32.btest(idr.flags, EcsExclusive) then
-			local cr = idr.records[from.id]
-			if cr then
-				dst[cr] = id
-				return archetype_ensure(world, dst)
-			end
-		end
-	end
-
 	local at = find_insert(id_types :: { number } , id :: number)
 
 	table.insert(dst, at, id)
@@ -2204,6 +2192,90 @@ local function world_new()
 		return r
 	end
 
+	local function inner_world_add<T, a>(
+		world: World,
+		entity: Entity<T>,
+		id: Id<a>
+	): ()
+		local entity_index = world.entity_index
+		local record = inner_entity_index_try_get_unsafe(entity :: number)
+		if not record then
+			return
+		end
+
+		local from = record.archetype
+		if ECS_IS_PAIR(id::number) then
+			local src = from or ROOT_ARCHETYPE
+			local edge = archetype_edges[src.id]
+			local to = edge[id]
+			local idr: ComponentRecord
+			if not to then
+				local first = ECS_PAIR_FIRST(id::number)
+				local wc = ECS_PAIR(first, EcsWildcard)
+				idr = component_index[wc]
+				if idr and bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) then
+					local cr = idr.records[src.id]
+					if cr then
+						local on_remove = idr.hooks.on_remove
+						local id_types = src.types
+						if on_remove then
+							on_remove(entity, id_types[cr])
+							src = record.archetype
+							id_types = src.types
+							cr = idr.records[src.id]
+						end
+						local dst = table.clone(id_types)
+						dst[cr] = id
+						to = archetype_ensure(world, dst)
+					else
+						to = find_archetype_with(world, id, src)
+						idr = component_index[id]
+					end
+				else
+					to = find_archetype_with(world, id, src)
+					idr = component_index[id]
+				end
+				edge[id] = to
+			else
+				idr = component_index[id]
+			end
+			if from == to then
+				return
+			end
+			if from then
+				entity_move(entity_index, entity, record, to)
+			else
+				if #to.types > 0 then
+					new_entity(entity, record, to)
+				end
+			end
+
+			local on_add = idr.hooks.on_add
+
+			if on_add then
+				on_add(entity, id)
+			end
+			return
+		end
+		local to = archetype_traverse_add(world, id, from)
+		if from == to then
+			return
+		end
+		if from then
+			entity_move(entity_index, entity, record, to)
+		else
+			if #to.types > 0 then
+				new_entity(entity, record, to)
+			end
+		end
+
+		local idr = world.component_index[id]
+		local on_add = idr.hooks.on_add
+
+		if on_add then
+			on_add(entity, id)
+		end
+	end
 
 	local function inner_world_get(world: World, entity: Entity,
 		a: Id, b: Id?, c: Id?, d: Id?, e: Id?): ...any
@@ -2317,38 +2389,6 @@ local function world_new()
 		end
 
 		return to
-	end
-
-	local function inner_world_add<T, a>(
-		world: World,
-		entity: Entity<T>,
-		id: Id<a>
-	): ()
-		local entity_index = world.entity_index
-		local record = inner_entity_index_try_get_unsafe(entity :: number)
-		if not record then
-			return
-		end
-
-		local from = record.archetype
-		local to = archetype_traverse_add(world, id, from)
-		if from == to then
-			return
-		end
-		if from then
-			entity_move(entity_index, entity, record, to)
-		else
-			if #to.types > 0 then
-				new_entity(entity, record, to)
-			end
-		end
-
-		local idr = world.component_index[id]
-		local on_add = idr.hooks.on_add
-
-		if on_add then
-			on_add(entity, id)
-		end
 	end
 
 	local function inner_world_set<T, a>(world: World, entity: Entity<T>, id: Id<a>, data: a): ()
