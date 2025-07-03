@@ -25,20 +25,7 @@ local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
 TEST("exclusive", function()
-	local world = jecs.world()
-	local A = world:component()
-	world:add(A, jecs.Exclusive)
-
-	local B = world:component()
-	local C = world:component()
-
-	local e = world:entity()
-	world:add(e, pair(A, B))
-	world:add(e, pair(A, C))
-
-	CHECK(world:has(e, pair(A, B)) == false)
-	CHECK(world:has(e, pair(A, C)) == true)
-	-- print(jecs.entity_index_try_get(world.entity_index, e).archetype.type)
+		-- print(jecs.entity_index_try_get(world.entity_index, e).archetype.type)
 end)
 
 TEST("bulk", function()
@@ -159,6 +146,66 @@ TEST("repro", function()
 end)
 
 TEST("world:add()", function()
+	do CASE "exclusive relations"
+		local world = jecs.world()
+		local A = world:component()
+		world:add(A, jecs.Exclusive)
+
+		local B = world:component()
+		local C = world:component()
+
+		local e = world:entity()
+		world:add(e, pair(A, B))
+		world:add(e, pair(A, C))
+
+		CHECK(world:has(e, pair(A, B)) == false)
+		CHECK(world:has(e, pair(A, C)) == true)
+	end
+
+	do CASE "exclusive relations invoke hooks"
+		local world = jecs.world()
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local e_ptr = jecs.Rest :: number + 1
+
+		world:add(A, jecs.Exclusive)
+		local on_remove_call = false
+		world:set(A, jecs.OnRemove, function(e, id)
+			CHECK(e == e_ptr)
+			CHECK(id == jecs.pair(A, B))
+			on_remove_call = true
+		end)
+
+		local on_add_call_count = 0
+		world:set(A, jecs.OnAdd, function(e, id)
+			on_add_call_count += 1
+			if on_add_call_count == 1 then
+				CHECK(e == e_ptr)
+				CHECK(id == jecs.pair(A, B))
+			elseif on_add_call_count == 2 then
+				CHECK(e == e_ptr)
+				CHECK(id == jecs.pair(A, C))
+			else
+				CHECK(false)
+			end
+		end)
+
+
+		local e = world:entity()
+		CHECK(e == e_ptr)
+		world:add(e, pair(A, B))
+		CHECK(on_add_call_count == 1)
+		world:add(e, pair(A, C))
+		CHECK(on_add_call_count == 2)
+		CHECK(on_remove_call)
+
+		CHECK(world:has(e, pair(A, B)) == false)
+		CHECK(world:has(e, pair(A, C)) == true)
+
+	end
+
 	do CASE "idempotent"
 		local world = jecs.world()
 		local d = dwi(world)

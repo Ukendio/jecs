@@ -42,8 +42,18 @@ export type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 export type Query<T...> = typeof(setmetatable(
 	{} :: {
 		iter: Iter<T...>,
-		with: (self: Query<T...>, ...Id) -> Query<T...>,
-		without: (self: Query<T...>, ...Id) -> Query<T...>,
+		with:
+			(<a>(Query<T...>, Id<a>) -> Query<T...>)
+			& (<a, b>(Query<T...>, Id<a>, Id<b>) -> Query<T...>)
+			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
+			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
+			& (<a, b, c, d>(Query<T...>, Id<a>, Id<b>, Id<c>, Id) -> Query<T...>),
+		without:
+			(<a>(Query<T...>, Id<a>) -> Query<T...>)
+			& (<a, b>(Query<T...>, Id<a>, Id<b>) -> Query<T...>)
+			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
+			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
+			& (<a, b, c, d>(Query<T...>, Id<a>, Id<b>, Id<c>, Id) -> Query<T...>),
 		archetypes: (self: Query<T...>) -> { Archetype },
 		cached: (self: Query<T...>) -> Query<T...>,
 	},
@@ -186,10 +196,9 @@ local ECS_ENTITY_MASK =       bit32.lshift(1, 24)
 local ECS_GENERATION_MASK =   bit32.lshift(1, 16)
 local ECS_PAIR_OFFSET = 	                 2^48
 
-local ECS_ID_DELETE =                 	     0b0001
-local ECS_ID_IS_TAG =                 	     0b0010
-local ECS_ID_IS_EXCLUSIVE =                  0b0100
-local ECS_ID_MASK =                   	     0b0000
+local ECS_ID_DELETE =                 	     0b01
+local ECS_ID_IS_TAG =                 	     0b10
+local ECS_ID_MASK =                   	     0b00
 
 local HI_COMPONENT_ID =                       256
 local EcsOnAdd =             HI_COMPONENT_ID +  1
@@ -205,8 +214,7 @@ local EcsRemove =            HI_COMPONENT_ID + 10
 local EcsName =              HI_COMPONENT_ID + 11
 local EcsOnArchetypeCreate = HI_COMPONENT_ID + 12
 local EcsOnArchetypeDelete = HI_COMPONENT_ID + 13
-local EcsExclusive =         HI_COMPONENT_ID + 14
-local EcsRest =              HI_COMPONENT_ID + 15
+local EcsRest =              HI_COMPONENT_ID + 14
 
 local NULL_ARRAY = table.freeze({}) :: Column
 local NULL = newproxy(false)
@@ -675,7 +683,6 @@ local function id_record_ensure(world: World, id: Entity): ComponentRecord
 	local is_pair = ECS_IS_PAIR(id :: number)
 
 	local has_delete = false
-	local is_exclusive = false
 
 	if is_pair then
 		relation = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id :: number)) :: i53
@@ -689,10 +696,6 @@ local function id_record_ensure(world: World, id: Entity): ComponentRecord
 
 		if cleanup_policy_target == EcsDelete then
 			has_delete = true
-		end
-
-		if world_has_one_inline(world, relation, EcsExclusive) then
-			is_exclusive = true
 		end
 	else
 		local cleanup_policy = world_target(world, relation, EcsOnDelete, 0)
@@ -715,8 +718,7 @@ local function id_record_ensure(world: World, id: Entity): ComponentRecord
 	flags = bit32.bor(
 		flags,
 		if has_delete then ECS_ID_DELETE else 0,
-		if is_tag then ECS_ID_IS_TAG else 0,
-		if is_exclusive then ECS_ID_IS_EXCLUSIVE else 0
+		if is_tag then ECS_ID_IS_TAG else 0
 	)
 
 	idr = {
@@ -927,22 +929,9 @@ end
 
 local function find_archetype_with(world: World, id: Id, from: Archetype): Archetype
 	local id_types = from.types
-	local dst = table.clone(id_types)
-
-	if ECS_IS_PAIR(id::number) then
-		local first = ECS_PAIR_FIRST(id::number)
-		local idr = world.component_index[ECS_PAIR(first, EcsWildcard)]
-		if idr and bit32.btest(idr.flags, EcsExclusive) then
-			local cr = idr.records[from.id]
-			if cr then
-				dst[cr] = id
-				return archetype_ensure(world, dst)
-			end
-		end
-	end
 
 	local at = find_insert(id_types :: { number } , id :: number)
-
+	local dst = table.clone(id_types)
 	table.insert(dst, at, id)
 
 	return archetype_ensure(world, dst)
@@ -2426,7 +2415,7 @@ local function world_new()
 				return entity
 			else
 				for i = eindex_max_id + 1, index do
-					eindex_sparse_array[i] = { dense = i } :: Record
+					eindex_sparse_array[i]= { dense = i } :: Record
 					eindex_dense_array[i] = i
 				end
 				entity_index.max_id = index
@@ -2909,7 +2898,7 @@ return {
 	world = world_new :: () -> World,
 	component = (ECS_COMPONENT :: any) :: <T>() -> Entity<T>,
 	tag = (ECS_TAG :: any) :: <T>() -> Entity<T>,
-	meta = (ECS_META :: any) :: <T>(id: Entity, id: Id<T>, value: T) -> Entity<T>,
+	meta = (ECS_META :: any) :: <T, a>(id: Entity<T>, id: Id<a>, value: a?) -> Entity<T>,
 	is_tag = (ecs_is_tag :: any) :: <T>(World, Id<T>) -> boolean,
 
     OnAdd = (EcsOnAdd :: any) :: Entity<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
@@ -2924,7 +2913,6 @@ return {
 	Delete = (EcsDelete :: any) :: Entity,
 	Remove = (EcsRemove :: any) :: Entity,
 	Name = (EcsName :: any) :: Entity<string>,
-	Exclusive = EcsExclusive :: Entity,
 	Rest = (EcsRest :: any) :: Entity,
 
 	pair = (ECS_PAIR :: any) :: <P, O>(first: Id<P>, second: Id<O>) -> Pair<P, O>,

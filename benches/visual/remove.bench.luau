@@ -21,7 +21,6 @@ local C4 = ecs:entity()
 ecs:add(C4, pair(jecs.OnDeleteTarget, jecs.Delete))
 local E1 = mcs:component()
 local E2 = mcs:entity()
-mcs:add(E2, mirror.Exclusive)
 mcs:add(E2, pair(jecs.OnDeleteTarget, jecs.Delete))
 local E3 = mcs:entity()
 mcs:add(E3, pair(jecs.OnDeleteTarget, jecs.Delete))
@@ -35,17 +34,17 @@ return {
 	Functions = {
 		Mirror = function()
 			local m = mcs:entity()
-			for i = 1, 1000 do
-				mcs:add(m, pair(E2, E3))
-				mcs:add(m, pair(E2, E4))
+			for i = 1, 100 do
+				mcs:add(m, pair(E4, E4))
+				mcs:add(m, pair(E4, E4))
 			end
 		end,
 
 		Jecs = function()
 			local j = ecs:entity()
-			for i = 1, 1000 do
-				ecs:add(j, pair(C2, C3))
-				ecs:add(j, pair(C2, C4))
+			for i = 1, 100 do
+				ecs:add(j, pair(C4, C4))
+				ecs:add(j, pair(C4, C4))
 			end
 		end,
 	},

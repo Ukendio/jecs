@@ -2269,7 +2269,7 @@ local function world_new()
 			end
 		end
 
-		local idr = world.component_index[id]
+		local idr = component_index[id]
 		local on_add = idr.hooks.on_add
 
 		if on_add then
@@ -2398,6 +2398,74 @@ local function world_new()
 		end
 
 		local from: Archetype = record.archetype
+		if ECS_IS_PAIR(id::number) then
+			local src = from or ROOT_ARCHETYPE
+			local edge = archetype_edges[src.id]
+			local to = edge[id]
+			local idr: ComponentRecord
+			if not to then
+				local first = ECS_PAIR_FIRST(id::number)
+				local wc = ECS_PAIR(first, EcsWildcard)
+				idr = component_index[wc]
+				if idr and bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) then
+					local cr = idr.records[src.id]
+					if cr then
+						local on_remove = idr.hooks.on_remove
+						local id_types = src.types
+						if on_remove then
+							on_remove(entity, id_types[cr])
+							src = record.archetype
+							id_types = src.types
+							cr = idr.records[src.id]
+						end
+						local dst = table.clone(id_types)
+						dst[cr] = id
+						to = archetype_ensure(world, dst)
+					else
+						to = find_archetype_with(world, id, src)
+						idr = component_index[id]
+					end
+				else
+					to = find_archetype_with(world, id, src)
+					idr = component_index[id]
+				end
+				edge[id] = to
+			else
+				idr = component_index[id]
+			end
+			local idr_hooks = idr.hooks
+			if from == to then
+				local column = to.columns_map[id]
+				column[record.row] = data
+
+				-- If the archetypes are the same it can avoid moving the entity
+				-- and just set the data directly.
+				local on_change = idr_hooks.on_change
+				if on_change then
+					on_change(entity, id, data)
+				end
+
+				return
+			end
+
+			if from then
+				entity_move(entity_index, entity, record, to)
+			else
+				if #to.types > 0 then
+					new_entity(entity, record, to)
+				end
+			end
+
+			local column = to.columns_map[id]
+			column[record.row] = data
+
+			local on_add = idr.hooks.on_add
+
+			if on_add then
+				on_add(entity, id)
+			end
+			return
+		end
 		local to: Archetype = inner_archetype_traverse_add(id, from)
 		local idr = component_index[id]
 		local idr_hooks = idr.hooks
