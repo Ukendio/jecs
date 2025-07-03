@@ -24,10 +24,6 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
-TEST("exclusive", function()
-		-- print(jecs.entity_index_try_get(world.entity_index, e).archetype.type)
-end)
-
 TEST("bulk", function()
 	local world = jecs.world()
 	local A = world:component()

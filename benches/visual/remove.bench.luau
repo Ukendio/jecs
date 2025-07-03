@@ -35,16 +35,17 @@ return {
 		Mirror = function()
 			local m = mcs:entity()
 			for i = 1, 100 do
-				mcs:add(m, pair(E4, E4))
-				mcs:add(m, pair(E4, E4))
+				mcs:add(m, pair(E2, E3))
+				mcs:remove(m, pair(E2, E3))
+				mcs:add(m, pair(E2, E4))
 			end
 		end,
 
 		Jecs = function()
 			local j = ecs:entity()
 			for i = 1, 100 do
-				ecs:add(j, pair(C4, C4))
-				ecs:add(j, pair(C4, C4))
+				ecs:add(j, pair(C2, C3))
+				ecs:add(j, pair(C2, C4))
 			end
 		end,
 	},

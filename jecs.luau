@@ -311,9 +311,9 @@ end
 
 local function entity_index_try_get_any(
 	entity_index: EntityIndex,
-	entity: number
+	entity: Entity
 ): Record?
-	local r = entity_index.sparse_array[ECS_ENTITY_T_LO(entity)]
+	local r = entity_index.sparse_array[ECS_ENTITY_T_LO(entity::number)]
 
 	if not r or r.dense == 0 then
 		return nil
@@ -329,6 +329,20 @@ local function entity_index_try_get(entity_index: EntityIndex, entity: Entity): 
 		if r_dense > entity_index.alive_count then
 			return nil
 		end
+		if entity_index.dense_array[r_dense] ~= entity then
+			return nil
+		end
+	end
+	return r
+end
+
+local function entity_index_try_get_fast(entity_index: EntityIndex, entity: Entity): Record?
+	local r = entity_index_try_get_any(entity_index, entity)
+	if r then
+		local r_dense = r.dense
+		-- if r_dense > entity_index.alive_count then
+		-- 	return nil
+		-- end
 		if entity_index.dense_array[r_dense] ~= entity then
 			return nil
 		end
