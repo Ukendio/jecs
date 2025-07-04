@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Added
+- `jecs.Exclusive` trait for making exclusive relationships.
+
+### Changed
+- `jecs.Child` to be an exclusive relationship, which means you can only have one `ChildOf` pair on an entity.
+
+## 0.7.2
+### Added
+- `jecs.entity_index_try_get_fast` back as to not break the observer addon.
+
+### Fixed
+- A linting problem with the types for `quer:with` and `query:without`.
+
+
 ## 0.7.0
 
 ### Added
