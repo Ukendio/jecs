@@ -142,6 +142,66 @@ TEST("repro", function()
 end)
 
 TEST("world:add()", function()
+	do CASE "exclusive relations"
+		local world = jecs.world()
+		local A = world:component()
+		world:add(A, jecs.Exclusive)
+
+		local B = world:component()
+		local C = world:component()
+
+		local e = world:entity()
+		world:add(e, pair(A, B))
+		world:add(e, pair(A, C))
+
+		CHECK(world:has(e, pair(A, B)) == false)
+		CHECK(world:has(e, pair(A, C)) == true)
+	end
+
+	do CASE "exclusive relations invoke hooks"
+		local world = jecs.world()
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local e_ptr = jecs.Rest :: number + 1
+
+		world:add(A, jecs.Exclusive)
+		local on_remove_call = false
+		world:set(A, jecs.OnRemove, function(e, id)
+			CHECK(e == e_ptr)
+			CHECK(id == jecs.pair(A, B))
+			on_remove_call = true
+		end)
+
+		local on_add_call_count = 0
+		world:set(A, jecs.OnAdd, function(e, id)
+			on_add_call_count += 1
+			if on_add_call_count == 1 then
+				CHECK(e == e_ptr)
+				CHECK(id == jecs.pair(A, B))
+			elseif on_add_call_count == 2 then
+				CHECK(e == e_ptr)
+				CHECK(id == jecs.pair(A, C))
+			else
+				CHECK(false)
+			end
+		end)
+
+
+		local e = world:entity()
+		CHECK(e == e_ptr)
+		world:add(e, pair(A, B))
+		CHECK(on_add_call_count == 1)
+		world:add(e, pair(A, C))
+		CHECK(on_add_call_count == 2)
+		CHECK(on_remove_call)
+
+		CHECK(world:has(e, pair(A, B)) == false)
+		CHECK(world:has(e, pair(A, C)) == true)
+
+	end
+
 	do CASE "idempotent"
 		local world = jecs.world()
 		local d = dwi(world)
@@ -192,6 +252,9 @@ TEST("world:children()", function()
 
 	local e3 = world:entity()
 	world:add(e3, pair(ChildOf, e1))
+
+	CHECK(world:has(e2, pair(ChildOf, e1)))
+	CHECK(world:has(e3, pair(ChildOf, e1)))
 
 	local count = 0
 	for entity in world:children(e1) do
@@ -1669,7 +1732,9 @@ end)
 TEST("#repro2", function()
 	local world = jecs.world()
 	local Lifetime = world:component() :: Id<number>
+	world:set(Lifetime, jecs.Name, "Lifetime")
 	local Particle = world:entity()
+	world:set(Particle, jecs.Name, "Particle")
 	local Beam = world:entity()
 
 	local entity = world:entity()
@@ -1677,19 +1742,24 @@ TEST("#repro2", function()
 	world:set(entity, pair(Lifetime, Beam), 2)
 	world:set(entity, pair(4 :: any, 5 :: any), 6) -- noise
 
+	CHECK(world:get(entity, pair(Lifetime, Particle)) == 1)
+	CHECK(world:get(entity, pair(Lifetime, Beam)) == 2)
+
+	CHECK(world:target(entity, Lifetime, 0) == Particle)
+	CHECK(world:target(entity, Lifetime, 1) == Beam)
+
 	-- entity_visualizer.components(world, entity)
+
+	-- print(CHECK(world:has(jecs.ChildOf, jecs.Exclusive)))
 
 	for e in world:each(pair(Lifetime, __)) do
 		local i = 0
 		local nth = world:target(e, Lifetime, i)
 		while nth do
 			-- entity_visualizer.components(world, e)
-
 			local data = world:get(e, pair(Lifetime, nth)) :: number
-			data -= 1
-		 	if data <= 0 then
-                world:remove(e, pair(Lifetime, nth))
-            else
+		 	if data > 0 then
+				data -= 1
                 world:set(e, pair(Lifetime, nth), data)
             end
 			i += 1
@@ -1697,7 +1767,7 @@ TEST("#repro2", function()
 		end
 	end
 
-	CHECK(not world:has(entity, pair(Lifetime, Particle)))
+	CHECK(world:get(entity, pair(Lifetime, Particle)) == 0)
 	CHECK(world:get(entity, pair(Lifetime, Beam)) == 1)
 end)
 
