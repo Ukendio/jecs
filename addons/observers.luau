@@ -7,7 +7,7 @@ export type PatchedWorld = jecs.World & {
 	observer: <T...>(
 		PatchedWorld,
 		jecs.Query<T...>,
-		(jecs.Entity) -> ()
+		(<a>(jecs.Entity, jecs.Id<a>, a) -> ())?
 	) -> () -> (jecs.Entity),
 	monitor: (
 		PatchedWorld,
@@ -40,7 +40,9 @@ local function observers_new(world, query, callback)
 		if jecs.query_match(query, archetype) then
 			i += 1
 			entities[i] = entity
-			callback(entity, id, value)
+			if callback ~= nil then
+				callback(entity, id, value)
+			end
 		end
 	end
 
