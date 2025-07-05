@@ -234,12 +234,12 @@ export class World {
 	each(id: Id): IterableFunction<Entity>;
 
 	/**
-	 * Returns an iterator that yields all child entities of the specified parent entity.
+	 * Returns the child entity of the specified parent entity.
 	 * Uses the ChildOf relationship internally.
 	 * @param parent The parent entity to get children for
-	 * @returns An iterator function that yields child entities
+	 * @returns Exclusive children, if any, of the parent entity.
 	 */
-	children(parent: Entity): IterableFunction<Entity>;
+	children(parent: Entity): Entity | undefined;
 
 	/**
 	 * Searches the world for entities that match specified components.
@@ -310,6 +310,7 @@ export declare const OnDeleteTarget: Tag;
 export declare const Delete: Tag;
 export declare const Remove: Tag;
 export declare const Name: Entity<string>;
+export declare const Exclusive: Tag;
 export declare const Rest: Entity;
 
 export type ComponentRecord = {
