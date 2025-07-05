@@ -169,7 +169,7 @@ local function observers_add(world: jecs.World): PatchedWorld
 
 			local idr = world.component_index[component]
 			if idr then
-				idr.hooks.on_add = on_add
+				idr.on_add = on_add
 			else
 				world:set(component, jecs.OnAdd, on_add)
 			end
@@ -203,7 +203,7 @@ local function observers_add(world: jecs.World): PatchedWorld
 			end
 			local idr = world.component_index[component]
 			if idr then
-				idr.hooks.on_change = on_change
+				idr.on_change = on_change
 			else
 				world:set(component, jecs.OnChange, on_change)
 			end
@@ -238,7 +238,7 @@ local function observers_add(world: jecs.World): PatchedWorld
 
 			local idr = world.component_index[component]
 			if idr then
-				idr.hooks.on_remove = on_remove
+				idr.on_remove = on_remove
 			else
 				world:set(component, jecs.OnRemove, on_remove)
 			end
