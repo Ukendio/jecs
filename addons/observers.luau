@@ -4,11 +4,11 @@ export type PatchedWorld = jecs.World & {
 	added: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id, value: T) -> ()) -> () -> (),
 	removed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id) -> ()) -> () -> (),
 	changed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id, value: T) -> ()) -> () -> (),
-	observer: (
+	observer: <T...>(
 		PatchedWorld,
-		any,
+		jecs.Query<T...>,
 		(jecs.Entity) -> ()
-	) -> (),
+	) -> () -> (jecs.Entity),
 	monitor: (
 		PatchedWorld,
 		any,
@@ -25,6 +25,8 @@ local function observers_new(world, query, callback)
 	end
 
 	local entity_index = world.entity_index :: any
+	local i = 0
+	local entities = {}
 	local function emplaced(entity, id, value)
 		local r = jecs.entity_index_try_get_fast(
 			entity_index, entity :: any)
@@ -36,7 +38,9 @@ local function observers_new(world, query, callback)
 		local archetype = r.archetype
 
 		if jecs.query_match(query, archetype) then
-			callback(entity)
+			i += 1
+			entities[i] = entity
+			callback(entity, id, value)
 		end
 	end
 
@@ -44,6 +48,21 @@ local function observers_new(world, query, callback)
 		world:added(term, emplaced)
 		world:changed(term, emplaced)
  	end
+
+  	return setmetatable({}, {
+   		__iter = function()
+     		local row = i
+     		return function()
+       			if row == 0 then
+          			i = 0
+             		table.clear(entities)
+          		end
+            	local entity = entities[row]
+             	row -= 1
+              	return entity
+			end
+	    end
+   	})
 end
 
 local function join(world, component)
@@ -115,19 +134,8 @@ local function monitors_new(world, query, callback)
 	end
 
 	local function removed(entity: jecs.Entity, component: jecs.Id)
-		local r = jecs.entity_index_try_get_fast(
-			entity_index, entity :: any)
-
-		if not r then
-			return
-		end
-
-		local archetype = r.archetype
-
-		if jecs.query_match(query, archetype) then
-			local EcsOnRemove = jecs.OnRemove :: jecs.Id
-			callback(entity, EcsOnRemove)
-		end
+		local EcsOnRemove = jecs.OnRemove :: jecs.Id
+		callback(entity, EcsOnRemove)
 	end
 
 	for _, term in terms do
