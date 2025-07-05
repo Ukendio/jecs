@@ -310,6 +310,7 @@ export declare const OnDeleteTarget: Tag;
 export declare const Delete: Tag;
 export declare const Remove: Tag;
 export declare const Name: Entity<string>;
+export declare const Exclusive: Tag;
 export declare const Rest: Entity;
 
 export type ComponentRecord = {
