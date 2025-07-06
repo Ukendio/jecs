@@ -659,7 +659,6 @@ TEST("world:delete()", function()
 		CHECK(not world:has(id1, Health))
 	end
 
-
 	do CASE "delete children"
 		local world = jecs.world()
 
@@ -846,6 +845,16 @@ TEST("world:delete()", function()
 		CHECK(not world:contains(bob))
 		CHECK(not world:contains(alice))
 	end
+
+	do CASE "deleted entity should not be able to be operated on"
+		local world = jecs.world()
+		local e = world:entity()
+		local A = world:component()
+		world:set(e, A, true)
+		world:delete(e)
+		world:set(e, A, true)
+		CHECK(world:has(e, A) == false)
+	end
 end)
 
 TEST("world:each()", function()
@@ -877,6 +886,19 @@ TEST("world:each()", function()
 end)
 
 TEST("world:range()", function()
+	do CASE "delete outside partitioned range"
+		local server = jecs.world()
+		local client = jecs.world()
+
+		server:range(0, 1000)
+		client:range(1000, 5000)
+
+		local e1 = server:entity()
+		CHECK((e1::number)< 1000)
+		local e2 = client:entity(e1)
+		CHECK(e2 == e1)
+		client:delete(e1)
+	end
 	do CASE "under range start"
 		local world = jecs.world()
 		world:range(400, 1000)

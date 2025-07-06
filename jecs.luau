@@ -2174,7 +2174,7 @@ local function world_new()
 	local function inner_entity_index_try_get_any(entity: number): Record?
 		local r = eindex_sparse_array[ECS_ENTITY_T_LO(entity)]
 
-		if not r or r.dense == 0 then
+		if not r then
 			return nil
 		end
 
@@ -2589,7 +2589,7 @@ local function world_new()
 				return entity
 			else
 				for i = eindex_max_id + 1, index do
-					eindex_sparse_array[i]= { dense = i } :: Record
+					eindex_sparse_array[i] = { dense = i } :: Record
 					eindex_dense_array[i] = i
 				end
 				entity_index.max_id = index
@@ -2911,7 +2911,6 @@ local function world_new()
 
 		local e_swap = dense_array[i_swap]
 		local r_swap = inner_entity_index_try_get_any(e_swap :: number) :: Record
-
 		r_swap.dense = dense
 		record.archetype = nil :: any
 		record.row = nil :: any
