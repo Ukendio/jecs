@@ -51,20 +51,18 @@ local function observers_new(world, query, callback)
 		world:changed(term, emplaced)
  	end
 
-  	return setmetatable({}, {
-   		__iter = function()
-     		local row = i
-     		return function()
-       			if row == 0 then
-          			i = 0
-             		table.clear(entities)
-          		end
-            	local entity = entities[row]
-             	row -= 1
-              	return entity
-			end
-	    end
-   	})
+  	return function()
+  		local row = i
+  		return function()
+     			if row == 0 then
+         			i = 0
+          		table.clear(entities)
+      		end
+           	local entity = entities[row]
+           	row -= 1
+           	return entity
+		end
+    end
 end
 
 local function join(world, component)
@@ -152,6 +150,19 @@ local function monitors_new(world, query, callback)
 		world:added(term, emplaced)
 		world:removed(term, removed)
  	end
+
+	return function()
+		local row = i
+		return function()
+			if row == 0 then
+				i = 0
+				table.clear(entities)
+			end
+			local entity = entities[row]
+			row -= 1
+			return entity
+		end
+	end
 end
 
 local function observers_add(world: jecs.World): PatchedWorld
