@@ -1,9 +1,10 @@
+--!strict
 local jecs = require("@jecs")
 
 export type PatchedWorld = jecs.World & {
-	added: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id, value: T) -> ()) -> () -> (),
+	added: <T>(PatchedWorld, jecs.Id<T>, <e>(e: jecs.Entity<e>, id: jecs.Id<T>, value: T?) -> ()) -> () -> (),
 	removed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id) -> ()) -> () -> (),
-	changed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id, value: T) -> ()) -> () -> (),
+	changed:  <T>(PatchedWorld, jecs.Id<T>, <e>(e: jecs.Entity<e>, id: jecs.Id<T>, value: T) -> ()) -> () -> (),
 	observer: <T...>(
 		PatchedWorld,
 		jecs.Query<T...>,
@@ -16,28 +17,41 @@ export type PatchedWorld = jecs.World & {
 	) -> ()
 }
 
-local function observers_new(world, query, callback)
-	local terms = query.filter_with :: { jecs.Id }
-	if not terms then
-		local ids = query.ids
-		query.filter_with = ids
-		terms = ids
+local function observers_new(
+	world: PatchedWorld,
+	query: any,
+	callback: (<T, a>(jecs.Entity<T>, jecs.Id<a>, value: a?) -> ())?
+)
+	query = query:cached()
+
+	local archetypes = {}
+	local terms = query.ids
+	local first = terms[1]
+
+	local observers_on_create = world.observable[jecs.ArchetypeCreate][first]
+	observers_on_create[#observers_on_create].callback = function(archetype)
+		archetypes[archetype.id] = true
+	end
+	local observers_on_delete = world.observable[jecs.ArchetypeDelete][first]
+	observers_on_delete[#observers_on_delete].callback = function(archetype)
+		archetypes[archetype.id] = nil
 	end
 
 	local entity_index = world.entity_index :: any
 	local i = 0
 	local entities = {}
-	local function emplaced(entity, id, value)
-		local r = jecs.entity_index_try_get_fast(
-			entity_index, entity :: any)
 
-		if not r then
-			return
-		end
+	local function emplaced<T, a>(
+		entity: jecs.Entity<T>,
+		id: jecs.Id<a>,
+		value: a?
+	)
+		local r = jecs.entity_index_try_get_fast(
+			entity_index, entity :: any) :: jecs.Record
 
 		local archetype = r.archetype
 
-		if jecs.query_match(query, archetype) then
+		if archetypes[archetype.id] then
 			i += 1
 			entities[i] = entity
 			if callback ~= nil then
@@ -110,27 +124,36 @@ local function join(world, component)
 end
 
 local function monitors_new(world, query, callback)
-	local terms = query.filter_with :: { jecs.Id }
-	if not terms then
-		local ids = query.ids
-		query.filter_with = ids
-		terms = ids
+	query = query:cached()
+
+	local archetypes = {}
+	local terms = query.ids
+	local first = terms[1]
+
+	local observers_on_create = world.observable[jecs.ArchetypeCreate][first]
+	observers_on_create[#observers_on_create].callback = function(archetype)
+		archetypes[archetype.id] = true
+	end
+	local observers_on_delete = world.observable[jecs.ArchetypeDelete][first]
+	observers_on_delete[#observers_on_delete].callback = function(archetype)
+		archetypes[archetype.id] = nil
 	end
 
 	local entity_index = world.entity_index :: any
 	local i = 0
 	local entities = {}
-	local function emplaced(entity, id, value)
-		local r = jecs.entity_index_try_get_fast(
-			entity_index, entity :: any)
 
-		if not r then
-			return
-		end
+	local function emplaced<T, a>(
+		entity: jecs.Entity<T>,
+		id: jecs.Id<a>,
+		value: a?
+	)
+		local r = jecs.entity_index_try_get_fast(
+			entity_index, entity :: any) :: jecs.Record
 
 		local archetype = r.archetype
 
-		if jecs.query_match(query, archetype) then
+		if archetypes[archetype.id] then
 			i += 1
 			entities[i] = entity
 			if callback ~= nil then
