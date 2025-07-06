@@ -2728,7 +2728,6 @@ local function world_new()
 	end
 
 	local function inner_world_delete<T>(world: World, entity: Entity<T>)
-		local entity_index = world.entity_index
 		local record = inner_entity_index_try_get_unsafe(entity::number)
 		if not record then
 			return
@@ -2904,20 +2903,19 @@ local function world_new()
 			end
 		end
 
-		local dense_array = entity_index.dense_array
 		local dense = record.dense
 		local i_swap = entity_index.alive_count
 		entity_index.alive_count = i_swap - 1
 
-		local e_swap = dense_array[i_swap]
+		local e_swap = eindex_dense_array[i_swap]
 		local r_swap = inner_entity_index_try_get_any(e_swap :: number) :: Record
 		r_swap.dense = dense
 		record.archetype = nil :: any
 		record.row = nil :: any
 		record.dense = i_swap
 
-		dense_array[dense] = e_swap
-		dense_array[i_swap] = ECS_GENERATION_INC(entity :: number)
+		eindex_dense_array[dense] = e_swap
+		eindex_dense_array[i_swap] = ECS_GENERATION_INC(entity :: number)
 	end
 
 	local function inner_world_exists<T>(world: World, entity: Entity<T>): boolean
