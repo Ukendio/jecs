@@ -1,6 +1,6 @@
 {
 	"name": "@rbxts/jecs",
-	"version": "0.8.1",
+	"version": "0.8.2",
 	"description": "Stupidly fast Entity Component System",
 	"main": "jecs.luau",
 	"repository": {
