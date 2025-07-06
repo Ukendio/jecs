@@ -2174,7 +2174,7 @@ local function world_new()
 	local function inner_entity_index_try_get_any(entity: number): Record?
 		local r = eindex_sparse_array[ECS_ENTITY_T_LO(entity)]
 
-		if not r then
+		if not r or r.dense == 0 then
 			return nil
 		end
 
@@ -2566,15 +2566,6 @@ local function world_new()
 				if not dense or r.dense == 0 then
 					r.dense = index
 					dense = index
-				end
-
-				local any = eindex_dense_array[dense]
-				if dense <= alive_count then
-					if any ~= entity then
-						error("Entity ID is already in use with a different generation")
-					else
-						return entity
-					end
 				end
 
 				local e_swap = eindex_dense_array[dense]

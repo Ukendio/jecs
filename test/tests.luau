@@ -885,6 +885,7 @@ TEST("world:each()", function()
 	end
 end)
 
+FOCUS()
 TEST("world:range()", function()
 	do CASE "delete outside partitioned range"
 		local server = jecs.world()
@@ -895,9 +896,20 @@ TEST("world:range()", function()
 
 		local e1 = server:entity()
 		CHECK((e1::number)< 1000)
+		server:delete(e1)
 		local e2 = client:entity(e1)
 		CHECK(e2 == e1)
-		client:delete(e1)
+		local A = client:component()
+		client:set(e2, A, true)
+		CHECK(client:get(e2, A))
+		client:delete(e2)
+		local e3 = client:entity()
+		CHECK(ECS_ID(e3::number) == 1000)
+
+		local e1v1 = server:entity()
+		local e4 = client:entity(e1v1)
+		CHECK(ECS_ID(e4::number) == e1)
+		CHECK(ECS_GENERATION(e4::number) == 1)
 	end
 	do CASE "under range start"
 		local world = jecs.world()
