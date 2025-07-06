@@ -12,7 +12,7 @@ export type PatchedWorld = jecs.World & {
 	monitor: (
 		PatchedWorld,
 		any,
-		(jecs.Entity, jecs.Id) -> ()
+		(<a>(jecs.Entity, jecs.Id<a>) -> ())?
 	) -> ()
 }
 
@@ -120,7 +120,9 @@ local function monitors_new(world, query, callback)
 	end
 
 	local entity_index = world.entity_index :: any
-	local function emplaced(entity: jecs.Entity)
+	local i = 0
+	local entities = {}
+	local function emplaced(entity, id, value)
 		local r = jecs.entity_index_try_get_fast(
 			entity_index, entity :: any)
 
@@ -131,13 +133,19 @@ local function monitors_new(world, query, callback)
 		local archetype = r.archetype
 
 		if jecs.query_match(query, archetype) then
-			callback(entity, jecs.OnAdd)
+			i += 1
+			entities[i] = entity
+			if callback ~= nil then
+				callback(entity, id, value)
+			end
 		end
 	end
 
 	local function removed(entity: jecs.Entity, component: jecs.Id)
 		local EcsOnRemove = jecs.OnRemove :: jecs.Id
-		callback(entity, EcsOnRemove)
+		if callback ~= nil then
+			callback(entity, EcsOnRemove)
+		end
 	end
 
 	for _, term in terms do
