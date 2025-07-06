@@ -3066,6 +3066,8 @@ return {
 	Remove = (EcsRemove :: any) :: Entity,
 	Name = (EcsName :: any) :: Entity<string>,
 	Exclusive = EcsExclusive :: Entity,
+	ArchetypeCreate = EcsOnArchetypeCreate,
+	ArchetypeDelete = EcsOnArchetypeDelete,
 	Rest = (EcsRest :: any) :: Entity,
 
 	pair = (ECS_PAIR :: any) :: <P, O>(first: Id<P>, second: Id<O>) -> Pair<P, O>,
