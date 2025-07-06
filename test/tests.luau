@@ -887,6 +887,62 @@ end)
 
 FOCUS()
 TEST("world:range()", function()
+
+	do CASE "spawn entity under min range"
+		local world = jecs.world()
+		world:range(400, 1000)
+		CHECK(world.entity_index.alive_count == 399)
+		local e = world:entity(300)
+		CHECK(world.entity_index.alive_count == 400)
+		local e1 = world:entity(300)
+		CHECK(world.entity_index.alive_count == 400)
+		CHECK(e)
+	end
+	do CASE "axen"
+		local base = jecs.world()
+		base:range(1_000, 2_000)
+
+		local mirror = jecs.world()
+		mirror:range(3_000, 4_000)
+
+		mirror:entity() -- NOTE: this fixes the "attempt to index nil with 'dense'" error
+
+		local foo = base:entity()
+		local bar = mirror:entity(foo)
+
+		base:delete(base:entity()) -- Removing this line stops the error below from happening
+
+		local meow = base:entity()
+		mirror:delete(bar)
+
+		CHECK(jecs.ECS_ID(foo))
+		CHECK(jecs.ECS_ID(meow))
+		local mrrp = mirror:entity(meow) -- jecs, Line 785 - Entity ID is already in use with a different generation
+		CHECK(mrrp == meow)
+	end
+	do CASE "axen2"
+		local world = jecs.world()
+		local mirror = jecs.world()
+
+		world:range(1000, 2000)
+		mirror:range(3000, 4000)
+
+		local foo = world:entity() -- 1000
+		local foo_mirror = mirror:entity(foo) -- 1000
+		CHECK(foo == foo_mirror)
+
+		for index = 1, 5 do
+		  	world:entity()
+		end
+
+		world:delete(foo)
+		mirror:delete(foo_mirror)
+
+		local bar = world:entity()
+		local bar_mirror = mirror:entity(bar)
+		CHECK(bar == bar_mirror)
+	end
+
 	do CASE "delete outside partitioned range"
 		local server = jecs.world()
 		local client = jecs.world()
@@ -902,6 +958,7 @@ TEST("world:range()", function()
 		local A = client:component()
 		client:set(e2, A, true)
 		CHECK(client:get(e2, A))
+
 		client:delete(e2)
 		local e3 = client:entity()
 		CHECK(ECS_ID(e3::number) == 1000)
@@ -910,8 +967,12 @@ TEST("world:range()", function()
 		local e4 = client:entity(e1v1)
 		CHECK(ECS_ID(e4::number) == e1)
 		CHECK(ECS_GENERATION(e4::number) == 1)
+		CHECK(not client:contains(e2))
+		CHECK(client:contains(e4))
 	end
+
 	do CASE "under range start"
+
 		local world = jecs.world()
 		world:range(400, 1000)
 		local id = world:entity() :: number

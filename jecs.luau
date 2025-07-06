@@ -2566,16 +2566,37 @@ local function world_new()
 				if not dense or r.dense == 0 then
 					r.dense = index
 					dense = index
+					local any = eindex_dense_array[dense]
+					if any == entity then
+						local e_swap = eindex_dense_array[dense]
+						local r_swap = inner_entity_index_try_get_any(e_swap :: number) :: Record
+
+						r_swap.dense = dense
+						alive_count += 1
+						entity_index.alive_count = alive_count
+						r.dense = alive_count
+
+						eindex_dense_array[dense] = e_swap
+						eindex_dense_array[alive_count] = entity
+					end
+					return entity
 				end
 
-				local e_swap = eindex_dense_array[dense]
-				local r_swap = inner_entity_index_try_get_any(e_swap :: number) :: Record
-				alive_count += 1
-				entity_index.alive_count = alive_count
-				r_swap.dense = dense
-				r.dense = alive_count
-				eindex_dense_array[dense] = e_swap
-				eindex_dense_array[alive_count] = entity
+				local any = eindex_dense_array[dense]
+				if any ~= entity then
+					if alive_count <= dense then
+						local e_swap = eindex_dense_array[dense]
+						local r_swap = inner_entity_index_try_get_any(e_swap :: number) :: Record
+
+						r_swap.dense = dense
+						alive_count += 1
+						entity_index.alive_count = alive_count
+						r.dense = alive_count
+
+						eindex_dense_array[dense] = e_swap
+						eindex_dense_array[alive_count] = entity
+					end
+				end
 
 				return entity
 			else
