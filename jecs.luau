@@ -781,6 +781,7 @@ local function archetype_register(world: World, archetype: Archetype)
 	local archetype_id = archetype.id
 	local columns_map = archetype.columns_map
 	local columns = archetype.columns
+
 	for i, component_id in archetype.types do
 		local idr = id_record_ensure(world, component_id)
 		local is_tag = bit32.btest(idr.flags, ECS_ID_IS_TAG)
@@ -803,6 +804,10 @@ local function archetype_register(world: World, archetype: Archetype)
 			archetype_append_to_records(idr_t, archetype_id, columns_map, t, i, column)
 		end
 	end
+
+	world.archetype_index[archetype.type] = archetype
+	world.archetypes[archetype_id] = archetype
+	world.archetype_edges[archetype.id] = {} :: Map<Id, Archetype>
 end
 
 local function archetype_create(world: World, id_types: { Id }, ty, prev: i53?): Archetype
@@ -824,7 +829,7 @@ local function archetype_create(world: World, id_types: { Id }, ty, prev: i53?):
 		dead = false,
 	}
 
-	archetype_register(world, archetype)
+	archetype_register(world, archetype, false)
 
 	for id in columns_map do
 		local observer_list = find_observers(world, EcsOnArchetypeCreate, id)
@@ -838,9 +843,6 @@ local function archetype_create(world: World, id_types: { Id }, ty, prev: i53?):
 		end
 	end
 
-	world.archetype_index[ty] = archetype
-	world.archetypes[archetype_id] = archetype
-	world.archetype_edges[archetype.id] = {} :: Map<Id, Archetype>
 
 	return archetype
 end
@@ -1078,6 +1080,8 @@ local function archetype_destroy(world: World, archetype: Archetype)
 			end
 		end
 	end
+
+	archetype.dead = true
 end
 
 local function NOOP() end
@@ -2324,6 +2328,10 @@ local function world_new()
 				end
 				edge[id] = to
 			else
+				if to.dead then
+					archetype_register(world, to)
+					to.dead = false
+				end
 				idr = component_index[id]
 			end
 			if from == to then
@@ -2342,6 +2350,7 @@ local function world_new()
 			if on_add then
 				on_add(entity, id)
 			end
+
 			return
 		end
 		local to = archetype_traverse_add(world, id, from)

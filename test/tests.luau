@@ -24,6 +24,44 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
+FOCUS()
+TEST("", function()
+	local world = jecs.world()
+	local data = world:component()
+	local relation = world:component()
+	world:add(relation, jecs.pair(jecs.OnDeleteTarget, jecs.Delete))
+
+	local e1 = world:entity()
+	local e2 = world:entity()
+	world:set(e2, data, 456)
+	world:add(e2, jecs.pair(relation, e1))
+	world:delete(e1)
+
+	local e1v1 = world:entity()
+	CHECK(ECS_ID(e1v1) == e1)
+	local e2v1 = world:entity()
+	CHECK(ECS_ID(e2v1) == e2)
+	world:set(e2v1, data, 456)
+
+	CHECK(world:contains(e1v1))
+	CHECK(not world:contains(e2))
+	CHECK(world:contains(e2v1))
+
+	local count = 0
+	for i,val in world:query(data):iter() do
+		count += 1
+	end
+	CHECK(count == 1)
+	count = 0
+	world:add(e2v1, jecs.pair(relation, e1v1))
+	CHECK(world:has(e2v1, jecs.pair(relation, e1v1)))
+
+	for i,val in world:query(data):iter() do
+		count += 1
+	end
+
+	CHECK(count==1)
+end)
 TEST("bulk", function()
 	local world = jecs.world()
 	local A = world:component()
@@ -885,7 +923,6 @@ TEST("world:each()", function()
 	end
 end)
 
-FOCUS()
 TEST("world:range()", function()
 
 	do CASE "spawn entity under min range"
@@ -1122,6 +1159,7 @@ end)
 
 TEST("world:query()", function()
 	local N = 2^8
+
 	do CASE "cached"
 		local world = jecs.world()
 		local Foo = world:component()
@@ -1157,6 +1195,26 @@ TEST("world:query()", function()
 		CHECK(not table.find(q:archetypes(), world.archetype_index[table.concat({Foo, Bar, Baz}, "_")]))
 		world:delete(Foo)
 		CHECK(#q:archetypes() == 0)
+	end
+
+	do CASE "3 components"
+		local world = jecs.world()
+		local A = world:component() :: jecs.Entity<boolean>
+		local B = world:component() :: jecs.Entity<boolean>
+		local C = world:component() :: jecs.Entity<boolean>
+		local e = world:entity()
+		world:set(e, A, true)
+		world:set(e, B, true)
+		world:set(e, C, true)
+		local q = world:query(A, B, C):cached()
+		local counter = 0
+		for x, a, b, c in q:iter() do
+			counter += 1
+			CHECK(a)
+			CHECK(b)
+			CHECK(c)
+		end
+		CHECK(counter == 1)
 	end
 	do CASE "multiple iter"
 		local world = jecs.world()
