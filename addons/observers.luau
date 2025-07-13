@@ -34,13 +34,10 @@ export type PatchedWorld = jecs.World & {
 
 local function observers_new(
 	world: PatchedWorld,
-	description: {
-		query: any,
-		callback: (<T, a>(jecs.Entity<T>, jecs.Id<a>, value: a?) -> ())?
-	}
+	query: any,
+	callback: (<T, a>(jecs.Entity<T>, jecs.Id<a>, value: a?) -> ())?
 )
-	local query = description.query:cached()
-	local callback = description.callback
+	query = query:cached()
 
 	local archetypes = {}
 	local terms = query.ids
