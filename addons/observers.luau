@@ -1,28 +1,46 @@
 --!strict
 local jecs = require("@jecs")
 
+
+type Description<T...> = jecs.Query<T...>
+
+type ObserverArm = (<a>(
+	PatchedWorld,
+	{
+		query: jecs.Query<a>,
+		callback: ((jecs.Entity) -> ())?
+	}
+) -> () -> () -> (jecs.Entity)) & (<a, b>(
+	PatchedWorld,
+	{
+		query: jecs.Query<a, b>,
+		callback: ((jecs.Entity) -> ())?
+	}
+) -> () -> () -> (jecs.Entity)) & (<a, b, c>(
+	PatchedWorld,
+	{
+		query: jecs.Query<a, b, c>,
+		callback: ((jecs.Entity) -> ())?
+	}
+) -> () -> () -> (jecs.Entity))
+
 export type PatchedWorld = jecs.World & {
 	added: <T>(PatchedWorld, jecs.Id<T>, <e>(e: jecs.Entity<e>, id: jecs.Id<T>, value: T?) -> ()) -> () -> (),
 	removed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id) -> ()) -> () -> (),
 	changed:  <T>(PatchedWorld, jecs.Id<T>, <e>(e: jecs.Entity<e>, id: jecs.Id<T>, value: T) -> ()) -> () -> (),
-	observer: <T...>(
-		PatchedWorld,
-		jecs.Query<T...>,
-		(<a>(jecs.Entity, jecs.Id<a>, a) -> ())?
-	) -> () -> (jecs.Entity),
-	monitor: (
-		PatchedWorld,
-		any,
-		(<a>(jecs.Entity, jecs.Id<a>) -> ())?
-	) -> ()
+	observer: ObserverArm & any,
+	monitor: ObserverArm & any
 }
 
 local function observers_new(
 	world: PatchedWorld,
-	query: any,
-	callback: (<T, a>(jecs.Entity<T>, jecs.Id<a>, value: a?) -> ())?
+	description: {
+		query: any,
+		callback: (<T, a>(jecs.Entity<T>, jecs.Id<a>, value: a?) -> ())?
+	}
 )
-	query = query:cached()
+	local query = description.query:cached()
+	local callback = description.callback
 
 	local archetypes = {}
 	local terms = query.ids
@@ -46,8 +64,7 @@ local function observers_new(
 		id: jecs.Id<a>,
 		value: a?
 	)
-		local r = jecs.entity_index_try_get_fast(
-			entity_index, entity :: any) :: jecs.Record
+		local r = entity_index.sparse_array[jecs.ECS_ID(entity)]
 
 		local archetype = r.archetype
 
@@ -68,9 +85,9 @@ local function observers_new(
   	return function()
   		local row = i
   		return function()
-     			if row == 0 then
-         			i = 0
-          		table.clear(entities)
+ 			if row == 0 then
+     			i = 0
+	      		table.clear(entities)
       		end
            	local entity = entities[row]
            	row -= 1
