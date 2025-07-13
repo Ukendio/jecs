@@ -24,8 +24,46 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
-FOCUS()
-TEST("", function()
+TEST("repeated pairs", function()
+	local pair = jecs.pair
+	local world = jecs.world()
+	local rel = world:component() -- Does not error if this is just a tag
+
+	-- Does not happen if we delete manually instead of using this
+	world:add(rel, pair(jecs.OnDeleteTarget, jecs.Delete))
+
+	local t1 = world:entity()
+
+	local p1 = pair(rel, t1)
+
+	local e1 = world:entity()
+
+	world:set(e1, p1, true)
+
+	CHECK(world:get(e1, p1))
+	CHECK(world:each(p1)() == e1)
+
+	world:delete(t1)
+
+	local t2 = world:entity()
+	local p2 = pair(rel, t2)
+
+	local e2 = world:entity()
+
+	print("-----")
+	world:set(e2, p2, true)
+
+	CHECK(world:get(e2, p2))
+	CHECK(p1 == p2)
+	local count = 0
+	CHECK(world:has(e2, p2))
+	for _ in world:query(p2) do
+		count += 1
+	end
+	CHECK(count == 1)
+	CHECK(world:each(p2)() == e2) -- Fails
+end)
+TEST("repro", function()
 	local world = jecs.world()
 	local data = world:component()
 	local relation = world:component()

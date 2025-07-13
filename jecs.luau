@@ -1052,14 +1052,15 @@ local function archetype_destroy(world: World, archetype: Archetype)
 
 	local component_index = world.component_index
 	local archetype_edges = world.archetype_edges
-
-	for id, edge in archetype_edges[archetype.id] do
-		archetype_edges[edge.id][id] = nil
+	local edges = archetype_edges[archetype.id]
+	for id, node in edges do
+		archetype_edges[node.id][id] = nil
+		edges[id] = nil
 	end
 
 	local archetype_id = archetype.id
-	world.archetypes[archetype_id] = nil :: any
-	world.archetype_index[archetype.type] = nil :: any
+	-- world.archetypes[archetype_id] = nil :: any
+	-- world.archetype_index[archetype.type] = nil :: any
 	local columns_map = archetype.columns_map
 
 	for id in columns_map do
@@ -2330,6 +2331,8 @@ local function world_new()
 			else
 				if to.dead then
 					archetype_register(world, to)
+					edge[id] = to
+					archetype_edges[to.id][id] = src
 					to.dead = false
 				end
 				idr = component_index[id]
@@ -2539,6 +2542,7 @@ local function world_new()
 						idr = component_index[id]
 					end
 					edge[id] = to
+					archetype_edges[to.id][id] = src
 				else
 					idr = component_index[id]
 				end
