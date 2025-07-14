@@ -777,37 +777,73 @@ local function archetype_append_to_records(
 	end
 end
 
-local function archetype_register(world: World, archetype: Archetype)
+local function archetype_register(world: World, archetype: Archetype, recycle: boolean)
 	local archetype_id = archetype.id
 	local columns_map = archetype.columns_map
 	local columns = archetype.columns
 
-	for i, component_id in archetype.types do
-		local idr = id_record_ensure(world, component_id)
-		local is_tag = bit32.btest(idr.flags, ECS_ID_IS_TAG)
-		local column = if is_tag then NULL_ARRAY else {}
-		columns[i] = column
+	if recycle then
+		local component_index = world.component_index
+		for i, component_id in archetype.types do
+			local idr = component_index[component_id]
+			local column = columns[i]
 
-		archetype_append_to_records(idr, archetype_id, columns_map, component_id :: number, i, column)
+			archetype_append_to_records(idr, archetype_id, columns_map, component_id :: number, i, column)
 
-		if ECS_IS_PAIR(component_id :: number) then
-			local relation = ECS_PAIR_FIRST(component_id :: number)
-			local object = ECS_PAIR_SECOND(component_id :: number)
-			local r = ECS_PAIR(relation, EcsWildcard)
-			local idr_r = id_record_ensure(world, r)
+			if ECS_IS_PAIR(component_id :: number) then
+				local relation = ECS_PAIR_FIRST(component_id :: number)
+				local object = ECS_PAIR_SECOND(component_id :: number)
+				local r = ECS_PAIR(relation, EcsWildcard)
+				local idr_r = component_index[r]
 
-			archetype_append_to_records(idr_r, archetype_id, columns_map, r, i, column)
+				archetype_append_to_records(idr_r, archetype_id, columns_map, r, i, column)
 
-			local t = ECS_PAIR(EcsWildcard, object)
-			local idr_t = id_record_ensure(world, t)
+				local t = ECS_PAIR(EcsWildcard, object)
+				local idr_t = component_index[t]
 
-			archetype_append_to_records(idr_t, archetype_id, columns_map, t, i, column)
+				archetype_append_to_records(idr_t, archetype_id, columns_map, t, i, column)
+			end
 		end
+	else
+		for i, component_id in archetype.types do
+			local idr = id_record_ensure(world, component_id)
+			local is_tag = bit32.btest(idr.flags, ECS_ID_IS_TAG)
+			local column = if is_tag then NULL_ARRAY else {}
+			columns[i] = column
+
+			archetype_append_to_records(idr, archetype_id, columns_map, component_id :: number, i, column)
+
+			if ECS_IS_PAIR(component_id :: number) then
+				local relation = ECS_PAIR_FIRST(component_id :: number)
+				local object = ECS_PAIR_SECOND(component_id :: number)
+				local r = ECS_PAIR(relation, EcsWildcard)
+				local idr_r = id_record_ensure(world, r)
+
+				archetype_append_to_records(idr_r, archetype_id, columns_map, r, i, column)
+
+				local t = ECS_PAIR(EcsWildcard, object)
+				local idr_t = id_record_ensure(world, t)
+
+				archetype_append_to_records(idr_t, archetype_id, columns_map, t, i, column)
+			end
+		end
+
+		world.archetype_index[archetype.type] = archetype
+		world.archetypes[archetype_id] = archetype
+		world.archetype_edges[archetype.id] = {} :: Map<Id, Archetype>
 	end
 
-	world.archetype_index[archetype.type] = archetype
-	world.archetypes[archetype_id] = archetype
-	world.archetype_edges[archetype.id] = {} :: Map<Id, Archetype>
+	for id in columns_map do
+		local observer_list = find_observers(world, EcsOnArchetypeCreate, id)
+		if not observer_list then
+			continue
+		end
+		for _, observer in observer_list do
+			if query_match(observer.query :: QueryInner, archetype) then
+				observer.callback(archetype)
+			end
+		end
+	end
 end
 
 local function archetype_create(world: World, id_types: { Id }, ty, prev: i53?): Archetype
@@ -830,19 +866,6 @@ local function archetype_create(world: World, id_types: { Id }, ty, prev: i53?):
 	}
 
 	archetype_register(world, archetype, false)
-
-	for id in columns_map do
-		local observer_list = find_observers(world, EcsOnArchetypeCreate, id)
-		if not observer_list then
-			continue
-		end
-		for _, observer in observer_list do
-			if query_match(observer.query :: QueryInner, archetype) then
-				observer.callback(archetype)
-			end
-		end
-	end
-
 
 	return archetype
 end
@@ -2330,7 +2353,7 @@ local function world_new()
 				edge[id] = to
 			else
 				if to.dead then
-					archetype_register(world, to)
+					archetype_register(world, to, true)
 					edge[id] = to
 					archetype_edges[to.id][id] = src
 					to.dead = false

@@ -24,6 +24,38 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
+TEST("repeated entity cached query", function()
+	local pair = jecs.pair
+	local world = jecs.world()
+	local rel = world:entity()
+	local cmp = world:component()
+
+	local query = world:query(cmp):cached()
+
+	local t1 = world:entity()
+	local p1 = pair(rel, t1)
+
+	local e1 = world:entity()
+
+	world:add(e1, p1)
+	world:set(e1, cmp, true)
+
+	CHECK(query:iter()() == e1)
+
+	world:delete(e1)
+	world:delete(t1)
+
+	local t2 = world:entity()
+	local p2 = pair(rel, t2)
+
+	local e2 = world:entity()
+
+	world:add(e2, p2)
+	world:set(e2, cmp, true)
+
+	CHECK(query:iter()() == e2) -- Fails
+end)
+
 TEST("repeated pairs", function()
 	local pair = jecs.pair
 	local world = jecs.world()
