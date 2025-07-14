@@ -24,6 +24,40 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
+TEST("Ensure archetype edges get cleaned", function()
+	local A = jecs.component()
+	local B = jecs.component()
+	local world = jecs.world()
+	local edges = world.archetype_edges
+
+	local e = world:entity()
+	local r = jecs.record(world, e)
+
+	world:set(e, A, true)
+	world:add(e, A)
+	local arch_a = r.archetype
+	world:set(e, B, true)
+	world:add(e, B)
+	local arch_ab = r.archetype
+	CHECK(edges[arch_a.id][B] == arch_ab)
+	CHECK(edges[arch_ab.id][B] == arch_a)
+
+	world:delete(B)
+
+	CHECK(edges[arch_a.id][B] == nil)
+	CHECK(edges[arch_ab.id][A] == nil)
+	for _ in edges[arch_ab.id] do
+		CHECK(false)
+	end
+
+	world:delete(A)
+
+	CHECK(edges[arch_a.id][B] == nil)
+	CHECK(edges[arch_a.id][A] == nil)
+	for _ in edges[arch_a.id] do
+		CHECK(false)
+	end
+end)
 TEST("repeated entity cached query", function()
 	local pair = jecs.pair
 	local world = jecs.world()
