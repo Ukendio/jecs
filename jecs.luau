@@ -3091,6 +3091,10 @@ local function ecs_is_tag(world: World, entity: Entity): boolean
 	return not world_has_one_inline(world, entity, EcsComponent)
 end
 
+local function ecs_entity_record(world: World, entity: Entity)
+	return entity_index_try_get(world.entity_index, entity)
+end
+
 return {
 	world = world_new :: () -> World,
 	component = (ECS_COMPONENT :: any) :: <T>() -> Entity<T>,
@@ -3135,6 +3139,8 @@ return {
 	archetype_append_to_records = archetype_append_to_records,
 	id_record_ensure = id_record_ensure,
 	component_record = id_record_get,
+	record = ecs_entity_record,
+
 	archetype_create = archetype_create,
 	archetype_ensure = archetype_ensure,
 	find_insert = find_insert,
