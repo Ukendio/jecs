@@ -303,6 +303,7 @@ export declare const OnAdd: StatefulHook;
 export declare const OnRemove: StatelessHook;
 export declare const OnChange: StatefulHook;
 export declare const ChildOf: Tag;
+export declare const Component: Tag;
 export declare const Wildcard: Entity;
 export declare const w: Entity;
 export declare const OnDelete: Tag;
