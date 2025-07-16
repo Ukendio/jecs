@@ -321,3 +321,6 @@ export type ComponentRecord = {
 }
 
 export function component_record(world: World, id: Id): ComponentRecord
+
+export function bulk_insert<const C extends Entity[]>(world: World, entity: Entity, ids: C, values: InferComponents<C>): void
+export function bulk_remove(world: World, entity: Entity, ids: Entity[]): void
