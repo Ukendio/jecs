@@ -24,6 +24,15 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
+TEST("another axen banger", function()
+	-- taken from jecs.luau
+	local world = jecs.world()
+	world:range(2000, 3000)
+
+	local e0v1_id = jecs.ECS_COMBINE(1000, 1) -- id can be both within or outside the world's range
+	local e0v1 = world:entity(e0v1_id)
+	assert(world:contains(e0v1)) -- fails
+end)
 TEST("Ensure archetype edges get cleaned", function()
 	local A = jecs.component()
 	local B = jecs.component()

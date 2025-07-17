@@ -2574,19 +2574,16 @@ local function world_new()
 				if not dense or r.dense == 0 then
 					r.dense = index
 					dense = index
-					local any = eindex_dense_array[dense]
-					if any == entity then
-						local e_swap = eindex_dense_array[dense]
-						local r_swap = inner_entity_index_try_get_any(e_swap :: number) :: Record
+					local e_swap = eindex_dense_array[dense]
+					local r_swap = inner_entity_index_try_get_any(e_swap :: number) :: Record
 
-						r_swap.dense = dense
-						alive_count += 1
-						entity_index.alive_count = alive_count
-						r.dense = alive_count
+					r_swap.dense = dense
+					alive_count += 1
+					entity_index.alive_count = alive_count
+					r.dense = alive_count
 
-						eindex_dense_array[dense] = e_swap
-						eindex_dense_array[alive_count] = entity
-					end
+					eindex_dense_array[dense] = e_swap
+					eindex_dense_array[alive_count] = entity
 					return entity
 				end
 
@@ -3093,6 +3090,13 @@ return {
 
 	pair = (ECS_PAIR :: any) :: <P, O>(first: Id<P>, second: Id<O>) -> Pair<P, O>,
 
+	IS_PAIR = (ECS_IS_PAIR :: any) :: <P, O>(pair: Pair<P, O>) -> boolean,
+	ECS_PAIR_FIRST = ECS_PAIR_FIRST :: <P, O>(pair: Pair<P, O>) -> Id<P>,
+	ECS_PAIR_SECOND = ECS_PAIR_SECOND :: <P, O>(pair: Pair<P, O>) -> Id<O>,
+	pair_first = (ecs_pair_first :: any) :: <P, O>(world: World, pair: Pair<P, O>) -> Id<P>,
+	pair_second = (ecs_pair_second :: any) :: <P, O>(world: World, pair: Pair<P, O>) -> Id<O>,
+	entity_index_get_alive = entity_index_get_alive,
+
 	-- Inwards facing API for testing
 	ECS_ID = ECS_ENTITY_T_LO,
 	ECS_GENERATION_INC = ECS_GENERATION_INC,
@@ -3100,13 +3104,8 @@ return {
 	ECS_ID_IS_WILDCARD = ECS_ID_IS_WILDCARD,
 	ECS_ID_DELETE = ECS_ID_DELETE,
 	ECS_META_RESET = ECS_META_RESET,
-
-	IS_PAIR = (ECS_IS_PAIR :: any) :: <P, O>(pair: Pair<P, O>) -> boolean,
-	ECS_PAIR_FIRST = ECS_PAIR_FIRST :: <P, O>(pair: Pair<P, O>) -> Id<P>,
-	ECS_PAIR_SECOND = ECS_PAIR_SECOND :: <P, O>(pair: Pair<P, O>) -> Id<O>,
-	pair_first = (ecs_pair_first :: any) :: <P, O>(world: World, pair: Pair<P, O>) -> Id<P>,
-	pair_second = (ecs_pair_second :: any) :: <P, O>(world: World, pair: Pair<P, O>) -> Id<O>,
-	entity_index_get_alive = entity_index_get_alive,
+	ECS_COMBINE = ECS_COMBINE,
+	ECS_ENTITY_MASK = ECS_ENTITY_MASK,
 
 	archetype_append_to_records = archetype_append_to_records,
 	id_record_ensure = id_record_ensure,
