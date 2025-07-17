@@ -19,8 +19,7 @@ export type Archetype = {
 	type: string,
 	entities: { Entity },
 	columns: { Column },
-	columns_map: { [Id]: Column },
-	dead: boolean,
+	columns_map: { [Id]: Column }
 }
 
 export type QueryInner = {
@@ -861,8 +860,7 @@ local function archetype_create(world: World, id_types: { Id }, ty, prev: i53?):
 		entities = {},
 		id = archetype_id,
 		type = ty,
-		types = id_types,
-		dead = false,
+		types = id_types
 	}
 
 	archetype_register(world, archetype, false)
@@ -901,10 +899,6 @@ local function archetype_ensure(world: World, id_types: { Id }): Archetype
 	local ty = hash(id_types)
 	local archetype = world.archetype_index[ty]
 	if archetype then
-		if archetype.dead then
-			archetype_register(world, archetype)
-			archetype.dead = false :: any
-		end
 		return archetype
 	end
 
@@ -1076,14 +1070,16 @@ local function archetype_destroy(world: World, archetype: Archetype)
 	local component_index = world.component_index
 	local archetype_edges = world.archetype_edges
 	local edges = archetype_edges[archetype.id]
+	print("delete archetype id", archetype.id, archetype.type)
 	for id, node in edges do
+		print("node id", node.id)
 		archetype_edges[node.id][id] = nil
 		edges[id] = nil
 	end
 
 	local archetype_id = archetype.id
-	-- world.archetypes[archetype_id] = nil :: any
-	-- world.archetype_index[archetype.type] = nil :: any
+	world.archetypes[archetype_id] = nil :: any
+	world.archetype_index[archetype.type] = nil :: any
 	local columns_map = archetype.columns_map
 
 	for id in columns_map do
@@ -1104,8 +1100,6 @@ local function archetype_destroy(world: World, archetype: Archetype)
 			end
 		end
 	end
-
-	archetype.dead = true
 end
 
 local function NOOP() end
@@ -2307,6 +2301,92 @@ local function world_new()
 		return r
 	end
 
+	local function inner_world_set<T, a>(world: World, entity: Entity<T>, id: Id<a>, data: a): ()
+		local record = inner_entity_index_try_get_unsafe(entity :: number)
+		if not record then
+			return
+		end
+
+		local from: Archetype = record.archetype
+		local src = from or ROOT_ARCHETYPE
+		local column = src.columns_map[id]
+		if column then
+			local idr = component_index[id]
+			column[record.row] = data
+
+			-- If the archetypes are the same it can avoid moving the entity
+			-- and just set the data directly.
+			local on_change = idr.on_change
+			if on_change then
+				on_change(entity, id, data)
+			end
+		else
+			local to: Archetype
+			local idr: ComponentRecord
+			if ECS_IS_PAIR(id::number) then
+				local edge = archetype_edges[src.id]
+				to = edge[id]
+				if not to then
+					local first = ECS_PAIR_FIRST(id::number)
+					local wc = ECS_PAIR(first, EcsWildcard)
+					idr = component_index[wc]
+					if idr and bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) then
+						local cr = idr.records[src.id]
+						if cr then
+							local on_remove = idr.on_remove
+							local id_types = src.types
+							if on_remove then
+								on_remove(entity, id_types[cr])
+								src = record.archetype
+								id_types = src.types
+								cr = idr.records[src.id]
+							end
+							local dst = table.clone(id_types)
+							dst[cr] = id
+							to = archetype_ensure(world, dst)
+						else
+							to = find_archetype_with(world, id, src)
+							idr = component_index[id]
+						end
+					else
+						to = find_archetype_with(world, id, src)
+						idr = component_index[id]
+					end
+					edge[id] = to
+					archetype_edges[to.id][id] = src
+				else
+					idr = component_index[id]
+				end
+			else
+				local edges = archetype_edges
+				local edge = edges[src.id]
+
+				to = edge[id] :: Archetype
+				if not to then
+					to = find_archetype_with(world, id, src)
+					edge[id] = to
+					edges[to.id][id] = src
+				end
+				idr = component_index[id]
+			end
+
+			if from then
+				-- If there was a previous archetype, then the entity needs to move the archetype
+				inner_entity_move(entity_index, entity, record, to)
+			else
+				new_entity(entity, record, to)
+			end
+
+			column = to.columns_map[id]
+			column[record.row] = data
+
+			local on_add = idr.on_add
+			if on_add then
+				on_add(entity, id, data)
+			end
+		end
+	end
+
 	local function inner_world_add<T, a>(
 		world: World,
 		entity: Entity<T>,
@@ -2319,11 +2399,15 @@ local function world_new()
 		end
 
 		local from = record.archetype
+		local src = from or ROOT_ARCHETYPE
+		if src.columns_map[id] then
+			return
+		end
+		local to: Archetype
+		local idr: ComponentRecord
 		if ECS_IS_PAIR(id::number) then
-			local src = from or ROOT_ARCHETYPE
 			local edge = archetype_edges[src.id]
-			local to = edge[id]
-			local idr: ComponentRecord
+			to = edge[id]
 			if not to then
 				local first = ECS_PAIR_FIRST(id::number)
 				local wc = ECS_PAIR(first, EcsWildcard)
@@ -2351,38 +2435,23 @@ local function world_new()
 					idr = component_index[id]
 				end
 				edge[id] = to
+				archetype_edges[to.id][id] = src
 			else
-				if to.dead then
-					archetype_register(world, to, true)
-					edge[id] = to
-					archetype_edges[to.id][id] = src
-					to.dead = false
-				end
 				idr = component_index[id]
 			end
-			if from == to then
-				return
-			end
-			if from then
-				inner_entity_move(entity_index, entity, record, to)
-			else
-				if #to.types > 0 then
-					new_entity(entity, record, to)
-				end
-			end
+		else
+			local edges = archetype_edges
+			local edge = edges[src.id]
 
-			local on_add = idr.on_add
-
-			if on_add then
-				on_add(entity, id)
+			to = edge[id] :: Archetype
+			if not to then
+				to = find_archetype_with(world, id, src)
+				edge[id] = to
+				edges[to.id][id] = src
 			end
-
-			return
+			idr = component_index[id]
 		end
-		local to = archetype_traverse_add(world, id, from)
-		if from == to then
-			return
-		end
+
 		if from then
 			inner_entity_move(entity_index, entity, record, to)
 		else
@@ -2391,7 +2460,6 @@ local function world_new()
 			end
 		end
 
-		local idr = component_index[id]
 		local on_add = idr.on_add
 
 		if on_add then
@@ -2493,102 +2561,6 @@ local function world_new()
 
 	local function inner_world_parent<T>(world: World, entity: Entity<T>): Entity?
 		return inner_world_target(world, entity, EcsChildOf, 0)
-	end
-
-	local function inner_archetype_traverse_add(id: Id, from: Archetype): Archetype
-		from = from or ROOT_ARCHETYPE
-		if from.columns_map[id] then
-			return from
-		end
-		local edges = archetype_edges
-		local edge = edges[from.id]
-
-		local to = edge[id] :: Archetype
-		if not to then
-			to = find_archetype_with(world, id, from)
-			edge[id] = to
-			edges[to.id][id] = from
-		end
-
-		return to
-	end
-
-	local function inner_world_set<T, a>(world: World, entity: Entity<T>, id: Id<a>, data: a): ()
-		local record = inner_entity_index_try_get_unsafe(entity :: number)
-		if not record then
-			return
-		end
-
-		local from: Archetype = record.archetype
-		local src = from or ROOT_ARCHETYPE
-		local column = src.columns_map[id]
-		if column then
-			local idr = component_index[id]
-			column[record.row] = data
-
-			-- If the archetypes are the same it can avoid moving the entity
-			-- and just set the data directly.
-			local on_change = idr.on_change
-			if on_change then
-				on_change(entity, id, data)
-			end
-		else
-			local to: Archetype
-			local idr: ComponentRecord
-			if ECS_IS_PAIR(id::number) then
-				local edge = archetype_edges[src.id]
-				to = edge[id]
-				if not to then
-					local first = ECS_PAIR_FIRST(id::number)
-					local wc = ECS_PAIR(first, EcsWildcard)
-					idr = component_index[wc]
-					if idr and bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) then
-						local cr = idr.records[src.id]
-						if cr then
-							local on_remove = idr.on_remove
-							local id_types = src.types
-							if on_remove then
-								on_remove(entity, id_types[cr])
-								src = record.archetype
-								id_types = src.types
-								cr = idr.records[src.id]
-							end
-							local dst = table.clone(id_types)
-							dst[cr] = id
-							to = archetype_ensure(world, dst)
-						else
-							to = find_archetype_with(world, id, src)
-							idr = component_index[id]
-						end
-					else
-						to = find_archetype_with(world, id, src)
-						idr = component_index[id]
-					end
-					edge[id] = to
-					archetype_edges[to.id][id] = src
-				else
-					idr = component_index[id]
-				end
-			else
-				to = inner_archetype_traverse_add(id, from)
-				idr = component_index[id]
-			end
-
-			if from then
-				-- If there was a previous archetype, then the entity needs to move the archetype
-				inner_entity_move(entity_index, entity, record, to)
-			else
-				new_entity(entity, record, to)
-			end
-
-			column = to.columns_map[id]
-			column[record.row] = data
-
-			local on_add = idr.on_add
-			if on_add then
-				on_add(entity, id, data)
-			end
-		end
 	end
 
 	local function inner_world_entity<T>(world: World, entity: Entity<T>?): Entity<T>

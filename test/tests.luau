@@ -129,6 +129,7 @@ TEST("repeated pairs", function()
 	CHECK(count == 1)
 	CHECK(world:each(p2)() == e2) -- Fails
 end)
+
 TEST("repro", function()
 	local world = jecs.world()
 	local data = world:component()
@@ -157,6 +158,7 @@ TEST("repro", function()
 	end
 	CHECK(count == 1)
 	count = 0
+	print("----")
 	world:add(e2v1, jecs.pair(relation, e1v1))
 	CHECK(world:has(e2v1, jecs.pair(relation, e1v1)))
 
@@ -164,6 +166,7 @@ TEST("repro", function()
 		count += 1
 	end
 
+	print(count)
 	CHECK(count==1)
 end)
 TEST("bulk", function()
