@@ -3004,8 +3004,10 @@ local function world_new()
 	inner_world_set(world, EcsWildcard, EcsName, "jecs.Wildcard")
 	inner_world_set(world, EcsChildOf, EcsName, "jecs.ChildOf")
 	inner_world_set(world, EcsComponent, EcsName, "jecs.Component")
+
 	inner_world_set(world, EcsOnDelete, EcsName, "jecs.OnDelete")
 	inner_world_set(world, EcsOnDeleteTarget, EcsName, "jecs.OnDeleteTarget")
+
 	inner_world_set(world, EcsDelete, EcsName, "jecs.Delete")
 	inner_world_set(world, EcsRemove, EcsName, "jecs.Remove")
 	inner_world_set(world, EcsName, EcsName, "jecs.Name")
@@ -3013,6 +3015,9 @@ local function world_new()
 
 	inner_world_add(world, EcsChildOf, ECS_PAIR(EcsOnDeleteTarget, EcsDelete))
 	inner_world_add(world, EcsChildOf, EcsExclusive)
+
+	inner_world_add(world, EcsOnDelete, EcsExclusive)
+	inner_world_add(world, EcsOnDeleteTarget, EcsExclusive)
 
 	for i = EcsRest + 1, ecs_max_tag_id do
 		entity_index_new_id(entity_index)
