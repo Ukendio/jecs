@@ -24,6 +24,16 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
+TEST("dai", function()
+	local world = jecs.world()
+	local C = world:component()
+
+	world:set(C, jecs.Name, "C")
+	CHECK(world:get(C, jecs.Name) == "C")
+	world:entity(2000)
+	CHECK(world:get(C, jecs.Name) == "C")
+end)
+
 TEST("another axen banger", function()
 	-- taken from jecs.luau
 	local world = jecs.world()

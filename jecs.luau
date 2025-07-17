@@ -2157,13 +2157,12 @@ local function world_new()
 	local eindex_dense_array = {} :: { Entity }
 	local eindex_sparse_array = {} :: { Record }
 	local eindex_alive_count = 0
-	local eindex_max_id = 0
 
 	local entity_index = {
 		dense_array = eindex_dense_array,
 		sparse_array = eindex_sparse_array,
 		alive_count = eindex_alive_count,
-		max_id = eindex_max_id,
+		max_id = 0,
 	} :: EntityIndex
 
 	local component_index = {} :: ComponentIndex
@@ -2605,7 +2604,7 @@ local function world_new()
 
 				return entity
 			else
-				for i = eindex_max_id + 1, index do
+				for i = entity_index.max_id + 1, index do
 					eindex_sparse_array[i] = { dense = i } :: Record
 					eindex_dense_array[i] = i
 				end
