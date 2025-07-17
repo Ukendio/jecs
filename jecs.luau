@@ -2156,12 +2156,11 @@ end
 local function world_new()
 	local eindex_dense_array = {} :: { Entity }
 	local eindex_sparse_array = {} :: { Record }
-	local eindex_alive_count = 0
 
 	local entity_index = {
 		dense_array = eindex_dense_array,
 		sparse_array = eindex_sparse_array,
-		alive_count = eindex_alive_count,
+		alive_count = 0,
 		max_id = 0,
 	} :: EntityIndex
 
