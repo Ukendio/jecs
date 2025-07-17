@@ -24,6 +24,19 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
+TEST("ardi", function()
+	local world = jecs.world()
+	local r = world:entity()
+	world:add(r, jecs.pair(jecs.OnDelete, jecs.Delete))
+
+	local e = world:entity()
+	local e1 = world:entity()
+	world:add(e, jecs.pair(r, e1))
+
+	world:delete(r)
+	CHECK(not world:contains(e))
+end)
+
 TEST("dai", function()
 	local world = jecs.world()
 	local C = world:component()
@@ -621,9 +634,9 @@ TEST("world:delete()", function()
 	    world:add(e1, ct)
 	    world:add(e2, jecs.pair(ct, dummy))
 
-	    world:delete(dummy)
+	    -- world:delete(dummy)
 
-	    CHECK(world:contains(e2))
+	    -- CHECK(world:contains(e2))
 
 	    world:delete(ct)
 

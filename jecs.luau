@@ -714,12 +714,12 @@ local function id_record_ensure(world: World, id: Entity): ComponentRecord
 		if world_has_one_inline(world, relation, EcsExclusive) then
 			is_exclusive = true
 		end
-	else
-		local cleanup_policy = world_target(world, relation, EcsOnDelete, 0)
+	end
 
-		if cleanup_policy == EcsDelete then
-			has_delete = true
-		end
+	local cleanup_policy = world_target(world, relation, EcsOnDelete, 0)
+
+	if cleanup_policy == EcsDelete then
+		has_delete = true
 	end
 
 	local on_add, on_change, on_remove = world_get(world,
@@ -2766,7 +2766,7 @@ local function world_new()
 
 		if idr then
 			local flags = idr.flags
-			if bit32.btest(flags, ECS_ID_DELETE) then
+			if (bit32.btest(flags, ECS_ID_DELETE) == true) then
 				for archetype_id in idr.records do
 					local idr_archetype = archetypes[archetype_id]
 
@@ -2873,7 +2873,8 @@ local function world_new()
 		if idr_r then
 			local archetype_ids = idr_r.records
 			local flags = idr_r.flags
-			if bit32.btest(flags, ECS_ID_DELETE) then
+			local has_delete_policy = bit32.btest(flags, ECS_ID_DELETE)
+			if has_delete_policy then
 				for archetype_id in archetype_ids do
 					local idr_r_archetype = archetypes[archetype_id]
 					local entities = idr_r_archetype.entities
