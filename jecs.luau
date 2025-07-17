@@ -2027,7 +2027,7 @@ local function world_children<a>(world: World, parent: Id<a>)
 	return world_each(world, ECS_PAIR(EcsChildOf, parent::number))
 end
 
-local function ecs_bulk_insert(world: World, entity: Entity, ids: { Entity }, values: { any })
+local function ecs_bulk_insert(world: World, entity: Entity, ids: { Id }, values: { any })
 	local entity_index = world.entity_index
 	local r = entity_index_try_get(entity_index, entity)
 	if not r then
@@ -2105,7 +2105,7 @@ local function ecs_bulk_insert(world: World, entity: Entity, ids: { Entity }, va
 	end
 end
 
-local function ecs_bulk_remove(world: World, entity: Entity, ids: { Entity })
+local function ecs_bulk_remove(world: World, entity: Entity, ids: { Id })
 	local entity_index = world.entity_index
 	local r = entity_index_try_get(entity_index, entity)
 	if not r then
@@ -2117,7 +2117,7 @@ local function ecs_bulk_remove(world: World, entity: Entity, ids: { Entity })
 		return
 	end
 
-	local remove: { [Entity]: boolean } = {}
+	local remove: { [Id]: boolean } = {}
 
 	local columns_map = from.columns_map
 
