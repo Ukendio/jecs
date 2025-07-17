@@ -1070,9 +1070,7 @@ local function archetype_destroy(world: World, archetype: Archetype)
 	local component_index = world.component_index
 	local archetype_edges = world.archetype_edges
 	local edges = archetype_edges[archetype.id]
-	print("delete archetype id", archetype.id, archetype.type)
 	for id, node in edges do
-		print("node id", node.id)
 		archetype_edges[node.id][id] = nil
 		edges[id] = nil
 	end
