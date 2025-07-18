@@ -2348,10 +2348,9 @@ local function world_new()
 
 					if not to then
 						to = find_archetype_with(world, id, src)
-					end
-
-					if not idr then
-						idr = component_index[wc]
+						if not idr then
+							idr = component_index[wc]
+						end
 					end
 
 					edge[id] = to
@@ -2455,10 +2454,9 @@ local function world_new()
 
 				if not to then
 					to = find_archetype_with(world, id, src)
-				end
-
-				if not idr then
-					idr = component_index[wc]
+					if not idr then
+						idr = component_index[wc]
+					end
 				end
 
 				edge[id] = to
@@ -3153,6 +3151,7 @@ return {
 	ECS_GENERATION_INC = ECS_GENERATION_INC,
 	ECS_GENERATION = ECS_GENERATION,
 	ECS_ID_IS_WILDCARD = ECS_ID_IS_WILDCARD,
+	ECS_ID_IS_EXCLUSIVE = ECS_ID_IS_EXCLUSIVE,
 	ECS_ID_DELETE = ECS_ID_DELETE,
 	ECS_META_RESET = ECS_META_RESET,
 	ECS_COMBINE = ECS_COMBINE,
