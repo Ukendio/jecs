@@ -346,23 +346,12 @@ TEST("world:add()", function()
 		world:add(A, jecs.Exclusive)
 		local on_remove_call = false
 		world:set(A, jecs.OnRemove, function(e, id)
-			CHECK(e == e_ptr)
-			CHECK(id == jecs.pair(A, B))
 			on_remove_call = true
 		end)
 
 		local on_add_call_count = 0
 		world:set(A, jecs.OnAdd, function(e, id)
 			on_add_call_count += 1
-			if on_add_call_count == 1 then
-				CHECK(e == e_ptr)
-				CHECK(id == jecs.pair(A, B))
-			elseif on_add_call_count == 2 then
-				CHECK(e == e_ptr)
-				CHECK(id == jecs.pair(A, C))
-			else
-				CHECK(false)
-			end
 		end)
 
 
@@ -377,6 +366,17 @@ TEST("world:add()", function()
 		CHECK(world:has(e, pair(A, B)) == false)
 		CHECK(world:has(e, pair(A, C)) == true)
 
+		-- We have to ensure that it actually invokes hooks everytime it
+		-- traverses the archetype
+		e = world:entity()
+		world:add(e, pair(A, B))
+		CHECK(on_add_call_count == 3)
+		world:add(e, pair(A, C))
+		CHECK(on_add_call_count == 4)
+		CHECK(on_remove_call)
+
+		CHECK(world:has(e, pair(A, B)) == false)
+		CHECK(world:has(e, pair(A, C)) == true)
 	end
 
 	do CASE "idempotent"

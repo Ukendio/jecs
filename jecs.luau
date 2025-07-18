@@ -2320,13 +2320,44 @@ local function world_new()
 			local to: Archetype
 			local idr: ComponentRecord
 			if ECS_IS_PAIR(id::number) then
+				local first = ECS_PAIR_FIRST(id::number)
+				local wc = ECS_PAIR(first, EcsWildcard)
+				idr = component_index[wc]
+
 				local edge = archetype_edges[src.id]
 				to = edge[id]
-				if not to then
-					local first = ECS_PAIR_FIRST(id::number)
-					local wc = ECS_PAIR(first, EcsWildcard)
-					idr = component_index[wc]
-					if idr and bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) then
+				if to == nil then
+					if idr and (bit32.btest(idr.flags) == true) then
+						local cr = idr.records[src.id]
+						if cr then
+							local on_remove = idr.on_remove
+							local id_types = src.types
+							if on_remove then
+								on_remove(entity, id_types[cr])
+
+								src = record.archetype
+								id_types = src.types
+								cr = idr.records[src.id]
+							end
+
+							local dst = table.clone(id_types)
+							dst[cr] = id
+							to = archetype_ensure(world, dst)
+						end
+					end
+
+					if not to then
+						to = find_archetype_with(world, id, src)
+					end
+
+					if not idr then
+						idr = component_index[wc]
+					end
+
+					edge[id] = to
+					archetype_edges[(to :: Archetype).id][id] = src
+				else
+					if bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) then
 						local cr = idr.records[src.id]
 						if cr then
 							local on_remove = idr.on_remove
@@ -2340,18 +2371,11 @@ local function world_new()
 							local dst = table.clone(id_types)
 							dst[cr] = id
 							to = archetype_ensure(world, dst)
-						else
-							to = find_archetype_with(world, id, src)
-							idr = component_index[id]
 						end
-					else
-						to = find_archetype_with(world, id, src)
-						idr = component_index[id]
 					end
-					edge[id] = to
-					archetype_edges[to.id][id] = src
-				else
-					idr = component_index[id]
+					if not to then
+						to = find_archetype_with(world, id, src)
+					end
 				end
 			else
 				local edges = archetype_edges
@@ -2401,14 +2425,46 @@ local function world_new()
 		end
 		local to: Archetype
 		local idr: ComponentRecord
+
 		if ECS_IS_PAIR(id::number) then
+			local first = ECS_PAIR_FIRST(id::number)
+			local wc = ECS_PAIR(first, EcsWildcard)
+			idr = component_index[wc]
+
 			local edge = archetype_edges[src.id]
 			to = edge[id]
-			if not to then
-				local first = ECS_PAIR_FIRST(id::number)
-				local wc = ECS_PAIR(first, EcsWildcard)
-				idr = component_index[wc]
-				if idr and bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) then
+			if to == nil then
+				if idr and (bit32.btest(idr.flags) == true) then
+					local cr = idr.records[src.id]
+					if cr then
+						local on_remove = idr.on_remove
+						local id_types = src.types
+						if on_remove then
+							on_remove(entity, id_types[cr])
+
+							src = record.archetype
+							id_types = src.types
+							cr = idr.records[src.id]
+						end
+
+						local dst = table.clone(id_types)
+						dst[cr] = id
+						to = archetype_ensure(world, dst)
+					end
+				end
+
+				if not to then
+					to = find_archetype_with(world, id, src)
+				end
+
+				if not idr then
+					idr = component_index[wc]
+				end
+
+				edge[id] = to
+				archetype_edges[(to :: Archetype).id][id] = src
+			else
+				if bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) then
 					local cr = idr.records[src.id]
 					if cr then
 						local on_remove = idr.on_remove
@@ -2422,18 +2478,11 @@ local function world_new()
 						local dst = table.clone(id_types)
 						dst[cr] = id
 						to = archetype_ensure(world, dst)
-					else
-						to = find_archetype_with(world, id, src)
-						idr = component_index[id]
 					end
-				else
-					to = find_archetype_with(world, id, src)
-					idr = component_index[id]
 				end
-				edge[id] = to
-				archetype_edges[to.id][id] = src
-			else
-				idr = component_index[id]
+				if not to then
+					to = find_archetype_with(world, id, src)
+				end
 			end
 		else
 			local edges = archetype_edges
