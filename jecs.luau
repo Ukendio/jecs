@@ -1428,7 +1428,7 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 			i -= 1
 
 			for i = 9, ids_len do
-				output[i - 8] = columns_map[i][row]
+				output[i - 8] = columns_map[ids[i]][row]
 			end
 
 			return entity, a[row], b[row], c[row], d[row], e[row], f[row], g[row], h[row], unpack(output)
@@ -1903,7 +1903,7 @@ local function query_cached(query: QueryInner)
 			i -= 1
 
 			for i = 9, ids_len do
-				output[i - 8] = columns_map[i][row]
+				output[i - 8] = columns_map[ids[i]][row]
 			end
 
 			return entity, a[row], b[row], c[row], d[row], e[row], f[row], g[row], unpack(output)

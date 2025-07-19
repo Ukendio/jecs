@@ -1536,6 +1536,7 @@ TEST("world:query()", function()
 
 		for i = 1, 9 do
 			local id = world:component()
+			world:component() -- make the components sparsely interleaved
 			components[i] = id
 		end
 		local e1 = world:entity()
