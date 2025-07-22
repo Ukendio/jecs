@@ -2191,11 +2191,6 @@ local function world_new()
 
 	local function inner_entity_index_try_get_any(entity: number): Record?
 		local r = eindex_sparse_array[ECS_ENTITY_T_LO(entity)]
-
-		if not r or r.dense == 0 then
-			return nil
-		end
-
 		return r
 	end
 
@@ -2284,7 +2279,7 @@ local function world_new()
 	-- end
 
 	local function inner_entity_index_try_get_unsafe(entity: number): Record?
-		local r = inner_entity_index_try_get_any(entity)
+		local r = eindex_sparse_array[ECS_ENTITY_T_LO(entity)]
 		if r then
 			local r_dense = r.dense
 			-- if r_dense > entity_index.alive_count then
@@ -3146,17 +3141,6 @@ return {
 	pair_second = (ecs_pair_second :: any) :: <P, O>(world: World, pair: Pair<P, O>) -> Id<O>,
 	entity_index_get_alive = entity_index_get_alive,
 
-	-- Inwards facing API for testing
-	ECS_ID = ECS_ENTITY_T_LO,
-	ECS_GENERATION_INC = ECS_GENERATION_INC,
-	ECS_GENERATION = ECS_GENERATION,
-	ECS_ID_IS_WILDCARD = ECS_ID_IS_WILDCARD,
-	ECS_ID_IS_EXCLUSIVE = ECS_ID_IS_EXCLUSIVE,
-	ECS_ID_DELETE = ECS_ID_DELETE,
-	ECS_META_RESET = ECS_META_RESET,
-	ECS_COMBINE = ECS_COMBINE,
-	ECS_ENTITY_MASK = ECS_ENTITY_MASK,
-
 	archetype_append_to_records = archetype_append_to_records,
 	id_record_ensure = id_record_ensure,
 	component_record = id_record_get,
@@ -3181,6 +3165,8 @@ return {
 	entity_index_is_alive = entity_index_is_alive,
 	entity_index_new_id = entity_index_new_id,
 
+	Query = Query,
+
 	query_iter = query_iter,
 	query_iter_init = query_iter_init,
 	query_with = query_with,
@@ -3189,4 +3175,15 @@ return {
 	query_match = query_match,
 
 	find_observers = find_observers,
+
+	-- Inwards facing API for testing
+	ECS_ID = ECS_ENTITY_T_LO,
+	ECS_GENERATION_INC = ECS_GENERATION_INC,
+	ECS_GENERATION = ECS_GENERATION,
+	ECS_ID_IS_WILDCARD = ECS_ID_IS_WILDCARD,
+	ECS_ID_IS_EXCLUSIVE = ECS_ID_IS_EXCLUSIVE,
+	ECS_ID_DELETE = ECS_ID_DELETE,
+	ECS_META_RESET = ECS_META_RESET,
+	ECS_COMBINE = ECS_COMBINE,
+	ECS_ENTITY_MASK = ECS_ENTITY_MASK,
 }

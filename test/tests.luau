@@ -2220,14 +2220,14 @@ TEST("change tracking", function()
 		world:set(e2, Foo, 2)
 
 		local i = 0
-		for e, new in q1 :: any do
+		for e, new in q1 do
 			i += 1
 			world:set(e, pair(Previous, Foo), new)
 		end
 
 		CHECK(i == 2)
 		local j = 0
-		for e, new in q1 :: any do
+		for e, new in q1 do
 			j += 1
 			world:set(e, pair(Previous, Foo), new)
 		end
