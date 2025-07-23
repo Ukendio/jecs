@@ -175,9 +175,9 @@ TEST("repro", function()
 	world:delete(e1)
 
 	local e1v1 = world:entity()
-	CHECK(ECS_ID(e1v1) == e1)
+	CHECK(ECS_ID(e1v1) == e1::any)
 	local e2v1 = world:entity()
-	CHECK(ECS_ID(e2v1) == e2)
+	CHECK(ECS_ID(e2v1) == e2::any)
 	world:set(e2v1, data, 456)
 
 	CHECK(world:contains(e1v1))
@@ -341,7 +341,7 @@ TEST("world:add()", function()
 		local B = world:component()
 		local C = world:component()
 
-		local e_ptr = jecs.Rest :: number + 1
+		local e_ptr: jecs.Entity = (jecs.Rest :: any) + 1
 
 		world:add(A, jecs.Exclusive)
 		local on_remove_call = false
@@ -1127,7 +1127,7 @@ TEST("world:range()", function()
 		client:range(1000, 5000)
 
 		local e1 = server:entity()
-		CHECK((e1::number)< 1000)
+		CHECK((e1::any)< 1000)
 		server:delete(e1)
 		local e2 = client:entity(e1)
 		CHECK(e2 == e1)
@@ -1137,12 +1137,12 @@ TEST("world:range()", function()
 
 		client:delete(e2)
 		local e3 = client:entity()
-		CHECK(ECS_ID(e3::number) == 1000)
+		CHECK(ECS_ID(e3) == 1000)
 
 		local e1v1 = server:entity()
 		local e4 = client:entity(e1v1)
-		CHECK(ECS_ID(e4::number) == e1)
-		CHECK(ECS_GENERATION(e4::number) == 1)
+		CHECK(ECS_ID(e4) == e1::any)
+		CHECK(ECS_GENERATION(e4) == 1)
 		CHECK(not client:contains(e2))
 		CHECK(client:contains(e4))
 	end
@@ -1151,15 +1151,16 @@ TEST("world:range()", function()
 
 		local world = jecs.world()
 		world:range(400, 1000)
-		local id = world:entity() :: number
-		local e = world:entity(id + 5)
-		CHECK(e == id + 5)
+		local id = world:entity()
+		local e = world:entity(id::any + 5)
+		CHECK(e::any == (id::any) + 5)
+
 		CHECK(world:contains(e))
 		local e2 = world:entity(399)
 		CHECK(world:contains(e2))
 		world:delete(e2)
 		CHECK(not world:contains(e2))
-		local e2v1 = world:entity(399) :: number
+		local e2v1 = world:entity(399)
 		CHECK(world:contains(e2v1))
 		CHECK(ECS_ID(e2v1) == 399)
 		CHECK(ECS_GENERATION(e2v1) == 0)
@@ -1172,13 +1173,13 @@ TEST("world:range()", function()
 		CHECK(world:contains(e2))
 		world:delete(e2)
 		CHECK(not world:contains(e2))
-		local e2v1 = world:entity(405) :: number
+		local e2v1 = world:entity(405)
 		CHECK(world:contains(e2v1))
 		CHECK(ECS_ID(e2v1) == 405)
 		CHECK(ECS_GENERATION(e2v1) == 0)
 
 		world:delete(e2v1)
-		local e2v2 = world:entity(e2v1) :: number
+		local e2v2 = world:entity(e2v1)
 		CHECK(ECS_ID(e2v2) == 405)
 		CHECK(ECS_GENERATION(e2v2) == 0)
 	end
@@ -1187,9 +1188,10 @@ end)
 TEST("world:entity()", function()
 	do CASE "desired id"
 		local world = jecs.world()
-		local id = world:entity() :: number
-		local e = world:entity(id + 5)
-		CHECK(e == id + 5)
+		local id = world:entity()
+		local offset: jecs.Entity = (id ::any) + 5
+		local e = world:entity(offset)
+		CHECK(e == offset)
 		CHECK(world:contains(e))
 		local e2 = world:entity(399)
 		CHECK(world:contains(e2))
@@ -1207,7 +1209,7 @@ TEST("world:entity()", function()
 	end
 	do CASE "generations"
 		local world = jecs.world()
-		local e = world:entity() :: any
+		local e = world:entity()
 		CHECK(ECS_ID(e) == 1 + jecs.Rest :: any)
 		CHECK(ECS_GENERATION(e) == 0) -- 0
 		e = ECS_GENERATION_INC(e)
@@ -1257,11 +1259,11 @@ TEST("world:entity()", function()
 			local e = world:entity()
 			world:delete(e)
 		end
-		local e = world:entity() :: number
+		local e = world:entity()
 		CHECK(ECS_ID(e) == pin)
 		CHECK(ECS_GENERATION(e) == 2^16-1)
 		world:delete(e)
-		e = world:entity() :: number
+		e = world:entity()
 		CHECK(ECS_ID(e) == pin)
 		CHECK(ECS_GENERATION(e) == 0)
 	end
@@ -1780,7 +1782,7 @@ TEST("world:query()", function()
 		world:add(e2, B)
 
 		local count = 0
-		for id in world:query(A) :: any do
+		for id in world:query(A) do
 			world:clear(id)
 			count += 1
 		end
@@ -2248,14 +2250,14 @@ TEST("change tracking", function()
 		world:set(testEntity, component, 10)
 
 		local i = 0
-		for entity, number in q1 :: any do
+		for entity, number in q1 do
 			i += 1
 			world:add(testEntity, tag)
 		end
 
 		CHECK(i == 1)
 
-		for e, n in q1 :: any do
+		for e, n in q1 do
 			world:set(e, pair(previous, component), n)
 		end
 	end
