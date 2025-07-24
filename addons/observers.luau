@@ -2,42 +2,46 @@
 local jecs = require("@jecs")
 
 
-type Description<T...> = jecs.Query<T...>
+export type Iter<T...> = (query: Query<T...>) -> () -> (jecs.Entity, T...)
 
-type ObserverArm = (<a>(
-	PatchedWorld,
-	{
-		query: jecs.Query<a>,
-		callback: ((jecs.Entity) -> ())?
+type Id<T=any> = jecs.Id<T>
+
+type Query<T...> = typeof(setmetatable(
+	{} :: {
+		iter: Iter<T...>,
+		with: (<a>(Query<T...>, Id<a>) -> Query<T...>)
+			& (<a, b>(Query<T...>, Id<a>, Id<b>) -> Query<T...>)
+			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
+			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
+			& (<a, b, c, d>(Query<T...>, Id<a>, Id<b>, Id<c>, Id) -> Query<T...>),
+		without: (<a>(Query<T...>, Id<a>) -> Query<T...>)
+			& (<a, b>(Query<T...>, Id<a>, Id<b>) -> Query<T...>)
+			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
+			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
+			& (<a, b, c, d>(Query<T...>, Id<a>, Id<b>, Id<c>, Id) -> Query<T...>),
+		archetypes: (self: Query<T...>) -> { jecs.Archetype },
+		cached: (self: Query<T...>) -> Query<T...>,
+	},
+	{} :: {
+		__iter: Iter<T...>,
 	}
-) -> () -> () -> (jecs.Entity)) & (<a, b>(
-	PatchedWorld,
-	{
-		query: jecs.Query<a, b>,
-		callback: ((jecs.Entity) -> ())?
-	}
-) -> () -> () -> (jecs.Entity)) & (<a, b, c>(
-	PatchedWorld,
-	{
-		query: jecs.Query<a, b, c>,
-		callback: ((jecs.Entity) -> ())?
-	}
-) -> () -> () -> (jecs.Entity))
+))
 
 export type PatchedWorld = jecs.World & {
 	added: <T>(PatchedWorld, jecs.Id<T>, <e>(e: jecs.Entity<e>, id: jecs.Id<T>, value: T?) -> ()) -> () -> (),
 	removed: <T>(PatchedWorld, jecs.Id<T>, (e: jecs.Entity, id: jecs.Id) -> ()) -> () -> (),
 	changed:  <T>(PatchedWorld, jecs.Id<T>, <e>(e: jecs.Entity<e>, id: jecs.Id<T>, value: T) -> ()) -> () -> (),
-	observer: ObserverArm & any,
-	monitor: ObserverArm & any
+	observer: <T...>(PatchedWorld, Query<T...>, callback: ((jecs.Entity, jecs.Id, any?) -> ())?) -> () -> () -> (jecs.Entity),
+	monitor: <T...>(PatchedWorld, Query<T...>, callback: ((jecs.Entity, jecs.Id, any?) -> ())?) -> () -> () -> (jecs.Entity)
 }
 
-local function observers_new(
+local function observers_new<T...>(
 	world: PatchedWorld,
-	query: any,
+	query: Query<T...>,
 	callback: (<T, a>(jecs.Entity<T>, jecs.Id<a>, value: a?) -> ())?
 )
 	query = query:cached()
+	callback = callback
 
 	local archetypes = {}
 	local terms = query.ids

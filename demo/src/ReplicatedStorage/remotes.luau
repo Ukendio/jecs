@@ -1,40 +1,32 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local types = require("../ReplicatedStorage/types")
 
-type Signal<T...> = {
-	Connect: (Signal<T...>, fn: (T...) -> ()) -> RBXScriptConnection
-}
 type Remote<T...> = {
-	FireClient: (Remote<T...>, T...) -> (),
+	FireClient: (Remote<T...>, Player, T...) -> (),
 	FireAllClients: (Remote<T...>, T...) -> (),
-	FireServer: (Remote<T...>) -> (),
-	OnServerEvent: {
-		Connect: (any, fn: (Player, T...) -> () ) -> ()
-	},
-	OnClientEvent: {
-		Connect: (any, fn: (T...) -> () ) -> ()
-	}
-
+	FireServer: (Remote<T...>, T...) -> (),
+	OnServerEvent: RBXScriptSignal<(Player, T...)>,
+	OnClientEvent: RBXScriptSignal<T...>
 }
 
-local function stream_ensure(name): Remote<any>
+local function stream_ensure(name)
 	local remote = ReplicatedStorage:FindFirstChild(name)
 	if not remote then
 		remote = Instance.new("RemoteEvent")
 		remote.Name = name
 		remote.Parent = ReplicatedStorage
 	end
-	return remote :: any
+	return remote
 end
 
-local function datagram_ensure(name): Remote<any>
+local function datagram_ensure(name)
 	local remote = ReplicatedStorage:FindFirstChild(name)
 	if not remote then
 		remote = Instance.new("UnreliableRemoteEvent")
 		remote.Name = name
 		remote.Parent = ReplicatedStorage
 	end
-	return remote :: any
+	return remote
 end
 
 return {

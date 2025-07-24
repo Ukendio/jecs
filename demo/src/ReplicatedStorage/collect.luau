@@ -1,13 +1,11 @@
-local function collect<T...>(
-	signal: {
-		Connect: (RBXScriptSignal<T...>, fn: (T...) -> ()) -> RBXScriptConnection
-	}
-): () -> (T...)
+
+--!strict
+local function collect(signal)
 	local enqueued = {}
 
 	local i = 0
 
-	local connection = (signal :: any):Connect(function(...)
+	local connection = signal:Connect(function(...)
 		table.insert(enqueued, { ... })
 		i += 1
 	end)
@@ -25,4 +23,11 @@ local function collect<T...>(
 	end, connection
 end
 
-return collect
+type Signal<T... = ...any> = {
+    Connect: (self: Signal<T...>, callback: (T...) -> ()) -> RBXScriptConnection,
+    ConnectParallel: (self: Signal<T...>, callback: (T...) -> ()) -> RBXScriptConnection,
+    Once: (self: Signal<T...>, callback: (T...) -> ()) -> RBXScriptConnection,
+    Wait: (self: Signal<T...>) -> (T...)
+}
+
+return collect :: <T...>(Signal<T...>) -> (() -> (T...), RBXScriptConnection)

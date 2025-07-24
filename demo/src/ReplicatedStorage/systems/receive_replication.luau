@@ -88,9 +88,6 @@ return function(world: types.World)
             if removed then
                 for _, entity in removed do
                     entity = ecs_ensure_entity(world, entity)
-                    if not world:contains(entity) then
-                        continue
-                    end
                     world:remove(entity, id)
                 end
             end
