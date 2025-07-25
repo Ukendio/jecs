@@ -241,7 +241,10 @@ print(world.get(Entity, Health));
 // 100
 // 50
 ```
+:::
 
+:::info
+`world:set(entity, component, value)` propagates that a change has happened for thes component on this entity, while mutating a value directly would not.
 :::
 
 ## query
@@ -289,10 +292,52 @@ If the index is larger than the total number of instances the entity has for the
 ```luau
 function World:target(
     entity: Entity, -- The entity
-    relation: Entity, -- The relationship between the entity and the target
+    relation: Id, -- The relationship between the entity and the target
     nth: number, -- The index
-): Entity? -- The target for the relationship at the specified index.
+): Id? -- The target for the relationship at the specified index.
 ```
+Example:
+
+::: code-group
+
+```luau [luau]
+local function timers_count(world: types.World)
+	local timers = world
+		:query(jecs.pair(ct.Timer, jecs.w))
+		:without(ct.Destroy)
+		:cached()
+
+	return function(_, dt: number)
+		for entity in timers do
+			local index = 0
+			local nth = world:target(entity, ct.Timer, index)
+			while nth do
+				local timer = world:get(entity, jecs.pair(ct.Timer, nth))
+				local elapsed = timer.elapsed + dt
+				if elapsed >= timer.duration then
+					world:add(entity, ct.Destroy)
+				end
+				timer.elapsed = elapsed
+			end
+		end
+	end
+end
+```
+
+```ts [typescript]
+const entity = world.entity();
+print(world.contains(entity));
+print(world.contains(1));
+print(world.contains(2));
+
+// Outputs:
+// true
+// true
+// false
+```
+
+:::
+
 
 ## parent
 
@@ -355,9 +400,9 @@ print(world.contains(2));
 Removes a component (ID) from an entity
 
 ```luau
-function World:remove(
+function World:remove<T>(
     entity: Entity,
-	component: Entity<T>
+	component: Id<T>
 ): void
 ```
 
@@ -458,20 +503,20 @@ Useful when you only need the entity for a specific ID and you want to avoid cre
 
 ```luau
 function World:each(
-	id: Entity -- The component ID
+	component: Id -- The component ID
 ): () -> Entity
 ```
 
 Example:
 ::: code-group
 ```luau [luau]
-local id = world:entity()
+local id = world:component()
 for entity in world:each(id) do
 	-- Do something
 end
 ```
 ```ts [typescript]
-const id = world.entity();
+const id = world.component();
 for (const entity of world.each(id)) {
 	// Do something
 }

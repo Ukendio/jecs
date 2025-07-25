@@ -27,8 +27,8 @@ local jecs = require(path/to/jecs)
 local world = jecs.world()
 ```
 ```typescript [typescript]
-import { World } from "@rbxts/jecs"
-const world = new World()
+import * as jecs from "@rbxts/jecs"
+const world = jecs.world()
 // creates a new entity with no components and returns its identifier
 const entity = world.entity()
 
@@ -154,6 +154,13 @@ world.set(Transform, OnChange, (entity, id, data) => {
 	// A transform component `id` has been changed to `data` on `entity`
 });
 ```
+:::
+
+:::info
+Children are cleaned up before parents
+When a parent and its children are deleted, OnRemove hooks will be invoked for children first, under the condition that there are no cycles in the relationship graph of the deleted entities. This order is maintained for any relationship that has the (OnDeleteTarget, Delete) trait (see Component Traits for more details).
+
+When an entity graph contains cycles, order is undefined. This includes cycles that can be formed using different relationships.
 :::
 
 ### Cleanup Traits
@@ -285,9 +292,10 @@ jecs.world() -- Position gets registered here
 ```
 
 ```typescript [typescript]
+import { world } from "@rbxts/jecs"
 const Position = jecs.component<Vector3>();
 
-new World() // Position gets registered here
+world() // Position gets registered here
 ```
 :::
 
@@ -301,9 +309,11 @@ jecs.world() -- Position gets registered here with its name "Position"
 ```
 
 ```typescript [typescript]
+import { world } from "@rbxts/jecs"
+
 jecs.meta(Position, jecs.Name, "Position")
 
-new World() // Position gets registered here with its name "Position"
+world() // Position gets registered here with its name "Position"
 ```
 :::
 
@@ -632,7 +642,7 @@ world:set(e, pair(Eats, Apples), { amount = 1 })
 world:set(e, pair(Begin, Position), Vector3.new(0, 0, 0))
 world:set(e, pair(End, Position), Vector3.new(10, 20, 30))
 
-world:add(e, jecs.ChildOf, Position)
+world:add(e, pair(jecs.ChildOf, Position))
 
 ```
 ```typescript [typescript]
@@ -648,7 +658,7 @@ world.set(e, pair(Eats, Apples), { amount: 1 })
 world.set(e, pair(Begin, Position), new Vector3(0, 0, 0))
 world.set(e, pair(End, Position), new Vector3(10, 20, 30))
 
-world.add(e, jecs.ChildOf, Position)
+world.add(e, pair(jecs.ChildOf, Position))
 ```
 :::
 

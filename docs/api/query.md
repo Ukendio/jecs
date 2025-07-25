@@ -4,13 +4,33 @@ A World contains entities which have components. The World is queryable and can 
 
 # Methods
 
-## iter
+## cached
 
-Returns an iterator that can be used to iterate over the query.
+Returns a cached version of the query. This is useful if you want to create a query that you can iterate multiple times.
 
 ```luau
-function Query:iter(): () -> (Entity, ...)
+function Query:cached(): Query -- Returns the cached Query
 ```
+Example:
+
+```luau [luau]
+local lerps = world:query(Lerp):cached() -- Ensure that you cache this outside a system so you do not create a new cache for a query every frame
+
+local function system(dt)
+	for entity, lerp in lerps do
+		-- Do something
+	end
+end
+```
+
+```ts [typescript]
+const lerps = world.query(Lerp).cached()
+
+function system(dt) {
+	for (const [entity, lerp] of lerps) {
+		// Do something
+	}
+}
 
 ## with
 
@@ -83,15 +103,13 @@ Example:
 
 ```luau [luau]
 for i, archetype in world:query(Position, Velocity):archetypes() do
-    local columns = archetype.columns
-    local field = archetype.records
-
-    local P = field[Position]
-    local V = field[Velocity]
+    local field = archetype.columns_map
+    local positions = field[Position]
+    local velocities = field[Velocity]
 
     for row, entity in archetype.entities do
-        local position = columns[P][row]
-        local velocity = columns[V][row]
+        local position = positions[row]
+        local velocity = velocities[row]
         -- Do something
     end
 end
@@ -101,10 +119,10 @@ end
 This function is meant for people who want to really customize their query behaviour at the archetype-level
 :::
 
-## cached
+## iter
 
-Returns a cached version of the query. This is useful if you want to iterate over the same query multiple times.
+If you are on the old solver, to get types for the returned values, requires usage of `:iter` to get an explicit returntype of an iterator function.
 
 ```luau
-function Query:cached(): Query -- Returns the cached Query
+function Query:iter(): () -> (Entity, ...)
 ```
