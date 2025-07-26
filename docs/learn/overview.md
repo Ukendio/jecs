@@ -173,15 +173,22 @@ This is what cleanup traits are for: to specify which action needs to be execute
 
 To configure a cleanup policy for an entity, a `(Condition, Action)` pair can be added to it. If no policy is specified, the default cleanup action (`Remove`) is performed.
 
-There are two cleanup actions:
+#### Cleanup Traits Summary
 
--   `Remove`: removes instances of the specified (component) id from all entities (default)
--   `Delete`: deletes all entities with specified id
+| Condition | Action | Description | Use Case |
+|-----------|--------|-------------|----------|
+| `OnDelete` | `Remove` | Removes the component from all entities when the component is deleted | Default behavior, safe cleanup |
+| `OnDelete` | `Delete` | Deletes all entities that have the component when the component is deleted | Cascading deletion, dangerous |
+| `OnDeleteTarget` | `Remove` | Removes the relationship from all entities when the target is deleted | Safe relationship cleanup |
+| `OnDeleteTarget` | `Delete` | Deletes all entities that have the relationship when the target is deleted | Hierarchical deletion (e.g., parent-child) |
 
-There are two cleanup conditions:
+**Cleanup Actions:**
+- `Remove`: removes instances of the specified (component) id from all entities (default)
+- `Delete`: deletes all entities with specified id
 
--   `OnDelete`: the component, tag or relationship is deleted
--   `OnDeleteTarget`: a target used with the relationship is deleted
+**Cleanup Conditions:**
+- `OnDelete`: the component, tag or relationship is deleted
+- `OnDeleteTarget`: a target used with the relationship is deleted
 
 #### (OnDelete, Remove)
 ::: code-group
@@ -705,3 +712,10 @@ To improve the speed of evaluating queries, Jecs has indices that store all arch
 While registering an archetype for a relationship index is not more expensive than registering an archetype for a regular index, an archetype with relationships has to also register itself with the appropriate wildcard indices for its relationships. For example, an archetype with relationship `pair(Likes, Apples)` registers itself with the `pair(Likes, Apples)`, `pair(Likes, jecs.Wildcard)` and `pair(jecs.Wildcard, Apples)` indices. For this reason, creating new archetypes with relationships has a higher overhead than an archetype without relationships.
 
 This page takes wording and terminology directly from Flecs, the first ECS with full support for [Entity Relationships](https://www.flecs.dev/flecs/md_docs_2Relationships.html).
+
+## Next Steps
+
+- [Performance Guide](./performance.md) - Learn about optimization and best practices
+- [Common Patterns](./patterns.md) - ECS patterns and best practices
+- [API Reference](../api/jecs.md) - Complete API documentation
+- [Examples](../../examples/) - Code examples and patterns
