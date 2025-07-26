@@ -13,6 +13,8 @@ function Query:cached(): Query -- Returns the cached Query
 ```
 Example:
 
+::: code-group
+
 ```luau [luau]
 local lerps = world:query(Lerp):cached() -- Ensure that you cache this outside a system so you do not create a new cache for a query every frame
 
@@ -31,6 +33,9 @@ function system(dt) {
 		// Do something
 	}
 }
+```
+
+:::
 
 ## with
 
