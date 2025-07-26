@@ -6,7 +6,7 @@ A World contains entities which have components. The World is queryable and can 
 
 ## new
 
-`World` utilizes a class, meaning JECS allows you to create multiple worlds.
+`World` utilizes a class, meaning jecs allows you to create multiple worlds.
 
 ```luau
 function World.new(): World
@@ -55,7 +55,7 @@ const entity = world.entity();
 
 ## component
 
-Creates a new component. Do note components are entities as well, meaning JECS allows you to add other components onto them.
+Creates a new component. Do note components are entities as well, meaning jecs allows you to add other components onto them.
 
 These are meant to be added onto other entities through `add` and `set`
 
@@ -545,6 +545,122 @@ Enforces a check for entities to be created within a desired range.
 ```luau
 function World:range(
 	range_begin: number -- The starting point,
-	range_begin: number? -- The end point (optional)
+	range_end: number? -- The end point (optional)
 )
 ```
+
+Example:
+
+::: code-group
+```luau [luau]
+world:range(1000, 5000) -- Entities will be created with IDs 1000-5000
+
+local entity = world:entity()
+print(entity) -- Will be >= 1000 and < 5000
+```
+```ts [typescript]
+world.range(1000, 5000) // Entities will be created with IDs 1000-5000
+
+const entity = world.entity()
+print(entity) // Will be >= 1000 and < 5000
+```
+:::
+
+## parent
+
+Gets the parent entity of the specified entity using the built-in `ChildOf` relationship.
+
+```luau
+function World:parent(
+    entity: Entity
+): Entity? -- Returns the parent entity or nil if no parent
+```
+
+Example:
+
+::: code-group
+```luau [luau]
+local parent = world:entity()
+local child = world:entity()
+
+world:add(child, pair(jecs.ChildOf, parent))
+
+local retrieved_parent = world:parent(child)
+print(retrieved_parent == parent) -- true
+```
+```ts [typescript]
+const parent = world.entity()
+const child = world.entity()
+
+world.add(child, pair(jecs.ChildOf, parent))
+
+const retrievedParent = world.parent(child)
+print(retrievedParent === parent) // true
+```
+:::
+
+## contains
+
+Checks if an entity exists and is alive in the world.
+
+```luau
+function World:contains(
+    entity: Entity
+): boolean
+```
+
+Example:
+
+::: code-group
+```luau [luau]
+local entity = world:entity()
+print(world:contains(entity)) -- true
+
+world:delete(entity)
+print(world:contains(entity)) -- false
+```
+```ts [typescript]
+const entity = world.entity()
+print(world.contains(entity)) // true
+
+world.delete(entity)
+print(world.contains(entity)) // false
+```
+:::
+
+## exists
+
+Alias for `contains`. Checks if an entity exists and is alive in the world.
+
+```luau
+function World:exists(
+    entity: Entity
+): boolean
+```
+
+## cleanup
+
+Cleans up deleted entities and their associated data. This is automatically called by jecs, but can be called manually if needed.
+
+```luau
+function World:cleanup(): void
+```
+
+Example:
+
+::: code-group
+```luau [luau]
+local entity = world:entity()
+world:delete(entity)
+
+-- Cleanup is usually automatic, but can be called manually
+world:cleanup()
+```
+```ts [typescript]
+const entity = world.entity()
+world.delete(entity)
+
+// Cleanup is usually automatic, but can be called manually
+world.cleanup()
+```
+:::

@@ -123,6 +123,17 @@ function jecs.pair_first(
 ```
 Returns the first element (the relation part) of a pair ID.
 
+**Example:**
+```luau
+local Likes = world:component()
+local alice = world:entity()
+local bob = world:entity()
+
+local pair_id = pair(Likes, alice)
+local relation = jecs.pair_first(pair_id)
+print(relation == Likes) -- true
+```
+
 ## pair_second()
 ```luau
 function jecs.pair_second(

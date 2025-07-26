@@ -15,6 +15,9 @@ hero:
     - theme: alt
       text: API References
       link: /api/jecs.md
+    - theme: alt
+      text: Observers
+      link: /api/observers.md
 
 features:
   - title: Stupidly Fast

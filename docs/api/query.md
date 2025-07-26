@@ -120,9 +120,26 @@ This function is meant for people who want to really customize their query behav
 :::
 
 ## iter
-
-If you are on the old solver, to get types for the returned values, requires usage of `:iter` to get an explicit returntype of an iterator function.
+In most cases, you can iterate over queries directly using `for entity, ... in query do`. The `:iter()` method is mainly useful if you are on the old solver, to get types for the returned values.
 
 ```luau
 function Query:iter(): () -> (Entity, ...)
+```
+
+Example:
+
+::: code-group
+```luau [luau]
+local query = world:query(Position, Velocity)
+
+-- Direct iteration (recommended)
+for entity, position, velocity in query do
+    -- Process entity
+end
+
+-- Using explicit iterator (when needed for the old solver)
+local iterator = query:iter()
+for entity, position, velocity in iterator do
+    -- Process entity
+end
 ```
