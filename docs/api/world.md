@@ -630,7 +630,7 @@ print(world.contains(entity)) // false
 
 ## exists
 
-Alias for `contains`. Checks if an entity exists and is alive in the world.
+Checks if the entity ID exists regardless of whether it is alive or not. Useful to know if the ID is occupied in the entity index.
 
 ```luau
 function World:exists(
