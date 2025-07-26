@@ -715,7 +715,4 @@ This page takes wording and terminology directly from Flecs, the first ECS with 
 
 ## Next Steps
 
-- [Performance Guide](./performance.md) - Learn about optimization and best practices
-- [Common Patterns](./patterns.md) - ECS patterns and best practices
 - [API Reference](../api/jecs.md) - Complete API documentation
-- [Examples](../../examples/) - Code examples and patterns
