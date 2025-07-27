@@ -150,9 +150,9 @@ export type World = {
 
 	observable: Map<Id, Map<Id, { Observer }>>,
 
-	added: <T>(World, Id<T>, <e>(e: Entity<e>, id: Id<T>, value: T?) -> ()) -> () -> (),
-	removed: <T>(World, Id<T>, (e: Entity, id: Id<T>) -> ()) -> () -> (),
-	changed:  <T>(World, Id<T>, <e>(e: Entity<e>, id: Id<T>, value: T) -> ()) -> () -> (),
+	added: <T>(World, Entity<T>, <e>(e: Entity<e>, id: Id<T>, value: T?) -> ()) -> () -> (),
+	removed: <T>(World, Entity<T>, (e: Entity, id: Id<T>) -> ()) -> () -> (),
+	changed:  <T>(World, Entity<T>, <e>(e: Entity<e>, id: Id<T>, value: T) -> ()) -> () -> (),
 
 	--- Enforce a check on entities to be created within desired range
 	range: (self: World, range_begin: number, range_end: number?) -> (),
