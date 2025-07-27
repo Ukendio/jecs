@@ -97,7 +97,7 @@ Builtin component type. This ID is for naming components, but realistically you 
 jecs.Rest: Id
 ```
 
-Builtin component type. This ID is for setting up a callback that is invoked when an instance of a component is changed.
+Builtin component type. This ID is simplying for denoting the end of the range for builtin component IDs.
 
 # Functions
 

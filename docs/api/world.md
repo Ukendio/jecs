@@ -60,7 +60,7 @@ Creates a new component. Do note components are entities as well, meaning jecs a
 These are meant to be added onto other entities through `add` and `set`
 
 ```luau
-function World:component<T>(): Entity<T> -- The new componen.
+function World:component<T>(): Entity<T> -- The new component.
 ```
 
 Example:
