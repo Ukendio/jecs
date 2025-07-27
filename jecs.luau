@@ -53,6 +53,8 @@ export type Query<T...> = typeof(setmetatable(
 			& (<a, b, c, d>(Query<T...>, Id<a>, Id<b>, Id<c>, Id) -> Query<T...>),
 		archetypes: (self: Query<T...>) -> { Archetype },
 		cached: (self: Query<T...>) -> Query<T...>,
+		ids: { Id<any> },
+		-- world: World
 	},
 	{} :: {
 		__iter: Iter<T...>,
@@ -65,7 +67,6 @@ export type Observer = {
 	callback: (archetype: Archetype) -> (),
 	query: QueryInner,
 }
-
 
 type archetype = {
 	id: number,
@@ -129,7 +130,11 @@ type world = {
 	exists: (self: world, entity: i53) -> boolean,
 	each: (self: world, id: i53) -> () -> i53,
 	children: (self: world, id: i53) -> () -> i53,
-	query: (world, ...i53) -> Query<...any>
+	query: (world, ...i53) -> Query<...any>,
+
+	added: (world, i53, (e: i53, id: i53, value: any?) -> ()) -> () -> (),
+	changed: (world, i53, (e: i53, id: i53, value: any?) -> ()) -> () -> (),
+	removed: (world, i53, (e: i53, id: i53) -> ()) -> () -> (),
 }
 
 export type World = {
@@ -144,6 +149,10 @@ export type World = {
 	max_archetype_id: number,
 
 	observable: Map<Id, Map<Id, { Observer }>>,
+
+	added: <T>(World, Id<T>, <e>(e: Entity<e>, id: Id<T>, value: T?) -> ()) -> () -> (),
+	removed: <T>(World, Id<T>, (e: Entity, id: Id<T>) -> ()) -> () -> (),
+	changed:  <T>(World, Id<T>, <e>(e: Entity<e>, id: Id<T>, value: T) -> ()) -> () -> (),
 
 	--- Enforce a check on entities to be created within desired range
 	range: (self: World, range_begin: number, range_end: number?) -> (),
@@ -2213,6 +2222,14 @@ local function world_new()
 
 	local observable = {}
 
+	type Signal = { [i53]: { Listener<any> } }
+
+	local signals = {
+		added = {} :: Signal,
+		changed = {} :: Signal,
+		removed = {} :: Signal
+	}
+
 	local world = {
 		archetype_edges = archetype_edges,
 
@@ -2226,7 +2243,9 @@ local function world_new()
 		max_component_id = ecs_max_component_id,
 
 		observable = observable,
+		signals = signals,
 	} :: world
+
 
 
 	local ROOT_ARCHETYPE = archetype_create(world, {}, "")
@@ -2575,6 +2594,108 @@ local function world_new()
 			return va, fetch(b, columns_map, row), fetch(c, columns_map, row), fetch(d, columns_map, row)
 		else
 			error("args exceeded")
+		end
+	end
+
+	type Listener<T> = (e: i53, id: i53, value: T?) -> ()
+
+	world.added = function<T>(_: world, component: i53, fn: Listener<T>)
+		local listeners = signals.added[component]
+		if not listeners then
+			listeners = {}
+			signals.added[component] = listeners
+
+			local function on_add(entity, id, value)
+				for _, listener in listeners :: { Listener<T> } do
+					listener(entity, id, value)
+				end
+			end
+			local existing_hook = inner_world_get(world, component, EcsOnAdd) :: Listener<T>
+			if existing_hook then
+				table.insert(listeners, existing_hook)
+			end
+
+			local idr = world.component_index[component]
+			if idr then
+				idr.on_add = on_add
+			else
+				inner_world_set(world, component, EcsOnAdd, on_add)
+			end
+		end
+		table.insert(listeners, fn)
+		return function()
+			local n = #listeners
+			local i = table.find(listeners, fn)
+			listeners[i] = listeners[n]
+			listeners[n] = nil
+		end
+	end
+
+	world.changed = function<T>(
+		_: world,
+		component: i53,
+		fn: Listener<T>
+	)
+		local listeners = signals.changed[component]
+		if not listeners then
+			listeners = {}
+			signals.changed[component] = listeners
+			local function on_change(entity, id, value: any)
+				for _, listener in listeners :: { Listener<T> }  do
+					listener(entity, id, value)
+				end
+			end
+			local existing_hook = inner_world_get(world, component, EcsOnChange) :: Listener<T>
+			if existing_hook then
+				table.insert(listeners, existing_hook)
+			end
+
+			local idr = world.component_index[component]
+			if idr then
+				idr.on_change = on_change
+			else
+				inner_world_set(world, component, EcsOnChange, on_change)
+			end
+		end
+		table.insert(listeners, fn)
+		return function()
+			local n = #listeners
+			local i = table.find(listeners, fn)
+			listeners[i] = listeners[n]
+			listeners[n] = nil
+		end
+	end
+
+	world.removed = function<T>(_: world, component: i53, fn: (i53, i53) -> ())
+		local listeners = signals.removed[component]
+		if not listeners then
+			listeners = {}
+			signals.removed[component] = listeners
+			local function on_remove(entity, id)
+				for _, listener in listeners :: { Listener<T> } do
+					listener(entity, id)
+				end
+			end
+			local existing_hook = inner_world_get(world, component, EcsOnRemove) :: Listener<T>
+			if existing_hook then
+				table.insert(listeners, existing_hook)
+			end
+
+			local idr = world.component_index[component]
+			if idr then
+				idr.on_remove = on_remove
+			else
+				inner_world_set(world, component, EcsOnRemove, on_remove)
+			end
+		end
+
+		table.insert(listeners, fn)
+
+		return function()
+			local n = #listeners
+			local i = table.find(listeners, fn)
+			listeners[i] = listeners[n]
+			listeners[n] = nil
 		end
 	end
 
@@ -3159,21 +3280,21 @@ return {
 	meta = (ECS_META :: any) :: <T, a>(id: Entity<T>, id: Id<a>, value: a?) -> Entity<T>,
 	is_tag = (ecs_is_tag :: any) :: <T>(World, Id<T>) -> boolean,
 
-    OnAdd = (EcsOnAdd :: any) :: Entity<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
-	OnRemove = (EcsOnRemove :: any) :: Entity<(entity: Entity, id: Id) -> ()>,
-	OnChange = (EcsOnChange :: any) :: Entity<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
+    OnAdd = (EcsOnAdd :: any) :: Id<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
+	OnRemove = (EcsOnRemove :: any) :: Id<(entity: Entity, id: Id) -> ()>,
+	OnChange = (EcsOnChange :: any) :: Id<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
 	ChildOf = (EcsChildOf :: any) :: Entity,
 	Component = (EcsComponent :: any) :: Entity,
-	Wildcard = (EcsWildcard :: any) :: Entity,
-	w = (EcsWildcard :: any) :: Entity,
+	Wildcard = (EcsWildcard :: any) :: Id,
+	w = (EcsWildcard :: any) :: Id,
 	OnDelete = (EcsOnDelete :: any) :: Entity,
 	OnDeleteTarget = (EcsOnDeleteTarget :: any) :: Entity,
 	Delete = (EcsDelete :: any) :: Entity,
 	Remove = (EcsRemove :: any) :: Entity,
-	Name = (EcsName :: any) :: Entity<string>,
+	Name = (EcsName :: any) :: Id<string>,
 	Exclusive = (EcsExclusive :: any) :: Entity,
-	ArchetypeCreate = EcsOnArchetypeCreate,
-	ArchetypeDelete = EcsOnArchetypeDelete,
+	ArchetypeCreate = (EcsOnArchetypeCreate :: any) :: Entity,
+	ArchetypeDelete = (EcsOnArchetypeDelete :: any) :: Entity,
 	Rest = (EcsRest :: any) :: Entity,
 
 	pair = ECS_PAIR :: <P, O>(first: Id<P>, second: Id<O>) -> Pair<P, O>,
