@@ -49,7 +49,7 @@ export type Archetype<T extends unknown[]> = {
 	type: string;
 	entities: number[];
 	columns: Column<unknown>[];
-	columns_map: { [K in keyof T]: Column<T[K]> }
+	columns_map: Record<Id, Column<T[number]>>
 };
 
 type Iter<T extends unknown[]> = IterableFunction<LuaTuple<[Entity, ...T]>>;

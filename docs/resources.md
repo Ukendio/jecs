@@ -49,8 +49,8 @@ A tool for inspecting entity lifetimes
 
 ### Helpers
 
-#### [jecs_observers](https://github.com/Ukendio/jecs/blob/main/addons/observers.luau)
-Observers for queries and signals for components
+#### [jecs_ob](https://github.com/Ukendio/jecs/blob/main/addons/ob.luau)
+Observers & Monitors for queries
 
 ### [hammer](https://github.com/Mark-Marks/hammer)
 A set of utilities for Jecs
