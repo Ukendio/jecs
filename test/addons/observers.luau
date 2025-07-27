@@ -2,11 +2,28 @@ local jecs = require("@jecs")
 local testkit = require("@testkit")
 local test = testkit.test()
 local CASE, TEST, FINISH, CHECK = test.CASE, test.TEST, test.FINISH, test.CHECK
+local FOCUS = test.FOCUS
 local ob = require("@addons/ob")
 
 TEST("addons/observers", function()
-	local world = jecs.world()
 
+	local world = jecs.world()
+	do CASE "monitors should accept pairs"
+		local A = world:component()
+		local B = world:component()
+
+		local c = 1
+		ob.monitor(world:query(jecs.pair(A, B)), function (_, event)
+			c += 1
+		end)
+
+		local child = world:entity()
+		world:add(child, jecs.pair(A, B))
+		CHECK(c == 2)
+
+		world:remove(child, jecs.pair(A, B))
+		CHECK(c == 3)
+	end
 	do CASE "Ensure ordering between signals and observers"
 		local A = world:component()
 		local B = world:component()

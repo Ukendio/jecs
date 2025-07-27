@@ -69,6 +69,9 @@ local function observers_new<T...>(
 	end
 
 	for _, term in terms do
+		if jecs.IS_PAIR(term) then
+			term = jecs.ECS_PAIR_FIRST(term)
+		end
 		world:added(term, emplaced)
 		world:changed(term, emplaced)
  	end
@@ -151,7 +154,7 @@ local function monitors_new<T...>(
 			i += 1
 			entities[i] = entity
 			if callback ~= nil then
-				callback(entity, id, value)
+				callback(entity, jecs.OnAdd)
 			end
 		end
 	end
@@ -164,6 +167,9 @@ local function monitors_new<T...>(
 	end
 
 	for _, term in terms do
+		if jecs.IS_PAIR(term) then
+			term = jecs.ECS_PAIR_FIRST(term)
+		end
 		world:added(term, emplaced)
 		world:removed(term, removed)
  	end
