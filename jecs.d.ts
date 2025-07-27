@@ -247,6 +247,10 @@ export class World {
 	 * @returns A Query object to iterate over results.
 	 */
 	query<T extends Id[]>(...components: T): Query<InferComponents<T>>;
+
+	added<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, value: T) => void): () => void
+	changed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, value: T) => void): () => void
+	removed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>) => void): () => void
 }
 
 export function world(): World;
