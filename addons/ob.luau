@@ -146,12 +146,13 @@ local function monitors_new<T...>(
 			entity_index, entity :: any) :: jecs.Record
 
 		local archetype = r.archetype
+		local EcsOnAdd = jecs.OnAdd :: jecs.Id
 
 		if archetypes[archetype.id] then
 			i += 1
 			entities[i] = entity
 			if callback ~= nil then
-				callback(entity, id, value)
+				callback(entity, EcsOnAdd, value)
 			end
 		end
 	end
