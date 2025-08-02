@@ -52,26 +52,26 @@ export type Archetype<T extends Id[]> = {
 	columns_map: { [K in T[number]]: Column<InferComponent<K>> };
 };
 
-type Iter<T extends unknown[]> = IterableFunction<LuaTuple<[Entity, ...T]>>;
+type Iter<T extends Id[]> = IterableFunction<LuaTuple<[Entity, ...InferComponents<T>]>>;
 
 export type CachedQuery<T extends Id[]> = {
 	/**
 	 * Returns an iterator that produces a tuple of [Entity, ...queriedComponents].
 	 */
-	iter(): Iter<InferComponents<T>>;
+	iter(): Iter<T>;
 
 	/**
 	 * Returns the matched archetypes of the query
 	 * @returns An array of archetypes of the query
 	 */
 	archetypes(): Archetype<T>[];
-} & Iter<InferComponents<T>>;
+} & Iter<T>;
 
 export type Query<T extends Id[]> = {
 	/**
 	 * Returns an iterator that produces a tuple of [Entity, ...queriedComponents].
 	 */
-	iter(): Iter<InferComponents<T>>;
+	iter(): Iter<T>;
 
 	/**
 	 * Creates and returns a cached version of this query for efficient reuse.
@@ -99,7 +99,7 @@ export type Query<T extends Id[]> = {
 	 * @returns An array of archetypes of the query
 	 */
 	archetypes(): Archetype<T>[];
-} & Iter<InferComponents<T>>;
+} & Iter<T>;
 
 export class World {
 	/**
