@@ -1064,40 +1064,77 @@ end)
 
 TEST("world:added", function()
 	local world = jecs.world()
-
 	do CASE "Should work even if set after the component has been used"
 		local A = world:component()
-
 		world:set(world:entity(), A, 2)
 		local ran = false
 		world:added(A, function()
 			ran = true
 		end)
-
 		local entity = world:entity()
 		world:set(entity, A, 3)
+		CHECK(ran)
+	end
+
+
+	do CASE "Should work even if set after the pair has been used"
+		local A = world:component()
+		local B = world:component()
+
+		world:set(world:entity(), A, 2)
+		world:set(world:entity(), pair(A, B), 2)
+
+		world:added(A, function()
+			ran = true
+		end)
+
+		local entity = world:entity()
+		world:set(entity, pair(A, B), 3)
+		CHECK(ran)
+	end
+
+	do CASE "Should allow setting signal after Relation has been used as a component"
+		local A = world:component()
+		local B = world:component()
+
+		world:add(world:entity(), A)
+
+		world:added(A, function()
+			ran = true
+		end)
+
+		world:add(world:entity(), pair(A, B))
+		CHECK(ran)
+	end
+
+	do CASE "Should invoke signal for the Relation being set as a key despite a pair with Relation having been cached"
+		local A = world:component()
+		local B = world:component()
+
+		world:add(world:entity(), pair(A, B))
+
+		world:added(A, function()
+			ran = true
+		end)
+
+		world:add(world:entity(), A)
 
 		CHECK(ran)
 	end
 
 	do CASE "Should not override hook"
 		local A = world:component()
-
 		local count = 1
 		local function counter()
 			count += 1
 		end
-
 		world:set(A, jecs.OnAdd, counter)
 		world:added(A, counter)
 		world:set(world:entity(), A, false)
 		CHECK(count == (1 + 2))
 		world:set(world:entity(), A, false)
-
 		CHECK(count == (1 + (2 * 2)))
 	end
-
-
 end)
 
 TEST("world:range()", function()

@@ -24,10 +24,10 @@ export type Archetype = {
 
 export type QueryInner = {
 	compatible_archetypes: { Archetype },
-	ids: { i53 },
-	filter_with: { i53 },
-	filter_without: { i53 },
-	next: () -> (number, ...any),
+	ids: { Id },
+	filter_with: { Id },
+	filter_without: { Id },
+	next: () -> (Entity, ...any),
 	world: World,
 }
 
@@ -54,6 +54,8 @@ export type Query<T...> = typeof(setmetatable(
 		archetypes: (self: Query<T...>) -> { Archetype },
 		cached: (self: Query<T...>) -> Query<T...>,
 		ids: { Id<any> },
+		patch: (self: Query<T...>, fn: (T...) -> (T...)) -> (),
+		view: (self: Query<T...>) -> View<T...>,
 		-- world: World
 	},
 	{} :: {
@@ -66,6 +68,12 @@ type QueryArm<T...> = () -> ()
 export type Observer = {
 	callback: (archetype: Archetype) -> (),
 	query: QueryInner,
+}
+
+
+export type observer = {
+	callback: (archetype: archetype) -> (),
+	query: query,
 }
 
 type archetype = {
@@ -504,7 +512,7 @@ local function ecs_pair_second(world: world, e: i53)
 	return ecs_get_alive(world, obj)
 end
 
-local function query_match(query: QueryInner, archetype: archetype)
+local function query_match(query: query, archetype: archetype)
 	local columns_map = archetype.columns_map
 	local with = query.filter_with
 
@@ -526,7 +534,7 @@ local function query_match(query: QueryInner, archetype: archetype)
 	return true
 end
 
-local function find_observers(world: world, event: i53, component: i53): { Observer }?
+local function find_observers(world: world, event: i53, component: i53): { observer }?
 	local cache = world.observable[event]
 	if not cache then
 		return nil
@@ -2615,7 +2623,7 @@ local function world_new()
 				table.insert(listeners, existing_hook)
 			end
 
-			local idr = world.component_index[component]
+			local idr = component_index[ECS_PAIR(component, EcsWildcard)] or component_index[component]
 			if idr then
 				idr.on_add = on_add
 			else
@@ -2650,7 +2658,7 @@ local function world_new()
 				table.insert(listeners, existing_hook)
 			end
 
-			local idr = world.component_index[component]
+			local idr = component_index[ECS_PAIR(component, EcsWildcard)] or component_index[component]
 			if idr then
 				idr.on_change = on_change
 			else
@@ -2681,7 +2689,7 @@ local function world_new()
 				table.insert(listeners, existing_hook)
 			end
 
-			local idr = world.component_index[component]
+			local idr = component_index[ECS_PAIR(component, EcsWildcard)] or component_index[component]
 			if idr then
 				idr.on_remove = on_remove
 			else
