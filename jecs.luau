@@ -733,7 +733,7 @@ local function world_target(world: world, entity: i53, relation: i53, index: num
 	local nth = index or 0
 
 	if nth >= count then
-		nth = nth + count + 1
+		return nil
 	end
 
 	nth = archetype.types[nth + idr.records[archetype_id]]
@@ -2759,7 +2759,7 @@ local function world_new()
 		local nth = index or 0
 
 		if nth >= count then
-			nth = nth + count + 1
+			return nil
 		end
 
 		nth = archetype.types[nth + idr.records[archetype_id]]
