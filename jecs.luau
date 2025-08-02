@@ -879,6 +879,7 @@ local function archetype_create(world: world, id_types: { i53 }, ty, prev: i53?)
 
 	for i, component_id in archetype.types do
 		local idr = id_record_ensure(world, component_id)
+		idr.size += 1
 		local is_tag = bit32.btest(idr.flags, ECS_ID_IS_TAG)
 		local column = if is_tag then NULL_ARRAY else {}
 		columns[i] = column
@@ -890,11 +891,13 @@ local function archetype_create(world: world, id_types: { i53 }, ty, prev: i53?)
 			local object = ECS_PAIR_SECOND(component_id)
 			local r = ECS_PAIR(relation, EcsWildcard)
 			local idr_r = id_record_ensure(world, r)
+			idr_r.size += 1
 
 			archetype_append_to_records(idr_r, archetype_id, columns_map, r, i, column)
 
 			local t = ECS_PAIR(EcsWildcard, object)
 			local idr_t = id_record_ensure(world, t)
+			idr_t.size += 1
 
 			archetype_append_to_records(idr_t, archetype_id, columns_map, t, i, column)
 		end
