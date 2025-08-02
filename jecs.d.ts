@@ -43,35 +43,35 @@ type InferComponents<A extends Id[]> = { [K in keyof A]: InferComponent<A[K]> };
 type ArchetypeId = number;
 export type Column<T> = T[];
 
-export type Archetype<T extends unknown[]> = {
+export type Archetype<T extends Id[]> = {
 	id: number;
 	types: number[];
 	type: string;
 	entities: number[];
 	columns: Column<unknown>[];
-	columns_map: Record<Id, Column<T[number]>>
+	columns_map: { [K in T[number]]: Column<InferComponent<K>> };
 };
 
 type Iter<T extends unknown[]> = IterableFunction<LuaTuple<[Entity, ...T]>>;
 
-export type CachedQuery<T extends unknown[]> = {
+export type CachedQuery<T extends Id[]> = {
 	/**
 	 * Returns an iterator that produces a tuple of [Entity, ...queriedComponents].
 	 */
-	iter(): Iter<T>;
+	iter(): Iter<InferComponents<T>>;
 
 	/**
 	 * Returns the matched archetypes of the query
 	 * @returns An array of archetypes of the query
 	 */
 	archetypes(): Archetype<T>[];
-} & Iter<T>;
+} & Iter<InferComponents<T>>;
 
-export type Query<T extends unknown[]> = {
+export type Query<T extends Id[]> = {
 	/**
 	 * Returns an iterator that produces a tuple of [Entity, ...queriedComponents].
 	 */
-	iter(): Iter<T>;
+	iter(): Iter<InferComponents<T>>;
 
 	/**
 	 * Creates and returns a cached version of this query for efficient reuse.
@@ -99,7 +99,7 @@ export type Query<T extends unknown[]> = {
 	 * @returns An array of archetypes of the query
 	 */
 	archetypes(): Archetype<T>[];
-} & Iter<T>;
+} & Iter<InferComponents<T>>;
 
 export class World {
 	/**
@@ -246,11 +246,11 @@ export class World {
 	 * @param components The list of components to query.
 	 * @returns A Query object to iterate over results.
 	 */
-	query<T extends Id[]>(...components: T): Query<InferComponents<T>>;
+	query<T extends Id[]>(...components: T): Query<T>;
 
-	added<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, value: T) => void): () => void
-	changed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, value: T) => void): () => void
-	removed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>) => void): () => void
+	added<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, value: T) => void): () => void;
+	changed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, value: T) => void): () => void;
+	removed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>) => void): () => void;
 }
 
 export function world(): World;
@@ -297,11 +297,11 @@ export function ECS_PAIR_FIRST(pair: Pair): number;
 export function ECS_PAIR_SECOND(pair: Pair): number;
 
 type StatefulHook = Entity<<T>(e: Entity<T>, id: Id<T>, data: T) => void> & {
-	readonly __nominal_StatefulHook: unique symbol,
-}
+	readonly __nominal_StatefulHook: unique symbol;
+};
 type StatelessHook = Entity<<T>(e: Entity<T>, id: Id<T>) => void> & {
-	readonly __nominal_StatelessHook: unique symbol,
-}
+	readonly __nominal_StatelessHook: unique symbol;
+};
 
 export declare const OnAdd: StatefulHook;
 export declare const OnRemove: StatelessHook;
@@ -319,12 +319,17 @@ export declare const Exclusive: Tag;
 export declare const Rest: Entity;
 
 export type ComponentRecord = {
-	records: Map<Id, number>,
-	counts: Map<Id, number>,
-	size: number,
-}
+	records: Map<Id, number>;
+	counts: Map<Id, number>;
+	size: number;
+};
 
-export function component_record(world: World, id: Id): ComponentRecord
+export function component_record(world: World, id: Id): ComponentRecord;
 
-export function bulk_insert<const C extends Id[]>(world: World, entity: Entity, ids: C, values: InferComponents<C>): void
-export function bulk_remove(world: World, entity: Entity, ids: Id[]): void
+export function bulk_insert<const C extends Id[]>(
+	world: World,
+	entity: Entity,
+	ids: C,
+	values: InferComponents<C>,
+): void;
+export function bulk_remove(world: World, entity: Entity, ids: Id[]): void;
