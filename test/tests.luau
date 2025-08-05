@@ -333,6 +333,15 @@ TEST("world:add()", function()
 
 		CHECK(world:has(e, pair(A, B)) == false)
 		CHECK(world:has(e, pair(A, C)) == true)
+
+		-- We have to test the path that checks the uncached method
+		local e1 = world:entity()
+
+		world:add(e1, pair(A, B))
+		world:add(e1, pair(A, C))
+
+		CHECK(world:has(e1, pair(A, B)) == false)
+		CHECK(world:has(e1, pair(A, C)) == true)
 	end
 
 	do CASE "exclusive relations invoke hooks"
@@ -377,6 +386,44 @@ TEST("world:add()", function()
 
 		CHECK(world:has(e, pair(A, B)) == false)
 		CHECK(world:has(e, pair(A, C)) == true)
+	end
+
+	do CASE "exclusive relations invoke on_remove hooks that should allow side effects"
+		local world = jecs.world()
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		local D = world:component()
+
+		world:add(A, jecs.Exclusive)
+		local call_count = 0
+		world:set(A, jecs.OnRemove, function(e, id)
+			call_count += 1
+			if call_count == 1 then
+				world:add(e, C)
+			else
+				world:add(e, D)
+			end
+		end)
+
+		local e = world:entity()
+		world:add(e, pair(A, B))
+		world:add(e, pair(A, C))
+
+		CHECK(world:has(e, pair(A, B)) == false)
+		CHECK(world:has(e, pair(A, C)) == true)
+		CHECK(world:has(e, C))
+
+
+		-- We have to ensure that it actually invokes hooks everytime it
+		-- traverses the archetype
+		e = world:entity()
+		world:add(e, pair(A, B))
+		world:add(e, pair(A, C))
+
+		CHECK(world:has(e, pair(A, B)) == false)
+		CHECK(world:has(e, pair(A, C)) == true)
+		CHECK(world:has(e, D))
 	end
 
 	do CASE "idempotent"
@@ -621,6 +668,57 @@ TEST("world:contains()", function()
 end)
 
 TEST("world:delete()", function()
+	do CASE "idr_t//delete_mask@3102..3108"
+		local world = jecs.world()
+		local A = world:component()
+		world:add(A, pair(jecs.OnDeleteTarget, jecs.Delete))
+		local B = world:component()
+		local B_OnAdd_called = false
+		local B_OnRemove_called = false
+		world:set(B, jecs.OnAdd, function()
+			B_OnAdd_called = true
+		end)
+		world:set(B, jecs.OnRemove, function()
+			B_OnRemove_called = true
+		end)
+
+		world:set(A, jecs.OnRemove, function(entity, id)
+			world:set(entity, B, true)
+		end)
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+		world:set(e2, pair(A, e1), true)
+
+		world:delete(e1)
+
+		CHECK(not world:has(e2, pair(A, e1)))
+		CHECK(not world:has(e2, B))
+		CHECK(not world:contains(e1))
+		CHECK(not world:contains(e2))
+		CHECK(B_OnAdd_called)
+		-- CHECK(B_OnRemove_called)
+	end
+
+	do CASE "idr_t//remove//on_remove//changed_archetype@3123..3126"
+		local world = jecs.world()
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		world:set(A, jecs.OnRemove, function(entity, id)
+			world:set(entity, B, true)
+		end)
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+		world:add(e2, pair(A, e2))
+		world:set(e2, pair(A, e1), true)
+
+		world:delete(e1)
+
+		CHECK(not world:has(e2, pair(A, e1)))
+	end
+
 	do CASE "pair(OnDelete, Delete)"
 	    local world = jecs.world()
 	    local ct = world:component()
@@ -1076,19 +1174,45 @@ TEST("world:added", function()
 		CHECK(ran)
 	end
 
+	do CASE ""
+		local world = jecs.world()
+		local IsNearby = world:component()
+		world:set(IsNearby, jecs.Name, "IsNearby")
+		local person1, person2 = world:entity(), world:entity()
+
+		world:add(person2, jecs.pair(IsNearby, person1))
+		local IsNearby_added_called = false
+		world:added(IsNearby, function(...) -- This prints fine
+			IsNearby_added_called = true
+		end)
+		local IsNearby_removed_called = false
+		world:removed(IsNearby, function(...)
+			IsNearby_removed_called = true
+		end)
+
+		world:remove(person2, pair(IsNearby, person1))
+		world:add(person2, pair(IsNearby, person1))
+		world:remove(person2, pair(IsNearby, person1))
+
+		CHECK(IsNearby_added_called)
+		CHECK(IsNearby_removed_called)
+	end
+
+
 
 	do CASE "Should work even if set after the pair has been used"
 		local A = world:component()
 		local B = world:component()
 
-		world:set(world:entity(), A, 2)
 		world:set(world:entity(), pair(A, B), 2)
 
+		local ran = false
 		world:added(A, function()
 			ran = true
 		end)
 
 		local entity = world:entity()
+		print(pair(A, B))
 		world:set(entity, pair(A, B), 3)
 		CHECK(ran)
 	end
@@ -1099,6 +1223,7 @@ TEST("world:added", function()
 
 		world:add(world:entity(), A)
 
+		local ran = false
 		world:added(A, function()
 			ran = true
 		end)
@@ -1113,6 +1238,7 @@ TEST("world:added", function()
 
 		world:add(world:entity(), pair(A, B))
 
+		local ran = false
 		world:added(A, function()
 			ran = true
 		end)
@@ -2198,7 +2324,6 @@ TEST("#repro", function()
 	world:delete(e2)
 	local types1 = { pair(Attacks, e1), pair(Eats, e1) }
 	table.sort(types1)
-
 
 	CHECK(d.tbl(e1).type == "")
 	CHECK(d.tbl(e3).type == table.concat(types1, "_"))

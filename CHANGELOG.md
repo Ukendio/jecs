@@ -3,6 +3,14 @@
 ## Unreleased
 
 ### Added
+- Added signals that allow listening to relation part of pairs in signals.
+
+### Changed
+- `OnRemove` hooks so that they are allowed to move entity's archetype even during deletion.
+
+## 0.8.0
+
+### Added
 - `jecs.Exclusive` trait for making exclusive relationships.
 
 ### Changed

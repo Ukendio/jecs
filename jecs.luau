@@ -54,8 +54,6 @@ export type Query<T...> = typeof(setmetatable(
 		archetypes: (self: Query<T...>) -> { Archetype },
 		cached: (self: Query<T...>) -> Query<T...>,
 		ids: { Id<any> },
-		patch: (self: Query<T...>, fn: (T...) -> (T...)) -> (),
-		view: (self: Query<T...>) -> View<T...>,
 		-- world: World
 	},
 	{} :: {
@@ -70,6 +68,14 @@ export type Observer = {
 	query: QueryInner,
 }
 
+type query = {
+	compatible_archetypes: { archetype },
+	ids: { i53 },
+	filter_with: { i53 },
+	filter_without: { i53 },
+	next: () -> (i53, ...any),
+	world: World,
+}
 
 export type observer = {
 	callback: (archetype: archetype) -> (),
@@ -86,7 +92,7 @@ type archetype = {
 }
 
 type componentrecord = {
-	records: { [i53]: number },
+	records: { [number]: number },
 	counts: { [i53]: number },
 	flags: number,
 	size: number,
@@ -94,6 +100,8 @@ type componentrecord = {
 	on_add: ((entity: i53, id: i53, value: any?) -> ())?,
 	on_change: ((entity: i53, id: i53, value: any) -> ())?,
 	on_remove: ((entity: i53, id: i53) -> ())?,
+
+	wildcard_pairs: { [number]: componentrecord },
 }
 type record = {
 	archetype: archetype,
@@ -889,17 +897,32 @@ local function archetype_create(world: world, id_types: { i53 }, ty, prev: i53?)
 		if ECS_IS_PAIR(component_id) then
 			local relation = ECS_PAIR_FIRST(component_id)
 			local object = ECS_PAIR_SECOND(component_id)
+
 			local r = ECS_PAIR(relation, EcsWildcard)
 			local idr_r = id_record_ensure(world, r)
-			idr_r.size += 1
 
+			idr_r.size += 1
 			archetype_append_to_records(idr_r, archetype_id, columns_map, r, i, column)
+			local idr_r_wc_pairs = idr_r.wildcard_pairs
+			if not idr_r_wc_pairs then
+				idr_r_wc_pairs = {} :: {[i53]: componentrecord }
+				idr_r.wildcard_pairs = idr_r_wc_pairs
+			end
+			idr_r_wc_pairs[component_id] = idr
 
 			local t = ECS_PAIR(EcsWildcard, object)
 			local idr_t = id_record_ensure(world, t)
-			idr_t.size += 1
 
+			idr_t.size += 1
 			archetype_append_to_records(idr_t, archetype_id, columns_map, t, i, column)
+
+			-- Hypothetically this should only capture leaf component records
+			local idr_t_wc_pairs = idr_t.wildcard_pairs
+			if not idr_t_wc_pairs then
+				idr_t_wc_pairs = {} :: {[i53]: componentrecord }
+				idr_t.wildcard_pairs = idr_t_wc_pairs
+			end
+			idr_t_wc_pairs[component_id] = idr
 		end
 	end
 
@@ -1086,15 +1109,12 @@ end
 
 local function archetype_delete(world: world, archetype: archetype, row: number)
 	local entity_index = world.entity_index
-	local component_index = world.component_index
 	local columns = archetype.columns
-	local id_types = archetype.types
 	local entities = archetype.entities
 	local column_count = #entities
 	local last = #entities
 	local move = entities[last]
 	-- We assume first that the entity is the last in the archetype
-	local delete = move
 
 	if row ~= last then
 		local record_to_move = entity_index_try_get_any(entity_index, move)
@@ -1102,16 +1122,7 @@ local function archetype_delete(world: world, archetype: archetype, row: number)
 			record_to_move.row = row
 		end
 
-		delete = entities[row]
 		entities[row] = move
-	end
-
-	for _, id in id_types do
-		local idr = component_index[id]
-		local on_remove = idr.on_remove
-		if on_remove then
-			on_remove(delete, id)
-		end
 	end
 
 	entities[last] = nil :: any
@@ -2365,6 +2376,22 @@ local function world_new()
 		return r
 	end
 
+	local function exclusive_traverse_add(
+		archetype: archetype,
+		cr: number,
+		id: i53
+	)
+		local edge = archetype_edges[archetype.id]
+		local to = edge[id]
+		if not to then
+			local dst = table.clone(archetype.types)
+			dst[cr] = id
+			to = archetype_ensure(world, dst)
+			edge[id] = to
+		end
+		return to
+	end
+
 	local function inner_world_set(world: world, entity: i53, id: i53, data): ()
 		local record = inner_entity_index_try_get_unsafe(entity)
 		if not record then
@@ -2395,22 +2422,19 @@ local function world_new()
 				local edge = archetype_edges[src.id]
 				to = edge[id]
 				if to == nil then
-					if idr and (bit32.btest(idr.flags) == true) then
+					if idr and (bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) == true) then
 						local cr = idr.records[src.id]
 						if cr then
 							local on_remove = idr.on_remove
 							local id_types = src.types
 							if on_remove then
 								on_remove(entity, id_types[cr])
-
 								src = record.archetype
 								id_types = src.types
 								cr = idr.records[src.id]
 							end
 
-							local dst = table.clone(id_types)
-							dst[cr] = id
-							to = archetype_ensure(world, dst)
+							to = exclusive_traverse_add(src, cr, id)
 						end
 					end
 
@@ -2425,30 +2449,27 @@ local function world_new()
 					archetype_edges[(to :: Archetype).id][id] = src
 				else
 					if bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) then
-						local cr = idr.records[src.id]
-						if cr then
-							local on_remove = idr.on_remove
-							local id_types = src.types
-							if on_remove then
+						local on_remove = idr.on_remove
+						if on_remove then
+							local cr = idr.records[src.id]
+							if cr then
+								local id_types = src.types
 								on_remove(entity, id_types[cr])
-								src = record.archetype
-								id_types = src.types
-								cr = idr.records[src.id]
+								local arche = record.archetype
+								if src ~= arche then
+									id_types = arche.types
+									cr = idr.records[arche.id]
+									to = exclusive_traverse_add(arche, cr, id)
+								end
 							end
-							local dst = table.clone(id_types)
-							dst[cr] = id
-							to = archetype_ensure(world, dst)
 						end
-					end
-					if not to then
-						to = find_archetype_with(world, id, src)
 					end
 				end
 			else
 				local edges = archetype_edges
 				local edge = edges[src.id]
 
-				to = edge[id] :: archetype
+				to = edge[id]
 				if not to then
 					to = find_archetype_with(world, id, src)
 					edge[id] = to
@@ -2501,7 +2522,7 @@ local function world_new()
 			local edge = archetype_edges[src.id]
 			to = edge[id]
 			if to == nil then
-				if idr and (bit32.btest(idr.flags) == true) then
+				if idr and (bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) == true) then
 					local cr = idr.records[src.id]
 					if cr then
 						local on_remove = idr.on_remove
@@ -2514,9 +2535,7 @@ local function world_new()
 							cr = idr.records[src.id]
 						end
 
-						local dst = table.clone(id_types)
-						dst[cr] = id
-						to = archetype_ensure(world, dst)
+						to = exclusive_traverse_add(src, cr, id)
 					end
 				end
 
@@ -2531,23 +2550,20 @@ local function world_new()
 				archetype_edges[(to :: Archetype).id][id] = src
 			else
 				if bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) then
-					local cr = idr.records[src.id]
-					if cr then
-						local on_remove = idr.on_remove
-						local id_types = src.types
-						if on_remove then
+					local on_remove = idr.on_remove
+					if on_remove then
+						local cr = idr.records[src.id]
+						if cr then
+							local id_types = src.types
 							on_remove(entity, id_types[cr])
-							src = record.archetype
-							id_types = src.types
-							cr = idr.records[src.id]
+							local arche = record.archetype
+							if src ~= arche then
+								id_types = arche.types
+								cr = idr.records[arche.id]
+								to = exclusive_traverse_add(arche, cr, id)
+							end
 						end
-						local dst = table.clone(id_types)
-						dst[cr] = id
-						to = archetype_ensure(world, dst)
 					end
-				end
-				if not to then
-					to = find_archetype_with(world, id, src)
 				end
 			end
 		else
@@ -2626,12 +2642,20 @@ local function world_new()
 				table.insert(listeners, existing_hook)
 			end
 
-			local idr = component_index[ECS_PAIR(component, EcsWildcard)] or component_index[component]
-			if idr then
-				idr.on_add = on_add
+			local idr_pair = component_index[ECS_PAIR(component, EcsWildcard)]
+
+			if idr_pair then
+				for id, cr in idr_pair.wildcard_pairs do
+					cr.on_add = on_add
+				end
+				idr_pair.on_add = on_add
 			else
-				inner_world_set(world, component, EcsOnAdd, on_add)
+				local idr = component_index[component]
+				if idr then
+					idr.on_add = on_add
+				end
 			end
+			inner_world_set(world, component, EcsOnAdd, on_add)
 		end
 		table.insert(listeners, fn)
 		return function()
@@ -2661,12 +2685,22 @@ local function world_new()
 				table.insert(listeners, existing_hook)
 			end
 
-			local idr = component_index[ECS_PAIR(component, EcsWildcard)] or component_index[component]
-			if idr then
-				idr.on_change = on_change
+			local idr_pair = component_index[ECS_PAIR(component, EcsWildcard)]
+
+			if idr_pair then
+				for _, cr in idr_pair.wildcard_pairs do
+					cr.on_change = on_change
+				end
+
+				idr_pair.on_change = on_change
 			else
-				inner_world_set(world, component, EcsOnChange, on_change)
+				local idr = component_index[component]
+				if idr then
+					idr.on_change = on_change
+				end
 			end
+
+			inner_world_set(world, component, EcsOnChange, on_change)
 		end
 		table.insert(listeners, fn)
 		return function()
@@ -2687,17 +2721,28 @@ local function world_new()
 					listener(entity, id)
 				end
 			end
+
 			local existing_hook = inner_world_get(world, component, EcsOnRemove) :: Listener<T>
 			if existing_hook then
 				table.insert(listeners, existing_hook)
 			end
 
-			local idr = component_index[ECS_PAIR(component, EcsWildcard)] or component_index[component]
-			if idr then
-				idr.on_remove = on_remove
+			local idr_pair = component_index[ECS_PAIR(component, EcsWildcard)]
+
+			if idr_pair then
+				for _, cr in idr_pair.wildcard_pairs do
+					cr.on_remove = on_remove
+				end
+
+				idr_pair.on_remove = on_remove
 			else
-				inner_world_set(world, component, EcsOnRemove, on_remove)
+				local idr = component_index[component]
+				if idr then
+					idr.on_remove = on_remove
+				end
 			end
+
+			inner_world_set(world, component, EcsOnRemove, on_remove)
 		end
 
 		table.insert(listeners, fn)
@@ -2860,6 +2905,7 @@ local function world_new()
 		if from.columns_map[id] then
 			local idr = world.component_index[id]
 			local on_remove = idr.on_remove
+
 			if on_remove then
 				on_remove(entity, id)
 			end
@@ -2964,12 +3010,16 @@ local function world_new()
 		end
 
 		local archetype = record.archetype
-		local row = record.row
 
 		if archetype then
-			-- In the future should have a destruct mode for
-			-- deleting archetypes themselves. Maybe requires recycling
-			archetype_delete(world, archetype, row)
+			for _, id in archetype.types do
+				local idr = component_index[id]
+				local on_remove = idr.on_remove
+				if on_remove then
+					on_remove(entity, id)
+				end
+			end
+			archetype_delete(world, record.archetype, record.row)
 		end
 
 		local component_index = world.component_index
@@ -3035,55 +3085,54 @@ local function world_new()
 			end
 		end
 		if idr_t then
-			local archetype_ids = idr_t.records
-			for archetype_id in archetype_ids do
-				local idr_t_archetype = archetypes[archetype_id]
-				local node = idr_t_archetype
-				local idr_t_types = idr_t_archetype.types
-				local entities = idr_t_archetype.entities
-
-				local deleted = false
-				for _, id in idr_t_types do
-					if not ECS_IS_PAIR(id) then
-						continue
-					end
-					local object = entity_index_get_alive(
-					    entity_index, ECS_PAIR_SECOND(id))
-					if object ~= entity then
-						continue
-					end
-					local id_record = component_index[id]
-					local flags = id_record.flags
-					local flags_delete_mask = bit32.btest(flags, ECS_ID_DELETE)
-					if flags_delete_mask then
+			for id, cr in idr_t.wildcard_pairs do
+				local flags = cr.flags
+				local flags_delete_mask = bit32.btest(flags, ECS_ID_DELETE)
+				local on_remove = cr.on_remove
+				if flags_delete_mask then
+					for archetype_id in cr.records do
+						local idr_t_archetype = archetypes[archetype_id]
+						local entities = idr_t_archetype.entities
 						for i = #entities, 1, -1 do
 							local child = entities[i]
 							inner_world_delete(world, child)
 						end
-						deleted = true
 						break
-					else
-						node = archetype_traverse_remove(world, id, node)
-						local on_remove = component_index[id].on_remove
-						if on_remove then
-							for _, entity in entities do
-								on_remove(entity, id)
+					end
+				else
+					for archetype_id in cr.records do
+						local idr_t_archetype = archetypes[archetype_id]
+						local entities = idr_t_archetype.entities
+						-- archetype_traverse_remove is not idempotent meaning
+						-- this access is actually unsafe because it can
+						-- incorrectly cache an edge despite a node of the
+						-- component id on the archetype does not exist. This
+						-- requires careful testing to ensure correct values are
+						-- being passed to the arguments.
+						local to = archetype_traverse_remove(world, id, idr_t_archetype)
+
+						for i = #entities, 1, -1 do
+							local e = entities[i]
+							local r = eindex_sparse_array[ECS_ID(e :: number)]
+							if on_remove then
+								on_remove(e, id)
+
+								local from = r.archetype
+								if from ~= idr_t_archetype then
+									-- unfortunately the on_remove hook allows a window where `e` can have changed archetype
+									-- this is hypothetically not that expensive of an operation anyways
+									to = archetype_traverse_remove(world, id, from)
+								end
 							end
+
+							inner_entity_move(entity_index, e, r, to)
 						end
 					end
 				end
 
-				if not deleted then
-					for i = #entities, 1, -1 do
-						local e = entities[i]
-						local r = inner_entity_index_try_get_unsafe(e) :: record
-						inner_entity_move(entity_index, e, r, node)
-					end
+				for archetype_id in cr.records do
+					archetype_destroy(world, archetypes[archetype_id])
 				end
-			end
-
-			for archetype_id in archetype_ids do
-				archetype_destroy(world, archetypes[archetype_id])
 			end
 		end
 
@@ -3286,6 +3335,9 @@ end
 
 return {
 	world = world_new :: () -> World,
+	World = {
+		new = world_new
+	},
 	component = (ECS_COMPONENT :: any) :: <T>() -> Entity<T>,
 	tag = (ECS_TAG :: any) :: <T>() -> Entity<T>,
 	meta = (ECS_META :: any) :: <T, a>(id: Entity<T>, id: Id<a>, value: a?) -> Entity<T>,
