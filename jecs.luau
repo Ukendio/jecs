@@ -2443,10 +2443,9 @@ local function world_new()
 						if not idr then
 							idr = component_index[wc]
 						end
+						edge[id] = to
+						archetype_edges[(to :: Archetype).id][id] = src
 					end
-
-					edge[id] = to
-					archetype_edges[(to :: Archetype).id][id] = src
 				else
 					if bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) then
 						local on_remove = idr.on_remove
@@ -2544,10 +2543,9 @@ local function world_new()
 					if not idr then
 						idr = component_index[wc]
 					end
+					edge[id] = to
+					archetype_edges[(to :: Archetype).id][id] = src
 				end
-
-				edge[id] = to
-				archetype_edges[(to :: Archetype).id][id] = src
 			else
 				if bit32.btest(idr.flags, ECS_ID_IS_EXCLUSIVE) then
 					local on_remove = idr.on_remove

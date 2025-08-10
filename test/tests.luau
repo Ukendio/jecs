@@ -24,6 +24,25 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
+TEST("", function()
+	local world = jecs.world()
+	local a = world:entity()
+	local b = world:entity()
+	local c = world:entity()
+
+	world:add(a, pair(ChildOf, b))
+	world:add(a, pair(ChildOf, c))
+
+	CHECK(not world:has(a, pair(ChildOf, b)))
+	CHECK(world:has(a, pair(ChildOf, c)))
+
+
+	world:remove(a, pair(ChildOf, c))
+
+	CHECK(not world:has(a, pair(ChildOf, b)))
+	CHECK(not world:has(a, pair(ChildOf, c)))
+
+end)
 TEST("ardi", function()
 	local world = jecs.world()
 	local r = world:entity()
@@ -319,7 +338,25 @@ TEST("repro", function()
 end)
 
 TEST("world:add()", function()
-	do CASE "exclusive relations"
+	do CASE "Removing exclusive pair should traverse backwards on edge"
+		local world = jecs.world()
+		local a = world:entity()
+		local b = world:entity()
+		local c = world:entity()
+
+		world:add(a, pair(ChildOf, b))
+		world:add(a, pair(ChildOf, c))
+
+		CHECK(not world:has(a, pair(ChildOf, b)))
+		CHECK(world:has(a, pair(ChildOf, c)))
+
+		world:remove(a, pair(ChildOf, c))
+
+		CHECK(not world:has(a, pair(ChildOf, b)))
+		CHECK(not world:has(a, pair(ChildOf, c)))
+		CHECK(not world:target(a, ChildOf))
+	end
+	do CASE "Exclusive relations"
 		local world = jecs.world()
 		local A = world:component()
 		world:add(A, jecs.Exclusive)
@@ -2044,6 +2081,140 @@ TEST("world:remove()", function()
 end)
 
 TEST("world:set()", function()
+	do CASE "Removing exclusive pair should traverse backwards on edge"
+		local world = jecs.world()
+		local a = world:entity()
+		local b = world:entity()
+		local c = world:entity()
+
+		local BattleLink = world:component()
+		world:add(BattleLink, jecs.Exclusive)
+
+		world:set(a, pair(BattleLink, b), {
+			timestamp = 1,
+			transform = vector.create(1, 2, 3)
+		})
+		world:set(a, pair(BattleLink, c), {
+			timestamp = 2,
+			transform = vector.create(1, 2, 3)
+		})
+
+		CHECK(not world:has(a, pair(BattleLink, b)))
+		CHECK(world:has(a, pair(BattleLink, c)))
+
+		world:remove(a, pair(BattleLink, c))
+
+		CHECK(not world:has(a, pair(BattleLink, b)))
+		CHECK(not world:has(a, pair(BattleLink, c)))
+		CHECK(not world:target(a, BattleLink))
+	end
+
+	do CASE "Exclusive relations"
+		local world = jecs.world()
+		local A = world:component()
+		world:add(A, jecs.Exclusive)
+
+		local B = world:component()
+		local C = world:component()
+
+		local e = world:entity()
+		world:set(e, pair(A, B), true)
+		world:set(e, pair(A, C), true)
+
+		CHECK(world:has(e, pair(A, B)) == false)
+		CHECK(world:has(e, pair(A, C)) == true)
+
+		-- We have to test the path that checks the uncached method
+		local e1 = world:entity()
+
+		world:set(e1, pair(A, B), true)
+		world:set(e1, pair(A, C), true)
+
+		CHECK(world:has(e1, pair(A, B)) == false)
+		CHECK(world:has(e1, pair(A, C)) == true)
+	end
+
+	do CASE "exclusive relations invoke hooks"
+		local world = jecs.world()
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local e_ptr: jecs.Entity = (jecs.Rest :: any) + 1
+
+		world:add(A, jecs.Exclusive)
+		local on_remove_call = false
+		world:set(A, jecs.OnRemove, function(e, id)
+			on_remove_call = true
+		end)
+
+		local on_add_call_count = 0
+		world:set(A, jecs.OnAdd, function(e, id)
+			on_add_call_count += 1
+		end)
+
+
+		local e = world:entity()
+		CHECK(e == e_ptr)
+		world:set(e, pair(A, B))
+		CHECK(on_add_call_count == 1)
+		world:set(e, pair(A, C))
+		CHECK(on_add_call_count == 2)
+		CHECK(on_remove_call)
+
+		CHECK(world:has(e, pair(A, B)) == false)
+		CHECK(world:has(e, pair(A, C)) == true)
+
+		-- We have to ensure that it actually invokes hooks everytime it
+		-- traverses the archetype
+		e = world:entity()
+		world:add(e, pair(A, B))
+		CHECK(on_add_call_count == 3)
+		world:add(e, pair(A, C))
+		CHECK(on_add_call_count == 4)
+		CHECK(on_remove_call)
+
+		CHECK(world:has(e, pair(A, B)) == false)
+		CHECK(world:has(e, pair(A, C)) == true)
+	end
+
+	do CASE "exclusive relations invoke on_remove hooks that should allow side effects"
+		local world = jecs.world()
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		local D = world:component()
+
+		world:add(A, jecs.Exclusive)
+		local call_count = 0
+		world:set(A, jecs.OnRemove, function(e, id)
+			call_count += 1
+			if call_count == 1 then
+				world:set(e, C, true)
+			else
+				world:set(e, D, true)
+			end
+		end)
+
+		local e = world:entity()
+		world:set(e, pair(A, B), true)
+		world:set(e, pair(A, C), true)
+
+		CHECK(world:has(e, pair(A, B)) == false)
+		CHECK(world:has(e, pair(A, C)) == true)
+		CHECK(world:has(e, C))
+
+
+		-- We have to ensure that it actually invokes hooks everytime it
+		-- traverses the archetype
+		e = world:entity()
+		world:set(e, pair(A, B), true)
+		world:set(e, pair(A, C), true)
+
+		CHECK(world:has(e, pair(A, B)) == false)
+		CHECK(world:has(e, pair(A, C)) == true)
+		CHECK(world:has(e, D))
+	end
 	do CASE "archetype move"
 		local world = jecs.world()
 
