@@ -355,45 +355,8 @@ This operation is the same as calling:
 world:target(entity, jecs.ChildOf, 0)
 ```
 
-## contains
-
-Checks if an entity or component (id) exists in the world.
-
-```luau
-function World:contains(
-    entity: Entity,
-): boolean
-```
-
-Example:
-
-::: code-group
-
-```luau [luau]
-local entity = world:entity()
-print(world:contains(entity))
-print(world:contains(1))
-print(world:contains(2))
-
--- Outputs:
--- true
--- true
--- false
-```
-
-```ts [typescript]
-const entity = world.entity();
-print(world.contains(entity));
-print(world.contains(1));
-print(world.contains(2));
-
-// Outputs:
-// true
-// true
-// false
-```
-
 :::
+
 
 ## remove
 
@@ -460,11 +423,11 @@ Example:
 
 ```luau [luau]
 local entity = world:entity()
-print(world:has(entity))
+print(world:contains(entity))
 
 world:delete(entity)
 
-print(world:has(entity))
+print(world:contains(entity))
 
 -- Outputs:
 -- true
@@ -601,7 +564,7 @@ print(retrievedParent === parent) // true
 
 ## contains
 
-Checks if an entity exists and is alive in the world.
+Checks if an entity or component (id) exists and is alive in the world.
 
 ```luau
 function World:contains(
