@@ -7,10 +7,14 @@ export type Entity<TData = unknown> = number & {
 	readonly __type_TData: TData;
 };
 
+type TagDiscriminator = {
+	readonly __nominal_Tag: unique symbol;
+};
+
 /**
  * An entity with no associated data when used as a component
  */
-export type Tag = Entity<undefined>;
+export type Tag = Entity<TagDiscriminator>;
 
 /**
  * A pair of entities:
@@ -26,12 +30,12 @@ export type Pair<P = unknown, O = unknown> = number & {
  * An `Id` can be either a single Entity or a Pair of Entities.
  * By providing `TData`, you can specifically require an Id that yields that type.
  */
-export type Id<TData = unknown> = Entity<TData> | Pair<TData, unknown> | Pair<undefined, TData>;
+export type Id<TData = unknown> = Entity<TData> | Pair<TData, unknown> | Pair<TagDiscriminator, TData>;
 
 export type InferComponent<E> = E extends Entity<infer D>
 	? D
 	: E extends Pair<infer P, infer O>
-	? P extends undefined
+	? P extends TagDiscriminator
 		? O
 		: P
 	: never;
@@ -119,7 +123,7 @@ export class World {
 	 * @returns An entity (Tag) with no data.
 	 */
 	entity(): Tag;
-	entity<T extends Entity>(id: T): InferComponent<T> extends undefined ? Tag : T;
+	entity<T extends Entity>(id: T): T;
 
 	/**
 	 * Creates a new entity in the first 256 IDs, typically used for static
@@ -148,7 +152,7 @@ export class World {
 	 * @param entity The target entity.
 	 * @param component The component (or tag) to add.
 	 */
-	add<C>(entity: Entity, component: undefined extends InferComponent<C> ? C : Id<undefined>): void;
+	add<C>(entity: Entity, component: TagDiscriminator extends InferComponent<C> ? C : Id<TagDiscriminator>): void;
 
 	/**
 	 * Installs a hook on the given component.
