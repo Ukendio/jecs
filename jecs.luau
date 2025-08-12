@@ -126,6 +126,8 @@ type world = {
 
 	max_component_id: number,
 	max_archetype_id: number,
+    start_component_id: number,
+    start_tag_id: number,
 
 	observable: Map<i53, Map<i53, { Observer }>>,
 
@@ -163,6 +165,8 @@ export type World = {
 
 	max_component_id: number,
 	max_archetype_id: number,
+    start_component_id: number,
+    start_tag_id: number,
 
 	observable: Map<Id, Map<Id, { Observer }>>,
 
@@ -758,6 +762,12 @@ local function ECS_ID_IS_WILDCARD(e: i53): boolean
 	local first = ECS_ENTITY_T_HI(e)
 	local second = ECS_ENTITY_T_LO(e)
 	return first == EcsWildcard or second == EcsWildcard
+end
+
+local function get_max_ids_difference(world: World): (number, number)
+    local diff_components = world.start_component_id - ecs_max_component_id
+    local diff_tags = world.start_tag_id - ecs_max_tag_id
+    return diff_components, diff_tags
 end
 
 local function id_record_get(world: World, id: Entity): ComponentRecord?
@@ -2263,6 +2273,9 @@ local function world_new()
 		archetype_index = archetype_index,
 		max_archetype_id = 0,
 		max_component_id = ecs_max_component_id,
+        
+        start_component_id = ecs_max_component_id,
+        start_tag_id = ecs_max_tag_id,
 
 		observable = observable,
 		signals = signals,
@@ -3366,6 +3379,7 @@ return {
 	pair_first = ecs_pair_first :: <P, O>(world: World, pair: Pair<P, O>) -> Id<P>,
 	pair_second = ecs_pair_second :: <P, O>(world: World, pair: Pair<P, O>) -> Id<O>,
 	entity_index_get_alive = entity_index_get_alive,
+    get_max_ids_difference = get_max_ids_difference,
 
 	archetype_append_to_records = archetype_append_to_records,
 	id_record_ensure = id_record_ensure :: (World, Id) -> ComponentRecord,
