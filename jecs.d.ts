@@ -57,7 +57,7 @@ export type Archetype<T extends Id[]> = {
 };
 
 type IterFn<T extends Id[]> = IterableFunction<LuaTuple<[Entity, ...InferComponents<T>]>>;
-type Iter<T extends Id[]> = IterableFunction<LuaTuple<[Entity, ...InferComponents<T>]>> & {
+type Iter<T extends Id[]> = IterFn<T> & {
 	/**
 	 * This isn't callable
 	 * @hidden
