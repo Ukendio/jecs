@@ -49,9 +49,9 @@ export type Column<T> = T[];
 
 export type Archetype<T extends Id[]> = {
 	id: number;
-	types: number[];
+	types: Entity[];
 	type: string;
-	entities: number[];
+	entities: Entity[];
 	columns: Column<unknown>[];
 	columns_map: { [K in T[number]]: Column<InferComponent<K>> };
 };
