@@ -338,10 +338,12 @@ export type ComponentRecord = {
 
 export function component_record(world: World, id: Id): ComponentRecord;
 
+type TagToUndefined<T> = T extends TagDiscriminator ? undefined : T
+
 export function bulk_insert<const C extends Id[]>(
 	world: World,
 	entity: Entity,
 	ids: C,
-	values: InferComponents<C>,
+	values: { [K in keyof C]: TagToUndefined<InferComponent<C[K]>> },
 ): void;
 export function bulk_remove(world: World, entity: Entity, ids: Id[]): void;
