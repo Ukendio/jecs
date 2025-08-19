@@ -1979,7 +1979,7 @@ local function query_cached(query: QueryInner)
 				output[i - 8] = columns_map[ids[i]::any][row]
 			end
 
-			return entity, a[row], b[row], c[row], d[row], e[row], f[row], g[row], unpack(output)
+			return entity, a[row], b[row], c[row], d[row], e[row], f[row], g[row], h[row], unpack(output)
 		end
 	end
 
@@ -3095,7 +3095,6 @@ local function world_new()
 							local child = entities[i]
 							inner_world_delete(world, child)
 						end
-						break
 					end
 				else
 					for archetype_id in cr.records do

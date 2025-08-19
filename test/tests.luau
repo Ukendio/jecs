@@ -24,25 +24,7 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
-TEST("", function()
-	local world = jecs.world()
-	local a = world:entity()
-	local b = world:entity()
-	local c = world:entity()
 
-	world:add(a, pair(ChildOf, b))
-	world:add(a, pair(ChildOf, c))
-
-	CHECK(not world:has(a, pair(ChildOf, b)))
-	CHECK(world:has(a, pair(ChildOf, c)))
-
-
-	world:remove(a, pair(ChildOf, c))
-
-	CHECK(not world:has(a, pair(ChildOf, b)))
-	CHECK(not world:has(a, pair(ChildOf, c)))
-
-end)
 TEST("ardi", function()
 	local world = jecs.world()
 	local r = world:entity()
@@ -167,7 +149,6 @@ TEST("repeated pairs", function()
 
 	local e2 = world:entity()
 
-	print("-----")
 	world:set(e2, p2, true)
 
 	CHECK(world:get(e2, p2))
@@ -209,7 +190,6 @@ TEST("repro", function()
 	end
 	CHECK(count == 1)
 	count = 0
-	print("----")
 	world:add(e2v1, jecs.pair(relation, e1v1))
 	CHECK(world:has(e2v1, jecs.pair(relation, e1v1)))
 
@@ -217,100 +197,140 @@ TEST("repro", function()
 		count += 1
 	end
 
-	print(count)
 	CHECK(count==1)
 end)
+
 TEST("bulk", function()
-	local world = jecs.world()
-	local A = world:component()
-	local B = world:component()
-	local C = world:component()
+	do CASE "Should allow components and tags to be in disorder"
+		local world = jecs.world()
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
 
-	local D = world:component()
-	local E = world:entity()
-	local F = world:component()
+		local D = world:component()
+		local E = world:entity()
+		local F = world:component()
 
-	local e = world:entity()
-	local r = jecs.entity_index_try_get(world.entity_index, e)
-	jecs.bulk_insert(world, e, { A, B, C }, { 1, 2, 3 })
-	CHECK(world:get(e, A) == 1)
-	CHECK(world:get(e, B) == 2)
-	CHECK(world:get(e, C) == 3)
+		local e = world:entity()
+		local r = jecs.entity_index_try_get(world.entity_index, e)
+		jecs.bulk_insert(world, e, { A, B, C }, { 1, 2, 3 })
+		CHECK(world:get(e, A) == 1)
+		CHECK(world:get(e, B) == 2)
+		CHECK(world:get(e, C) == 3)
 
-	jecs.bulk_insert(world, e,
-		{ D, E, F },
-		{ 4, nil, 5 }
-	)
-	CHECK(world:get(e, A) == 1)
-	CHECK(world:get(e, B) == 2)
-	CHECK(world:get(e, C) == 3)
+		jecs.bulk_insert(world, e,
+			{ D, E, F },
+			{ 4, nil, 5 }
+		)
+		CHECK(world:get(e, A) == 1)
+		CHECK(world:get(e, B) == 2)
+		CHECK(world:get(e, C) == 3)
 
-	CHECK(world:get(e, D) == 4)
-	CHECK(world:get(e, E) == nil and world:has(e, E))
-	CHECK(world:get(e, F) == 5)
+		CHECK(world:get(e, D) == 4)
+		CHECK(world:get(e, E) == nil and world:has(e, E))
+		CHECK(world:get(e, F) == 5)
 
-	jecs.bulk_insert(world, e,
-		{ A, D, E, F, C },
-		{ 10, 40, nil, 50, 30 }
-	)
+		jecs.bulk_insert(world, e,
+			{ A, D, E, F, C },
+			{ 10, 40, nil, 50, 30 }
+		)
 
-	CHECK(world:get(e, A) == 10)
-	CHECK(world:get(e, B) == 2)
-	CHECK(world:get(e, C) == 30)
-	CHECK(world:get(e, D) == 40)
-	CHECK(world:get(e, E) == nil and world:has(e, E))
-	CHECK(world:get(e, F) == 50)
+		CHECK(world:get(e, A) == 10)
+		CHECK(world:get(e, B) == 2)
+		CHECK(world:get(e, C) == 30)
+		CHECK(world:get(e, D) == 40)
+		CHECK(world:get(e, E) == nil and world:has(e, E))
+		CHECK(world:get(e, F) == 50)
 
-	local G = world:component()
-	world:set(e, G, 100)
+		local G = world:component()
+		world:set(e, G, 100)
 
-	CHECK(world:get(e, A) == 10)
-	CHECK(world:get(e, B) == 2)
-	CHECK(world:get(e, C) == 30)
-	CHECK(world:get(e, D) == 40)
-	CHECK(world:get(e, E) == nil and world:has(e, E))
-	CHECK(world:get(e, F) == 50)
-	CHECK(world:get(e, G) == 100)
+		CHECK(world:get(e, A) == 10)
+		CHECK(world:get(e, B) == 2)
+		CHECK(world:get(e, C) == 30)
+		CHECK(world:get(e, D) == 40)
+		CHECK(world:get(e, E) == nil and world:has(e, E))
+		CHECK(world:get(e, F) == 50)
+		CHECK(world:get(e, G) == 100)
 
-	world:remove(e, B)
+		world:remove(e, B)
 
-	CHECK(world:get(e, A) == 10)
-	CHECK(world:has(e, B) == false)
-	CHECK(world:get(e, C) == 30)
-	CHECK(world:get(e, D) == 40)
-	CHECK(world:get(e, E) == nil and world:has(e, E))
-	CHECK(world:get(e, F) == 50)
-	CHECK(world:get(e, G) == 100)
+		CHECK(world:get(e, A) == 10)
+		CHECK(world:has(e, B) == false)
+		CHECK(world:get(e, C) == 30)
+		CHECK(world:get(e, D) == 40)
+		CHECK(world:get(e, E) == nil and world:has(e, E))
+		CHECK(world:get(e, F) == 50)
+		CHECK(world:get(e, G) == 100)
 
-	jecs.bulk_remove(world, e, { A, B, C, D })
+		jecs.bulk_remove(world, e, { A, B, C, D })
 
-	CHECK(world:has(e, A) == false)
-	CHECK(world:has(e, B) == false)
-	CHECK(world:has(e, C) == false)
-	CHECK(world:has(e, D) == false)
-	CHECK(world:get(e, E) == nil and world:has(e, E))
-	CHECK(world:get(e, F) == 50)
-	CHECK(world:get(e, G) == 100)
+		CHECK(world:has(e, A) == false)
+		CHECK(world:has(e, B) == false)
+		CHECK(world:has(e, C) == false)
+		CHECK(world:has(e, D) == false)
+		CHECK(world:get(e, E) == nil and world:has(e, E))
+		CHECK(world:get(e, F) == 50)
+		CHECK(world:get(e, G) == 100)
 
-	jecs.bulk_insert(world, e, { D, G }, { 999, 1 })
+		jecs.bulk_insert(world, e, { D, G }, { 999, 1 })
 
-	CHECK(world:has(e, A) == false)
-	CHECK(world:has(e, B) == false)
-	CHECK(world:has(e, C) == false)
-	CHECK(world:get(e, D) == 999)
-	CHECK(world:get(e, E) == nil and world:has(e, E))
-	CHECK(world:get(e, F) == 50)
-	CHECK(world:get(e, G) == 1)
+		CHECK(world:has(e, A) == false)
+		CHECK(world:has(e, B) == false)
+		CHECK(world:has(e, C) == false)
+		CHECK(world:get(e, D) == 999)
+		CHECK(world:get(e, E) == nil and world:has(e, E))
+		CHECK(world:get(e, F) == 50)
+		CHECK(world:get(e, G) == 1)
 
-	jecs.bulk_remove(world, e, { A, B, C, D, E, F, G })
+		jecs.bulk_remove(world, e, { A, B, C, D, E, F, G })
 
-	CHECK(world:has(e, A) == false)
-	CHECK(world:has(e, B) == false)
-	CHECK(world:has(e, C) == false)
-	CHECK(world:has(e, D) == false)
-	CHECK(world:has(e, E) == false)
-	CHECK(world:has(e, F) == false)
-	CHECK(world:has(e, G) == false)
+		CHECK(world:has(e, A) == false)
+		CHECK(world:has(e, B) == false)
+		CHECK(world:has(e, C) == false)
+		CHECK(world:has(e, D) == false)
+		CHECK(world:has(e, E) == false)
+		CHECK(world:has(e, F) == false)
+		CHECK(world:has(e, G) == false)
+	end
+	do CASE "Should bulk add by default when there is no values"
+		local world = jecs.world()
+		local t1, t2, t3 = world:entity(), world:entity(), world:entity()
+		local count = 0
+		local function counter()
+			count += 1
+		end
+		world:added(t1, counter)
+		world:added(t2, counter)
+		world:added(t3, counter)
+
+		local e = world:entity()
+		jecs.bulk_insert(world, e, {t1,t2,t3}, {})
+
+		CHECK(world:has(e, t1, t2, t3))
+		CHECK(count == 3)
+	end
+
+	do CASE "Should bulk add by default when there is no values"
+		local world = jecs.world()
+		local c1, c2, c3 = world:component(), world:component(), world:component()
+		local count = 0
+		local function counter()
+			count += 1
+		end
+
+		world:changed(c1, counter)
+		world:changed(c2, counter)
+		world:changed(c3, counter)
+
+		local e = world:entity()
+		jecs.bulk_insert(world, e, {c1,c2,c3}, {1,2,3})
+
+		jecs.bulk_insert(world, e, {c1,c2,c3}, {4,5,6})
+
+		CHECK(world:has(e, c1, c2, c3))
+		CHECK(count == 3)
+	end
 end)
 
 TEST("repro", function()
@@ -705,6 +725,24 @@ TEST("world:contains()", function()
 end)
 
 TEST("world:delete()", function()
+	do CASE "Should delete children in different archetypes if they have the same parent"
+		local world = jecs.world()
+
+	    local component = world:entity()
+
+	    local parent = world:entity()
+
+	    local child = world:entity()
+	    world:add(child, jecs.pair(jecs.ChildOf, parent))
+
+	    local child2 = world:entity()
+	    world:add(child2, component) -- important, they need to be in different archetypes
+	    world:add(child2, jecs.pair(jecs.ChildOf, parent))
+
+	    world:delete(parent)
+	    CHECK(not world:contains(child))
+	    CHECK(not world:contains(child2)) -- fails
+	end
 	do CASE "idr_t//delete_mask@3102..3108"
 		local world = jecs.world()
 		local A = world:component()
@@ -1249,7 +1287,6 @@ TEST("world:added", function()
 		end)
 
 		local entity = world:entity()
-		print(pair(A, B))
 		world:set(entity, pair(A, B), 3)
 		CHECK(ran)
 	end
@@ -1794,6 +1831,41 @@ TEST("world:query()", function()
 			CHECK(g == 13 ^ 7)
 			CHECK(h == 13 ^ 8)
 			CHECK(i == 13 ^ 9)
+		end
+	end
+
+	do CASE "query more than 8 components"
+		local world = jecs.world()
+		local components = {}
+
+		for i = 1, 15 do
+			local id = world:component()
+			world:component() -- make the components sparsely interleaved
+			components[i] = id
+		end
+		local e1 = world:entity()
+		for i, id in components do
+			world:set(e1, id, 13 ^ i)
+		end
+
+		local q = world:query(unpack(components))
+
+		for entity, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o in q do
+			CHECK(a == 13 ^ 1)
+			CHECK(b == 13 ^ 2)
+			CHECK(c == 13 ^ 3)
+			CHECK(d == 13 ^ 4)
+			CHECK(e == 13 ^ 5)
+			CHECK(f == 13 ^ 6)
+			CHECK(g == 13 ^ 7)
+			CHECK(h == 13 ^ 8)
+			CHECK(i == 13 ^ 9)
+			CHECK(j == 13 ^ 10)
+			CHECK(k == 13 ^ 11)
+			CHECK(l == 13 ^ 12)
+			CHECK(m == 13 ^ 13)
+			CHECK(n == 13 ^ 14)
+			CHECK(o == 13 ^ 15)
 		end
 	end
 
