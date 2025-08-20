@@ -347,3 +347,11 @@ export function bulk_insert<const C extends Id[]>(
 	values: { [K in keyof C]: TagToUndefined<InferComponent<C[K]>> },
 ): void;
 export function bulk_remove(world: World, entity: Entity, ids: Id[]): void;
+
+export type EntityRecord<T extends Id[]> = {
+	archetype: Archetype<T>,
+	row: number,
+	dense: number,
+};
+
+export function record<T extends Id[] = []>(world: World, entity: Entity): EntityRecord<T>;
