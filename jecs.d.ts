@@ -346,10 +346,10 @@ export function bulk_insert<const C extends Id[]>(
 ): void;
 export function bulk_remove(world: World, entity: Entity, ids: Id[]): void;
 
-export type EntityRecord<E extends Entity> = {
-	archetype: Archetype<[E]>,
+export type EntityRecord<T extends Id[]> = {
+	archetype: Archetype<T>,
 	row: number,
 	dense: number,
 };
 
-export function record<E extends Entity>(world: World, entity: E): EntityRecord<E>;
+export function record<T extends Id[] = []>(world: World, entity: Entity): EntityRecord<T>;
