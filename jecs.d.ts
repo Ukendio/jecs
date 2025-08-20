@@ -345,3 +345,11 @@ export function bulk_insert<const C extends Id[]>(
 	values: InferComponents<C>,
 ): void;
 export function bulk_remove(world: World, entity: Entity, ids: Id[]): void;
+
+export type EntityRecord<E extends Entity> = {
+	archetype: Archetype<[E]>,
+	row: number,
+	dense: number,
+};
+
+export function record<E extends Entity>(world: World, entity: E): EntityRecord<E>;
