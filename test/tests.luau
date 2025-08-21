@@ -332,7 +332,7 @@ TEST("bulk", function()
 		CHECK(count == 3)
 	end
 
-	do CASE "Should work with hooks moving archetypes without previous"
+	do CASE "Should bulk add with hooks moving archetypes without previous"
 		local world = jecs.world()
 		local c1, c2, c3 = world:component(), world:component(), world:component()
 		
@@ -347,7 +347,7 @@ TEST("bulk", function()
 		CHECK(world:get(e, c3) == "hello")
 	end
 
-	do CASE "Should work with hooks moving archetypes with previous"
+	do CASE "Should bulk add with hooks moving archetypes with previous"
 		local world = jecs.world()
 		local c1, c2, c3 = world:component(), world:component(), world:component()
 		
