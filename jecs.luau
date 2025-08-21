@@ -2110,15 +2110,13 @@ local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: 
 		local dst_types = ids
 		local to = archetype_ensure(world, dst_types)
 		new_entity(entity, r, to)
-		local row = r.row
-		local columns_map = to.columns_map
 		for i, id in ids do
 			local value = values[i]
 			local cdr = component_index[id]
 
 			local on_add = cdr.on_add
 			if value then
-				columns_map[id][row] = value
+				r.archetype.columns_map[id][r.row] = value
 				if on_add then
 					on_add(entity, id, value :: any)
 				end
@@ -2148,12 +2146,10 @@ local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: 
 	end
 
 	local to = archetype_ensure(world, dst_types)
-	local columns_map = to.columns_map
 
 	if from ~= to then
 		entity_move(entity_index, entity, r, to)
 	end
-	local row = r.row
 
 	for i, set in emplaced do
 		local id = ids[i]
@@ -2164,7 +2160,7 @@ local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: 
 		local on_add = idr.on_add
 
 		if value ~= nil then
-			columns_map[id][row] = value
+			r.archetype.columns_map[id][r.row] = value
 			local on_change = idr.on_change
 			local hook = if set then on_change else on_add
 			if hook then

@@ -331,6 +331,37 @@ TEST("bulk", function()
 		CHECK(world:has(e, c1, c2, c3))
 		CHECK(count == 3)
 	end
+
+	do CASE "Should bulk add with hooks moving archetypes without previous"
+		local world = jecs.world()
+		local c1, c2, c3 = world:component(), world:component(), world:component()
+		
+		world:added(c1, function(e)
+			world:set(e, c3, "hello")
+		end)
+		
+		local e = world:entity()
+		jecs.bulk_insert(world, e, {c1,c2}, {true, 123})
+		CHECK(world:get(e, c1) == true)
+		CHECK(world:get(e, c2) == 123)
+		CHECK(world:get(e, c3) == "hello")
+	end
+
+	do CASE "Should bulk add with hooks moving archetypes with previous"
+		local world = jecs.world()
+		local c1, c2, c3 = world:component(), world:component(), world:component()
+		
+		world:added(c1, function(e)
+			world:set(e, c3, "hello")
+		end)
+		
+		local e = world:entity()
+		world:add(e, world:entity())
+		jecs.bulk_insert(world, e, {c1,c2}, {true, 123})
+		CHECK(world:get(e, c1) == true)
+		CHECK(world:get(e, c2) == 123)
+		CHECK(world:get(e, c3) == "hello")
+	end
 end)
 
 TEST("repro", function()
