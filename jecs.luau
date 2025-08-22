@@ -926,9 +926,9 @@ local function archetype_create(world: world, id_types: { i53 }, ty, prev: i53?)
 		end
 	end
 
-	world.archetype_index[archetype.type] = archetype
+	world.archetype_index[ty] = archetype
 	world.archetypes[archetype_id] = archetype
-	world.archetype_edges[archetype.id] = {} :: Map<i53, archetype>
+	world.archetype_edges[archetype_id] = {} :: Map<i53, archetype>
 
 	for id in columns_map do
 		local observer_list = find_observers(world, EcsOnArchetypeCreate, id)
@@ -1175,11 +1175,85 @@ end
 
 local function NOOP() end
 
+local function query_archetypes(query: query)
+	local compatible_archetypes = query.compatible_archetypes
+	if not compatible_archetypes then
+		compatible_archetypes = {}
+		query.compatible_archetypes = compatible_archetypes
+
+		local archetypes = query.world.archetypes
+
+		local component_index = query.world.component_index
+
+		local idr: componentrecord?
+		local with = query.filter_with
+		for _, id in with do
+			local map = component_index[id]
+			if not map then
+				continue
+			end
+
+			if idr == nil or (map.size :: number) < (idr.size :: number) then
+				idr = map
+			end
+		end
+
+		if idr == nil then
+			return compatible_archetypes
+		end
+
+		local without = query.filter_without
+
+		for archetype_id in idr.records do
+			local archetype = archetypes[archetype_id]
+			local columns_map = archetype.columns_map
+			local skip = false
+			for _, component in with do
+				if not columns_map[component] then
+					skip = true
+					break
+				end
+			end
+			if skip then
+				continue
+			end
+			if without then
+				for _, component in without do
+					if columns_map[component] then
+						skip = true
+						break
+					end
+				end
+			end
+
+			if skip then
+				continue
+			end
+
+			table.insert(compatible_archetypes, archetype)
+		end
+	end
+	return compatible_archetypes
+end
+
+local function query_with(query: query, ...: i53)
+	local ids = query.ids
+	local with = { ... }
+	table.move(ids, 1, #ids, #with + 1, with)
+	query.filter_with = with
+	return query
+end
+
+local function query_without(query: query, ...: i53)
+	local without = { ... }
+	query.filter_without = without
+	return query
+end
 
 local function query_iter_init(query: QueryInner): () -> (number, ...any)
 	local world_query_iter_next
 
-	local compatible_archetypes = query.compatible_archetypes
+	local compatible_archetypes = query_archetypes(query::any) :: { Archetype }
 	local lastArchetype = 1
 	local archetype = compatible_archetypes[1]
 	if not archetype then
@@ -1252,9 +1326,6 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1277,9 +1348,6 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1303,9 +1371,6 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1330,9 +1395,6 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1358,9 +1420,6 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1387,9 +1446,6 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1417,9 +1473,6 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1448,9 +1501,6 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1482,9 +1532,6 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1520,84 +1567,8 @@ local function query_iter(query): () -> (number, ...any)
 	return query_next
 end
 
-local function query_without(query: QueryInner, ...: Id)
-	local without = { ... }
-	query.filter_without = without :: any
-	local compatible_archetypes = query.compatible_archetypes
-	for i = #compatible_archetypes, 1, -1 do
-		local archetype = compatible_archetypes[i]
-		local columns_map = archetype.columns_map
-		local matches = true
-
-		for _, id in without do
-			if columns_map[id] then
-				matches = false
-				break
-			end
-		end
-
-		if matches then
-			continue
-		end
-
-		local last = #compatible_archetypes
-		if last ~= i then
-			compatible_archetypes[i] = compatible_archetypes[last]
-		end
-		compatible_archetypes[last] = nil :: any
-	end
-
-	return query :: any
-end
-
-local function query_with(query: QueryInner, ...: Id)
-	local compatible_archetypes = query.compatible_archetypes
-	local with = { ... } :: any
-	query.filter_with = with
-
-	for i = #compatible_archetypes, 1, -1 do
-		local archetype = compatible_archetypes[i]
-		local columns_map = archetype.columns_map
-		local matches = true
-
-		for _, id in with do
-			if not columns_map[id] then
-				matches = false
-				break
-			end
-		end
-
-		if matches then
-			continue
-		end
-
-		local last = #compatible_archetypes
-		if last ~= i then
-			compatible_archetypes[i] = compatible_archetypes[last]
-		end
-		compatible_archetypes[last] = nil :: any
-	end
-
-	return query :: any
-end
-
--- Meant for directly iterating over archetypes to minimize
--- function call overhead. Should not be used unless iterating over
--- hundreds of thousands of entities in bulk.
-local function query_archetypes(query)
-	return query.compatible_archetypes
-end
-
 local function query_cached(query: QueryInner)
-	local with = query.filter_with
 	local ids = query.ids
-	if with then
-		table.move(ids, 1, #ids, #with + 1, with)
-	else
-		query.filter_with = ids
-	end
-
-	local compatible_archetypes = query.compatible_archetypes
 	local lastArchetype = 1
 
 	local A, B, C, D, E, F, G, H, I = unpack(ids :: { Id })
@@ -1609,7 +1580,8 @@ local function query_cached(query: QueryInner)
 	local i: number
 	local archetype: Archetype
 	local columns_map: { [Id]: Column }
-	local archetypes = query.compatible_archetypes
+	local archetypes = query_archetypes(query :: any)
+	local compatible_archetypes = archetypes :: { Archetype }
 
 	local world = query.world
 	-- Only need one observer for EcsArchetypeCreate and EcsArchetypeDelete respectively
@@ -1727,9 +1699,6 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1752,9 +1721,6 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1778,9 +1744,6 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1805,9 +1768,6 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1892,10 +1852,6 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
-				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
 				b = columns_map[B]
@@ -1923,9 +1879,6 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1957,9 +1910,6 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
-				if i == 0 then
-					continue
-				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -2001,65 +1951,16 @@ Query.archetypes = query_archetypes
 Query.cached = query_cached
 
 local function world_query(world: World, ...)
-	local compatible_archetypes = {}
-	local length = 0
-
 	local ids = { ... }
-
-	local archetypes = world.archetypes
-
-	local idr: ComponentRecord?
-	local component_index = world.component_index
 
 	local q = setmetatable({
 		ids = ids,
-		compatible_archetypes = compatible_archetypes,
+		filter_with = ids,
 		world = world,
 	}, Query)
 
-	for _, id in ids do
-		local map = component_index[id]
-		if not map then
-			return q
-		end
-
-		if idr == nil or (map.size :: number) < (idr.size :: number) then
-			idr = map
-		end
-	end
-
-	if idr == nil then
-		return q
-	end
-
-	for archetype_id in idr.records do
-		local compatibleArchetype = archetypes[archetype_id]
-		if #compatibleArchetype.entities == 0 then
-			continue
-		end
-		local columns_map = compatibleArchetype.columns_map
-
-		local skip = false
-
-		for i, id in ids do
-			local column = columns_map[id]
-			if not column then
-				skip = true
-				break
-			end
-		end
-
-		if skip then
-			continue
-		end
-
-		length += 1
-		compatible_archetypes[length] = compatibleArchetype
-	end
-
 	return q
 end
-
 local function world_each(world: world, id: i53): () -> i53
 	local idr = world.component_index[id]
 	if not idr then
