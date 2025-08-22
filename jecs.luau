@@ -74,7 +74,7 @@ type query = {
 	filter_with: { i53 },
 	filter_without: { i53 },
 	next: () -> (i53, ...any),
-	world: World,
+	world: world,
 }
 
 export type observer = {
@@ -1181,9 +1181,10 @@ local function query_archetypes(query: query)
 		compatible_archetypes = {}
 		query.compatible_archetypes = compatible_archetypes
 
-		local archetypes = query.world.archetypes
+		local world = query.world
+		local archetypes = world.archetypes
 
-		local component_index = query.world.component_index
+		local component_index = world.component_index
 
 		local idr: componentrecord?
 		local with = query.filter_with

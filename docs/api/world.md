@@ -603,11 +603,25 @@ function World:exists(
 
 ## cleanup
 
-Cleans up deleted entities and their associated data. This is automatically called by jecs, but can be called manually if needed.
+Cleans up empty archetypes.
 
 ```luau
 function World:cleanup(): void
 ```
+
+:::info
+It is recommended to profile the optimal interval you should cleanup because it varies completely from game to game.
+
+Here are a couple of reasons from Sander Mertens:
+	- some applications are memory constrained, so any wasted memory on empty
+	  archetypes has to get cleaned up
+	- many archetypes can get created during game startup but aren't used later
+	  on, so it would be wasteful to keep them around
+	- empty archetypes can slow queries down, especially if there are many more
+	  empty ones than non-empty ones
+	- if the total number of component permutations (/relationships) is too
+	  high, you have no choice but to periodically cleanup empty archetypes
+:::
 
 Example:
 
