@@ -166,7 +166,7 @@ export type World = {
 
 	observable: Map<Id, Map<Id, { Observer }>>,
 
-	added: <T>(World, Entity<T>, <e>(e: Entity<e>, id: Id<T>, value: T?) -> ()) -> () -> (),
+	added: <T>(World, Entity<T>, <e>(e: Entity<e>, id: Id<T>, value: T) -> ()) -> () -> (),
 	removed: <T>(World, Entity<T>, (e: Entity, id: Id<T>) -> ()) -> () -> (),
 	changed:  <T>(World, Entity<T>, <e>(e: Entity<e>, id: Id<T>, value: T) -> ()) -> () -> (),
 
