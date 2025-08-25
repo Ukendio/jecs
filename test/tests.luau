@@ -335,11 +335,11 @@ TEST("bulk", function()
 	do CASE "Should bulk add with hooks moving archetypes without previous"
 		local world = jecs.world()
 		local c1, c2, c3 = world:component(), world:component(), world:component()
-		
+
 		world:added(c1, function(e)
 			world:set(e, c3, "hello")
 		end)
-		
+
 		local e = world:entity()
 		jecs.bulk_insert(world, e, {c1,c2}, {true, 123})
 		CHECK(world:get(e, c1) == true)
@@ -350,11 +350,11 @@ TEST("bulk", function()
 	do CASE "Should bulk add with hooks moving archetypes with previous"
 		local world = jecs.world()
 		local c1, c2, c3 = world:component(), world:component(), world:component()
-		
+
 		world:added(c1, function(e)
 			world:set(e, c3, "hello")
 		end)
-		
+
 		local e = world:entity()
 		world:add(e, world:entity())
 		jecs.bulk_insert(world, e, {c1,c2}, {true, 123})
@@ -550,9 +550,9 @@ TEST("world:add()", function()
 end)
 
 TEST("world:children()", function()
-	local world = jecs.world()
 	local C = jecs.component()
 	local T = jecs.tag()
+	local world = jecs.world()
 
 	local e1 = world:entity()
 	world:set(e1, C, true)
@@ -2510,7 +2510,7 @@ TEST("#repro2", function()
 	local entity = world:entity()
 	world:set(entity, pair(Lifetime, Particle), 1)
 	world:set(entity, pair(Lifetime, Beam), 2)
-	world:set(entity, pair(4 :: any, 5 :: any), 6) -- noise
+	world:set(entity, pair(world:component(), world:component()), 6) -- noise
 
 	CHECK(world:get(entity, pair(Lifetime, Particle)) == 1)
 	CHECK(world:get(entity, pair(Lifetime, Beam)) == 2)

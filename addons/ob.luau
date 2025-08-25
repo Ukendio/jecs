@@ -160,6 +160,10 @@ local function monitors_new<T...>(
 	end
 
 	local function removed(entity: jecs.Entity, component: jecs.Id)
+		local r = jecs.record(world, entity)
+		if not archetypes[r.archetype.id] then
+			return
+		end
 		local EcsOnRemove = jecs.OnRemove :: jecs.Id
 		if callback ~= nil then
 			callback(entity, EcsOnRemove)

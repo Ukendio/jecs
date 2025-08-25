@@ -1078,18 +1078,6 @@ local function archetype_traverse_add(
 	return to
 end
 
-local function world_component(world: world): i53
-	local id = (world.max_component_id :: number) + 1
-	if id > HI_COMPONENT_ID then
-		-- IDs are partitioned into ranges because component IDs are not nominal,
-		-- so it needs to error when IDs intersect into the entity range.
-		error("Too many components, consider using world:entity() instead to create components.")
-	end
-	world.max_component_id = id
-
-	return id
-end
-
 local function archetype_fast_delete_last(columns: { Column }, column_count: number)
 	for i, column in columns do
 		if column ~= NULL_ARRAY then
@@ -1327,6 +1315,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1349,6 +1340,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1372,6 +1366,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1396,6 +1393,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1421,6 +1421,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1447,6 +1450,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1474,6 +1480,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1502,6 +1511,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1533,6 +1545,9 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1700,6 +1715,9 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1722,6 +1740,9 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1745,6 +1766,9 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1769,6 +1793,9 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1853,6 +1880,10 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
+				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
 				b = columns_map[B]
@@ -1880,6 +1911,9 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -1911,6 +1945,9 @@ local function query_cached(query: QueryInner)
 
 				entities = archetype.entities
 				i = #entities
+				if i == 0 then
+					continue
+				end
 				entity = entities[i]
 				columns_map = archetype.columns_map
 				a = columns_map[A]
@@ -2149,6 +2186,10 @@ local function world_new()
 		changed = {} :: Signal,
 		removed = {} :: Signal
 	}
+
+	-- We need to cache the moment the world is registered, that way
+	-- `world:component` will not pollute the global registration of components.
+	local max_component_id = ecs_max_component_id
 
 	local world = {
 		archetype_edges = archetype_edges,
@@ -3124,6 +3165,19 @@ local function world_new()
 		world.archetype_index = new_archetype_map
 	end
 
+	local function world_component(world: world): i53
+		max_component_id += 1
+		if max_component_id > HI_COMPONENT_ID then
+			-- IDs are partitioned into ranges because component IDs are not nominal,
+			-- so it needs to error when IDs intersect into the entity range.
+			error("Too many components, consider using world:entity() instead to create components.")
+		end
+		world.max_component_id = max_component_id
+		inner_world_add(world, max_component_id, EcsComponent)
+
+		return max_component_id
+	end
+
 	world.entity = inner_world_entity
 	world.query = world_query :: any
 	world.remove = inner_world_remove
@@ -3143,14 +3197,12 @@ local function world_new()
 	world.children = world_children
 	world.range = world_range
 
-	for i = 1, HI_COMPONENT_ID do
-		local e = entity_index_new_id(entity_index)
-		inner_world_add(world, e, EcsComponent)
+	for i = 1, EcsRest do
+		entity_index_new_id(entity_index)
 	end
 
-	for i = HI_COMPONENT_ID + 1, EcsRest do
-		-- Initialize built-in components
-		entity_index_new_id(entity_index)
+	for i = 1, max_component_id do
+		inner_world_add(world, i, EcsComponent)
 	end
 
 	inner_world_add(world, EcsName, EcsComponent)
