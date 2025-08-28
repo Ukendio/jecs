@@ -137,7 +137,7 @@ type world = {
 	add: (self: world, id: i53, component: i53) -> (),
 	set: (self: world, id: i53, component: i53, data: any) -> (),
 	cleanup: (self: world) -> (),
-	clear: (self: world, id: i53) -> (),
+	clear: (self: world, entity: i53) -> (),
 	remove: (self: world, id: i53, component: i53) -> (),
 	get: (world, ...i53) -> (),
 	has: (world, ...i53) -> boolean,
@@ -190,8 +190,9 @@ export type World = {
 	set: <T, a>(self: World, id: Entity<T>, component: Id<a>, data: a) -> (),
 
 	cleanup: (self: World) -> (),
-	-- Clears an entity from the world
-	clear: <a>(self: World, id: Id<a>) -> (),
+
+	-- Removes all components from the entity
+	clear: (self: World, entity: Entity) -> (),
 	--- Removes a component from the given entity
 	remove: <T, a>(self: World, id: Entity<T>, component: Id<a>) -> (),
 	--- Retrieves the value of up to 4 components. These values may be nil.
@@ -484,7 +485,7 @@ end
 
 local ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY = "Entity is outside range"
 
-local function entity_index_new_id(entity_index: entityindex): i53
+local function ENTITY_INDEX_NEW_ID(entity_index: entityindex): i53
 	local dense_array = entity_index.dense_array
 	local alive_count = entity_index.alive_count
 	local sparse_array = entity_index.sparse_array
@@ -669,7 +670,7 @@ local function fetch(id: i53, columns_map: { [i53]: Column }, row: number): any
 	return column[row]
 end
 
-local function world_get(world: world, entity: i53,
+local function WORLD_GET(world: world, entity: i53,
 	a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
 	local record = entity_index_try_get(world.entity_index, entity)
 	if not record then
@@ -699,7 +700,7 @@ local function world_get(world: world, entity: i53,
 	end
 end
 
-local function world_has_one_inline(world: world, entity: i53, id: i53): boolean
+local function WORLD_HAS(world: world, entity: i53, id: i53): boolean
 	local record = entity_index_try_get(world.entity_index, entity)
 	if not record then
 		return false
@@ -713,7 +714,7 @@ local function world_has_one_inline(world: world, entity: i53, id: i53): boolean
 	return archetype.columns_map[id] ~= nil
 end
 
-local function world_target(world: world, entity: i53, relation: i53, index: number?): i53?
+local function WORLD_TARGET(world: world, entity: i53, relation: i53, index: number?): i53?
 	local entity_index = world.entity_index
 	local record = entity_index_try_get(entity_index, entity)
 	if not record then
@@ -771,15 +772,12 @@ local function id_record_get(world: World, id: Entity): ComponentRecord?
 	return nil
 end
 
-local function id_record_ensure(world: world, id: i53): componentrecord
-	local component_index = world.component_index
+local function id_record_create(
+	world: world,
+	component_index: Map<i53, componentrecord>,
+	id: i53
+): componentrecord
 	local entity_index = world.entity_index
-	local idr: componentrecord? = component_index[id]
-
-	if idr then
-		return idr
-	end
-
 	local flags = ECS_ID_MASK
 	local relation = id
 	local target = 0
@@ -796,31 +794,31 @@ local function id_record_ensure(world: world, id: i53): componentrecord
 		ecs_assert(target and entity_index_is_alive(
 			entity_index, target), ECS_INTERNAL_ERROR)
 
-		local cleanup_policy_target = world_target(world, relation, EcsOnDeleteTarget, 0)
+		local cleanup_policy_target = WORLD_TARGET(world, relation, EcsOnDeleteTarget, 0)
 
 		if cleanup_policy_target == EcsDelete then
 			has_delete = true
 		end
 
-		if world_has_one_inline(world, relation, EcsExclusive) then
+		if WORLD_HAS(world, relation, EcsExclusive) then
 			is_exclusive = true
 		end
 	end
 
-	local cleanup_policy = world_target(world, relation, EcsOnDelete, 0)
+	local cleanup_policy = WORLD_TARGET(world, relation, EcsOnDelete, 0)
 
 	if cleanup_policy == EcsDelete then
 		has_delete = true
 	end
 
-	local on_add, on_change, on_remove = world_get(world,
+	local on_add, on_change, on_remove = WORLD_GET(world,
 		relation, EcsOnAdd, EcsOnChange, EcsOnRemove)
 
-	local is_tag = not world_has_one_inline(world,
+	local is_tag = not WORLD_HAS(world,
 		relation, EcsComponent)
 
 	if is_tag and is_pair then
-		is_tag = not world_has_one_inline(world, target, EcsComponent)
+		is_tag = not WORLD_HAS(world, target, EcsComponent)
 	end
 
 	flags = bit32.bor(
@@ -830,7 +828,7 @@ local function id_record_ensure(world: world, id: i53): componentrecord
 		if is_exclusive then ECS_ID_IS_EXCLUSIVE else 0
 	)
 
-	idr = {
+	local idr = {
 		size = 0,
 		records = {},
 		counts = {},
@@ -844,6 +842,17 @@ local function id_record_ensure(world: world, id: i53): componentrecord
 	component_index[id] = idr
 
 	return idr
+end
+
+local function id_record_ensure(world: world, id: i53): componentrecord
+	local component_index = world.component_index
+	local idr: componentrecord? = component_index[id]
+
+	if idr then
+		return idr
+	end
+
+	return id_record_create(world, component_index, id)
 end
 
 local function archetype_append_to_records(
@@ -2208,11 +2217,34 @@ local function world_new()
 	} :: world
 
 
+	local function entity_index_new_id(entity_index: entityindex): i53
+		local alive_count = entity_index.alive_count
+		local max_id = entity_index.max_id
+
+		if alive_count < max_id then
+			alive_count += 1
+			entity_index.alive_count = alive_count
+			local id = eindex_dense_array[alive_count]
+			return id
+		end
+
+		local id = max_id + 1
+		local range_end = entity_index.range_end
+		ecs_assert(range_end == nil or id < range_end, ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
+
+		entity_index.max_id = id
+		alive_count += 1
+		entity_index.alive_count = alive_count
+		eindex_dense_array[alive_count] = id
+		eindex_sparse_array[id] = { dense = alive_count } :: record
+
+		return id
+	end
 
 	local ROOT_ARCHETYPE = archetype_create(world, {}, "")
 	world.ROOT_ARCHETYPE = ROOT_ARCHETYPE
 
-	local function inner_entity_index_try_get_any(entity: i53): record?
+	local function entity_index_try_get_any(entity: i53): record?
 		local r = eindex_sparse_array[ECS_ENTITY_T_LO(entity)]
 		return r
 	end
@@ -2287,8 +2319,8 @@ local function world_new()
 		record.row = dst_row
 	end
 
-	-- local function inner_entity_index_try_get(entity: number): Record?
-	-- 	local r = inner_entity_index_try_get_any(entity)
+	-- local function entity_index_try_get(entity: number): Record?
+	-- 	local r = entity_index_try_get_any(entity)
 	-- 	if r then
 	-- 		local r_dense = r.dense
 	-- 		if r_dense > entity_index.alive_count then
@@ -2301,7 +2333,7 @@ local function world_new()
 	-- 	return r
 	-- end
 
-	local function inner_entity_index_try_get_unsafe(entity: i53): record?
+	local function entity_index_try_get_unsafe(entity: i53): record?
 		local r = eindex_sparse_array[ECS_ENTITY_T_LO(entity)]
 		if r then
 			local r_dense = r.dense
@@ -2331,8 +2363,8 @@ local function world_new()
 		return to
 	end
 
-	local function inner_world_set(world: world, entity: i53, id: i53, data): ()
-		local record = inner_entity_index_try_get_unsafe(entity)
+	local function world_set(world: world, entity: i53, id: i53, data): ()
+		local record = entity_index_try_get_unsafe(entity)
 		if not record then
 			return
 		end
@@ -2433,13 +2465,13 @@ local function world_new()
 		end
 	end
 
-	local function inner_world_add(
+	local function world_add(
 		world: world,
 		entity: i53,
 		id: i53
 	): ()
 		local entity_index = world.entity_index
-		local record = inner_entity_index_try_get_unsafe(entity :: number)
+		local record = entity_index_try_get_unsafe(entity :: number)
 		if not record then
 			return
 		end
@@ -2531,9 +2563,9 @@ local function world_new()
 		end
 	end
 
-	local function inner_world_get(world: world, entity: i53,
+	local function world_get(world: world, entity: i53,
 		a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
-		local record = inner_entity_index_try_get_unsafe(entity)
+		local record = entity_index_try_get_unsafe(entity)
 		if not record then
 			return nil
 		end
@@ -2574,7 +2606,7 @@ local function world_new()
 					listener(entity, id, value)
 				end
 			end
-			local existing_hook = inner_world_get(world, component, EcsOnAdd) :: Listener<T>
+			local existing_hook = world_get(world, component, EcsOnAdd) :: Listener<T>
 			if existing_hook then
 				table.insert(listeners, existing_hook)
 			end
@@ -2592,7 +2624,7 @@ local function world_new()
 					idr.on_add = on_add
 				end
 			end
-			inner_world_set(world, component, EcsOnAdd, on_add)
+			world_set(world, component, EcsOnAdd, on_add)
 		end
 		table.insert(listeners, fn)
 		return function()
@@ -2617,7 +2649,7 @@ local function world_new()
 					listener(entity, id, value)
 				end
 			end
-			local existing_hook = inner_world_get(world, component, EcsOnChange) :: Listener<T>
+			local existing_hook = world_get(world, component, EcsOnChange) :: Listener<T>
 			if existing_hook then
 				table.insert(listeners, existing_hook)
 			end
@@ -2637,7 +2669,7 @@ local function world_new()
 				end
 			end
 
-			inner_world_set(world, component, EcsOnChange, on_change)
+			world_set(world, component, EcsOnChange, on_change)
 		end
 		table.insert(listeners, fn)
 		return function()
@@ -2659,7 +2691,7 @@ local function world_new()
 				end
 			end
 
-			local existing_hook = inner_world_get(world, component, EcsOnRemove) :: Listener<T>
+			local existing_hook = world_get(world, component, EcsOnRemove) :: Listener<T>
 			if existing_hook then
 				table.insert(listeners, existing_hook)
 			end
@@ -2679,7 +2711,7 @@ local function world_new()
 				end
 			end
 
-			inner_world_set(world, component, EcsOnRemove, on_remove)
+			world_set(world, component, EcsOnRemove, on_remove)
 		end
 
 		table.insert(listeners, fn)
@@ -2692,10 +2724,10 @@ local function world_new()
 		end
 	end
 
-	local function inner_world_has(world: World, entity: i53,
+	local function world_has(world: World, entity: i53,
 		a: i53, b: i53?, c: i53?, d: i53?, e: i53?): boolean
 
-		local record = inner_entity_index_try_get_unsafe(entity)
+		local record = entity_index_try_get_unsafe(entity)
 		if not record then
 			return false
 		end
@@ -2714,8 +2746,8 @@ local function world_new()
 			(e == nil or error("args exceeded"))
 	end
 
-	local function inner_world_target(world: world, entity: i53, relation: i53, index: number?): i53?
-		local record = inner_entity_index_try_get_unsafe(entity)
+	local function world_target(world: world, entity: i53, relation: i53, index: number?): i53?
+		local record = entity_index_try_get_unsafe(entity)
 		if not record then
 			return nil
 		end
@@ -2754,11 +2786,11 @@ local function world_new()
 		    ECS_PAIR_SECOND(nth))
 	end
 
-	local function inner_world_parent(world: world, entity: i53): i53?
-		return inner_world_target(world, entity, EcsChildOf, 0)
+	local function world_parent(world: world, entity: i53): i53?
+		return world_target(world, entity, EcsChildOf, 0)
 	end
 
-	local function inner_world_entity(world: world, entity: i53?): i53
+	local function world_entity(world: world, entity: i53?): i53
 		if entity then
 			local index = ECS_ID(entity)
 			local alive_count = entity_index.alive_count
@@ -2770,7 +2802,7 @@ local function world_new()
 					r.dense = index
 					dense = index
 					local e_swap = eindex_dense_array[dense]
-					local r_swap = inner_entity_index_try_get_any(e_swap) :: record
+					local r_swap = entity_index_try_get_any(e_swap) :: record
 
 					r_swap.dense = dense
 					alive_count += 1
@@ -2786,7 +2818,7 @@ local function world_new()
 				if any ~= entity then
 					if alive_count <= dense then
 						local e_swap = eindex_dense_array[dense]
-						local r_swap = inner_entity_index_try_get_any(e_swap) :: record
+						local r_swap = entity_index_try_get_any(e_swap) :: record
 
 						r_swap.dense = dense
 						alive_count += 1
@@ -2828,8 +2860,8 @@ local function world_new()
 		return entity_index_new_id(entity_index)
 	end
 
-	local function inner_world_remove(world: world, entity: i53, id: i53)
-		local record = inner_entity_index_try_get_unsafe(entity)
+	local function world_remove(world: world, entity: i53, id: i53)
+		local record = entity_index_try_get_unsafe(entity)
 		if not record then
 			return
 		end
@@ -2853,95 +2885,8 @@ local function world_new()
 		end
 	end
 
-	local function inner_world_clear(world: world, entity: i53)
-		local tgt = ECS_PAIR(EcsWildcard, entity)
-		local idr_t = component_index[tgt]
-		local idr = component_index[entity]
-		local rel = ECS_PAIR(entity, EcsWildcard)
-		local idr_r = component_index[rel]
-
-		if idr then
-			local count = 0
-			local queue = {}
-			for archetype_id in idr.records do
-				local idr_archetype = archetypes[archetype_id]
-				local entities = idr_archetype.entities
-				local n = #entities
-				table.move(entities, 1, n, count + 1, queue)
-				count += n
-			end
-			for _, e in queue do
-				inner_world_remove(world, e, entity)
-			end
-		end
-
-		if idr_t then
-			local archetype_ids = idr_t.records
-			for archetype_id in archetype_ids do
-				local idr_t_archetype = archetypes[archetype_id]
-				local idr_t_types = idr_t_archetype.types
-				local entities = idr_t_archetype.entities
-
-				local node = idr_t_archetype
-
-				for _, id in idr_t_types do
-					if not ECS_IS_PAIR(id) then
-						continue
-					end
-					local object = entity_index_get_alive(
-					    entity_index, ECS_PAIR_SECOND(id))
-					if object ~= entity then
-						continue
-					end
-					node = archetype_traverse_remove(world, id, node)
-					local on_remove = component_index[id].on_remove
-					if on_remove then
-						for _, entity in entities do
-							on_remove(entity, id)
-						end
-					end
-				end
-
-				for i = #entities, 1, -1 do
-					local e = entities[i]
-					local r = inner_entity_index_try_get_unsafe(e) :: record
-					inner_entity_move(entity_index, e, r, node)
-				end
-			end
-		end
-
-		if idr_r then
-			local archetype_ids = idr_r.records
-			local records = idr_r.records
-			local counts = idr_r.counts
-			for archetype_id in archetype_ids do
-				local idr_r_archetype = archetypes[archetype_id]
-				local node = idr_r_archetype
-				local entities = idr_r_archetype.entities
-				local tr = records[archetype_id]
-				local tr_count = counts[archetype_id]
-				local types = idr_r_archetype.types
-				for i = tr, tr + tr_count - 1 do
-					local id = types[i]
-					node = archetype_traverse_remove(world, id, idr_r_archetype)
-					local on_remove = component_index[id].on_remove
-					if on_remove then
-						for _, entity in entities do
-							on_remove(entity, id)
-						end
-					end
-				end
-				for i = #entities, 1, -1 do
-					local e = entities[i]
-					local r = inner_entity_index_try_get_unsafe(e) :: record
-					inner_entity_move(entity_index, e, r, node)
-				end
-			end
-		end
-	end
-
-	local function inner_world_delete(world: world, entity: i53)
-		local record = inner_entity_index_try_get_unsafe(entity)
+	local function world_delete(world: world, entity: i53)
+		local record = entity_index_try_get_unsafe(entity)
 		if not record then
 			return
 		end
@@ -2977,7 +2922,7 @@ local function world_new()
 					local entities = idr_archetype.entities
 					local n = #entities
 					for i = n, 1, -1 do
-						inner_world_delete(world, entities[i])
+						world_delete(world, entities[i])
 					end
 
 					archetype_destroy(world, idr_archetype)
@@ -3032,7 +2977,7 @@ local function world_new()
 						local entities = idr_t_archetype.entities
 						for i = #entities, 1, -1 do
 							local child = entities[i]
-							inner_world_delete(world, child)
+							world_delete(world, child)
 						end
 					end
 				else
@@ -3082,7 +3027,7 @@ local function world_new()
 					local entities = idr_r_archetype.entities
 					local n = #entities
 					for i = n, 1, -1 do
-						inner_world_delete(world, entities[i])
+						world_delete(world, entities[i])
 					end
 					archetype_destroy(world, idr_r_archetype)
 				end
@@ -3109,7 +3054,7 @@ local function world_new()
 
 					for i = #entities, 1, -1 do
 						local e = entities[i]
-						local r = inner_entity_index_try_get_unsafe(e) :: record
+						local r = entity_index_try_get_unsafe(e) :: record
 						inner_entity_move(entity_index, e, r, node)
 					end
 				end
@@ -3125,7 +3070,7 @@ local function world_new()
 		entity_index.alive_count = i_swap - 1
 
 		local e_swap = eindex_dense_array[i_swap]
-		local r_swap = inner_entity_index_try_get_any(e_swap) :: record
+		local r_swap = entity_index_try_get_any(e_swap) :: record
 		r_swap.dense = dense
 		record.archetype = nil :: any
 		record.row = nil :: any
@@ -3135,15 +3080,34 @@ local function world_new()
 		eindex_dense_array[i_swap] = ECS_GENERATION_INC(entity)
 	end
 
-	local function inner_world_exists(world: world, entity: i53): boolean
-		return inner_entity_index_try_get_any(entity) ~= nil
+	local function world_clear(world: world, entity: i53)
+		local record = entity_index_try_get_unsafe(entity)
+		if not record then
+			return
+		end
+
+		local archetype = record.archetype
+		for _, id in archetype.types do
+			local idr = component_index[id]
+			local on_remove = idr.on_remove
+			if on_remove then
+				on_remove(entity, id)
+			end
+		end
+		archetype_delete(world, record.archetype, record.row)
+		record.archetype = nil :: any
+		record.row = nil :: any
 	end
 
-	local function inner_world_contains(world: world, entity: i53): boolean
+	local function world_exists(world: world, entity: i53): boolean
+		return entity_index_try_get_any(entity) ~= nil
+	end
+
+	local function world_contains(world: world, entity: i53): boolean
 		return entity_index_is_alive(entity_index, entity)
 	end
 
-	local function inner_world_cleanup(world: world)
+	local function world_cleanup(world: world)
 		for _, archetype in archetypes do
 			if #archetype.entities == 0 then
 				archetype_destroy(world, archetype)
@@ -3173,26 +3137,27 @@ local function world_new()
 			error("Too many components, consider using world:entity() instead to create components.")
 		end
 		world.max_component_id = max_component_id
-		inner_world_add(world, max_component_id, EcsComponent)
+		world_add(world, max_component_id, EcsComponent)
 
 		return max_component_id
 	end
 
-	world.entity = inner_world_entity
+	world.entity = world_entity
 	world.query = world_query :: any
-	world.remove = inner_world_remove
-	world.clear = inner_world_clear
-	world.delete = inner_world_delete
+	world.remove = world_remove
+	world.clear = world_clear
+	-- world.purge = world_purge
+	world.delete = world_delete
 	world.component = world_component
-	world.add = inner_world_add
-	world.set = inner_world_set
-	world.get = inner_world_get :: any
-	world.has = inner_world_has :: any
-	world.target = inner_world_target
-	world.parent = inner_world_parent
-	world.contains = inner_world_contains
-	world.exists = inner_world_exists
-	world.cleanup = inner_world_cleanup
+	world.add = world_add
+	world.set = world_set
+	world.get = world_get :: any
+	world.has = world_has :: any
+	world.target = world_target
+	world.parent = world_parent
+	world.contains = world_contains
+	world.exists = world_exists
+	world.cleanup = world_cleanup
 	world.each = world_each
 	world.children = world_children
 	world.range = world_range
@@ -3202,36 +3167,36 @@ local function world_new()
 	end
 
 	for i = 1, max_component_id do
-		inner_world_add(world, i, EcsComponent)
+		world_add(world, i, EcsComponent)
 	end
 
-	inner_world_add(world, EcsName, EcsComponent)
-	inner_world_add(world, EcsOnChange, EcsComponent)
-	inner_world_add(world, EcsOnAdd, EcsComponent)
-	inner_world_add(world, EcsOnRemove, EcsComponent)
-	inner_world_add(world, EcsWildcard, EcsComponent)
-	inner_world_add(world, EcsRest, EcsComponent)
+	world_add(world, EcsName, EcsComponent)
+	world_add(world, EcsOnChange, EcsComponent)
+	world_add(world, EcsOnAdd, EcsComponent)
+	world_add(world, EcsOnRemove, EcsComponent)
+	world_add(world, EcsWildcard, EcsComponent)
+	world_add(world, EcsRest, EcsComponent)
 
-	inner_world_set(world, EcsOnAdd, EcsName, "jecs.OnAdd")
-	inner_world_set(world, EcsOnRemove, EcsName, "jecs.OnRemove")
-	inner_world_set(world, EcsOnChange, EcsName, "jecs.OnChange")
-	inner_world_set(world, EcsWildcard, EcsName, "jecs.Wildcard")
-	inner_world_set(world, EcsChildOf, EcsName, "jecs.ChildOf")
-	inner_world_set(world, EcsComponent, EcsName, "jecs.Component")
+	world_set(world, EcsOnAdd, EcsName, "jecs.OnAdd")
+	world_set(world, EcsOnRemove, EcsName, "jecs.OnRemove")
+	world_set(world, EcsOnChange, EcsName, "jecs.OnChange")
+	world_set(world, EcsWildcard, EcsName, "jecs.Wildcard")
+	world_set(world, EcsChildOf, EcsName, "jecs.ChildOf")
+	world_set(world, EcsComponent, EcsName, "jecs.Component")
 
-	inner_world_set(world, EcsOnDelete, EcsName, "jecs.OnDelete")
-	inner_world_set(world, EcsOnDeleteTarget, EcsName, "jecs.OnDeleteTarget")
+	world_set(world, EcsOnDelete, EcsName, "jecs.OnDelete")
+	world_set(world, EcsOnDeleteTarget, EcsName, "jecs.OnDeleteTarget")
 
-	inner_world_set(world, EcsDelete, EcsName, "jecs.Delete")
-	inner_world_set(world, EcsRemove, EcsName, "jecs.Remove")
-	inner_world_set(world, EcsName, EcsName, "jecs.Name")
-	inner_world_set(world, EcsRest, EcsRest, "jecs.Rest")
+	world_set(world, EcsDelete, EcsName, "jecs.Delete")
+	world_set(world, EcsRemove, EcsName, "jecs.Remove")
+	world_set(world, EcsName, EcsName, "jecs.Name")
+	world_set(world, EcsRest, EcsRest, "jecs.Rest")
 
-	inner_world_add(world, EcsChildOf, ECS_PAIR(EcsOnDeleteTarget, EcsDelete))
-	inner_world_add(world, EcsChildOf, EcsExclusive)
+	world_add(world, EcsChildOf, ECS_PAIR(EcsOnDeleteTarget, EcsDelete))
+	world_add(world, EcsChildOf, EcsExclusive)
 
-	inner_world_add(world, EcsOnDelete, EcsExclusive)
-	inner_world_add(world, EcsOnDeleteTarget, EcsExclusive)
+	world_add(world, EcsOnDelete, EcsExclusive)
+	world_add(world, EcsOnDeleteTarget, EcsExclusive)
 
 	for i = EcsRest + 1, ecs_max_tag_id do
 		entity_index_new_id(entity_index)
@@ -3240,9 +3205,9 @@ local function world_new()
 	for i, bundle in ecs_metadata do
 		for ty, value in bundle do
 			if value == NULL then
-				inner_world_add(world, i, ty)
+				world_add(world, i, ty)
 			else
-				inner_world_set(world, i, ty, value)
+				world_set(world, i, ty, value)
 			end
 		end
 	end
@@ -3273,7 +3238,7 @@ local function ecs_is_tag(world: world, entity: i53): boolean
 	if idr then
 		return bit32.btest(idr.flags, ECS_ID_IS_TAG)
 	end
-	return not world_has_one_inline(world, entity, EcsComponent)
+	return not WORLD_HAS(world, entity, EcsComponent)
 end
 
 local function ecs_entity_record(world: world, entity: i53)
@@ -3338,7 +3303,7 @@ return {
 	entity_index_try_get_fast = entity_index_try_get_fast :: (EntityIndex, Entity) -> Record?,
 	entity_index_try_get_any = entity_index_try_get_any :: (EntityIndex, Entity) -> Record,
 	entity_index_is_alive = entity_index_is_alive :: (EntityIndex, Entity) -> boolean,
-	entity_index_new_id = entity_index_new_id :: (EntityIndex) -> Entity,
+	entity_index_new_id = ENTITY_INDEX_NEW_ID :: (EntityIndex) -> Entity,
 
 	Query = Query,
 

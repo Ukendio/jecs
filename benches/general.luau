@@ -199,6 +199,7 @@ do
 			end
 
 			local q = world:query(A, B, C, D)
+			q:archetypes()
 			START()
 			for id in q do
 			end

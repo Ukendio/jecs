@@ -185,6 +185,11 @@ export class World {
 	cleanup(): void;
 
 	/**
+	 * Removes all instances of specified component
+	 */
+	// purge<T>(component: Id<T>): void
+
+	/**
 	 * Clears all components and relationships from the given entity, but
 	 * does not delete the entity from the world.
 	 * @param entity The entity to clear.

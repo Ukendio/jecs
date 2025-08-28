@@ -11,15 +11,22 @@ end
 local jecs = require("@jecs")
 local mirror = require("@mirror")
 
-type i53 = number
-
 do
 	TITLE(testkit.color.white_underline("Jecs query"))
-	local ecs = jecs.world()
+	local ecs = jecs.world() :: jecs.World
 	do
 		TITLE("one component in common")
 
-		local function view_bench(world: jecs.World, A: i53, B: i53, C: i53, D: i53, E: i53, F: i53, G: i53, H: i53)
+		local function view_bench(world: jecs.World,
+			A: jecs.Id,
+			B: jecs.Id,
+			C: jecs.Id,
+			D: jecs.Id,
+			E: jecs.Id,
+			F: jecs.Id,
+			G: jecs.Id,
+			H: jecs.Id
+		)
 			BENCH("1 component", function()
 				for _ in world:query(A) do
 				end
@@ -131,11 +138,21 @@ end
 
 do
 	TITLE(testkit.color.white_underline("Mirror query"))
-	local ecs = mirror.World.new()
+	local ecs = mirror.World.new() :: jecs.World
 	do
 		TITLE("one component in common")
 
-		local function view_bench(world: jecs.World, A: i53, B: i53, C: i53, D: i53, E: i53, F: i53, G: i53, H: i53)
+		local function view_bench(
+			world: mirror.World,
+			A: jecs.Id,
+			B: jecs.Id,
+			C: jecs.Id,
+			D: jecs.Id,
+			E: jecs.Id,
+			F: jecs.Id,
+			G: jecs.Id,
+			H: jecs.Id
+		)
 			BENCH("1 component", function()
 				for _ in world:query(A) do
 				end

@@ -591,100 +591,146 @@ TEST("world:children()", function()
 	jecs.ECS_META_RESET()
 end)
 
-TEST("world:clear()", function()
-	do CASE "should remove its components"
+-- TEST("world:purge()", function()
+-- 	do CASE "should remove all instances of specified component"
+-- 		local world = jecs.world()
+-- 		local A = world:component()
+-- 		local B = world:component()
+
+-- 		local e = world:entity()
+-- 		local e1 = world:entity()
+-- 		local _e2 = world:entity()
+
+-- 		world:set(e, A, true)
+-- 		world:set(e, B, true)
+
+-- 		world:set(e1, A, true)
+-- 		world:set(e1, B, true)
+
+-- 		CHECK(world:get(e, A))
+-- 		CHECK(world:get(e, B))
+
+-- 		world:purge(A)
+-- 		CHECK(world:get(e, A) == nil)
+-- 		CHECK(world:get(e, B))
+-- 		CHECK(world:get(e1, A) == nil)
+-- 		CHECK(world:get(e1, B))
+-- 	end
+
+-- 	do CASE "remove purged component from entities"
+-- 		local world = jecs.world()
+-- 		local A = world:component()
+-- 		local B = world:component()
+-- 		local C = world:component()
+
+-- 		do
+-- 			local id1 = world:entity()
+-- 			local id2 = world:entity()
+-- 			local id3 = world:entity()
+
+-- 			world:set(id1, A, true)
+
+-- 			world:set(id2, A, true)
+-- 			world:set(id2, B, true)
+
+-- 			world:set(id3, A, true)
+-- 			world:set(id3, B, true)
+-- 			world:set(id3, C, true)
+
+-- 			world:purge(A)
+
+-- 			CHECK(not world:has(id1, A))
+-- 			CHECK(not world:has(id2, A))
+-- 			CHECK(not world:has(id3, A))
+
+-- 			CHECK(world:has(id2, B))
+-- 			CHECK(world:has(id3, B, C))
+
+-- 			world:purge(C)
+
+-- 			CHECK(world:has(id2, B))
+-- 			CHECK(world:has(id3, B))
+
+-- 			CHECK(world:contains(A))
+-- 			CHECK(world:contains(C))
+-- 			CHECK(world:has(A, jecs.Component))
+-- 			CHECK(world:has(B, jecs.Component))
+-- 		end
+
+-- 		do
+-- 			local id1 = world:entity()
+-- 			local id2 = world:entity()
+-- 			local id3 = world:entity()
+
+-- 			local tgt = world:entity()
+
+-- 			world:add(id1, pair(A, tgt))
+-- 			world:add(id1, pair(B, tgt))
+-- 			world:add(id1, pair(C, tgt))
+
+-- 			world:add(id2, pair(A, tgt))
+-- 			world:add(id2, pair(B, tgt))
+-- 			world:add(id2, pair(C, tgt))
+
+-- 			world:add(id3, pair(A, tgt))
+-- 			world:add(id3, pair(B, tgt))
+-- 			world:add(id3, pair(C, tgt))
+
+-- 			world:purge(B)
+-- 			CHECK(world:has(id1, pair(A, tgt), pair(C, tgt)))
+-- 			CHECK(not world:has(id1, pair(B, tgt)))
+-- 			CHECK(world:has(id2, pair(A, tgt), pair(C, tgt)))
+-- 			CHECK(not world:has(id1, pair(B, tgt)))
+-- 			CHECK(world:has(id3, pair(A, tgt), pair(C, tgt)))
+
+-- 		end
+
+-- 	end
+-- end)
+
+TEST("world:clear", function()
+	do CASE "remove all components on entity"
 		local world = jecs.world()
 		local A = world:component()
 		local B = world:component()
 
 		local e = world:entity()
-		local e1 = world:entity()
-		local _e2 = world:entity()
 
 		world:set(e, A, true)
 		world:set(e, B, true)
 
-		world:set(e1, A, true)
-		world:set(e1, B, true)
+		world:clear(e)
 
-		CHECK(world:get(e, A))
-		CHECK(world:get(e, B))
-
-		world:clear(A)
-		CHECK(world:get(e, A) == nil)
-		CHECK(world:get(e, B))
-		CHECK(world:get(e1, A) == nil)
-		CHECK(world:get(e1, B))
+		CHECK(world:contains(e))
+		CHECK(not world:has(e, A))
+		CHECK(not world:has(e, B))
+		print(jecs.record(world, e).archetype == nil::any)
 	end
 
-	do CASE "remove cleared ID from entities"
+	do CASE "should invoke hooks"
 		local world = jecs.world()
 		local A = world:component()
+		local called = 0
+		world:set(A, jecs.OnRemove, function()
+			called += 1
+		end)
+
 		local B = world:component()
-		local C = world:component()
+		world:set(B, jecs.OnRemove, function()
+			called += 1
+		end)
 
-		do
-			local id1 = world:entity()
-			local id2 = world:entity()
-			local id3 = world:entity()
+		local e = world:entity()
 
-			world:set(id1, A, true)
+		world:set(e, A, true)
+		world:set(e, B, true)
 
-			world:set(id2, A, true)
-			world:set(id2, B, true)
+		world:clear(e)
 
-			world:set(id3, A, true)
-			world:set(id3, B, true)
-			world:set(id3, C, true)
-
-			world:clear(A)
-
-			CHECK(not world:has(id1, A))
-			CHECK(not world:has(id2, A))
-			CHECK(not world:has(id3, A))
-
-			CHECK(world:has(id2, B))
-			CHECK(world:has(id3, B, C))
-
-			world:clear(C)
-
-			CHECK(world:has(id2, B))
-			CHECK(world:has(id3, B))
-
-			CHECK(world:contains(A))
-			CHECK(world:contains(C))
-			CHECK(world:has(A, jecs.Component))
-			CHECK(world:has(B, jecs.Component))
-		end
-
-		do
-			local id1 = world:entity()
-			local id2 = world:entity()
-			local id3 = world:entity()
-
-			local tgt = world:entity()
-
-			world:add(id1, pair(A, tgt))
-			world:add(id1, pair(B, tgt))
-			world:add(id1, pair(C, tgt))
-
-			world:add(id2, pair(A, tgt))
-			world:add(id2, pair(B, tgt))
-			world:add(id2, pair(C, tgt))
-
-			world:add(id3, pair(A, tgt))
-			world:add(id3, pair(B, tgt))
-			world:add(id3, pair(C, tgt))
-
-			world:clear(B)
-			CHECK(world:has(id1, pair(A, tgt), pair(C, tgt)))
-			CHECK(not world:has(id1, pair(B, tgt)))
-			CHECK(world:has(id2, pair(A, tgt), pair(C, tgt)))
-			CHECK(not world:has(id1, pair(B, tgt)))
-			CHECK(world:has(id3, pair(A, tgt), pair(C, tgt)))
-
-		end
-
+		CHECK(world:contains(e))
+		CHECK(not world:has(e, A))
+		CHECK(not world:has(e, B))
+		CHECK(called == 2)
 	end
 end)
 
@@ -1882,21 +1928,21 @@ TEST("world:query()", function()
 		local q = world:query(unpack(components))
 
 		for entity, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o in q do
-			CHECK(a == 13 ^ 1)
-			CHECK(b == 13 ^ 2)
-			CHECK(c == 13 ^ 3)
-			CHECK(d == 13 ^ 4)
-			CHECK(e == 13 ^ 5)
-			CHECK(f == 13 ^ 6)
-			CHECK(g == 13 ^ 7)
-			CHECK(h == 13 ^ 8)
-			CHECK(i == 13 ^ 9)
-			CHECK(j == 13 ^ 10)
-			CHECK(k == 13 ^ 11)
-			CHECK(l == 13 ^ 12)
-			CHECK(m == 13 ^ 13)
-			CHECK(n == 13 ^ 14)
-			CHECK(o == 13 ^ 15)
+			CHECK(a::any == 13 ^ 1)
+			CHECK(b::any == 13 ^ 2)
+			CHECK(c::any == 13 ^ 3)
+			CHECK(d::any == 13 ^ 4)
+			CHECK(e::any == 13 ^ 5)
+			CHECK(f::any == 13 ^ 6)
+			CHECK(g::any == 13 ^ 7)
+			CHECK(h::any == 13 ^ 8)
+			CHECK(i::any == 13 ^ 9)
+			CHECK(j::any == 13 ^ 10)
+			CHECK(k::any == 13 ^ 11)
+			CHECK(l::any == 13 ^ 12)
+			CHECK(m::any == 13 ^ 13)
+			CHECK(n::any == 13 ^ 14)
+			CHECK(o::any == 13 ^ 15)
 		end
 	end
 
