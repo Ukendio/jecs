@@ -1,19 +1,16 @@
 local jecs = require("@jecs")
 local pair = jecs.pair
 
-local world = jecs.World.new()
-local Name = world:component()
+local world = jecs.world()
+local Name = world:component() :: jecs.Id<string>
 
-local function named(ctr, name)
-	local e = ctr(world)
-	world:set(e, Name, name)
-	return e
-end
-local function name(e)
-	return world:get(e, Name)
+
+local function name(e: jecs.Entity): string
+	return assert(world:get(e, Name))
 end
 
-local Position = named(world.component, "Position") :: jecs.Entity<vector>
+local Position = world:component() :: jecs.Id<vector>
+world:set(Position, Name, "Position")
 local Previous = jecs.Rest
 
 local added = world
@@ -29,10 +26,14 @@ local removed = world
 	:cached()
 
 
-local e1 = named(world.entity, "e1")
+local e1 = world:entity()
+world:set(e1, Name, "e1")
 world:set(e1, Position, vector.create(10, 20, 30))
-local e2 = named(world.entity, "e2")
+
+local e2 = world:entity()
+world:set(e2, Name, "e2")
 world:set(e2, Position, vector.create(10, 20, 30))
+
 for entity, p in added do
 	print(`Added {name(entity)}: \{{p.x}, {p.y}, {p.z}}`)
 	world:set(entity, pair(Previous, Position), p)
@@ -40,10 +41,10 @@ end
 
 world:set(e1, Position, vector.create(999, 999, 1998))
 
-for _, archetype in changed:archetypes() do
+for entity, new, old in changed do
 	if new ~= old then
-		print(`{name(e)}'s Position changed from \{{old.x}, {old.y}, {old.z}\} to \{{new.x}, {new.y}, {new.z}\}`)
-		world:set(e, pair(Previous, Position), new)
+		print(`{name(entity)}'s Position changed from \{{old.x}, {old.y}, {old.z}\} to \{{new.x}, {new.y}, {new.z}\}`)
+		world:set(entity, pair(Previous, Position), new)
 	end
 end
 

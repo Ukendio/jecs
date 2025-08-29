@@ -1,5 +1,5 @@
 local jecs = require("@jecs")
-local world = jecs.World.new()
+local world = jecs.world()
 
 local Position = world:component()
 local Velocity = world:component()
