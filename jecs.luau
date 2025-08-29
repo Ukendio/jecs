@@ -2986,9 +2986,17 @@ local function world_new()
 						end
 						break
 					else
+						local on_remove = id_record.on_remove
+
 						for i = #entities, 1, -1 do
 							local child = entities[i]
-							world_remove(world, child, id)
+							if on_remove then
+								on_remove(child, id)
+							end
+
+							local r = entity_index_try_get_unsafe(child) :: record
+							local to = archetype_traverse_remove(world, id, r.archetype)
+							inner_entity_move(child, r, to)
 						end
 					end
 				end
