@@ -54,6 +54,8 @@ export type Query<T...> = typeof(setmetatable(
 		archetypes: (self: Query<T...>) -> { Archetype },
 		cached: (self: Query<T...>) -> Query<T...>,
 		ids: { Id<any> },
+		filter_with: { Id<any> }?,
+		filter_without: { Id<any> }?
 		-- world: World
 	},
 	{} :: {
@@ -92,13 +94,14 @@ type archetype = {
 }
 
 type componentrecord = {
+	component: i53,
 	records: { [number]: number },
 	counts: { [i53]: number },
 	flags: number,
 	size: number,
 
-	on_add: ((entity: i53, id: i53, value: any?) -> ())?,
-	on_change: ((entity: i53, id: i53, value: any) -> ())?,
+	on_add: ((entity: i53, id: i53, value: any, oldarchetype: archetype) -> ())?,
+	on_change: ((entity: i53, id: i53, value: any, oldarchetype: archetype) -> ())?,
 	on_remove: ((entity: i53, id: i53) -> ())?,
 
 	wildcard_pairs: { [number]: componentrecord },
@@ -166,9 +169,9 @@ export type World = {
 
 	observable: Map<Id, Map<Id, { Observer }>>,
 
-	added: <T>(World, Entity<T>, <e>(e: Entity<e>, id: Id<T>, value: T) -> ()) -> () -> (),
+	added: <T>(World, Entity<T>, <e>(e: Entity<e>, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
 	removed: <T>(World, Entity<T>, (e: Entity, id: Id<T>) -> ()) -> () -> (),
-	changed:  <T>(World, Entity<T>, <e>(e: Entity<e>, id: Id<T>, value: T) -> ()) -> () -> (),
+	changed:  <T>(World, Entity<T>, <e>(e: Entity<e>, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
 
 	--- Enforce a check on entities to be created within desired range
 	range: (self: World, range_begin: number, range_end: number?) -> (),
@@ -262,8 +265,8 @@ export type ComponentRecord = {
 	flags: number,
 	size: number,
 
-	on_add: (<T>(entity: Entity, id: Entity<T>, value: T?) -> ())?,
-	on_change: (<T>(entity: Entity, id: Entity<T>, value: T) -> ())?,
+	on_add: (<T>(entity: Entity, id: Entity<T>, value: T, oldarchetype: Archetype) -> ())?,
+	on_change: (<T>(entity: Entity, id: Entity<T>, value: T, oldArchetype: Archetype) -> ())?,
 	on_remove: ((entity: Entity, id: Entity) -> ())?,
 }
 export type ComponentIndex = Map<Id, ComponentRecord>
@@ -924,14 +927,6 @@ local function archetype_create(world: world, id_types: { i53 }, ty, prev: i53?)
 
 			idr_t.size += 1
 			archetype_append_to_records(idr_t, archetype_id, columns_map, t, i, column)
-
-			-- Hypothetically this should only capture leaf component records
-			local idr_t_wc_pairs = idr_t.wildcard_pairs
-			if not idr_t_wc_pairs then
-				idr_t_wc_pairs = {} :: {[i53]: componentrecord }
-				idr_t.wildcard_pairs = idr_t_wc_pairs
-			end
-			idr_t_wc_pairs[component_id] = idr
 		end
 	end
 
@@ -2058,6 +2053,7 @@ local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: 
 		local dst_types = ids
 		local to = archetype_ensure(world, dst_types)
 		new_entity(entity, r, to)
+		local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
 		for i, id in ids do
 			local value = values[i]
 			local cdr = component_index[id]
@@ -2066,11 +2062,11 @@ local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: 
 			if value then
 				r.archetype.columns_map[id][r.row] = value
 				if on_add then
-					on_add(entity, id, value :: any)
+					on_add(entity, id, value, ROOT_ARCHETYPE)
 				end
 			else
 				if on_add then
-					on_add(entity, id)
+					on_add(entity, id, nil, ROOT_ARCHETYPE)
 				end
 			end
 		end
@@ -2112,10 +2108,10 @@ local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: 
 			local on_change = idr.on_change
 			local hook = if set then on_change else on_add
 			if hook then
-				hook(entity, id, value :: any)
+				hook(entity, id, value :: any, from)
 			end
 		elseif on_add then
-			on_add(entity, id)
+			on_add(entity, id, nil, from)
 		end
 	end
 end
@@ -2306,7 +2302,6 @@ local function world_new()
 	end
 
 	local function inner_entity_move(
-		entity_index: entityindex,
 		entity: i53,
 		record: record,
 		to: archetype
@@ -2380,7 +2375,7 @@ local function world_new()
 			-- and just set the data directly.
 			local on_change = idr.on_change
 			if on_change then
-				on_change(entity, id, data)
+				on_change(entity, id, data, src)
 			end
 		else
 			local to: archetype
@@ -2450,7 +2445,7 @@ local function world_new()
 
 			if from then
 				-- If there was a previous archetype, then the entity needs to move the archetype
-				inner_entity_move(entity_index, entity, record, to)
+				inner_entity_move(entity, record, to)
 			else
 				new_entity(entity, record, to)
 			end
@@ -2460,7 +2455,7 @@ local function world_new()
 
 			local on_add = idr.on_add
 			if on_add then
-				on_add(entity, id, data)
+				on_add(entity, id, data, src)
 			end
 		end
 	end
@@ -2470,7 +2465,6 @@ local function world_new()
 		entity: i53,
 		id: i53
 	): ()
-		local entity_index = world.entity_index
 		local record = entity_index_try_get_unsafe(entity :: number)
 		if not record then
 			return
@@ -2549,7 +2543,7 @@ local function world_new()
 		end
 
 		if from then
-			inner_entity_move(entity_index, entity, record, to)
+			inner_entity_move(entity, record, to)
 		else
 			if #to.types > 0 then
 				new_entity(entity, record, to)
@@ -2559,7 +2553,7 @@ local function world_new()
 		local on_add = idr.on_add
 
 		if on_add then
-			on_add(entity, id)
+			on_add(entity, id, nil, src)
 		end
 	end
 
@@ -2593,7 +2587,7 @@ local function world_new()
 		end
 	end
 
-	type Listener<T> = (e: i53, id: i53, value: T?) -> ()
+	type Listener<T> = (e: i53, id: i53, value: T, oldarchetype: archetype) -> ()
 
 	world.added = function<T>(_: world, component: i53, fn: Listener<T>)
 		local listeners = signals.added[component]
@@ -2601,9 +2595,9 @@ local function world_new()
 			listeners = {}
 			signals.added[component] = listeners
 
-			local function on_add(entity, id, value)
+			local function on_add(entity, id, value, oldarchetype)
 				for _, listener in listeners :: { Listener<T> } do
-					listener(entity, id, value)
+					listener(entity, id, value, oldarchetype)
 				end
 			end
 			local existing_hook = world_get(world, component, EcsOnAdd) :: Listener<T>
@@ -2644,9 +2638,9 @@ local function world_new()
 		if not listeners then
 			listeners = {}
 			signals.changed[component] = listeners
-			local function on_change(entity, id, value: any)
+			local function on_change(entity, id, value, oldarchetype)
 				for _, listener in listeners :: { Listener<T> }  do
-					listener(entity, id, value)
+					listener(entity, id, value, oldarchetype)
 				end
 			end
 			local existing_hook = world_get(world, component, EcsOnChange) :: Listener<T>
@@ -2686,7 +2680,7 @@ local function world_new()
 			listeners = {}
 			signals.removed[component] = listeners
 			local function on_remove(entity, id)
-				for _, listener in listeners :: { Listener<T> } do
+				for _, listener in listeners :: { (...any) -> () } do
 					listener(entity, id)
 				end
 			end
@@ -2881,7 +2875,7 @@ local function world_new()
 
 			local to = archetype_traverse_remove(world, id, record.archetype)
 
-			inner_entity_move(entity_index, entity, record, to)
+			inner_entity_move(entity, record, to)
 		end
 	end
 
@@ -2945,7 +2939,7 @@ local function world_new()
 								-- this is hypothetically not that expensive of an operation anyways
 								to = archetype_traverse_remove(world, entity, from)
 							end
-							inner_entity_move(entity_index, e, r, to)
+							inner_entity_move(e, r, to)
 						end
 
 						archetype_destroy(world, idr_archetype)
@@ -2967,53 +2961,41 @@ local function world_new()
 			end
 		end
 		if idr_t then
-			for id, cr in idr_t.wildcard_pairs do
-				local flags = cr.flags
-				local flags_delete_mask = bit32.btest(flags, ECS_ID_DELETE)
-				local on_remove = cr.on_remove
-				if flags_delete_mask then
-					for archetype_id in cr.records do
-						local idr_t_archetype = archetypes[archetype_id]
-						local entities = idr_t_archetype.entities
+			local archetype_ids = idr_t.records
+			for archetype_id in archetype_ids do
+				local idr_t_archetype = archetypes[archetype_id]
+				local idr_t_types = idr_t_archetype.types
+				local entities = idr_t_archetype.entities
+
+				for _, id in idr_t_types do
+					if not ECS_IS_PAIR(id) then
+						continue
+					end
+					local object = entity_index_get_alive(
+					    entity_index, ECS_PAIR_SECOND(id))
+					if object ~= entity then
+						continue
+					end
+					local id_record = component_index[id]
+					local flags = id_record.flags
+					local flags_delete_mask = bit32.btest(flags, ECS_ID_DELETE)
+					if flags_delete_mask then
 						for i = #entities, 1, -1 do
 							local child = entities[i]
 							world_delete(world, child)
 						end
-					end
-				else
-					for archetype_id in cr.records do
-						local idr_t_archetype = archetypes[archetype_id]
-						local entities = idr_t_archetype.entities
-						-- archetype_traverse_remove is not idempotent meaning
-						-- this access is actually unsafe because it can
-						-- incorrectly cache an edge despite a node of the
-						-- component id on the archetype does not exist. This
-						-- requires careful testing to ensure correct values are
-						-- being passed to the arguments.
-						local to = archetype_traverse_remove(world, id, idr_t_archetype)
-
+						break
+					else
 						for i = #entities, 1, -1 do
-							local e = entities[i]
-							local r = eindex_sparse_array[ECS_ID(e :: number)]
-							if on_remove then
-								on_remove(e, id)
-
-								local from = r.archetype
-								if from ~= idr_t_archetype then
-									-- unfortunately the on_remove hook allows a window where `e` can have changed archetype
-									-- this is hypothetically not that expensive of an operation anyways
-									to = archetype_traverse_remove(world, id, from)
-								end
-							end
-
-							inner_entity_move(entity_index, e, r, to)
+							local child = entities[i]
+							world_remove(world, child, id)
 						end
 					end
 				end
+			end
 
-				for archetype_id in cr.records do
-					archetype_destroy(world, archetypes[archetype_id])
-				end
+			for archetype_id in archetype_ids do
+				archetype_destroy(world, archetypes[archetype_id])
 			end
 		end
 
@@ -3055,7 +3037,7 @@ local function world_new()
 					for i = #entities, 1, -1 do
 						local e = entities[i]
 						local r = entity_index_try_get_unsafe(e) :: record
-						inner_entity_move(entity_index, e, r, node)
+						inner_entity_move(e, r, node)
 					end
 				end
 
@@ -3064,6 +3046,7 @@ local function world_new()
 				end
 			end
 		end
+
 
 		local dense = record.dense
 		local i_swap = entity_index.alive_count

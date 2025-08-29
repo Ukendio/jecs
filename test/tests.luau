@@ -24,6 +24,104 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@tools/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
+SKIP()
+TEST("jecs delete", function()
+	do CASE "delete children"
+		local world = jecs.world()
+
+		local Health = world:component()
+		local Poison = world:component()
+		local FriendsWith = world:component()
+
+		local e = world:entity()
+		world:set(e, Poison, 5)
+		world:set(e, Health, 50)
+
+		local children = {}
+		for i = 1, 10 do
+			local child = world:entity()
+			world:set(child, Poison, 9999)
+			world:set(child, Health, 100)
+			world:add(child, pair(jecs.ChildOf, e))
+			table.insert(children, child)
+		end
+
+		BENCH("delete children of entity", function()
+			world:delete(e)
+		end)
+
+		for i, child in children do
+			CHECK(not world:contains(child))
+			CHECK(not world:has(child, pair(jecs.ChildOf, e)))
+			CHECK(not world:has(child, Health))
+		end
+
+		e = world:entity()
+
+		local friends = {}
+		for i = 1, 10 do
+			local friend = world:entity()
+			world:set(friend, Poison, 9999)
+			world:set(friend, Health, 100)
+			world:add(friend, pair(FriendsWith, e))
+			for j = 1, 10 do
+				world:add(friend, world:component())
+			end
+			table.insert(friends, friend)
+		end
+
+		BENCH("remove friends of entity", function()
+			world:delete(e)
+		end)
+
+		for i, friend in friends do
+			CHECK(not world:has(friend, pair(FriendsWith, e)))
+			CHECK(world:has(friend, Health))
+			CHECK(world:contains(friend))
+		end
+	end
+end)
+
+TEST("pepe", function()
+	local world = jecs.world()
+	local t = world:entity()
+	local c = world:component()
+	world:add(c, t)
+
+	local component = world:component()
+	local lifetime = world:component()
+
+	local tag = world:entity()
+	local rel1 = world:entity()
+	local rel2 = world:entity()
+	local rel3 = world:entity()
+
+	local destroyed = false
+
+	world:removed(lifetime, function(e)
+	    destroyed = true
+	end)
+
+	local parent = world:entity()
+	world:set(parent, component, "foo")
+	world:add(parent, jecs.pair(rel1, component))
+
+	local other1 = world:entity()
+	world:add(other1, tag)
+	world:add(other1, jecs.pair(jecs.ChildOf, parent))
+	world:add(other1, jecs.pair(rel1, component))
+
+	local child = world:entity()
+	world:set(child, lifetime, "")
+	world:add(child, jecs.pair(jecs.ChildOf, parent))
+	world:add(child, jecs.pair(rel3, parent))
+	world:add(child, jecs.pair(rel2, other1))
+
+	world:delete(parent)
+
+	CHECK(destroyed)
+	CHECK(not world:contains(child))
+end)
 
 TEST("ardi", function()
 	local world = jecs.world()
@@ -856,7 +954,6 @@ TEST("world:delete()", function()
 		local world = jecs.world()
 		local A = world:component()
 		local B = world:component()
-		local C = world:component()
 		world:set(A, jecs.OnRemove, function(entity, id)
 			world:set(entity, B, true)
 		end)
