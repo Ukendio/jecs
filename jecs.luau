@@ -216,7 +216,8 @@ export type World = {
 	children: <T>(self: World, id: Id<T>) -> () -> Entity,
 
 	--- Searches the world for entities that match a given query
-	query: (<A>(World, Id<A>) -> Query<A>)
+	query: ((World) -> Query<nil>)
+		& (<A>(World, Id<A>) -> Query<A>)
 		& (<A, B>(World, Id<A>, Id<B>) -> Query<A, B>)
 		& (<A, B, C>(World, Id<A>, Id<B>, Id<C>) -> Query<A, B, C>)
 		& (<A, B, C, D>(World, Id<A>, Id<B>, Id<C>, Id<D>) -> Query<A, B, C, D>)
@@ -1253,7 +1254,29 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 	local a: Column, b: Column, c: Column, d: Column
 	local e: Column, f: Column, g: Column, h: Column
 
-	if not B then
+	if not A then
+		function world_query_iter_next(): any
+			local entity = entities[i]
+			while entity == nil do
+				lastArchetype += 1
+				archetype = compatible_archetypes[lastArchetype]
+				if not archetype then
+					return nil
+				end
+
+				entities = archetype.entities
+				i = #entities
+				if i == 0 then
+					continue
+				end
+				entity = entities[i]
+			end
+			i -= 1
+			return entity
+		end
+		query.next = world_query_iter_next
+		return world_query_iter_next
+	elseif not B then
 		a = columns_map[A]
 	elseif not C then
 		a = columns_map[A]
@@ -1650,7 +1673,8 @@ local function query_cached(query: QueryInner)
 		entities = archetype.entities
 		i = #entities
 		columns_map = archetype.columns_map
-		if not B then
+		if not A then
+		elseif not B then
 			a = columns_map[A]
 		elseif not C then
 			a = columns_map[A]
@@ -1699,7 +1723,27 @@ local function query_cached(query: QueryInner)
 		return world_query_iter_next
 	end
 
-	if not B then
+	if not A then
+		function world_query_iter_next(): any
+			local entity = entities[i]
+			while entity == nil do
+				lastArchetype += 1
+				archetype = compatible_archetypes[lastArchetype]
+				if not archetype then
+					return nil
+				end
+
+				entities = archetype.entities
+				i = #entities
+				if i == 0 then
+					continue
+				end
+				entity = entities[i]
+			end
+			i -= 1
+			return entity
+		end
+	elseif not B then
 		function world_query_iter_next(): any
 			local entity = entities[i]
 			while entity == nil do
