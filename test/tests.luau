@@ -330,6 +330,20 @@ TEST("bulk", function()
 		CHECK(world:get(e, c2) == 123)
 		CHECK(world:get(e, c3) == "hello")
 	end
+
+	do CASE "Should ensure archetype ids are sorted"
+		local world = jecs.world()
+		local c1, c2, c3 = world:component(), world:component(), world:component()
+
+		local e = world:entity()
+		jecs.bulk_insert(world, e, { c2, c1 }, { 2, 1 })
+		jecs.bulk_insert(world, e, { c1 }, { 1 })
+		world:set(e, c3, 3)
+
+		CHECK(world:get(e, c1) == 1)
+		CHECK(world:get(e, c2) == 2)
+		CHECK(world:get(e, c3) == 3)
+	end
 end)
 
 TEST("repro", function()
