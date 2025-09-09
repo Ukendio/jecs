@@ -2050,7 +2050,9 @@ local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: 
 	local from = r.archetype
 	local component_index = world.component_index
 	if not from then
-		local dst_types = ids
+		local dst_types = table.clone(ids)
+		table.sort(dst_types)
+
 		local to = archetype_ensure(world, dst_types)
 		new_entity(entity, r, to)
 		local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
