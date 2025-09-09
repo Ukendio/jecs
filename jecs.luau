@@ -41,16 +41,8 @@ export type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 export type Query<T...> = typeof(setmetatable(
 	{} :: {
 		iter: Iter<T...>,
-		with: (<a>(Query<T...>, Id<a>) -> Query<T...>)
-			& (<a, b>(Query<T...>, Id<a>, Id<b>) -> Query<T...>)
-			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
-			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
-			& (<a, b, c, d>(Query<T...>, Id<a>, Id<b>, Id<c>, Id) -> Query<T...>),
-		without: (<a>(Query<T...>, Id<a>) -> Query<T...>)
-			& (<a, b>(Query<T...>, Id<a>, Id<b>) -> Query<T...>)
-			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
-			& (<a, b, c>(Query<T...>, Id<a>, Id<b>, Id<c>) -> Query<T...>)
-			& (<a, b, c, d>(Query<T...>, Id<a>, Id<b>, Id<c>, Id) -> Query<T...>),
+		with: ((Query<T...>, ...Id) -> Query<T...>),
+		without: ((Query<T...>, ...Id) -> Query<T...>),
 		archetypes: (self: Query<T...>) -> { Archetype },
 		cached: (self: Query<T...>) -> Query<T...>,
 		ids: { Id<any> },
@@ -169,9 +161,9 @@ export type World = {
 
 	observable: Map<Id, Map<Id, { Observer }>>,
 
-	added: <T>(World, Entity<T>, <e>(e: Entity<e>, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
+	added: <T>(World, Entity<T>, (e: Entity, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
 	removed: <T>(World, Entity<T>, (e: Entity, id: Id<T>) -> ()) -> () -> (),
-	changed:  <T>(World, Entity<T>, <e>(e: Entity<e>, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
+	changed:  <T>(World, Entity<T>, (e: Entity, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
 
 	--- Enforce a check on entities to be created within desired range
 	range: (self: World, range_begin: number, range_end: number?) -> (),
