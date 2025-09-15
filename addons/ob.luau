@@ -27,7 +27,7 @@ local function observers_new<T...>(
 	callback = callback
 
 	local archetypes = {}
-	local terms = query.ids
+	local terms = query.filter_with :: { jecs.Id }
 	local first = terms[1]
 
 	local observers_on_create = world.observable[jecs.ArchetypeCreate][first]
