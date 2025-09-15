@@ -22,6 +22,7 @@ local function observers_new<T...>(
 ): Observer<T...>
 	query:cached()
 
+
 	local world = (query :: Query<T...> & { world: World }).world
 	callback = callback
 
@@ -41,6 +42,10 @@ local function observers_new<T...>(
 	end
 
 	local entity_index = world.entity_index :: any
+
+	for _, archetype in query:archetypes() do
+		archetypes[archetype.id] = true
+	end
 
 	local function emplaced<T, a>(
 		entity: jecs.Entity<T>,
@@ -131,6 +136,10 @@ local function monitors_new<T...>(query: Query<T...>): Observer<T...>
 	local observer_on_delete = observers_on_delete[#observers_on_delete]
 	observer_on_delete.callback = function(archetype)
 		archetypes[archetype.id] = nil
+	end
+
+	for _, archetype in query:archetypes() do
+		archetypes[archetype.id] = true
 	end
 	local entity_index = world.entity_index :: any
 

@@ -7,6 +7,23 @@ local ob = require("@addons/ob")
 
 TEST("addons/ob", function()
 	local world = jecs.world()
+	do CASE "should match against archetypes that were already created"
+		local A = world:component()
+
+		local e1 = world:entity()
+		world:add(e1, A)
+
+		local monitor = ob.monitor(world:query(A))
+		local c = 1
+		monitor.added(function()
+			c += 1
+		end)
+
+		world:remove(e1, A)
+		world:add(e1, A)
+		CHECK(c==2)
+	end
+
 	do CASE "Should support query:without()"
 		local A = world:component()
 		local B = world:component()

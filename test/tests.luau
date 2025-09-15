@@ -1365,7 +1365,6 @@ TEST("world:added", function()
 	end
 
 	do CASE ""
-		local world = jecs.world()
 		local IsNearby = world:component()
 		world:set(IsNearby, jecs.Name, "IsNearby")
 		local person1, person2 = world:entity(), world:entity()
