@@ -5,15 +5,42 @@ local CASE, TEST, FINISH, CHECK = test.CASE, test.TEST, test.FINISH, test.CHECK
 local FOCUS = test.FOCUS
 local ob = require("@addons/ob")
 
-TEST("addons/observers", function()
-
+TEST("addons/ob", function()
 	local world = jecs.world()
+	do CASE "Should support query:without()"
+		local A = world:component()
+		local B = world:component()
+
+		local c = 1
+		local monitor = ob.monitor(world:query(A):without(B))
+		monitor.added(function()
+			c += 1
+		end)
+		monitor.removed(function()
+			c += 1
+		end)
+
+		local child = world:entity()
+		world:add(child, B)
+		CHECK(c==1)
+		world:add(child, A)
+		CHECK(c==1)
+		world:remove(child, B)
+		CHECK(c==2)
+		world:remove(child, A)
+		CHECK(c==3)
+	end
+
 	do CASE "monitors should accept pairs"
 		local A = world:component()
 		local B = world:component()
 
 		local c = 1
-		ob.monitor(world:query(jecs.pair(A, B)), function (_, event)
+		local monitor = ob.monitor(world:query(jecs.pair(A, B)))
+		monitor.added(function()
+			c += 1
+		end)
+		monitor.removed(function()
 			c += 1
 		end)
 
@@ -24,6 +51,7 @@ TEST("addons/observers", function()
 		world:remove(child, jecs.pair(A, B))
 		CHECK(c == 3)
 	end
+
 	do CASE "Ensure ordering between signals and observers"
 		local A = world:component()
 		local B = world:component()
@@ -78,7 +106,9 @@ TEST("addons/observers", function()
 			count += 1
 		end
 
-		ob.monitor(world:query(A), counter)
+		local monitor = ob.monitor(world:query(A))
+		monitor.added(counter)
+		monitor.removed(counter)
 
 		local e = world:entity()
 		world:set(e, A, false)

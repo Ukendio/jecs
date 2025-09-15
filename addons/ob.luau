@@ -10,22 +10,16 @@ type Entity<T> = jecs.Entity<T>
 
 export type Iter<T...> = (Observer<T...>) -> () -> (jecs.Entity, T...)
 
-export type Observer<T...> = typeof(setmetatable(
-	{} :: {
-		iter: Iter<T...>,
-		entities: { Entity<nil> },
-		disconnect: (Observer<T...>) -> ()
-	},
-	{} :: {
-		__iter: Iter<T...>,
-	}
-))
+export type Observer<T...> = {
+	disconnect: (Observer<T...>) -> (),
+	added: ((jecs.Entity) -> ()) -> (),
+	removed: ((jecs.Entity) -> ()) -> ()
+}
 
 local function observers_new<T...>(
 	query: Query<T...>,
-	callback: ((Entity<nil>, Id<any>, value: any?) -> ())?
+	callback: ((Entity<nil>) -> ())
 ): Observer<T...>
-
 	query:cached()
 
 	local world = (query :: Query<T...> & { world: World }).world
@@ -47,8 +41,6 @@ local function observers_new<T...>(
 	end
 
 	local entity_index = world.entity_index :: any
-	local i = 0
-	local entities = {}
 
 	local function emplaced<T, a>(
 		entity: jecs.Entity<T>,
@@ -60,70 +52,74 @@ local function observers_new<T...>(
 		local archetype = r.archetype
 
 		if archetypes[archetype.id] then
-			i += 1
-			entities[i] = entity
-			if callback ~= nil then
-				callback(entity, id, value)
-			end
+			callback(entity)
 		end
 	end
+
+	local cleanup = {}
 
 	for _, term in terms do
 		if jecs.IS_PAIR(term) then
 			term = jecs.ECS_PAIR_FIRST(term)
 		end
-		world:added(term, emplaced)
-		world:changed(term, emplaced)
+		local onadded = world:added(term, emplaced)
+		local onchanged = world:changed(term, emplaced)
+		table.insert(cleanup, onadded)
+		table.insert(cleanup, onchanged)
  	end
 
-  	local function disconnect()
-   		table.remove(observers_on_create, table.find(
-     		observers_on_create,
-       		observer_on_create
-     	))
+	local without = query.filter_without
+   	if without then
+		for _, term in without do
+			if jecs.IS_PAIR(term) then
+				term = jecs.ECS_PAIR_FIRST(term)
+			end
+			local onremoved = world:removed(term, function(entity, id)
+				local r = jecs.record(world, entity)
+				local archetype = r.archetype
+				if archetype then
+					local dst = jecs.archetype_traverse_remove(world, id, archetype)
+					if archetypes[dst.id] then
+						callback(entity)
+					end
+				end
+			end)
+			table.insert(cleanup, onremoved)
+		end
+	end
 
-     	table.remove(observers_on_delete, table.find(
-      		observers_on_delete,
-        	observer_on_delete
+ 	local function disconnect()
+  		table.remove(observers_on_create, table.find(
+	  		observers_on_create,
+	    	observer_on_create
+	   	))
+
+	   	table.remove(observers_on_delete, table.find(
+	      	observers_on_delete,
+	       	observer_on_delete
        	))
+
+		table.clear(archetypes)
+
+		for _, disconnect in cleanup do
+			disconnect()
+		end
    	end
 
-    local function iter()
-  		local row = i
-  		return function()
- 			if row == 0 then
-     			i = 0
-      			table.clear(entities)
-      		end
-           	local entity = entities[row]
-           	row -= 1
-           	return entity
-        end
-    end
-
-  	local observer = {
-   		disconnect = disconnect,
-     	entities = entities,
-     	__iter = iter,
-      	iter = iter
+	local observer = {
+  		disconnect = disconnect,
    	}
-
-    setmetatable(observer, observer)
 
     return (observer :: any) :: Observer<T...>
 end
 
-local function monitors_new<T...>(
-	query: Query<T...>,
-	callback: ((Entity<nil>, Id<any>, value: any?) -> ())?
-): Observer<T...>
-
+local function monitors_new<T...>(query: Query<T...>): Observer<T...>
 	query:cached()
 
 	local world = (query :: Query<T...> & { world: World }).world
 
 	local archetypes = {}
-	local terms = query.ids
+	local terms = query.filter_with :: { jecs.Id<any> }
 	local first = terms[1]
 
 	local observers_on_create = world.observable[jecs.ArchetypeCreate][first]
@@ -137,46 +133,76 @@ local function monitors_new<T...>(
 		archetypes[archetype.id] = nil
 	end
 	local entity_index = world.entity_index :: any
-	local i = 0
-	local entities = {}
+
+	local callback_added: ((jecs.Entity) -> ())?
+	local callback_removed: ((jecs.Entity) -> ())?
 
 	local function emplaced<T, a>(
 		entity: jecs.Entity<T>,
 		id: jecs.Id<a>,
 		value: a?
 	)
+		if callback_added == nil then
+			return
+		end
+
 		local r = jecs.entity_index_try_get_fast(
 			entity_index, entity :: any) :: jecs.Record
 
 		local archetype = r.archetype
 
 		if archetypes[archetype.id] then
-			i += 1
-			entities[i] = entity
-			if callback ~= nil then
-				callback(entity, jecs.OnAdd)
-			end
+			callback_added(entity)
 		end
 	end
 
 	local function removed(entity: jecs.Entity, component: jecs.Id)
+		if callback_removed == nil then
+			return
+		end
 		local r = jecs.record(world, entity)
 		if not archetypes[r.archetype.id] then
 			return
 		end
-		local EcsOnRemove = jecs.OnRemove :: jecs.Id
-		if callback ~= nil then
-			callback(entity, EcsOnRemove)
-		end
+		callback_removed(entity)
 	end
+
+	local cleanup = {}
 
 	for _, term in terms do
 		if jecs.IS_PAIR(term) then
 			term = jecs.ECS_PAIR_FIRST(term)
 		end
-		world:added(term, emplaced)
-		world:removed(term, removed)
+		local onadded = world:added(term, emplaced)
+		local onremoved = world:removed(term, removed)
+		table.insert(cleanup, onadded)
+		table.insert(cleanup, onremoved)
  	end
+
+  	local without = query.filter_without
+   	if without then
+	   	for _, term in without do
+			if jecs.IS_PAIR(term) then
+				term = jecs.ECS_PAIR_FIRST(term)
+			end
+			local onadded = world:added(term, removed)
+			local onremoved = world:removed(term, function(entity, id)
+				if callback_added == nil then
+					return
+				end
+				local r = jecs.record(world, entity)
+				local archetype = r.archetype
+				if archetype then
+					local dst = jecs.archetype_traverse_remove(world, id, archetype)
+					if archetypes[dst.id] then
+						callback_added(entity)
+					end
+				end
+			end)
+			table.insert(cleanup, onadded)
+			table.insert(cleanup, onremoved)
+    	end
+    end
 
  	local function disconnect()
   		table.remove(observers_on_create, table.find(
@@ -188,29 +214,27 @@ local function monitors_new<T...>(
 	      	observers_on_delete,
 	       	observer_on_delete
        	))
+
+		table.clear(archetypes)
+
+		for _, disconnect in cleanup do
+			disconnect()
+		end
    	end
 
-    local function iter()
-  		local row = i
-  		return function()
- 			if row == 0 then
-     			i = 0
-     			table.clear(entities)
-      		end
-           	local entity = entities[row]
-           	row -= 1
-           	return entity
-        end
+    local function monitor_added(callback)
+		callback_added = callback
+    end
+
+    local function monitor_removed(callback)
+    	callback_removed = callback
     end
 
 	local observer = {
   		disconnect = disconnect,
-	   	entities = entities,
-	   	__iter = iter,
-       	iter = iter
+    	added = monitor_added,
+     	removed = monitor_removed
    	}
-
-    setmetatable(observer, observer)
 
     return (observer :: any) :: Observer<T...>
 end
