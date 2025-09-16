@@ -80,13 +80,13 @@ local function observers_new<T...>(
 				local rel = jecs.ECS_PAIR_SECOND(term)
 				local tgt = jecs.ECS_PAIR_SECOND(term)
 				local wc = tgt == jecs.w
-				local onremoved = world:removed(term, function(entity, id)
+				local onremoved = world:removed(rel, function(entity, id)
+					if not wc and term ~= tgt then
+						return
+					end
 					local r = jecs.record(world, entity)
 					local archetype = r.archetype
 					if archetype then
-						if not wc and id ~= tgt then
-							return
-						end
 						local dst = jecs.archetype_traverse_remove(world, id, archetype)
 						if archetypes[dst.id] then
 							callback(entity)
@@ -218,12 +218,12 @@ local function monitors_new<T...>(query: Query<T...>): Observer<T...>
 					if callback_removed == nil then
 						return
 					end
+					if not wc and id ~= term then
+						return
+					end
 					local r = jecs.record(world, entity)
 					local archetype = r.archetype
 					if archetype then
-						if not wc and id ~= term then
-							return
-						end
 						local dst = jecs.archetype_traverse_remove(world, id, archetype)
 						if archetypes[dst.id] then
 							callback_removed(entity)
@@ -232,6 +232,9 @@ local function monitors_new<T...>(query: Query<T...>): Observer<T...>
 				end)
 				local onremoved = world:removed(rel, function(entity, id)
 					if callback_added == nil then
+						return
+					end
+					if not wc and id ~= term then
 						return
 					end
 					local r = jecs.record(world, entity)

@@ -24,11 +24,15 @@ TEST("addons/ob", function()
 		CHECK(c==2)
 	end
 
-	do CASE "Should support query:without(pair(R, t1)) when adding pair(R, t2)"
+	do CASE "Should enter monitor at query:without(pair(R, t1)) when adding pair(R, t2)"
 		local A = world:component()
 		local B = world:component()
 		local C = world:component()
 		local D = world:component()
+
+		local e = world:entity()
+		world:add(e, A)
+		world:add(e, jecs.pair(B, D))
 
 		local c = 1
 		local r = 1
@@ -51,7 +55,52 @@ TEST("addons/ob", function()
 		CHECK(r==2)
 	end
 
-	do CASE "Should support query:without(pair(R, *)) when adding pair(R, t1)"
+	do CASE "Should enter monitor at query:without(pair(R, t1)) when removing pair(R, t1)"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		local D = world:component()
+
+		print("B", B)
+
+		local e = world:entity()
+		world:add(e, A)
+		world:add(e, jecs.pair(B, D))
+
+		local c = 1
+		local r = 1
+		local monitor = ob.monitor(world:query(A):without(jecs.pair(B, D)))
+		monitor.added(function()
+			c += 1
+		end)
+		monitor.removed(function()
+			r += 1
+		end)
+
+		local child = world:entity()
+		world:add(child, jecs.pair(B, C))
+		world:add(child, jecs.pair(B, D))
+		CHECK(c==1)
+		world:add(child, A)
+		CHECK(c==1)
+		world:remove(child, jecs.pair(B, C))
+		CHECK(c==1)
+		world:add(child, jecs.pair(B, C))
+		CHECK(c==1)
+		world:remove(child, jecs.pair(B, D))
+		CHECK(c==2)
+		world:add(child, jecs.pair(B, D))
+		CHECK(c==2)
+		CHECK(r==2)
+		world:remove(child, jecs.pair(B, C))
+		CHECK(c==2)
+		CHECK(r==2)
+		world:remove(child, jecs.pair(B, D))
+		CHECK(c==3)
+		CHECK(r==2)
+	end
+
+	do CASE "Should enter monitor at query:without(pair(R, *)) when adding pair(R, t1)"
 		local A = world:component()
 		local B = world:component()
 		local C = world:component()
@@ -78,7 +127,7 @@ TEST("addons/ob", function()
 		CHECK(r==2)
 	end
 
-	do CASE "Should support query:without()"
+	do CASE "Should enter monitor at query:without(t1) when removing t1"
 		local A = world:component()
 		local B = world:component()
 
