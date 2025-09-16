@@ -24,6 +24,60 @@ TEST("addons/ob", function()
 		CHECK(c==2)
 	end
 
+	do CASE "Should support query:without(pair(R, t1)) when adding pair(R, t2)"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		local D = world:component()
+
+		local c = 1
+		local r = 1
+		local monitor = ob.monitor(world:query(A):without(jecs.pair(B, C)))
+		monitor.added(function()
+			c += 1
+		end)
+		monitor.removed(function()
+			r += 1
+		end)
+
+		local child = world:entity()
+		world:add(child, A)
+		CHECK(c==2)
+		world:add(child, jecs.pair(B, D))
+		CHECK(c==2)
+		CHECK(r==1)
+		world:add(child, jecs.pair(B, C))
+		CHECK(c==2)
+		CHECK(r==2)
+	end
+
+	do CASE "Should support query:without(pair(R, *)) when adding pair(R, t1)"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		local D = world:component()
+
+		local c = 1
+		local r = 1
+		local monitor = ob.monitor(world:query(A):without(jecs.pair(B, jecs.w)))
+		monitor.added(function()
+			c += 1
+		end)
+		monitor.removed(function()
+			r += 1
+		end)
+
+		local child = world:entity()
+		world:add(child, A)
+		CHECK(c==2)
+		world:add(child, jecs.pair(B, D))
+		CHECK(c==2)
+		CHECK(r==2)
+		world:add(child, jecs.pair(B, C))
+		CHECK(c==2)
+		CHECK(r==2)
+	end
+
 	do CASE "Should support query:without()"
 		local A = world:component()
 		local B = world:component()

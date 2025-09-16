@@ -77,19 +77,38 @@ local function observers_new<T...>(
    	if without then
 		for _, term in without do
 			if jecs.IS_PAIR(term) then
-				term = jecs.ECS_PAIR_FIRST(term)
-			end
-			local onremoved = world:removed(term, function(entity, id)
-				local r = jecs.record(world, entity)
-				local archetype = r.archetype
-				if archetype then
-					local dst = jecs.archetype_traverse_remove(world, id, archetype)
-					if archetypes[dst.id] then
-						callback(entity)
+				local rel = jecs.ECS_PAIR_SECOND(term)
+				local tgt = jecs.ECS_PAIR_SECOND(term)
+				local wc = tgt == jecs.w
+				local onremoved = world:removed(term, function(entity, id)
+					local r = jecs.record(world, entity)
+					local archetype = r.archetype
+					if archetype then
+						if not wc and id ~= tgt then
+							return
+						end
+						local dst = jecs.archetype_traverse_remove(world, id, archetype)
+						if archetypes[dst.id] then
+							callback(entity)
+						end
 					end
-				end
-			end)
-			table.insert(cleanup, onremoved)
+				end)
+
+				table.insert(cleanup, onremoved)
+			else
+				local onremoved = world:removed(term, function(entity, id)
+					local r = jecs.record(world, entity)
+					local archetype = r.archetype
+					if archetype then
+						local dst = jecs.archetype_traverse_remove(world, id, archetype)
+						if archetypes[dst.id] then
+							callback(entity)
+						end
+					end
+				end)
+
+				table.insert(cleanup, onremoved)
+			end
 		end
 	end
 
@@ -192,24 +211,70 @@ local function monitors_new<T...>(query: Query<T...>): Observer<T...>
    	if without then
 	   	for _, term in without do
 			if jecs.IS_PAIR(term) then
-				term = jecs.ECS_PAIR_FIRST(term)
-			end
-			local onadded = world:added(term, removed)
-			local onremoved = world:removed(term, function(entity, id)
-				if callback_added == nil then
-					return
-				end
-				local r = jecs.record(world, entity)
-				local archetype = r.archetype
-				if archetype then
-					local dst = jecs.archetype_traverse_remove(world, id, archetype)
-					if archetypes[dst.id] then
-						callback_added(entity)
+				local rel = jecs.ECS_PAIR_FIRST(term)
+				local tgt = jecs.ECS_PAIR_SECOND(term)
+				local wc = tgt == jecs.w
+				local onadded = world:added(rel, function(entity, id)
+					if callback_removed == nil then
+						return
 					end
-				end
-			end)
-			table.insert(cleanup, onadded)
-			table.insert(cleanup, onremoved)
+					local r = jecs.record(world, entity)
+					local archetype = r.archetype
+					if archetype then
+						if not wc and id ~= term then
+							return
+						end
+						local dst = jecs.archetype_traverse_remove(world, id, archetype)
+						if archetypes[dst.id] then
+							callback_removed(entity)
+						end
+					end
+				end)
+				local onremoved = world:removed(rel, function(entity, id)
+					if callback_added == nil then
+						return
+					end
+					local r = jecs.record(world, entity)
+					local archetype = r.archetype
+					if archetype then
+						local dst = jecs.archetype_traverse_remove(world, id, archetype)
+						if archetypes[dst.id] then
+							callback_added(entity)
+						end
+					end
+				end)
+				table.insert(cleanup, onadded)
+				table.insert(cleanup, onremoved)
+			else
+				local onadded = world:added(term, function(entity, id)
+					if callback_removed == nil then
+						return
+					end
+					local r = jecs.record(world, entity)
+					local archetype = r.archetype
+					if archetype then
+						local dst = jecs.archetype_traverse_remove(world, id, archetype)
+						if archetypes[dst.id] then
+							callback_removed(entity)
+						end
+					end
+				end)
+				local onremoved = world:removed(term, function(entity, id)
+					if callback_added == nil then
+						return
+					end
+					local r = jecs.record(world, entity)
+					local archetype = r.archetype
+					if archetype then
+						local dst = jecs.archetype_traverse_remove(world, id, archetype)
+						if archetypes[dst.id] then
+							callback_added(entity)
+						end
+					end
+				end)
+				table.insert(cleanup, onadded)
+				table.insert(cleanup, onremoved)
+			end
     	end
     end
 

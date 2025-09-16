@@ -3244,8 +3244,7 @@ local function world_new()
 	return world
 end
 
--- type function ecs_id_t(entity)
--- 	local ty = entity:components()[2]
+-- type function ecs_id_t(ty)
 -- 	local __T = ty:readproperty(types.singleton("__T"))
 -- 	if not __T then
 -- 		return ty:readproperty(types.singleton("__jecs_pair_value"))
