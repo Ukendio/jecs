@@ -1607,6 +1607,9 @@ local function query_cached(query: QueryInner)
 	local lastArchetype = 1
 
 	local A, B, C, D, E, F, G, H, I = unpack(ids :: { Id })
+	if not A then
+		A = query.filter_with[1]
+	end
 	local a: Column, b: Column, c: Column, d: Column
 	local e: Column, f: Column, g: Column, h: Column
 
