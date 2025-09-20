@@ -12,6 +12,10 @@ export type Iter<T...> = (Observer<T...>) -> () -> (jecs.Entity, T...)
 
 export type Observer<T...> = {
 	disconnect: (Observer<T...>) -> (),
+}
+
+export type Monitor<T...> = {
+	disconnect: (Observer<T...>) -> (),
 	added: ((jecs.Entity) -> ()) -> (),
 	removed: ((jecs.Entity) -> ()) -> ()
 }
@@ -77,11 +81,11 @@ local function observers_new<T...>(
    	if without then
 		for _, term in without do
 			if jecs.IS_PAIR(term) then
-				local rel = jecs.ECS_PAIR_SECOND(term)
+				local rel = jecs.ECS_PAIR_FIRST(term)
 				local tgt = jecs.ECS_PAIR_SECOND(term)
 				local wc = tgt == jecs.w
 				local onremoved = world:removed(rel, function(entity, id)
-					if not wc and term ~= tgt then
+					if not wc and id ~= term then
 						return
 					end
 					local r = jecs.record(world, entity)
@@ -137,7 +141,7 @@ local function observers_new<T...>(
     return (observer :: any) :: Observer<T...>
 end
 
-local function monitors_new<T...>(query: Query<T...>): Observer<T...>
+local function monitors_new<T...>(query: Query<T...>): Monitor<T...>
 	query:cached()
 
 	local world = (query :: Query<T...> & { world: World }).world
@@ -313,7 +317,7 @@ local function monitors_new<T...>(query: Query<T...>): Observer<T...>
      	removed = monitor_removed
    	}
 
-    return (observer :: any) :: Observer<T...>
+    return (observer :: any) :: Monitor<T...>
 end
 
 return {
