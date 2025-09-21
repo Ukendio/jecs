@@ -350,13 +350,19 @@ export type ComponentRecord = {
 export function component_record(world: World, id: Id): ComponentRecord;
 
 type TagToUndefined<T> = T extends TagDiscriminator ? undefined : T
-type TrimUndefined<T extends unknown[]> = T extends [...infer R, undefined] ? TrimUndefined<R> : T
+type TrimOptional<T extends unknown[]> = T extends [...infer L, infer R] 
+	? unknown extends R 
+		? L | T | TrimOptional<L> 
+		: R extends undefined
+			? L | T | TrimOptional<L>
+			: T
+	: T
 
 export function bulk_insert<const C extends Id[]>(
 	world: World,
 	entity: Entity,
 	ids: C,
-	values: [...TrimUndefined<{ [K in keyof C]: TagToUndefined<InferComponent<C[K]>> }>, ...undefined[]],
+	values: TrimOptional<{ [K in keyof C]: TagToUndefined<InferComponent<C[K]>> }>,
 ): void;
 export function bulk_remove(world: World, entity: Entity, ids: Id[]): void;
 
