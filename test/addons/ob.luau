@@ -7,6 +7,26 @@ local ob = require("@addons/ob")
 
 TEST("addons/ob::observer", function()
 	local world = jecs.world()
+	do CASE [[should not invoke callbacks with a related but non-queried pair that
+		while the entity still matches against the query]]
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local c = 1
+
+		ob.observer(world:query(jecs.pair(A, B)), function()
+			c+=1
+		end)
+
+		local e = world:entity()
+		CHECK(c==1)
+		world:add(e, jecs.pair(A, B))
+		CHECK(c==2)
+		world:add(e, jecs.pair(A, C))
+		CHECK(c==2)
+	end
+
 	do CASE "should match against archetypes that were already created"
 		local A = world:component()
 
@@ -203,6 +223,28 @@ end)
 
 TEST("addons/ob::monitor", function()
 	local world = jecs.world()
+	do CASE [[should not invoke callbacks with a related but non-queried pair that
+		while the entity still matches against the query]]
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local c = 1
+
+		local monitor = ob.monitor(world:query(jecs.pair(A, B)))
+
+		monitor.added(function()
+			c += 1
+		end)
+
+
+		local e = world:entity()
+		CHECK(c==1)
+		world:add(e, jecs.pair(A, B))
+		CHECK(c==2)
+		world:add(e, jecs.pair(A, C))
+		CHECK(c==2)
+	end
 	do CASE "should match against archetypes that were already created"
 		local A = world:component()
 
