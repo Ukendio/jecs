@@ -8,24 +8,16 @@ local jecs = require(ReplicatedStorage.ecs)
 local collect = require(ReplicatedStorage.collect)
 local ty = require(ReplicatedStorage.types)
 
-return function(world: ty.World)
-
-	--- integration test
-
- --    for _ = 1, 10 do
- --    	local e = world:entity()
- --     	world:set(e, ct.TestA, true)
- --    end
-
+return function(world: jecs.World)
     local storages = {} :: { [jecs.Entity]: {[jecs.Entity]: any }}
     local networked_components = {}
     local networked_pairs = {}
 
-    for component in world:each(ct.Networked) do
-		local name = assert(world:get(component, jecs.Name), "Invalid component")
+	for component in world:each(ct.Networked) do
+		local name = world:get(component, jecs.Name)
+		assert(name)
 		if components[name] == nil then
 			error("Invalid component:"..name)
-
 		end
 
         storages[component] = {}
@@ -34,7 +26,8 @@ return function(world: ty.World)
     end
 
 	for relation in world:each(ct.NetworkedPair) do
-		local name = world:get(relation, jecs.Name) :: string
+		local name = world:get(relation, jecs.Name)
+		assert(name)
 		if not components[name] then
 			error("Invalid component")
 		end
@@ -43,7 +36,7 @@ return function(world: ty.World)
 
 	for _, component in networked_components do
 		local name = world:get(component, jecs.Name)
-		if not components[name] then
+		if not name or not components[name] then
 			-- error("Invalid component")
 			error(`Networked Component (%id{component}%name{name})`)
 		end
@@ -68,51 +61,51 @@ return function(world: ty.World)
 	end
 
 	for _, relation in networked_pairs do
-		world:added(relation, function(entity, id, value)
-		local is_tag = jecs.is_tag(world, id)
-		local storage = storages[id]
-		if not storage then
-			storage = {}
-			storages[id] = storage
-		end
-		if is_tag then
-			storage[entity] = true
-		else
+		world:added(relation, function(entity: jecs.Entity, id: jecs.Id, value)
+			local is_tag = jecs.is_tag(world, id)
+			local storage = storages[id]
+			if not storage then
+				storage = {}
+				storages[id] = storage
+			end
+			if is_tag then
+				storage[entity] = true
+			else
+				storage[entity] = value
+			end
+		end)
+
+		world:changed(relation, function(entity: jecs.Id, id: jecs.Id, value)
+			local is_tag = jecs.is_tag(world, id)
+			if is_tag then
+				return
+			end
+
+			local storage = storages[id]
+			if not storage then
+				storage = {}
+				storages[id] = storage
+			end
+
 			storage[entity] = value
-		end
-	end)
+		end)
 
-	world:changed(relation, function(entity, id, value)
-		local is_tag = jecs.is_tag(world, id)
-		if is_tag then
-			return
-		end
+		world:removed(relation, function(entity, id)
+			local storage = storages[id]
+			if not storage then
+				storage = {}
+				storages[id] = storage
+			end
 
-		local storage = storages[id]
-		if not storage then
-			storage = {}
-			storages[id] = storage
-		end
-
-		storage[entity] = value
-	end)
-
-	world:removed(relation, function(entity, id)
-		local storage = storages[id]
-		if not storage then
-			storage = {}
-			storages[id] = storage
-		end
-
-		storage[entity] = "jecs.Remove"
-	end)
+			storage[entity] = "jecs.Remove"
+		end)
 	end
 
     -- local requested_snapshots = collect(remotes.request_snapshot.OnServerEvent)
     local players_added = collect(Players.PlayerAdded)
 
-    return function()
-        local snapshot_lazy: ty.Snapshot
+    return function(_, dt: number)
+        local snapshot_lazy: ty.snapshot
         local set_ids_lazy: { jecs.Entity }
 
         -- In the future maybe it should be requested by the player instead when they
@@ -132,9 +125,7 @@ return function(world: ty.World)
 						local entities = archetype.entities
 						local entities_len = #entities
 						table.move(entities, 1, entities_len, set_n + 1, set_ids_lazy)
-						if is_tag then
-							set_values = table.create(entities_len, true)
-						else
+						if not is_tag then
 							local column = archetype.columns_map[component]
 							table.move(column, 1, entities_len, set_n + 1, set_values)
 						end
@@ -144,25 +135,31 @@ return function(world: ty.World)
 
 					local set = table.move(set_ids_lazy, 1, set_n, 1, {})
 
-					local ser_id: string = nil :: any
-
-					if jecs.IS_PAIR(component) then
-						ser_id = `{jecs.pair_first(world, component)},{jecs.pair_first(world, component)}`
-					else
-						ser_id = tostring(component)
-					end
-
-			    	snapshot_lazy[ser_id] = {
+					local map = {
 	                    set = if set_n > 0 then set else nil,
 	                    values = if set_n > 0 then set_values else nil,
 	                }
+
+					if jecs.IS_PAIR(component) then
+						map.relation = jecs.pair_first(world, component)
+						map.target = jecs.pair_second(world, component)
+						map.pair = true
+					end
+				   	snapshot_lazy[tostring(component)] = map
 				end
 			end
 
 			remotes.replication:FireClient(player, snapshot_lazy)
 		end
 
-		local snapshot = {} :: ty.Snapshot
+		-- accumulator += dt
+
+		-- Purposely sending less diffs of the world because doing it at 60hz
+		-- gets expensive. But this requires interpolated elements in the scene.
+		-- if accumulator > 1/60 then
+		-- 	accumulator = 0
+
+		local snapshot = {} :: ty.snapshot
 
 		local set_ids = {}
 		local removed_ids = {}
@@ -193,23 +190,33 @@ return function(world: ty.World)
             if dirty then
             	local removed = table.move(removed_ids, 1, removed_n, 1, {}) :: { jecs.Entity }
              	local set = table.move(set_ids, 1, set_n, 1, {}) :: { jecs.Entity }
-	            local ser_id: string = nil :: any
 
-				if jecs.IS_PAIR(component) then
-					ser_id = `{jecs.pair_first(world, component)},{jecs.pair_second(world, component)}`
-				else
-					ser_id = tostring(component)
-				end
+              	-- local ser_id: string = nil :: any
 
-	            snapshot[ser_id] = {
+				-- if jecs.IS_PAIR(component) then
+				-- 	ser_id = `{jecs.pair_first(world, component)},{jecs.pair_second(world, component)}`
+				-- else
+				-- 	ser_id = tostring(component)
+				-- end
+
+				local map = {
                     set = if set_n > 0 then set else nil,
                     values = if set_n > 0 then set_values else nil,
-                    removed = if removed_n > 0 then removed else nil
+                    removed = if removed_n > 0 then removed else nil,
                 }
+
+				if jecs.IS_PAIR(component) then
+					map.relation = jecs.pair_first(world, component)
+					map.target = jecs.pair_second(world, component)
+					map.pair = true
+				end
+
+				snapshot[tostring(component)] = map
 	        end
         end
         if next(snapshot) ~= nil then
         	remotes.replication:FireAllClients(snapshot)
+			-- print(snapshot)
         end
     end
 end
