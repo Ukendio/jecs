@@ -1,10 +1,12 @@
+--!strict
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local jabby = require(ReplicatedStorage.Packages.jabby)
+local ct = require(ReplicatedStorage.components)
 local jecs = require(ReplicatedStorage.ecs)
 
-jabby.set_check_function(function() return true end)
+jabby.set_check_function(function(player) return true end)
 
-local scheduler = jabby.scheduler.create("jabby scheduler")
+local scheduler = jabby.scheduler.create()
 
 jabby.register({
 	applet = jabby.applets.scheduler,
@@ -12,125 +14,78 @@ jabby.register({
 	configuration = {
 		scheduler = scheduler,
 	},
-})
+}::any)
 
 local ContextActionService = game:GetService("ContextActionService")
 
-local function create_widget(_, state: Enum.UserInputState)
+local function create_widget(_, state: Enum.UserInputState): Enum.ContextActionResult
 	local client = jabby.obtain_client()
-    if state ~= Enum.UserInputState.Begin then return end
-    client.spawn_app(client.apps.home, nil)
+    if state ~= Enum.UserInputState.Begin then
+    	return Enum.ContextActionResult.Pass
+    end
+    client.spawn_app(client.apps.home::any, nil)
+    return Enum.ContextActionResult.Sink
 end
 
 local RunService = game:GetService("RunService")
 
-local System = jecs.component() :: jecs.Id<{
-	fn: () -> (),
-	name: string,
-}>
-local DependsOn = jecs.component()
-local Phase = jecs.tag()
-local Event = jecs.component() :: jecs.Id<RBXScriptSignal>
-
-local pair = jecs.pair
-
-local types = require(ReplicatedStorage.types)
-
-local function ECS_PHASE(world, after: types.Entity)
-	local phase = world:entity()
-	world:add(phase, Phase)
-	if after then
-		local dependency = pair(DependsOn, after)
-		world:add(phase, dependency)
+local function schedule(world, ...)
+	local function get_entity_from_part(part: BasePart): (jecs.Entity<any>?, PVInstance?)
+		for id, model in world:query(ct.Renderable) do
+			if not part:IsDescendantOf(model) then continue end
+			return id, model
+		end
+		return nil, nil
 	end
-
-	return phase
-end
-
-local Heartbeat = jecs.tag()
-jecs.meta(Heartbeat, Phase)
-jecs.meta(Heartbeat, Event, RunService.Heartbeat)
-
-local PreSimulation = jecs.tag()
-jecs.meta(PreSimulation, Phase)
-jecs.meta(PreSimulation, Event, RunService.PreSimulation)
-
-local PreAnimation = jecs.tag()
-jecs.meta(PreAnimation, Phase)
-jecs.meta(PreAnimation, Event, RunService.PreAnimation)
-
-local PreRender = jecs.tag()
-jecs.meta(PreRender, Phase)
-jecs.meta(PreRender, Event, RunService.PreRender)
-
-local function ECS_SYSTEM(world: types.World, mod: ModuleScript, phase: types.Entity?)
-	local system = world:entity()
-	local p = phase or Heartbeat
-	local fn = require(mod) :: (...any) -> ()
-	world:set(system, System, {
-		fn = fn(world, 0) or fn,
-		name = mod.Name,
-	})
-
-	local depends_on = DependsOn :: jecs.Entity
-	world:add(system, pair(depends_on, p))
-end
-local function find_systems_w_phase(world: types.World, systems, phase: types.Entity)
-	local phase_name = world:get(phase, jecs.Name) :: string
-	for _, s in world:query(System):with(pair(DependsOn, phase)) do
-		table.insert(systems, {
-			id = scheduler:register_system({
-				phase = phase_name,
-				name = s.name,
-			}),
-			fn = s.fn
-		})
-	end
-	for after in world:query(Phase, pair(DependsOn, phase)) do
-		find_systems_w_phase(world, systems, after)
-	end
-	return systems
-end
-
-local function ECS_RUN(world: types.World)
 
 	jabby.register({
 		applet = jabby.applets.world,
-		name = "MyWorld",
+		name = "World",
 		configuration = {
 			world = world,
+			get_entity_from_part = get_entity_from_part,
 		},
-	})
+	}::any)
+
+	local systems = { ... }
+
+	local function systems_load(mod: ModuleScript, ...)
+		local fn = require(mod) :: (...any) -> ()
+		local system = fn(...) or fn
+
+		local system_id = scheduler:register_system({
+			name = mod.Name,
+			module = mod,
+		})
+
+		return {
+			system = system,
+			id = system_id
+		}
+	end
+
+	for i, mod in systems do
+		systems[i] = systems_load(mod, world, 0)
+	end
 
 	if RunService:IsClient() then
-		ContextActionService:BindAction("Open Jabby Home", create_widget, false, Enum.KeyCode.F4)
+		ContextActionService:BindAction(
+			"Open Jabby Home",
+			create_widget,
+			false,
+			Enum.KeyCode.F4
+		)
 	end
 
-	for phase, event in world:query(Event, Phase) do
-		local systems = find_systems_w_phase(world, {}, phase)
-		event:Connect(function(...)
-			for _, system in systems do
-				scheduler:run(system.id, system.fn, world, ...)
-			end
-		end)
+	return function(dt: number, input: InputObject?)
+		for i, config in systems do
+			-- config.system(world, dt, input)
+			local system = config.system
+			local id = config.id
+			scheduler:run(id, system,
+				world, dt, input)
+		end
 	end
-
 end
 
-return {
-	PHASE = ECS_PHASE,
-	SYSTEM = ECS_SYSTEM,
-	RUN = ECS_RUN,
-	phases = {
-		Heartbeat = Heartbeat,
-		PreSimulation = PreSimulation,
-		PreAnimation = PreAnimation,
-		PreRender = PreRender
-	},
-	components = {
-		System = System,
-		DependsOn = DependsOn,
-		Phase = Phase,
-		Event = Event,
-	}
-}
+return schedule

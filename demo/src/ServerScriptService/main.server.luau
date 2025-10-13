@@ -11,11 +11,14 @@ local world = jecs.world()
 
 local systems = ServerScriptService.systems
 
-SYSTEM(world, systems.replication)
-SYSTEM(world, systems.players_added)
-SYSTEM(world, systems.poison_hurts)
-SYSTEM(world, systems.health_regen)
-SYSTEM(world, systems.lifetimes_expire)
-SYSTEM(world, systems.life_is_painful)
-SYSTEM(world, ReplicatedStorage.systems.entities_delete)
-RUN(world, 0)
+local heartbeat = schedule(world,
+	systems.players_added,
+	systems.poison_hurts,
+	systems.health_regen,
+	systems.lifetimes_expire,
+	systems.life_is_painful,
+	systems.entities_delete,
+	systems.replication
+)
+
+game:GetService("RunService").Heartbeat:Connect(heartbeat)
