@@ -21,6 +21,7 @@ export default defineConfig({
 						{ text: "jecs", link: "/api/jecs" },
 						{ text: "World", link: "/api/world" },
 						{ text: "Query", link: "/api/query" },
+						{ text: "Observers", link: "/api/observers" },
 					],
 				},
 			],

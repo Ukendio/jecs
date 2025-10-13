@@ -8,7 +8,7 @@ The observers addon is included with jecs and can be imported directly:
 
 ```luau
 local jecs = require(path/to/jecs)
-local observers_add = require(path/to/jecs/addons/observers)
+local observers_add = require(path/to/jecs/addons/ob)
 
 local world = observers_add(jecs.world())
 ```
