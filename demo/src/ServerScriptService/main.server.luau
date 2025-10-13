@@ -3,9 +3,6 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local jecs = require(ReplicatedStorage.ecs)
 local schedule = require(ReplicatedStorage.schedule)
 
-local SYSTEM = schedule.SYSTEM
-local RUN = schedule.RUN
-
 require(ReplicatedStorage.components)
 local world = jecs.world()
 
