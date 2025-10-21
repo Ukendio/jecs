@@ -292,13 +292,17 @@ TEST("bulk", function()
 		world:changed(c3, counter)
 
 		local e = world:entity()
-		jecs.bulk_insert(world, e, {c1,c2,c3}, {1,2,3})
+		jecs.bulk_insert(world, e, {c1,c2}, {1,2,3})
 
 		jecs.bulk_insert(world, e, {c1,c2,c3}, {4,5,6})
 
 		CHECK(world:has(e, c1, c2, c3))
-		CHECK(count == 3)
+		CHECK(count == 2)
+
+		jecs.bulk_insert(world, e, {c1,c2,c3}, {7,8,9})
+		CHECK(count == 2+3)
 	end
+
 
 	do CASE "Should bulk add with hooks moving archetypes without previous"
 		local world = jecs.world()

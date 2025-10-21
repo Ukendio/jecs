@@ -137,9 +137,11 @@ local function monitors_new(query: Query<...any>): Monitor
 	local callback_added: ((jecs.Entity) -> ())?
 	local callback_removed: ((jecs.Entity) -> ())?
 
-	local function emplaced<T, a>(
-		entity: jecs.Entity<T>,
-		id: jecs.Id<a>
+ 	local function emplaced<a>(
+ 		entity: jecs.Entity,
+ 		id: jecs.Id<a>,
+		value: a,
+		oldarchetype: jecs.Archetype
 	)
 		if callback_added == nil then
 			return
@@ -148,22 +150,26 @@ local function monitors_new(query: Query<...any>): Monitor
 		local r = jecs.entity_index_try_get_fast(
 			entity_index, entity :: any) :: jecs.Record
 
-		local archetype = r.archetype
-
-		if archetypes[archetype.id] then
+		if archetypes[r.archetype.id] then
 			callback_added(entity)
 		end
 	end
 
-	local function removed(entity: jecs.Entity, component)
+	local function removed(entity: jecs.Entity, component: jecs.Component, delete:boolean?)
+		if delete then
+			return
+		end
 		if callback_removed == nil then
 			return
 		end
 		local r = jecs.record(world, entity)
-		if not archetypes[r.archetype.id] then
-			return
+		local src = r.archetype
+
+		local dst = jecs.archetype_traverse_remove(world, component, src)
+
+		if not archetypes[dst.id] then
+			callback_removed(entity)
 		end
-		callback_removed(entity)
 	end
 
 	local cleanup = {}
@@ -174,7 +180,7 @@ local function monitors_new(query: Query<...any>): Monitor
 			local tgt = jecs.ECS_PAIR_SECOND(term)
 			local wc = tgt == jecs.w
 
-			local onadded = world:added(rel, function(entity, id)
+			local onadded = world:added(rel, function(entity, id, _, oldarchetype)
 				if callback_added == nil then
 					return
 				end
@@ -186,9 +192,10 @@ local function monitors_new(query: Query<...any>): Monitor
 				local r = jecs.entity_index_try_get_fast(
 					entity_index, entity :: any) :: jecs.Record
 
-				local archetype = r.archetype
-
-				if archetypes[archetype.id] then
+				if archetypes[oldarchetype.id] and archetypes[r.archetype.id] then
+					print("???")
+				end
+				if not archetypes[oldarchetype.id] and archetypes[r.archetype.id] then
 					callback_added(entity)
 				end
 			end)
@@ -199,11 +206,11 @@ local function monitors_new(query: Query<...any>): Monitor
 				if not wc and id ~= term then
 					return
 				end
+
 				local r = jecs.record(world, entity)
-				if not archetypes[r.archetype.id] then
-					return
+				if archetypes[r.archetype.id] then
+					callback_removed(entity)
 				end
-				callback_removed(entity)
 			end)
 			table.insert(cleanup, onadded)
 			table.insert(cleanup, onremoved)
@@ -223,7 +230,7 @@ local function monitors_new(query: Query<...any>): Monitor
 				local rel = jecs.ECS_PAIR_FIRST(term)
 				local tgt = jecs.ECS_PAIR_SECOND(term)
 				local wc = tgt == jecs.w
-				local onadded = world:added(rel, function(entity, id)
+				local onadded = world:added(rel, function(entity, id, _, oldarchetype)
 					if callback_removed == nil then
 						return
 					end
@@ -232,14 +239,23 @@ local function monitors_new(query: Query<...any>): Monitor
 					end
 					local r = jecs.record(world, entity)
 					local archetype = r.archetype
-					if archetype then
-						local dst = jecs.archetype_traverse_remove(world, id, archetype)
-						if archetypes[dst.id] then
-							callback_removed(entity)
-						end
+					if not archetype then
+						return
+					end
+
+					-- NOTE(marcus): This check that it was presently in
+					-- the query but distinctively leaves is important as
+					-- sometimes it could be too eager to report that it
+					-- removed a component even though the entity is not
+					-- apart of the monitor
+					if archetypes[oldarchetype.id] and not archetypes[archetype.id] then
+						callback_removed(entity)
 					end
 				end)
-				local onremoved = world:removed(rel, function(entity, id)
+				local onremoved = world:removed(rel, function(entity, id, delete)
+					if delete then
+						return
+					end
 					if callback_added == nil then
 						return
 					end
@@ -248,40 +264,58 @@ local function monitors_new(query: Query<...any>): Monitor
 					end
 					local r = jecs.record(world, entity)
 					local archetype = r.archetype
-					if archetype then
-						local dst = jecs.archetype_traverse_remove(world, id, archetype)
-						if archetypes[dst.id] then
-							callback_added(entity)
-						end
+					if not archetype then
+						return
+					end
+
+					local dst = jecs.archetype_traverse_remove(world, id, archetype)
+
+					if archetypes[dst.id] then
+						callback_added(entity)
 					end
 				end)
 				table.insert(cleanup, onadded)
 				table.insert(cleanup, onremoved)
 			else
-				local onadded = world:added(term, function(entity, id)
+				local onadded = world:added(term, function(entity, id, _, oldarchetype)
 					if callback_removed == nil then
 						return
 					end
 					local r = jecs.record(world, entity)
 					local archetype = r.archetype
-					if archetype then
-						local dst = jecs.archetype_traverse_remove(world, id, archetype)
-						if archetypes[dst.id] then
-							callback_removed(entity)
-						end
+					if not archetype then
+						return
+					end
+
+					-- NOTE(marcus): Sometimes OnAdd listeners for excluded
+					-- terms are too eager to report that it is leaving the
+					-- monitor even though the entity is not apart of it
+					-- already.
+					if archetypes[oldarchetype.id] and not archetypes[archetype.id] then
+						callback_removed(entity)
 					end
 				end)
-				local onremoved = world:removed(term, function(entity, id)
+				local onremoved = world:removed(term, function(entity, id, delete)
+					if delete then
+						return
+					end
 					if callback_added == nil then
 						return
 					end
 					local r = jecs.record(world, entity)
 					local archetype = r.archetype
-					if archetype then
-						local dst = jecs.archetype_traverse_remove(world, id, archetype)
-						if archetypes[dst.id] then
-							callback_added(entity)
-						end
+					if not archetype then
+						return
+					end
+					local dst = jecs.archetype_traverse_remove(world, id, archetype)
+
+					-- NOTE(marcus): Inversely with the opposite operation, you
+					-- only need to check if it is going to enter the query once
+					-- because world:remove already stipulates that it is
+					-- idempotent so that this hook won't be invoked if it is
+					-- was already removed.
+					if archetypes[dst.id] then
+						callback_added(entity)
 					end
 				end)
 				table.insert(cleanup, onadded)

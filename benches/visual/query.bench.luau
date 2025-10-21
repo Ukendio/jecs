@@ -4,9 +4,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local jecs = require(ReplicatedStorage.Lib:Clone())
-local mirror = require(ReplicatedStorage.mirror:Clone())
-local mcs = mirror.world()
+local chrono = require(ReplicatedStorage.chronoecs:Clone())
 local ecs = jecs.world()
+local ccs = chrono.new()
 
 local D1 = ecs:component()
 local D2 = ecs:component()
@@ -17,74 +17,74 @@ local D6 = ecs:component()
 local D7 = ecs:component()
 local D8 = ecs:component()
 
-local E1 = mcs:component()
-local E2 = mcs:component()
-local E3 = mcs:component()
-local E4 = mcs:component()
-local E5 = mcs:component()
-local E6 = mcs:component()
-local E7 = mcs:component()
-local E8 = mcs:component()
+local E1 = ccs:component()
+local E2 = ccs:component()
+local E3 = ccs:component()
+local E4 = ccs:component()
+local E5 = ccs:component()
+local E6 = ccs:component()
+local E7 = ccs:component()
+local E8 = ccs:component()
+
+local d_components = {}
+local e_components = {}
+
+for i = 1, 150 do
+	ecs:component()
+	ccs:component()
+end
 
 local function flip()
-	return math.random() >= 0.3
+	return math.random() >= 0.5
 end
 
 local N = 2 ^ 16 - 2
 
 for i = 1, N do
 	local entity = ecs:entity()
-	local m = mcs:entity()
+	local m = ccs:entity()
 
 	if flip() then
-		ecs:add(entity, entity)
-		mcs:add(m, m)
-	end
-	if flip() then
 		ecs:set(entity, D1, true)
-		mcs:set(m, E1, true)
+		ccs:add(m, E1)
+		ccs:set(m, E1, true)
 	end
 	if flip() then
 		ecs:set(entity, D2, true)
-		mcs:set(m, E2, true)
+		ccs:add(m, E2)
+		ccs:set(m, E2, true)
 	end
 	if flip() then
 		ecs:set(entity, D3, true)
-		mcs:set(m, E3, true)
+		ccs:add(m, E3)
+		ccs:set(m, E3, true)
 	end
 	if flip() then
 		ecs:set(entity, D4, true)
-		mcs:set(m, E4, true)
+		ccs:add(m, E4)
+		ccs:set(m, E4, true)
 	end
 	if flip() then
 		ecs:set(entity, D5, true)
-		mcs:set(m, E5, true)
+		ccs:add(m, E4)
+		ccs:set(m, E5, true)
 	end
 	if flip() then
 		ecs:set(entity, D6, true)
-		mcs:set(m, E6, true)
+		ccs:add(m, E6)
+		ccs:set(m, E6, true)
 	end
 	if flip() then
 		ecs:set(entity, D7, true)
-		mcs:set(m, E7, true)
+		ccs:add(m, E7)
+		ccs:set(m, E7, true)
 	end
 	if flip() then
+		ccs:add(m, E8)
 		ecs:set(entity, D8, true)
-		mcs:set(m, E8, true)
+		ccs:set(m, E8, true)
 	end
 end
-
-local count = 0
-
-for _, archetype in ecs:query(D2, D4, D6, D8):archetypes() do
-	count += #archetype.entities
-end
-
-
-local mq = mcs:query(E2, E4, E6, E8):cached()
-local jq = ecs:query(D2, D4, D6, D8):cached()
-
-print(count, #jq:archetypes())
 
 return {
 	ParameterGenerator = function()
@@ -102,13 +102,13 @@ return {
 		-- 	end
 		-- end,
 		--
-		Mirror = function()
-			for entityId, firstComponent in mq do
+		chrono = function()
+			for entityId, firstComponent in ccs:view(E2, E4, E6, E8) do
 			end
 		end,
 
 		Jecs = function()
-			for entityId, firstComponent in jq do
+			for entityId, firstComponent in ecs:query(D2, D4, D6, D8) do
 			end
 		end,
 	},

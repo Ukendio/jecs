@@ -222,8 +222,68 @@ TEST("addons/ob::observer", function()
 	end
 end)
 
+FOCUS()
 TEST("addons/ob::monitor", function()
 	local world = jecs.world()
+
+	do CASE [[should not invoke monitor.added callback unless it wasn't apart
+	of the monitor]]
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local monitor = ob.monitor(world:query(A):without(B, C))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, A)
+		CHECK(c==1)
+		world:add(e, B)
+		world:add(e, C)
+		-- left
+		CHECK(c==1)
+
+		world:remove(e, B)
+		world:remove(e, C)
+		-- re-enters once
+		CHECK(c==2)
+
+		world:remove(e, B)
+		CHECK(c==2)
+	end
+
+	do CASE "deleted entity should only exit monitor once"
+		local A = world:component()
+		local B = world:component()
+
+		local Destroy = world:entity()
+
+		local c = 0
+
+		local monitor = ob.monitor(world:query(A, B):without(Destroy))
+
+		monitor.added(function()
+			print("enter")
+		end)
+		monitor.removed(function()
+			c += 1
+		end)
+
+
+		local e = world:entity()
+		world:add(e, A)
+		world:add(e, B)
+
+		world:add(e, Destroy)
+
+		world:delete(e)
+		print(c)
+		CHECK(c==1)
+	end
+
 	do CASE [[should not invoke callbacks with a related but non-queried pair that
 		while the entity still matches against the query]]
 		local A = world:component()

@@ -63,37 +63,20 @@ end
 
 type function ecs_id_t(first: type, second: type)
 	local __T = types.singleton("__T")
+
+	local p = ecs_pair_t(Entity(first), Entity(second))
 	if second:is("nil") then
-		local p = ecs_pair_t(Entity(first), Entity(second))
-
-		-- Create component type that matches Component<T> structure exactly
-		-- This should be structurally compatible with Component<T>
-		local component_type = types.newtable()
-		component_type:setproperty(__T, first)
-
-		-- Union order: component first, then pair
-		-- This helps Luau recognize Component<T> as assignable
-		-- local u = types.unionof(component_type, p)
-		-- return u
-		return component_type
+		return first
 	end
 
-	local function entity(ty: type)
-		local e = types.newtable()
-		e:setproperty(__T, ty)
-		return e
-	end
-
-	local e1 = entity(first)
-	local e2 = entity(second)
-	return ecs_pair_t(e1, e2)
+	return p
 end
 
 export type Entity<T = nil> = { __T: T }
-export type Id2<T = any> = { __T: T }
+export type Id<T = any> = { __T: T }
 export type Pair<First=any, Second=any> = ecs_pair_t<Entity<First>, Entity<Second>>
 export type Component<T=any> = { __T: T }
-export type Id<First, Second=nil> = ecs_id_t<First, Second>
+export type Id2<First, Second=nil> = ecs_id_t<First, Second>
 
 export type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 export type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
@@ -110,8 +93,8 @@ export type CachedQuery<T...> = typeof(setmetatable(
 		cached: (self: CachedQuery<T...>) -> CachedQuery<T...>,
 		has: (CachedQuery<T...>, Entity) -> boolean,
 		ids: { Id<any> },
-		filter_with: { Id<any, any> }?,
-		filter_without: { Id<any, any> }?,
+		filter_with: { Id<any> }?,
+		filter_without: { Id<any> }?,
 		archetypes_map: { [number]: number },
 		-- world: World
 	},
@@ -129,8 +112,8 @@ export type Query<T...> = typeof(setmetatable(
 		cached: (self: Query<T...>) -> CachedQuery<T...>,
 		has: (Query<T...>, Entity) -> boolean,
 		ids: { Id<any> },
-		filter_with: { Id<any, any> }?,
-		filter_without: { Id<any, any> }?,
+		filter_with: { Id<any> }?,
+		filter_without: { Id<any> }?,
 		-- world: World
 	},
 	{} :: {
@@ -177,7 +160,7 @@ type componentrecord = {
 
 	on_add: ((entity: i53, id: i53, value: any, oldarchetype: archetype) -> ())?,
 	on_change: ((entity: i53, id: i53, value: any, oldarchetype: archetype) -> ())?,
-	on_remove: ((entity: i53, id: i53) -> ())?,
+	on_remove: ((entity: i53, id: i53, delete: boolean?) -> ())?,
 
 	wildcard_pairs: { [number]: componentrecord },
 }
@@ -228,7 +211,7 @@ type world = {
 
 	added: (world, i53, (e: i53, id: i53, value: any?) -> ()) -> () -> (),
 	changed: (world, i53, (e: i53, id: i53, value: any?) -> ()) -> () -> (),
-	removed: (world, i53, (e: i53, id: i53) -> ()) -> () -> (),
+	removed: (world, i53, (e: i53, id: i53, delete: boolean?) -> ()) -> () -> (),
 }
 
 
@@ -246,7 +229,7 @@ export type World = {
 	observable: Map<Component, Map<Component, { Observer }>>,
 
 	added: <T>(World, Component<T>, (e: Entity, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
-	removed: <T>(World, Component<T>, (e: Entity, id: Id<T>) -> ()) -> () -> (),
+	removed: <T>(World, Component<T>, (e: Entity, id: Id<T>, delete: boolean?) -> ()) -> () -> (),
 	changed: <T>(World, Component<T>, (e: Entity, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
 
 	--- Enforce a check on entities to be created within desired range
@@ -2248,20 +2231,21 @@ local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: 
 		local to = archetype_ensure(world, dst_types)
 		new_entity(entity, r, to)
 		local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
+
 		for i, id in ids do
 			local value = values[i]
+			if value then
+				r.archetype.columns_map[id][r.row] = value
+			end
+		end
+
+		for i, id in ids do
 			local cdr = component_index[id]
 
 			local on_add = cdr.on_add
-			if value then
-				r.archetype.columns_map[id][r.row] = value
-				if on_add then
-					on_add(entity, id, value, ROOT_ARCHETYPE)
-				end
-			else
-				if on_add then
-					on_add(entity, id, nil, ROOT_ARCHETYPE)
-				end
+			if on_add then
+				local value = values[i]
+				on_add(entity, id, value, ROOT_ARCHETYPE)
 			end
 		end
 		return
@@ -2287,25 +2271,43 @@ local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: 
 
 	if from ~= to then
 		entity_move(entity_index, entity, r, to)
-	end
 
-	for i, set in emplaced do
-		local id = ids[i]
-		local idr = component_index[id]
+		for i, id in ids do
+			local value = values[i] :: any
 
-		local value = values[i] :: any
-
-		local on_add = idr.on_add
-
-		if value ~= nil then
-			r.archetype.columns_map[id][r.row] = value
-			local on_change = idr.on_change
-			local hook = if set then on_change else on_add
-			if hook then
-				hook(entity, id, value :: any, from)
+			if value ~= nil then
+				r.archetype.columns_map[id][r.row] = value
 			end
-		elseif on_add then
-			on_add(entity, id, nil, from)
+		end
+
+		for i, exists in emplaced do
+			local value = values[i]
+			local id = ids[i]
+			local idr = component_index[id]
+			if exists then
+				local on_change = idr.on_change
+				if on_change then
+					on_change(entity, id, value, from)
+				end
+			else
+				local on_add = idr.on_add
+				if on_add then
+					on_add(entity, id, value, from)
+				end
+			end
+		end
+	else
+		for i, id in ids do
+			local value = values[i] :: any
+			local idr = component_index[id]
+			local on_change = idr.on_change
+			if on_change then
+				on_change(entity, id, value, from)
+			end
+
+			if value ~= nil then
+				r.archetype.columns_map[id][r.row] = value
+			end
 		end
 	end
 end
@@ -2783,7 +2785,9 @@ local function world_new()
 		end
 	end
 
-	type Listener<T> = (e: i53, id: i53, value: T, oldarchetype: archetype) -> ()
+	type Listener<T> =
+		& ((e: i53, id: i53, value: T, oldarchetype: archetype) -> ())
+		& ((e: i53, id: i53, delete: boolean?) -> ())
 
 	world.added = function<T>(_: world, component: i53, fn: Listener<T>)
 		local listeners = signals.added[component]
@@ -2839,7 +2843,7 @@ local function world_new()
 					listener(entity, id, value, oldarchetype)
 				end
 			end
-			local existing_hook = world_get(world, component, EcsOnChange) :: Listener<T>
+			local existing_hook = world_get(world, component, EcsOnChange) :: Listener<T>?
 			if existing_hook then
 				table.insert(listeners, existing_hook)
 			end
@@ -2870,14 +2874,14 @@ local function world_new()
 		end
 	end
 
-	world.removed = function<T>(_: world, component: i53, fn: (i53, i53) -> ())
+	world.removed = function<T>(_: world, component: i53, fn: (i53, i53, boolean?) -> ())
 		local listeners = signals.removed[component]
 		if not listeners then
 			listeners = {}
 			signals.removed[component] = listeners
-			local function on_remove(entity, id)
+			local function on_remove(entity, id, delete)
 				for _, listener in listeners :: { (...any) -> () } do
-					listener(entity, id)
+					listener(entity, id, delete)
 				end
 			end
 
@@ -3088,7 +3092,7 @@ local function world_new()
 				local idr = component_index[id]
 				local on_remove = idr.on_remove
 				if on_remove then
-					on_remove(entity, id)
+					on_remove(entity, id, true)
 				end
 			end
 			archetype_delete(world, record.archetype, record.row)
@@ -3096,11 +3100,11 @@ local function world_new()
 
 		local component_index = world.component_index
 		local archetypes = world.archetypes
-		local tgt = ECS_PAIR(EcsWildcard, entity::number)
-		local rel = ECS_PAIR(entity::number, EcsWildcard)
+		local tgt = ECS_PAIR(EcsWildcard, entity)
+		local rel = ECS_PAIR(entity, EcsWildcard)
 
 		local idr_t = component_index[tgt]
-		local idr = component_index[entity::number]
+		local idr = component_index[entity]
 		local idr_r = component_index[rel]
 
 		if idr then
@@ -3228,7 +3232,7 @@ local function world_new()
 					local tr_count = counts[archetype_id]
 					local idr_r_types = idr_r_archetype.types
 					for i = tr, tr + tr_count - 1 do
-						local id = types[i]
+						local id = idr_r_types[i]
 						node = archetype_traverse_remove(world, id, node)
 						local on_remove = component_index[id].on_remove
 						if on_remove then
@@ -3444,10 +3448,10 @@ return {
 	pair = ECS_PAIR :: <P, O>(first: Entity<P>, second: Entity<O>) -> Pair<P, O>,
 
 	IS_PAIR = ECS_IS_PAIR :: (pair: Component) -> boolean,
-	ECS_PAIR_FIRST = ECS_PAIR_FIRST :: <P, O>(pair: Id<P, O>) -> Component<P>,
-	ECS_PAIR_SECOND = ECS_PAIR_SECOND :: <P, O>(pair: Id<P, O>) -> Component<O>,
-	pair_first = ecs_pair_first :: <P, O>(world: World, pair: Id<P, O>) -> Component<P>,
-	pair_second = ecs_pair_second :: <P, O>(world: World, pair: Id<P, O>) -> Component<O>,
+	ECS_PAIR_FIRST = ECS_PAIR_FIRST :: <P, O>(pair: Id<P>) -> Component<P>,
+	ECS_PAIR_SECOND = ECS_PAIR_SECOND :: <P, O>(pair: Id<P>) -> Component<O>,
+	pair_first = ecs_pair_first :: <P, O>(world: World, pair: Id<P>) -> Component<P>,
+	pair_second = ecs_pair_second :: <P, O>(world: World, pair: Id<P>) -> Component<O>,
 	entity_index_get_alive = entity_index_get_alive,
 
 	archetype_append_to_records = archetype_append_to_records,
