@@ -52,6 +52,7 @@ jobs:
                   name: Jecs ${{ github.ref_name }}
                   files: |
                       jecs.rbxm
+                      jecs.luau
 
     publish:
         name: Publish
