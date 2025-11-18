@@ -247,7 +247,7 @@ export type World = {
 
 	added: <T>(World, Component<T>, (e: Entity, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
 	removed: <T>(World, Component<T>, (e: Entity, id: Id<T>) -> ()) -> () -> (),
-	changed:  <T>(World, Component<T>, (e: Entity, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
+	changed: <T>(World, Component<T>, (e: Entity, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
 
 	--- Enforce a check on entities to be created within desired range
 	range: (self: World, range_begin: number, range_end: number?) -> (),
@@ -3228,7 +3228,7 @@ local function world_new()
 					local tr_count = counts[archetype_id]
 					local idr_r_types = idr_r_archetype.types
 					for i = tr, tr + tr_count - 1 do
-						local id = idr_r_types[i]
+						local id = types[i]
 						node = archetype_traverse_remove(world, id, node)
 						local on_remove = component_index[id].on_remove
 						if on_remove then
