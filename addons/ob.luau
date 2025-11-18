@@ -13,8 +13,8 @@ export type Observer<T...> = {
 	disconnect: (Observer<T...>) -> (),
 }
 
-export type Monitor<T...> = {
-	disconnect: (Observer<T...>) -> (),
+export type Monitor = {
+	disconnect: () -> (),
 	added: ((jecs.Entity) -> ()) -> (),
 	removed: ((jecs.Entity) -> ()) -> ()
 }
@@ -23,37 +23,19 @@ local function observers_new<T...>(
 	query: Query<T...>,
 	callback: (jecs.Entity) -> ()
 ): Observer<T...>
-	query:cached()
+	local cachedquery = query:cached()
 
-
-	local world = (query :: Query<T...> & { world: World }).world
+	local world = (cachedquery :: Query<any> & { world: World }).world
 	callback = callback
 
-	local archetypes = {}
-	local terms = query.filter_with :: { jecs.Id }
-	local first = terms[1]
+	local archetypes = cachedquery.archetypes_map
+	local terms = query.filter_with :: { jecs.Id<any, any> }
 
-	local observers_on_create = world.observable[jecs.ArchetypeCreate][first]
-	local observer_on_create = observers_on_create[#observers_on_create]
-	observer_on_create.callback = function(archetype)
-		archetypes[archetype.id] = true
-	end
-	local observers_on_delete = world.observable[jecs.ArchetypeDelete][first]
-	local observer_on_delete = observers_on_delete[#observers_on_delete]
-	observer_on_delete.callback = function(archetype)
-		archetypes[archetype.id] = nil
-	end
-
-	local entity_index = world.entity_index :: any
-
-	for _, archetype in query:archetypes() do
-		archetypes[archetype.id] = true
-	end
+	local entity_index = world.entity_index
 
 	local function emplaced<a>(
 		entity: jecs.Entity,
-		id: jecs.Id<a>,
-		value: a
+		id: jecs.Id<a>
 	)
 		local r = entity_index.sparse_array[jecs.ECS_ID(entity)]
 
@@ -130,18 +112,6 @@ local function observers_new<T...>(
 	end
 
  	local function disconnect()
-  		table.remove(observers_on_create, table.find(
-	  		observers_on_create,
-	    	observer_on_create
-	   	))
-
-	   	table.remove(observers_on_delete, table.find(
-	      	observers_on_delete,
-	       	observer_on_delete
-       	))
-
-		table.clear(archetypes)
-
 		for _, disconnect in cleanup do
 			disconnect()
 		end
@@ -154,38 +124,22 @@ local function observers_new<T...>(
     return observer
 end
 
-local function monitors_new<T...>(query: Query<T...>): Monitor<T...>
-	query:cached()
+local function monitors_new(query: Query<...any>): Monitor
+	local cachedquery = query:cached()
 
-	local world = (query :: Query<T...> & { world: World }).world
+	local world = (cachedquery :: Query<...any> & { world: World }).world :: jecs.World
 
-	local archetypes = {}
-	local terms = query.filter_with :: { jecs.Id<any> }
-	local first = terms[1]
+	local archetypes = cachedquery.archetypes_map
+	local terms = cachedquery.filter_with :: { jecs.Id<any, any> }
 
-	local observers_on_create = world.observable[jecs.ArchetypeCreate][first]
-	local observer_on_create = observers_on_create[#observers_on_create]
-	observer_on_create.callback = function(archetype)
-		archetypes[archetype.id] = true
-	end
-	local observers_on_delete = world.observable[jecs.ArchetypeDelete][first]
-	local observer_on_delete = observers_on_delete[#observers_on_delete]
-	observer_on_delete.callback = function(archetype)
-		archetypes[archetype.id] = nil
-	end
-
-	for _, archetype in query:archetypes() do
-		archetypes[archetype.id] = true
-	end
 	local entity_index = world.entity_index :: any
 
 	local callback_added: ((jecs.Entity) -> ())?
 	local callback_removed: ((jecs.Entity) -> ())?
 
-	local function emplaced<a>(
-		entity: jecs.Entity,
-		id: jecs.Id<a>,
-		value: a
+	local function emplaced<T, a>(
+		entity: jecs.Entity<T>,
+		id: jecs.Id<a>
 	)
 		if callback_added == nil then
 			return
@@ -201,7 +155,7 @@ local function monitors_new<T...>(query: Query<T...>): Monitor<T...>
 		end
 	end
 
-	local function removed(entity: jecs.Entity, component: jecs.Id)
+	local function removed(entity: jecs.Entity, component)
 		if callback_removed == nil then
 			return
 		end
@@ -259,6 +213,7 @@ local function monitors_new<T...>(query: Query<T...>): Monitor<T...>
 			table.insert(cleanup, onadded)
 			table.insert(cleanup, onremoved)
 		end
+
  	end
 
   	local without = query.filter_without
@@ -336,18 +291,6 @@ local function monitors_new<T...>(query: Query<T...>): Monitor<T...>
     end
 
  	local function disconnect()
-  		table.remove(observers_on_create, table.find(
-	  		observers_on_create,
-	    	observer_on_create
-	   	))
-
-	   	table.remove(observers_on_delete, table.find(
-	      	observers_on_delete,
-	       	observer_on_delete
-       	))
-
-		table.clear(archetypes)
-
 		for _, disconnect in cleanup do
 			disconnect()
 		end
@@ -365,7 +308,7 @@ local function monitors_new<T...>(query: Query<T...>): Monitor<T...>
   		disconnect = disconnect,
     	added = monitor_added,
      	removed = monitor_removed
-   	} :: Monitor<T...>
+   	} :: Monitor
 
     return monitor
 end

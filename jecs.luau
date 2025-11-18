@@ -19,35 +19,118 @@ export type Archetype = {
 	type: string,
 	entities: { Entity },
 	columns: { Column },
-	columns_map: { [Id]: Column }
+	columns_map: { [Component]: Column }
 }
 
 export type QueryInner = {
 	compatible_archetypes: { Archetype },
-	ids: { Id },
-	filter_with: { Id },
-	filter_without: { Id },
+	archetypes_map: { [number]: number },
+	ids: { Component },
+	filter_with: { Component },
+	filter_without: { Component },
 	next: () -> (Entity, ...any),
 	world: World,
 }
 
-export type Entity<T = any> ={ __T: T }
-export type Id<T = any> = { __T: T }
-export type Pair<P, O> = Id<P>
-type ecs_id_t<T = unknown> = Id<T> | Pair<T, "Tag"> | Pair<"Tag", T>
+type function ecs_entity_t(ty: type)
+	if ty:is("union") then
+		for _, component in ty:components() do
+			assert(not component:readproperty(types.singleton("__IS_PAIR")), "Expected Entity got Pair")
+		end
+	end
+	assert(ty:readproperty(types.singleton("__T")), "Expected Entity")
+	assert(not ty:readproperty(types.singleton("__IS_PAIR")), "Expected Entity got Pair")
+	return ty
+end
+
+type function ecs_pair_t(first: type, second: type)
+	local __T = types.singleton("__T")
+	local __IS_PAIR = types.singleton("__IS_PAIR")
+
+	local first_t = first:readproperty(__T)
+	local second_t = second:readproperty(__T)
+
+	assert(first_t and second_t, "Expected at least one Entity in pair")
+
+	local id = types.newtable()
+	local ty = if first_t:is("nil") then second_t else first_t
+
+	id:setproperty(__T, ty)
+	id:setproperty(__IS_PAIR, types.singleton(true))
+
+	return id
+end
+
+type function ecs_id_t(first: type, second: type)
+	local __T = types.singleton("__T")
+	if second:is("nil") then
+		local p = ecs_pair_t(Entity(first), Entity(second))
+
+		-- Create component type that matches Component<T> structure exactly
+		-- This should be structurally compatible with Component<T>
+		local component_type = types.newtable()
+		component_type:setproperty(__T, first)
+
+		-- Union order: component first, then pair
+		-- This helps Luau recognize Component<T> as assignable
+		-- local u = types.unionof(component_type, p)
+		-- return u
+		return component_type
+	end
+
+	local function entity(ty: type)
+		local e = types.newtable()
+		e:setproperty(__T, ty)
+		return e
+	end
+
+	local e1 = entity(first)
+	local e2 = entity(second)
+	return ecs_pair_t(e1, e2)
+end
+
+export type Entity<T = nil> = { __T: T }
+export type Id2<T = any> = { __T: T }
+export type Pair<First=any, Second=any> = ecs_pair_t<Entity<First>, Entity<Second>>
+export type Component<T=any> = { __T: T }
+export type Id<First, Second=nil> = ecs_id_t<First, Second>
+
 export type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 export type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
+export type CachedIter<T...> = (query: CachedQuery<T...>) -> () -> (Entity, T...)
+
+type TypePack<T...> = {
+	__phantomdata: () -> (T...)
+}
+
+export type CachedQuery<T...> = typeof(setmetatable(
+	{} :: {
+		iter: CachedIter<T...>,
+		archetypes: (self: CachedQuery<T...>) -> { Archetype },
+		cached: (self: CachedQuery<T...>) -> CachedQuery<T...>,
+		has: (CachedQuery<T...>, Entity) -> boolean,
+		ids: { Id<any> },
+		filter_with: { Id<any, any> }?,
+		filter_without: { Id<any, any> }?,
+		archetypes_map: { [number]: number },
+		-- world: World
+	},
+	{} :: {
+		__iter: CachedIter<T...>,
+	})
+)
 
 export type Query<T...> = typeof(setmetatable(
 	{} :: {
 		iter: Iter<T...>,
-		with: ((Query<T...>, ...Id) -> Query<T...>),
-		without: ((Query<T...>, ...Id) -> Query<T...>),
+		with: ((Query<T...>, ...Component) -> Query<T...>),
+		without: ((Query<T...>, ...Component) -> Query<T...>),
 		archetypes: (self: Query<T...>) -> { Archetype },
-		cached: (self: Query<T...>) -> Query<T...>,
+		cached: (self: Query<T...>) -> CachedQuery<T...>,
+		has: (Query<T...>, Entity) -> boolean,
 		ids: { Id<any> },
-		filter_with: { Id<any> }?,
-		filter_without: { Id<any> }?
+		filter_with: { Id<any, any> }?,
+		filter_without: { Id<any, any> }?,
 		-- world: World
 	},
 	{} :: {
@@ -148,6 +231,7 @@ type world = {
 	removed: (world, i53, (e: i53, id: i53) -> ()) -> () -> (),
 }
 
+
 export type World = {
 	archetype_edges: Map<number, Map<Entity, Archetype>>,
 	archetype_index: { [string]: Archetype },
@@ -159,48 +243,57 @@ export type World = {
 	max_component_id: number,
 	max_archetype_id: number,
 
-	observable: Map<Id, Map<Id, { Observer }>>,
+	observable: Map<Component, Map<Component, { Observer }>>,
 
-	added: <T>(World, Entity<T>, (e: Entity, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
-	removed: <T>(World, Entity<T>, (e: Entity, id: Id<T>) -> ()) -> () -> (),
-	changed:  <T>(World, Entity<T>, (e: Entity, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
+	added: <T>(World, Component<T>, (e: Entity, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
+	removed: <T>(World, Component<T>, (e: Entity, id: Id<T>) -> ()) -> () -> (),
+	changed:  <T>(World, Component<T>, (e: Entity, id: Id<T>, value: T, oldarchetype: Archetype) -> ()) -> () -> (),
 
 	--- Enforce a check on entities to be created within desired range
 	range: (self: World, range_begin: number, range_end: number?) -> (),
 
 	--- Creates a new entity
-	entity: <T>(self: World, id: (number | Entity<T>)?) -> Entity<T>,
+	entity:
+			& ((self: World) -> Entity<nil>)
+			& ((self: World, id: Entity) -> Entity)
+			& ((self: World, id: number) -> Entity)
+			& (<T>(self: World, id: Component<T>) -> Component<T>),
 	--- Creates a new entity located in the first 256 ids.
 	--- These should be used for static components for fast access.
 	component: <T>(self: World) -> Entity<T>,
 	--- Gets the target of an relationship. For example, when a user calls
 	--- `world:target(id, ChildOf(parent), 0)`, you will obtain the parent entity.
-	target: <T, a>(self: World, id: Entity<T>, relation: Id<a>, index: number?) -> Entity?,
+	target: <T, a>(self: World, id: Entity<T>, relation: ecs_entity_t<Component>, index: number?) -> Entity?,
 	--- Deletes an entity and all it's related components and relationships.
 	delete: <T>(self: World, id: Entity<T>) -> (),
 
 	--- Adds a component to the entity with no value
-	add: <T, a>(self: World, id: Entity<T>, component: Id<a>) -> (),
+	add: <a>(
+		self: World,
+		id: ecs_entity_t<Entity>,
+		component: Component<a>
+	) -> (),
+
 	--- Assigns a value to a component on the given entity
-	set: <T, a>(self: World, id: Entity<T>, component: Id<a>, data: a) -> (),
+	set: <T, a>(self: World, id: Entity<T>, component: Component<a>, data: a) -> (),
 
 	cleanup: (self: World) -> (),
 
 	-- Removes all components from the entity
 	clear: (self: World, entity: Entity) -> (),
 	--- Removes a component from the given entity
-	remove: <T, a>(self: World, id: Entity<T>, component: Id<a>) -> (),
+	remove: <T, a>(self: World, id: Entity<T>, component: Component<a>) -> (),
 	--- Retrieves the value of up to 4 components. These values may be nil.
-	get: & (<T, a>(World, Entity<T>, Id<a>) -> a?)
-		& (<T, a, b>(World, Entity<T>, Id<a>, Id<b>) -> (a?, b?))
-		& (<T, a, b, c>(World, Entity<T>, Id<a>, Id<b>, Id<c>) -> (a?, b?, c?))
-		& (<T, a, b, c, d>(World, Entity<T>, Id<a>, Id<b>, Id<c>, Id<d>) -> (a?, b?, c?, d?)),
+	get: & (<T, a>(World, Entity<T>, Component<a>) -> a?)
+		& (<T, a, b>(World, Entity<T>, Component<a>, Component<b>) -> (a?, b?))
+		& (<T, a, b, c>(World, Entity<T>, Component<a>, Component<b>, Component<c>) -> (a?, b?, c?))
+		& (<T, a, b, c, d>(World, Entity<T>, Component<a>, Component<b>, Component<c>, Component<d>) -> (a?, b?, c?, d?)),
 
 	--- Returns whether the entity has the ID.
-	has: (<T, a>(World, Entity<T>, Id<a>) -> boolean)
-		& (<T, a, b>(World, Entity<T>, Id<a>, Id<a>) -> boolean)
-		& (<T, a, b, c>(World, Entity<T>, Id<a>, Id<b>, Id<c>) -> boolean)
-		& <T, a, b, c, d>(World, Entity<T>, Id<a>, Id<b>, Id<c>, Id<d>) -> boolean,
+	has: (<T, a>(World, Entity<T>, Component<a>) -> boolean)
+		& (<T, a, b>(World, Entity<T>, Component<a>, Component<a>) -> boolean)
+		& (<T, a, b, c>(World, Entity<T>, Component<a>, Component<b>, Component<c>) -> boolean)
+		& <T, a, b, c, d>(World, Entity<T>, Component<a>, Component<b>, Component<c>, Component<d>) -> boolean,
 
 	--- Get parent (target of ChildOf relationship) for entity. If there is no ChildOf relationship pair, it will return nil.
 	parent: <T>(self: World, entity: Entity<T>) -> Entity?,
@@ -217,33 +310,33 @@ export type World = {
 
 	--- Searches the world for entities that match a given query
 	query: ((World) -> Query<nil>)
-		& (<A>(World, Id<A>) -> Query<A>)
-		& (<A, B>(World, Id<A>, Id<B>) -> Query<A, B>)
-		& (<A, B, C>(World, Id<A>, Id<B>, Id<C>) -> Query<A, B, C>)
-		& (<A, B, C, D>(World, Id<A>, Id<B>, Id<C>, Id<D>) -> Query<A, B, C, D>)
-		& (<A, B, C, D, E>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>) -> Query<A, B, C, D, E>)
-		& (<A, B, C, D, E, F>(World, Id<A>, Id<B>, Id<C>, Id<D>, Id<E>, Id<F>) -> Query<A, B, C, D, E, F>)
+		& (<A>(World, Component<A>) -> Query<A>)
+		& (<A, B>(World, Component<A>, Component<B>) -> Query<A, B>)
+		& (<A, B, C>(World, Component<A>, Component<B>, Component<C>) -> Query<A, B, C>)
+		& (<A, B, C, D>(World, Component<A>, Component<B>, Component<C>, Component<D>) -> Query<A, B, C, D>)
+		& (<A, B, C, D, E>(World, Component<A>, Component<B>, Component<C>, Component<D>, Component<E>) -> Query<A, B, C, D, E>)
+		& (<A, B, C, D, E, F>(World, Component<A>, Component<B>, Component<C>, Component<D>, Component<E>, Component<F>) -> Query<A, B, C, D, E, F>)
 		& (<A, B, C, D, E, F, G>(
 			World,
-			Id<A>,
-			Id<B>,
-			Id<C>,
-			Id<D>,
-			Id<E>,
-			Id<F>,
-			Id<G>
+			Component<A>,
+			Component<B>,
+			Component<C>,
+			Component<D>,
+			Component<E>,
+			Component<F>,
+			Component<G>
 		) -> Query<A, B, C, D, E, F, G>)
 		& (<A, B, C, D, E, F, G, H>(
 			World,
-			Id<A>,
-			Id<B>,
-			Id<C>,
-			Id<D>,
-			Id<E>,
-			Id<F>,
-			Id<G>,
-			Id<H>,
-			...Id<any>
+			Component<A>,
+			Component<B>,
+			Component<C>,
+			Component<D>,
+			Component<E>,
+			Component<F>,
+			Component<G>,
+			Component<H>,
+			...Component<any>
 		) -> Query<A, B, C, D, E, F, G, H>),
 }
 
@@ -262,7 +355,7 @@ export type ComponentRecord = {
 	on_change: (<T>(entity: Entity, id: Entity<T>, value: T, oldArchetype: Archetype) -> ())?,
 	on_remove: ((entity: Entity, id: Entity) -> ())?,
 }
-export type ComponentIndex = Map<Id, ComponentRecord>
+export type ComponentIndex = Map<Component, ComponentRecord>
 export type Archetypes = { [i24]: Archetype }
 
 export type EntityIndex = {
@@ -1250,7 +1343,7 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 	local columns_map = archetype.columns_map
 
 	local ids = query.ids
-	local A, B, C, D, E, F, G, H, I = unpack(ids :: { Id })
+	local A, B, C, D, E, F, G, H, I = unpack(ids :: { Component })
 	local a: Column, b: Column, c: Column, d: Column
 	local e: Column, f: Column, g: Column, h: Column
 
@@ -1606,7 +1699,7 @@ local function query_cached(query: QueryInner)
 	local ids = query.ids
 	local lastArchetype = 1
 
-	local A, B, C, D, E, F, G, H, I = unpack(ids :: { Id })
+	local A, B, C, D, E, F, G, H, I = unpack(ids :: { Component })
 	if not A then
 		A = query.filter_with[1]
 	end
@@ -1617,8 +1710,15 @@ local function query_cached(query: QueryInner)
 	local entities: { Entity }
 	local i: number
 	local archetype: Archetype
-	local columns_map: { [Id]: Column }
-	local archetypes = query_archetypes(query :: any)
+	local columns_map: { [Component]: Column }
+	local archetypes = query_archetypes(query :: any) :: { Archetype }
+	local archetypes_map = {}
+	query.archetypes_map = archetypes_map
+
+	for j, arche in archetypes do
+		archetypes_map[arche.id] = j
+	end
+
 	local compatible_archetypes = archetypes :: { Archetype }
 
 	local world = query.world
@@ -1627,10 +1727,10 @@ local function query_cached(query: QueryInner)
 	local observable = world.observable
 	local on_create_action = observable[EcsOnArchetypeCreate::any]
 	if not on_create_action then
-		on_create_action = {} :: Map<Id, { Observer }>
+		on_create_action = {} :: Map<Component, { Observer }>
 		observable[EcsOnArchetypeCreate::any] = on_create_action
 	end
-	local query_cache_on_create = on_create_action[A]
+	local query_cache_on_create: { Observer } = on_create_action[A]
 	if not query_cache_on_create then
 		query_cache_on_create = {}
 		on_create_action[A] = query_cache_on_create
@@ -1638,31 +1738,36 @@ local function query_cached(query: QueryInner)
 
 	local on_delete_action = observable[EcsOnArchetypeDelete::any]
 	if not on_delete_action then
-		on_delete_action = {} :: Map<Id, { Observer }>
+		on_delete_action = {} :: Map<Component, { Observer }>
 		observable[EcsOnArchetypeDelete::any] = on_delete_action
 	end
-	local query_cache_on_delete = on_delete_action[A]
+	local query_cache_on_delete: { Observer } = on_delete_action[A]
 	if not query_cache_on_delete then
 		query_cache_on_delete = {}
 		on_delete_action[A] = query_cache_on_delete
 	end
 
-	local function on_create_callback(archetype)
-		table.insert(archetypes, archetype)
+	local function on_create_callback(archetype: Archetype)
+		local n = #archetypes + 1
+		archetypes[n] = archetype
+		archetypes_map[archetype.id] = n
 	end
 
 	local function on_delete_callback(archetype)
-		local i = table.find(archetypes, archetype) :: number
-		if i == nil then
-			return
-		end
 		local n = #archetypes
-		archetypes[i] = archetypes[n]
+		local lastarchetype = archetypes[n]
+		local archetypeid = archetype.id
+		local i = archetypes_map[archetypeid]
+
+		archetypes[i] = lastarchetype
 		archetypes[n] = nil
+
+		archetypes_map[archetypeid] = nil
+		archetypes_map[lastarchetype.id] = i
 	end
 
-	local observer_for_create = { query = query, callback = on_create_callback }
-	local observer_for_delete = { query = query, callback = on_delete_callback }
+	local observer_for_create = { query = query, callback = on_create_callback } :: Observer
+	local observer_for_delete = { query = query, callback = on_delete_callback } :: Observer
 
 	table.insert(query_cache_on_create, observer_for_create)
 	table.insert(query_cache_on_delete, observer_for_delete)
@@ -2014,12 +2119,59 @@ local function query_cached(query: QueryInner)
 		end
 	end
 
+	local eindex = world.entity_index :: entityindex
+
+	local function cached_query_has(entity): boolean
+		local r = entity_index_try_get_fast(eindex, entity)
+		if not r then
+			return false
+		end
+
+		local entityarchetype = r.archetype
+		if not entityarchetype then
+			return false
+		end
+
+		return archetypes_map[entityarchetype.id] ~= nil
+	end
+
 	local cached_query = query :: any
 	cached_query.archetypes = query_archetypes
 	cached_query.__iter = cached_query_iter
 	cached_query.iter = cached_query_iter
+	cached_query.has = cached_query_has
 	setmetatable(cached_query, cached_query)
 	return cached_query
+end
+
+local function query_has(query: QueryInner, entity: i53)
+	local world = query.world :: world
+	local r = entity_index_try_get(world.entity_index, entity)
+	if not r then
+		return false
+	end
+	local archetype = r.archetype
+	if not archetype then
+		return false
+	end
+
+	local columns_map = archetype.columns_map
+	for _, component in query.filter_with :: {number} do
+		if not columns_map[component] then
+			return false
+		end
+	end
+
+	local filter_without = query.filter_without
+	if filter_without then
+		for _, component in filter_without :: {number} do
+			if columns_map[component] then
+				return false
+			end
+		end
+	end
+
+	return true
 end
 
 local Query = {}
@@ -2030,6 +2182,7 @@ Query.without = query_without
 Query.with = query_with
 Query.archetypes = query_archetypes
 Query.cached = query_cached
+Query.has = query_has
 
 local function world_query(world: World, ...)
 	local ids = { ... }
@@ -2217,7 +2370,9 @@ local function world_new()
 		max_id = 0,
 	} :: entityindex
 
-	local component_index = {} :: Map<i53, componentrecord>
+	-- NOTE(marcus): with the way the component index is accessed, we want to
+	-- ensure that components range has fast access.
+	local component_index = table.create(EcsRest) :: Map<i53, componentrecord>
 
 	local archetype_index = {} :: { [string]: archetype }
 	local archetypes = {} :: Map<i53, archetype>
@@ -2749,7 +2904,7 @@ local function world_new()
 			world_set(world, component, EcsOnRemove, on_remove)
 		end
 
-		table.insert(listeners, fn)
+		table.insert(listeners, fn::Listener<any>)
 
 		return function()
 			local n = #listeners
@@ -3071,9 +3226,9 @@ local function world_new()
 					local entities = idr_r_archetype.entities
 					local tr = records[archetype_id]
 					local tr_count = counts[archetype_id]
-					local types = idr_r_archetype.types
+					local idr_r_types = idr_r_archetype.types
 					for i = tr, tr + tr_count - 1 do
-						local id = types[i]
+						local id = idr_r_types[i]
 						node = archetype_traverse_remove(world, id, node)
 						local on_remove = component_index[id].on_remove
 						if on_remove then
@@ -3247,23 +3402,6 @@ local function world_new()
 	return world
 end
 
--- type function ecs_id_t(ty)
--- 	local __T = ty:readproperty(types.singleton("__T"))
--- 	if not __T then
--- 		return ty:readproperty(types.singleton("__jecs_pair_value"))
--- 	end
--- 	return __T
--- end
-
--- type function ecs_pair_t(first, second)
--- 	if ecs_id_t(first):is("nil") then
--- 		return second
--- 	else
--- 		return first
--- 	end
--- end
---
-
 local function ecs_is_tag(world: world, entity: i53): boolean
 	local idr = world.component_index[entity]
 	if idr then
@@ -3282,51 +3420,51 @@ return {
 		new = world_new
 	},
 	component = (ECS_COMPONENT :: any) :: <T>() -> Entity<T>,
-	tag = (ECS_TAG :: any) :: <T>() -> Entity<T>,
-	meta = (ECS_META :: any) :: <T, a>(id: Entity<T>, id: Id<a>, value: a?) -> Entity<T>,
-	is_tag = (ecs_is_tag :: any) :: <T>(World, Id<T>) -> boolean,
+	tag = (ECS_TAG :: any) :: () -> Entity<nil>,
+	meta = (ECS_META :: any) :: <T, a>(id: Entity<T>, id: Component<a>, value: a?) -> Entity<T>,
+	is_tag = (ecs_is_tag :: any) :: <T>(World, Component<T>) -> boolean,
 
-    OnAdd = (EcsOnAdd :: any) :: Id<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
-	OnRemove = (EcsOnRemove :: any) :: Id<(entity: Entity, id: Id) -> ()>,
-	OnChange = (EcsOnChange :: any) :: Id<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
-	ChildOf = (EcsChildOf :: any) :: Entity,
-	Component = (EcsComponent :: any) :: Entity,
-	Wildcard = (EcsWildcard :: any) :: Id,
-	w = (EcsWildcard :: any) :: Id,
-	OnDelete = (EcsOnDelete :: any) :: Entity,
-	OnDeleteTarget = (EcsOnDeleteTarget :: any) :: Entity,
-	Delete = (EcsDelete :: any) :: Entity,
-	Remove = (EcsRemove :: any) :: Entity,
-	Name = (EcsName :: any) :: Id<string>,
-	Exclusive = (EcsExclusive :: any) :: Entity,
-	ArchetypeCreate = (EcsOnArchetypeCreate :: any) :: Entity,
-	ArchetypeDelete = (EcsOnArchetypeDelete :: any) :: Entity,
-	Rest = (EcsRest :: any) :: Entity,
+    OnAdd = (EcsOnAdd :: any) :: Component<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
+	OnRemove = (EcsOnRemove :: any) :: Component<<T>(entity: Entity, id: Id<T>) -> ()>,
+	OnChange = (EcsOnChange :: any) :: Component<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
+	ChildOf = (EcsChildOf :: any) :: Entity<nil>,
+	Component = (EcsComponent :: any) :: Entity<nil>,
+	Wildcard = (EcsWildcard :: any) :: Component,
+	w = (EcsWildcard :: any) :: Component,
+	OnDelete = (EcsOnDelete :: any) :: Entity<nil>,
+	OnDeleteTarget = (EcsOnDeleteTarget :: any) :: Entity<nil>,
+	Delete = (EcsDelete :: any) :: Entity<nil>,
+	Remove = (EcsRemove :: any) :: Entity<nil>,
+	Name = (EcsName :: any) :: Component<string>,
+	Exclusive = (EcsExclusive :: any) :: Entity<nil>,
+	ArchetypeCreate = (EcsOnArchetypeCreate :: any) :: Entity<nil>,
+	ArchetypeDelete = (EcsOnArchetypeDelete :: any) :: Entity<nil>,
+	Rest = (EcsRest :: any) :: Entity<nil>,
 
-	pair = ECS_PAIR :: <P, O>(first: Id<P>, second: Id<O>) -> Pair<P, O>,
+	pair = ECS_PAIR :: <P, O>(first: Entity<P>, second: Entity<O>) -> Pair<P, O>,
 
-	IS_PAIR = ECS_IS_PAIR :: <P, O>(pair: Pair<P, O>) -> boolean,
-	ECS_PAIR_FIRST = ECS_PAIR_FIRST :: <P, O>(pair: Pair<P, O>) -> Id<P>,
-	ECS_PAIR_SECOND = ECS_PAIR_SECOND :: <P, O>(pair: Pair<P, O>) -> Id<O>,
-	pair_first = ecs_pair_first :: <P, O>(world: World, pair: Pair<P, O>) -> Id<P>,
-	pair_second = ecs_pair_second :: <P, O>(world: World, pair: Pair<P, O>) -> Id<O>,
+	IS_PAIR = ECS_IS_PAIR :: (pair: Component) -> boolean,
+	ECS_PAIR_FIRST = ECS_PAIR_FIRST :: <P, O>(pair: Id<P, O>) -> Component<P>,
+	ECS_PAIR_SECOND = ECS_PAIR_SECOND :: <P, O>(pair: Id<P, O>) -> Component<O>,
+	pair_first = ecs_pair_first :: <P, O>(world: World, pair: Id<P, O>) -> Component<P>,
+	pair_second = ecs_pair_second :: <P, O>(world: World, pair: Id<P, O>) -> Component<O>,
 	entity_index_get_alive = entity_index_get_alive,
 
 	archetype_append_to_records = archetype_append_to_records,
-	id_record_ensure = id_record_ensure :: (World, Id) -> ComponentRecord,
-	component_record = id_record_get :: (World, Id) -> ComponentRecord?,
+	id_record_ensure = id_record_ensure :: (World, Component) -> ComponentRecord,
+	component_record = id_record_get :: (World, Component) -> ComponentRecord?,
 	record = ecs_entity_record :: (World, Entity) -> Record,
 
-	archetype_create = archetype_create :: (World, { Id }, string) -> Archetype,
-	archetype_ensure = archetype_ensure :: (World, { Id }) -> Archetype,
+	archetype_create = archetype_create :: (World, { Component }, string) -> Archetype,
+	archetype_ensure = archetype_ensure :: (World, { Component }) -> Archetype,
 	find_insert = find_insert,
-	find_archetype_with = find_archetype_with :: (World, Id, Archetype) -> Archetype,
-	find_archetype_without = find_archetype_without :: (World, Id, Archetype) -> Archetype,
+	find_archetype_with = find_archetype_with :: (World, Component, Archetype) -> Archetype,
+	find_archetype_without = find_archetype_without :: (World, Component, Archetype) -> Archetype,
 	create_edge_for_remove = create_edge_for_remove,
-	archetype_traverse_add = archetype_traverse_add :: (World, Id, Archetype) -> Archetype,
-	archetype_traverse_remove = archetype_traverse_remove :: (World, Id, Archetype) -> Archetype,
-	bulk_insert = ecs_bulk_insert :: (World, Entity, { Id }, { any }) -> (),
-	bulk_remove = ecs_bulk_remove :: (World, Entity, { Id }) -> (),
+	archetype_traverse_add = archetype_traverse_add :: (World, Component, Archetype) -> Archetype,
+	archetype_traverse_remove = archetype_traverse_remove :: (World, Component, Archetype) -> Archetype,
+	bulk_insert = ecs_bulk_insert :: (World, Entity, { Component }, { any }) -> (),
+	bulk_remove = ecs_bulk_remove :: (World, Entity, { Component }) -> (),
 
 	entity_move = entity_move :: (EntityIndex, Entity, Record, Archetype) -> (),
 
@@ -3345,7 +3483,7 @@ return {
 	query_archetypes = query_archetypes,
 	query_match = query_match,
 
-	find_observers = find_observers :: (World, Id, Id) -> { Observer },
+	find_observers = find_observers :: (World, Component, Component) -> { Observer },
 
 	-- Inwards facing API for testing
 	ECS_ID = ECS_ENTITY_T_LO :: (Entity) -> number,

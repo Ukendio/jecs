@@ -24,6 +24,7 @@ TEST("addons/ob::observer", function()
 		world:add(e, jecs.pair(A, B))
 		CHECK(c==2)
 		world:add(e, jecs.pair(A, C))
+		print(c)
 		CHECK(c==2)
 	end
 
