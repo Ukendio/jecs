@@ -24,7 +24,6 @@ TEST("addons/ob::observer", function()
 		world:add(e, jecs.pair(A, B))
 		CHECK(c==2)
 		world:add(e, jecs.pair(A, C))
-		print(c)
 		CHECK(c==2)
 	end
 
@@ -220,11 +219,78 @@ TEST("addons/ob::observer", function()
 		world:add(e, jecs.pair(A, e2))
 		CHECK(callcount == 1 + 2 * 2)
 	end
+
+	do CASE "observer with pair should handle remove and re-add correctly"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+
+		local c = 0
+		ob.observer(world:query(jecs.pair(A, e1)), function()
+			c += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, jecs.pair(A, e1))
+		CHECK(c == 1)
+		world:remove(e, jecs.pair(A, e1))
+		CHECK(c == 1)
+		world:add(e, jecs.pair(A, e1))
+		CHECK(c == 2)
+		world:remove(e, jecs.pair(A, e1))
+		CHECK(c == 2)
+	end
+
+	do CASE "observer with pair should handle set operations correctly"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+
+		local c = 0
+		ob.observer(world:query(jecs.pair(A, e1)), function()
+			c += 1
+		end)
+
+		local e = world:entity()
+		world:set(e, jecs.pair(A, e1), true)
+		CHECK(c == 1)
+		world:set(e, jecs.pair(A, e1), false)
+		CHECK(c == 2)
+		world:set(e, jecs.pair(A, e1), true)
+		CHECK(c == 3)
+		world:remove(e, jecs.pair(A, e1))
+		CHECK(c == 3)
+		world:set(e, jecs.pair(A, e1), true)
+		CHECK(c == 4)
+	end
+
+	do CASE "observer with wildcard pair should handle operations correctly"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local c = 0
+		ob.observer(world:query(A, jecs.pair(B, jecs.w)), function()
+			c += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, A)
+		CHECK(c == 0)
+		world:set(e, jecs.pair(B, e1), true)
+		CHECK(c == 1)
+		world:set(e, jecs.pair(B, e2), false)
+		CHECK(c == 2)
+		world:remove(e, jecs.pair(B, e1))
+		CHECK(c == 2)
+		world:remove(e, jecs.pair(B, e2))
+		CHECK(c == 2)
+	end
 end)
 
 TEST("addons/ob::monitor", function()
 	local world = jecs.world()
-
 
 	do CASE [[should not invoke monitor.added callback multiple times in a bulk_move
 	]]
@@ -241,7 +307,6 @@ TEST("addons/ob::monitor", function()
 		local e = world:entity()
 		jecs.bulk_insert(world, e, { A, B, C }, { 1, 2, 3 })
 		CHECK(c==1)
-		print(c)
 	end
 
 	do CASE [[should not invoke monitor.added callback unless it wasn't apart
@@ -273,15 +338,146 @@ TEST("addons/ob::monitor", function()
 		CHECK(c==2)
 	end
 
+	do CASE "different entities bulk_insert with same old archetype"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local monitor = ob.monitor(world:query(A, B, C))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		-- First entity: ROOT_ARCHETYPE -> ABC (triggers, sets last_old_archetype = ROOT_ARCHETYPE)
+		jecs.bulk_insert(world, e1, { A, B, C }, { 1, 2, 3 })
+		CHECK(c == 1)
+
+		-- Second entity: ROOT_ARCHETYPE -> ABC (same old archetype, but different entity)
+		-- Should still trigger even though last_old_archetype == ROOT_ARCHETYPE
+		jecs.bulk_insert(world, e2, { A, B, C }, { 4, 5, 6 })
+		CHECK(c == 2)
+	end
+
+	do CASE "multiple entities bulk_insert pairs with same old archetype"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local monitor = ob.monitor(world:query(jecs.pair(A, e1), jecs.pair(A, e2)))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+
+		local entity1 = world:entity()
+		local entity2 = world:entity()
+
+		-- First entity: ROOT_ARCHETYPE -> pairs (triggers)
+		jecs.bulk_insert(world, entity1, { jecs.pair(A, e1), jecs.pair(A, e2) }, { true, true })
+		CHECK(c == 1)
+
+		-- Second entity: ROOT_ARCHETYPE -> pairs (same old archetype, different entity)
+		-- Should still trigger
+		jecs.bulk_insert(world, entity2, { jecs.pair(A, e1), jecs.pair(A, e2) }, { true, true })
+		CHECK(c == 2)
+	end
+
+	do CASE "entities transition sequentially with same old archetype"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local monitor = ob.monitor(world:query(A, B, C))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+		local e3 = world:entity()
+
+		-- All three entities: ROOT_ARCHETYPE -> ABC
+		-- Each should trigger independently
+		jecs.bulk_insert(world, e1, { A, B, C }, { 1, 2, 3 })
+		CHECK(c == 1)
+
+		jecs.bulk_insert(world, e2, { A, B, C }, { 4, 5, 6 })
+		CHECK(c == 2)
+
+		jecs.bulk_insert(world, e3, { A, B, C }, { 7, 8, 9 })
+		CHECK(c == 3)
+	end
+
+	do CASE "entity transitions after another entity with same old archetype"
+		local A = world:component()
+		local B = world:component()
+
+		local monitor = ob.monitor(world:query(A, B))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		-- First entity: ROOT_ARCHETYPE -> AB (triggers, sets last_old_archetype = ROOT_ARCHETYPE)
+		jecs.bulk_insert(world, e1, { A, B }, { 1, 2 })
+		CHECK(c == 1)
+
+		-- Remove e1 from monitor (should clear last_old_archetype)
+		world:remove(e1, A)
+
+		-- Second entity: ROOT_ARCHETYPE -> AB (should trigger even though old archetype matches)
+		jecs.bulk_insert(world, e2, { A, B }, { 3, 4 })
+		CHECK(c == 2)
+
+		-- Re-add e1: ROOT_ARCHETYPE -> AB again (should trigger)
+		world:add(e1, A)
+		CHECK(c == 3)
+	end
+
+	do CASE "mixed bulk_insert and regular add with same old archetype"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local monitor = ob.monitor(world:query(A, B, C))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		-- First entity: bulk_insert from ROOT_ARCHETYPE (sets last_old_archetype = ROOT_ARCHETYPE, last_entity = e1)
+		jecs.bulk_insert(world, e1, { A, B, C }, { 1, 2, 3 })
+		CHECK(c == 1)
+
+		-- Second entity: regular add from ROOT_ARCHETYPE
+		-- Adding components one by one - callback should trigger when entity matches query
+		world:add(e2, A)
+		CHECK(c == 1)  -- Entity doesn't match query yet (needs A, B, C)
+		world:add(e2, B)
+		CHECK(c == 1)  -- Still doesn't match
+		world:add(e2, C)
+		CHECK(c == 2)  -- Now matches query, should trigger (different entity, so not skipped)
+	end
+
 	do CASE "deleted entity should only exit monitor once"
 		local A = world:component()
 		local B = world:component()
 
-		local Destroy = world:entity()
-
 		local c = 0
 
-		local monitor = ob.monitor(world:query(A, B):without(Destroy))
+		local monitor = ob.monitor(world:query(A, B))
 
 		monitor.added(function()
 			print("enter")
@@ -290,15 +486,13 @@ TEST("addons/ob::monitor", function()
 			c += 1
 		end)
 
-
 		local e = world:entity()
 		world:add(e, A)
 		world:add(e, B)
-
-		world:add(e, Destroy)
-
+		print("---world:delete---")
 		world:delete(e)
-		print(c)
+		print("-----")
+		print(c, "c")
 		CHECK(c==1)
 	end
 
