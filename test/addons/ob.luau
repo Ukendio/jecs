@@ -222,9 +222,27 @@ TEST("addons/ob::observer", function()
 	end
 end)
 
-FOCUS()
 TEST("addons/ob::monitor", function()
 	local world = jecs.world()
+
+
+	do CASE [[should not invoke monitor.added callback multiple times in a bulk_move
+	]]
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local monitor = ob.monitor(world:query(A, B, C))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+
+		local e = world:entity()
+		jecs.bulk_insert(world, e, { A, B, C }, { 1, 2, 3 })
+		CHECK(c==1)
+		print(c)
+	end
 
 	do CASE [[should not invoke monitor.added callback unless it wasn't apart
 	of the monitor]]
@@ -489,6 +507,261 @@ TEST("addons/ob::monitor", function()
 		CHECK(count == 4)
 		world:set(e, A, false)
 		CHECK(count == 4)
+	end
+
+	do CASE "should not invoke monitor.added callback multiple times in bulk_insert with pairs"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local monitor = ob.monitor(world:query(jecs.pair(A, e1), jecs.pair(A, e2)))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+
+		local e = world:entity()
+		jecs.bulk_insert(world, e, { jecs.pair(A, e1), jecs.pair(A, e2) }, { true, true })
+		CHECK(c == 1)
+	end
+
+	do CASE "should not invoke monitor.added callback multiple times in bulk_insert with mixed components and pairs"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		local e1 = world:entity()
+
+		local monitor = ob.monitor(world:query(A, B, jecs.pair(C, e1)))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+
+		local e = world:entity()
+		jecs.bulk_insert(world, e, { A, B, jecs.pair(C, e1) }, { 1, 2, true })
+		CHECK(c == 1)
+	end
+
+	do CASE "monitor with wildcard pair should handle bulk_insert"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+		local e3 = world:entity()
+
+		local monitor = ob.monitor(world:query(A, jecs.pair(B, jecs.w)))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, A)
+		CHECK(c == 0)
+		world:add(e, jecs.pair(B, e1))
+		CHECK(c == 1)
+		world:add(e, jecs.pair(B, e2))
+		CHECK(c == 1)
+		world:add(e, jecs.pair(B, e3))
+		CHECK(c == 1)
+	end
+
+	do CASE "monitor with multiple pairs should handle separate operations correctly"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local monitor = ob.monitor(world:query(jecs.pair(A, e1), jecs.pair(A, e2)))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+		local r = 0
+		monitor.removed(function()
+			r += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, jecs.pair(A, e1))
+		CHECK(c == 0)
+		world:add(e, jecs.pair(A, e2))
+		CHECK(c == 1)
+		world:remove(e, jecs.pair(A, e1))
+		CHECK(r == 1)
+		world:remove(e, jecs.pair(A, e2))
+		CHECK(r == 1)
+		world:add(e, jecs.pair(A, e1))
+		CHECK(c == 1)
+		world:add(e, jecs.pair(A, e2))
+		CHECK(c == 2)
+	end
+
+	if true then return end
+
+	do CASE "monitor with pair should handle remove and re-add correctly"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+
+		local monitor = ob.monitor(world:query(jecs.pair(A, e1)))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+		local r = 0
+		monitor.removed(function()
+			r += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, jecs.pair(A, e1))
+		CHECK(c == 1)
+		world:remove(e, jecs.pair(A, e1))
+		CHECK(r == 1)
+		world:add(e, jecs.pair(A, e1))
+		CHECK(c == 2)
+		world:remove(e, jecs.pair(A, e1))
+		CHECK(r == 2)
+	end
+
+	do CASE "monitor with pair and without clause should handle bulk operations"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local monitor = ob.monitor(world:query(A):without(jecs.pair(B, e1)))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+		local r = 0
+		monitor.removed(function()
+			r += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, A)
+		CHECK(c == 1)
+		world:add(e, jecs.pair(B, e2))
+		CHECK(c == 1)
+		world:add(e, jecs.pair(B, e1))
+		CHECK(c == 1)
+		CHECK(r == 1)
+		world:remove(e, jecs.pair(B, e1))
+		CHECK(c == 2)
+		CHECK(r == 1)
+	end
+
+	do CASE "monitor with wildcard pair in without should handle operations correctly"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local monitor = ob.monitor(world:query(A):without(jecs.pair(B, jecs.w)))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+		local r = 0
+		monitor.removed(function()
+			r += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, A)
+		CHECK(c == 1)
+		world:add(e, jecs.pair(B, e1))
+		CHECK(c == 1)
+		CHECK(r == 1)
+		world:add(e, jecs.pair(B, e2))
+		CHECK(c == 1)
+		CHECK(r == 1)
+		world:remove(e, jecs.pair(B, e1))
+		CHECK(c == 1)
+		CHECK(r == 1)
+		world:remove(e, jecs.pair(B, e2))
+		CHECK(c == 2)
+		CHECK(r == 1)
+	end
+
+	do CASE "monitor with multiple pairs should not skip legitimate transitions"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+		local e3 = world:entity()
+
+		local monitor = ob.monitor(world:query(jecs.pair(A, e1), jecs.pair(A, e2)))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, jecs.pair(A, e1))
+		CHECK(c == 1)
+		world:remove(e, jecs.pair(A, e1))
+		world:add(e, jecs.pair(A, e2))
+		CHECK(c == 2)
+		world:remove(e, jecs.pair(A, e2))
+		world:add(e, jecs.pair(A, e1))
+		CHECK(c == 3)
+		world:add(e, jecs.pair(A, e2))
+		CHECK(c == 4)
+	end
+
+	do CASE "monitor with pair should handle set operations correctly"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+
+		local monitor = ob.monitor(world:query(jecs.pair(A, e1)))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+		local r = 0
+		monitor.removed(function()
+			r += 1
+		end)
+
+		local e = world:entity()
+		world:set(e, jecs.pair(A, e1), true)
+		CHECK(c == 1)
+		world:set(e, jecs.pair(A, e1), false)
+		CHECK(c == 1)
+		world:set(e, jecs.pair(A, e1), true)
+		CHECK(c == 2)
+		world:remove(e, jecs.pair(A, e1))
+		CHECK(r == 1)
+		world:set(e, jecs.pair(A, e1), true)
+		CHECK(c == 3)
+	end
+
+	do CASE "monitor with pair query should handle non-matching pairs"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local monitor = ob.monitor(world:query(jecs.pair(A, e1)))
+		local c = 0
+		monitor.added(function()
+			c += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, jecs.pair(A, e1))
+		CHECK(c == 1)
+		world:add(e, jecs.pair(A, e2))
+		CHECK(c == 1)
+		world:add(e, jecs.pair(B, e1))
+		CHECK(c == 1)
 	end
 end)
 

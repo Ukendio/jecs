@@ -72,7 +72,7 @@ type function ecs_id_t(first: type, second: type)
 	return p
 end
 
-export type Entity<T = nil> = { __T: T }
+export type Entity<T = any> = { __T: T }
 export type Id<T = any> = { __T: T }
 export type Pair<First=any, Second=any> = ecs_pair_t<Entity<First>, Entity<Second>>
 export type Component<T=any> = { __T: T }

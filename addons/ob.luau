@@ -29,7 +29,7 @@ local function observers_new<T...>(
 	callback = callback
 
 	local archetypes = cachedquery.archetypes_map
-	local terms = query.filter_with :: { jecs.Id<any, any> }
+	local terms = query.filter_with :: { jecs.Id<any> }
 
 	local entity_index = world.entity_index
 
@@ -73,13 +73,13 @@ local function observers_new<T...>(
  	end
 
 	local without = query.filter_without
-   	if without then
+	if without then
 		for _, term in without do
 			if jecs.IS_PAIR(term) then
 				local rel = jecs.ECS_PAIR_FIRST(term)
 				local tgt = jecs.ECS_PAIR_SECOND(term)
 				local wc = tgt == jecs.w
-				local onremoved = world:removed(rel, function(entity, id)
+				local onremoved = world:removed(rel, function(entity, id, delete: boolean?)
 					if not wc and id ~= term then
 						return
 					end
@@ -130,28 +130,49 @@ local function monitors_new(query: Query<...any>): Monitor
 	local world = (cachedquery :: Query<...any> & { world: World }).world :: jecs.World
 
 	local archetypes = cachedquery.archetypes_map
-	local terms = cachedquery.filter_with :: { jecs.Id<any, any> }
+	local terms = cachedquery.filter_with :: { jecs.Id<any> }
 
 	local entity_index = world.entity_index :: any
+
+	local terms_lookup: { [jecs.Id<any>]: boolean } = {}
+	for _, term in terms do
+		terms_lookup[term] = true
+	end
 
 	local callback_added: ((jecs.Entity) -> ())?
 	local callback_removed: ((jecs.Entity) -> ())?
 
+	-- NOTE(marcus): Track the last old archetype we processed to detect bulk operations.
+	-- We can detect this pattern by checking if we've seen this old archetype
+	-- before with a component in the terms list.
+	local last_old_archetype: jecs.Archetype? = nil
+
  	local function emplaced<a>(
  		entity: jecs.Entity,
  		id: jecs.Id<a>,
-		value: a,
-		oldarchetype: jecs.Archetype
-	)
-		if callback_added == nil then
+ 		value: a,
+ 		oldarchetype: jecs.Archetype
+ 	)
+ 		if callback_added == nil then
+ 			return
+ 		end
+
+	   	-- NOTE(marcus): Skip if we've seen this old archetype before AND
+		-- this component is in the query's terms. The component-in-terms
+		-- check ensures we don't skip legitimate separate operations.
+		if last_old_archetype == oldarchetype and terms_lookup[id] then
 			return
 		end
 
 		local r = jecs.entity_index_try_get_fast(
 			entity_index, entity :: any) :: jecs.Record
+		if not archetypes[oldarchetype.id] and archetypes[r.archetype.id] then
 
-		if archetypes[r.archetype.id] then
+			last_old_archetype = oldarchetype
 			callback_added(entity)
+		else
+			-- NOTE(marcus): Clear tracking when we see a different transition pattern
+			last_old_archetype = nil
 		end
 	end
 
@@ -168,6 +189,7 @@ local function monitors_new(query: Query<...any>): Monitor
 		local dst = jecs.archetype_traverse_remove(world, component, src)
 
 		if not archetypes[dst.id] then
+			last_old_archetype = nil
 			callback_removed(entity)
 		end
 	end
@@ -180,8 +202,11 @@ local function monitors_new(query: Query<...any>): Monitor
 			local tgt = jecs.ECS_PAIR_SECOND(term)
 			local wc = tgt == jecs.w
 
-			local onadded = world:added(rel, function(entity, id, _, oldarchetype)
+			local onadded = world:added(rel, function(entity, id, _, oldarchetype: jecs.Archetype)
 				if callback_added == nil then
+					return
+				end
+				if last_old_archetype == oldarchetype and terms_lookup[id] then
 					return
 				end
 
@@ -192,10 +217,8 @@ local function monitors_new(query: Query<...any>): Monitor
 				local r = jecs.entity_index_try_get_fast(
 					entity_index, entity :: any) :: jecs.Record
 
-				if archetypes[oldarchetype.id] and archetypes[r.archetype.id] then
-					print("???")
-				end
 				if not archetypes[oldarchetype.id] and archetypes[r.archetype.id] then
+					last_old_archetype = oldarchetype
 					callback_added(entity)
 				end
 			end)
@@ -209,6 +232,7 @@ local function monitors_new(query: Query<...any>): Monitor
 
 				local r = jecs.record(world, entity)
 				if archetypes[r.archetype.id] then
+					last_old_archetype = nil
 					callback_removed(entity)
 				end
 			end)
@@ -230,7 +254,7 @@ local function monitors_new(query: Query<...any>): Monitor
 				local rel = jecs.ECS_PAIR_FIRST(term)
 				local tgt = jecs.ECS_PAIR_SECOND(term)
 				local wc = tgt == jecs.w
-				local onadded = world:added(rel, function(entity, id, _, oldarchetype)
+				local onadded = world:added(rel, function(entity, id, _, oldarchetype: jecs.Archetype)
 					if callback_removed == nil then
 						return
 					end
@@ -249,6 +273,7 @@ local function monitors_new(query: Query<...any>): Monitor
 					-- removed a component even though the entity is not
 					-- apart of the monitor
 					if archetypes[oldarchetype.id] and not archetypes[archetype.id] then
+						last_old_archetype = nil
 						callback_removed(entity)
 					end
 				end)
@@ -262,15 +287,20 @@ local function monitors_new(query: Query<...any>): Monitor
 					if not wc and id ~= term then
 						return
 					end
+
 					local r = jecs.record(world, entity)
 					local archetype = r.archetype
 					if not archetype then
+						return
+					end
+					if last_old_archetype == archetype and terms_lookup[id] then
 						return
 					end
 
 					local dst = jecs.archetype_traverse_remove(world, id, archetype)
 
 					if archetypes[dst.id] then
+						last_old_archetype = archetype
 						callback_added(entity)
 					end
 				end)
