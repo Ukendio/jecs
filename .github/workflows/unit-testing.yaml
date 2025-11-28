@@ -15,12 +15,6 @@ jobs:
             - name: Install Rokit
               uses: CompeyDev/setup-rokit@v0.1.2
 
-            - name: Install Luau
-              uses: encodedvenom/install-luau@v4.3
-              with:
-                  version: "0.667"
-                  verbose: "true"
-
             - name: Run Unit Tests
               id: run_tests
               run: |
