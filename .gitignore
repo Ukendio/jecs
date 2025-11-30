@@ -71,3 +71,7 @@ profile.*
 *.patch
 
 genhtml.perl
+
+rokit.toml
+package-lock.json
+mirror.luau

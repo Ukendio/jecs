@@ -1,6 +1,6 @@
 local jecs = require("@jecs")
 
-local testkit = require("@testkit")
+local testkit = require("@modules/testkit")
 local BENCH, START = testkit.benchmark()
 local __ = jecs.Wildcard
 local ECS_ID, ECS_GENERATION = jecs.ECS_ID, jecs.ECS_GENERATION
@@ -21,7 +21,7 @@ type World = jecs.World
 type Entity<T=nil> = jecs.Entity<T>
 type Id<T=unknown> = jecs.Id<T>
 
-local entity_visualiser = require("@tools/entity_visualiser")
+local entity_visualiser = require("@modules/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
 TEST("Ensure archetype edges get cleaned", function()

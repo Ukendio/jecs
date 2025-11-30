@@ -6,10 +6,10 @@ realm = "shared"
 license = "MIT"
 include = [
 	"default.project.json",
-	"jecs.luau",
+	"src",
 	"wally.toml",
 	"README.md",
 	"CHANGELOG.md",
 	"LICENSE",
 ]
-exclude = ["**"]
+exclude = ["src/mirror.luau"]

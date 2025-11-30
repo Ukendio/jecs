@@ -1,7 +1,4 @@
 [tools]
 wally = "upliftgames/wally@0.3.2"
 rojo = "rojo-rbx/rojo@7.4.4"
-stylua = "johnnymorganz/stylua@2.0.1"
-Blink = "1Axen/Blink@0.14.1"
-wally-package-types = "JohnnyMorganz/wally-package-types@1.4.2"
 luau = "luau-lang/luau@0.701"

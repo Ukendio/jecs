@@ -12,7 +12,7 @@
 		"ReplicatedStorage": {
 			"$className": "ReplicatedStorage",
 			"Lib": {
-				"$path": "jecs.luau"
+				"$path": "../src/jecs.luau"
 			},
 			"benches": {
 				"$path": "benches"

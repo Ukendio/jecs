@@ -1,10 +1,8 @@
 {
     "aliases": {
-        "jecs": "./jecs",
-        "testkit": "./tools/testkit",
-        "mirror": "./mirror",
-        "tools": "./tools",
-        "addons": "./addons"
+        "jecs": "src/jecs",
+        "modules": "modules",
+        "mirror": "src/mirror",
     },
     "languageMode": "strict"
 }

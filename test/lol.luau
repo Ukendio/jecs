@@ -136,7 +136,7 @@ local function pa(e)
 	print(`{pe(e)} is {if alive(e) then "alive" else "not alive"}`)
 end
 
-local tprint = require("@testkit").print
+local tprint = require("@modules/testkit").print
 local e1v0 = alloc()
 local e2v0 = alloc()
 local e3v0 = alloc()

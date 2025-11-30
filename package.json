@@ -15,10 +15,9 @@
 	],
 	"homepage": "https://github.com/ukendio/jecs",
 	"license": "MIT",
-	"types": "jecs.d.ts",
+	"types": "src/jecs.d.ts",
 	"files": [
-		"jecs.luau",
-		"jecs.d.ts",
+		"src",
 		"LICENSE.md",
 		"README.md"
 	],

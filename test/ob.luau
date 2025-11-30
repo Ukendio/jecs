@@ -1,11 +1,11 @@
 local jecs = require("@jecs")
-local testkit = require("@testkit")
+local testkit = require("@modules/testkit")
 local test = testkit.test()
 local CASE, TEST, FINISH, CHECK = test.CASE, test.TEST, test.FINISH, test.CHECK
 local FOCUS = test.FOCUS
-local ob = require("@addons/ob")
+local ob = require("@modules/ob")
 
-TEST("addons/ob::observer", function()
+TEST("modules/ob::observer", function()
 	local world = jecs.world()
 	do CASE [[should not invoke callbacks with a related but non-queried pair that
 		while the entity still matches against the query]]
@@ -289,7 +289,7 @@ TEST("addons/ob::observer", function()
 	end
 end)
 
-TEST("addons/ob::monitor", function()
+TEST("modules/ob::monitor", function()
 	local world = jecs.world()
 
 	do CASE [[should not invoke monitor.added callback multiple times in a bulk_move

@@ -1,7 +1,7 @@
 --!optimize 2
 --!native
 
-local testkit = require("@testkit")
+local testkit = require("@modules/testkit")
 local BENCH, START = testkit.benchmark()
 local function TITLE(title: string)
 	print()
