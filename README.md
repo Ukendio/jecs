@@ -1,9 +1,3 @@
-<p align="center">
-  <img src="assets/image-5.png" width=35%/>
-</p>
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE) [![Wally](https://img.shields.io/github/v/tag/ukendio/jecs?&style=for-the-badge)](https://wally.run/package/ukendio/jecs) [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ukendio/jecs/unit-testing.yaml?&style=for-the-badge)](https://github.com/Ukendio/jecs/actions/workflows/unit-testing.yaml)
-
 Just a stupidly fast Entity Component System
 
 -   [Entity Relationships](https://ajmmertens.medium.com/building-games-in-ecs-with-entity-relationships-657275ba2c6c) as first class citizens
@@ -14,61 +8,17 @@ Just a stupidly fast Entity Component System
 -   Cache friendly [archetype/SoA](https://ajmmertens.medium.com/building-an-ecs-2-archetypes-and-vectorization-fe21690805f9) storage
 -   Rigorously [unit tested](https://github.com/Ukendio/jecs/actions/workflows/unit-testing.yaml) for stability
 
-### Installation
+### Get Started
 
-With [Wally](https://wally.run/):
-```bash
-jecs = "ukendio/jecs@0.6.0" # Inside wally.toml
-```
-With [pesde](https://pesde.dev/):
-```bash
-pesde add wally#ukendio/jecs@0.6.0
-```
-With [npm](https://www.npmjs.com/package/@rbxts/jecs) ([roblox-ts](https://roblox-ts.com/)):
-```bash
-npm i @rbxts/jecs
-```
+ how_to:
+ 	This is a step-by-step introduction to how this ECS works and the reasoning behind its design.
 
-### Example
+ modules:
+ 	These are regularly used modules and should be mostly working, but some might not be. You can look in this folder to see some code that you might use to help you hit the ground running quickly.
 
-```lua
-local world = jecs.World.new()
-local pair = jecs.pair
+ examples:
+  	These are larger programs that showcase real use cases and can help you understand how everything fits together.
 
--- These components and functions are actually already builtin
--- but have been illustrated for demonstration purposes
-local ChildOf = world:component()
-local Name = world:component()
-
-local function parent(entity)
-    return world:target(entity, ChildOf)
-end
-local function getName(entity)
-    return world:get(entity, Name)
-end
-
-local alice = world:entity()
-world:set(alice, Name, "alice")
-
-local bob = world:entity()
-world:add(bob, pair(ChildOf, alice))
-world:set(bob, Name, "bob")
-
-local sara = world:entity()
-world:add(sara, pair(ChildOf, alice))
-world:set(sara, Name, "sara")
-
-print(getName(parent(sara)))
-
-for e, name in world:query(Name, pair(ChildOf, alice)) do
-    print(name, "is the child of alice")
-end
-
--- Output
--- "alice"
--- bob is the child of alice
--- sara is the child of alice
-```
 
 ### Benchmarks
 
