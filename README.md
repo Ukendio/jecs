@@ -9,6 +9,7 @@ Just a stupidly fast Entity Component System
 -   Rigorously [unit tested](https://github.com/Ukendio/jecs/actions/workflows/unit-testing.yaml) for stability
 
 ### Get Started
+This repository includes a few subfolders that can help you get started with jecs:
 
  how_to:
  	This is a step-by-step introduction to how this ECS works and the reasoning behind its design.
