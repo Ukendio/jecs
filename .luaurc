@@ -1,8 +1,8 @@
 {
     "aliases": {
-        "jecs": "src/jecs",
-        "modules": "modules",
-        "mirror": "src/mirror",
+        "jecs": "./src/jecs",
+        "modules": "./modules",
+        "mirror": "./src/mirror",
     },
     "languageMode": "strict"
 }
