@@ -26,9 +26,9 @@ This repository includes a few subfolders that can help you get started with jec
 ### Benchmarks
 
 21,000 entities 125 archetypes 4 random components queried.
-![Queries](assets/image-3.png)
-Can be found under /benches/visual/query.luau
+![Queries](test/benches/data/image-3.png)
+Can be found under /test/benches/visual/query.luau
 
 Inserting 8 components to an entity and updating them over 50 times.
-![Insertions](assets/image-4.png)
-Can be found under /benches/visual/insertions.luau
+![Insertions](test/benches/data/image-4.png)
+Can be found under /test/benches/visual/insertions.luau
