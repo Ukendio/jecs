@@ -1,5 +1,5 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local types = require("../ReplicatedStorage/types")
+local ReplicatedStorage = require("@game/ReplicatedStorage")
+local types = require("./types")
 
 type Remote<T...> = {
 	FireClient: (Remote<T...>, Player, T...) -> (),
@@ -31,12 +31,6 @@ end
 
 return {
 	input = datagram_ensure("input") :: Remote<string>,
-	replication = stream_ensure("replication") :: Remote<{
-		[string]: {
-			set: { types.Entity }?,
-			values: { any }?,
-			removed: { types.Entity }?
-		}
-	}>,
+	replication = stream_ensure("replication") :: Remote<types.snapshot>,
 
 }
