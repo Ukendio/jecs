@@ -11,13 +11,13 @@ Just a stupidly fast Entity Component System
 ### Get Started
 This repository includes a few subfolders that can help you get started with jecs:
 
- how_to:
+- how_to:
  	This is a step-by-step introduction to how this ECS works and the reasoning behind its design.
 
- modules:
+- modules:
  	These are regularly used modules and should be mostly working, but some might not be. You can look in this folder to see some code that you might use to help you hit the ground running quickly.
 
- examples:
+- examples:
   	These are larger programs that showcase real use cases and can help you understand how everything fits together.
 
 
