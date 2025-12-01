@@ -22,6 +22,8 @@ This repository includes a few subfolders that can help you get started with jec
 - examples:
   	These are larger programs that showcase real use cases and can help you understand how everything fits together.
 
+<!-- After testing is complete, replace this with the path for the Jecs repo -->
+If you wish to view the documentation inside Roblox Studio, you can find an importable model file [here](https://nightly.link/Mark-Marks/jecs/workflows/studio-docs/docs%2Fstudio/studio_docs.rbxm).
 
 ### Benchmarks
 
