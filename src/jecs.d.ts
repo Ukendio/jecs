@@ -30,19 +30,15 @@ export type Pair<P = unknown, O = unknown> = number & {
  * An `Id` can be either a single Entity or a Pair of Entities.
  * By providing `TData`, you can specifically require an Id that yields that type.
  */
-export type Id<TData = unknown> =
-	| Entity<TData>
-	| Pair<TData, unknown>
-	| Pair<TagDiscriminator, TData>;
+export type Id<TData = unknown> = Entity<TData> | Pair<TData, unknown> | Pair<TagDiscriminator, TData>;
 
-export type InferComponent<E> =
-	E extends Entity<infer D>
-		? D
-		: E extends Pair<infer P, infer O>
-			? P extends TagDiscriminator
-				? O
-				: P
-			: never;
+export type InferComponent<E> = E extends Entity<infer D>
+	? D
+	: E extends Pair<infer P, infer O>
+	? P extends TagDiscriminator
+	? O
+	: P
+	: never;
 
 type FlattenTuple<T extends unknown[]> = T extends [infer U] ? U : LuaTuple<T>;
 type Nullable<T extends unknown[]> = { [K in keyof T]: T[K] | undefined };
@@ -67,7 +63,7 @@ type Iter<T extends Id[]> = IterFn<T> & {
 	 * @hidden
 	 * @deprecated
 	 */
-	(): never;
+	(): never
 };
 
 export type CachedQuery<T extends Id[]> = {
@@ -182,10 +178,7 @@ export class World {
 	 * @param entity The target entity.
 	 * @param component The component (or tag) to add.
 	 */
-	add<C>(
-		entity: Entity,
-		component: TagDiscriminator extends InferComponent<C> ? C : Id<TagDiscriminator>,
-	): void;
+	add<C>(entity: Entity, component: TagDiscriminator extends InferComponent<C> ? C : Id <TagDiscriminator>): void;
 
 	/**
 	 * Installs a hook on the given component.
@@ -193,11 +186,7 @@ export class World {
 	 * @param hook The hook to install.
 	 * @param value The hook callback.
 	 */
-	set<T>(
-		component: Entity<T>,
-		hook: StatefulHook,
-		value: (e: Entity, id: Id<T>, data: T) => void,
-	): void;
+	set<T>(component: Entity<T>, hook: StatefulHook, value: (e: Entity, id: Id<T>, data: T) => void): void;
 	set<T>(component: Entity<T>, hook: StatelessHook, value: (e: Entity, id: Id<T>) => void): void;
 	/**
 	 * Assigns a value to a component on the given entity.
@@ -301,10 +290,7 @@ export class World {
 	query<T extends Id[]>(...components: T): Query<T>;
 
 	added<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, value: T) => void): () => void;
-	changed<T>(
-		component: Entity<T>,
-		listener: (e: Entity, id: Id<T>, value: T) => void,
-	): () => void;
+	changed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, value: T) => void): () => void;
 	removed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>) => void): () => void;
 }
 
@@ -381,14 +367,14 @@ export type ComponentRecord = {
 
 export function component_record(world: World, id: Id): ComponentRecord;
 
-type TagToUndefined<T> = T extends TagDiscriminator ? undefined : T;
-type TrimOptional<T extends unknown[]> = T extends [...infer L, infer R]
-	? unknown extends R
-		? L | T | TrimOptional<L>
+type TagToUndefined<T> = T extends TagDiscriminator ? undefined : T
+type TrimOptional<T extends unknown[]> = T extends [...infer L, infer R] 
+	? unknown extends R 
+		? L | T | TrimOptional<L> 
 		: R extends undefined
 			? L | T | TrimOptional<L>
 			: T
-	: T;
+	: T
 
 export function bulk_insert<const C extends Id[]>(
 	world: World,
@@ -399,9 +385,9 @@ export function bulk_insert<const C extends Id[]>(
 export function bulk_remove(world: World, entity: Entity, ids: Id[]): void;
 
 export type EntityRecord<T extends Id[]> = {
-	archetype: Archetype<T>;
-	row: number;
-	dense: number;
+	archetype: Archetype<T>,
+	row: number,
+	dense: number,
 };
 
 export function record<T extends Id[] = []>(world: World, entity: Entity): EntityRecord<T>;
