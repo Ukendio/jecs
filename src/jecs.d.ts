@@ -77,6 +77,8 @@ export type CachedQuery<T extends Id[]> = {
 	 * @returns An array of archetypes of the query
 	 */
 	archetypes(): Archetype<T>[];
+
+	has(entity: Entity): boolean;
 } & Iter<T>;
 
 export type Query<T extends Id[]> = {
@@ -111,6 +113,8 @@ export type Query<T extends Id[]> = {
 	 * @returns An array of archetypes of the query
 	 */
 	archetypes(): Archetype<T>[];
+
+	has(entity: Entity): boolean;
 } & Iter<T>;
 
 export class World {
