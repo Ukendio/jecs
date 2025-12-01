@@ -79,14 +79,6 @@ export type CachedQuery<T extends Id[]> = {
 	archetypes(): Archetype<T>[];
 
 	has(entity: Entity): boolean;
-
-	ids: Id<any>[];
-
-	filter_with?: Id<any>[];
-
-	filter_without?: Id<any>[];
-
-	archetypes_map: Map<number, number>;
 } & Iter<T>;
 
 export type Query<T extends Id[]> = {
@@ -123,12 +115,6 @@ export type Query<T extends Id[]> = {
 	archetypes(): Archetype<T>[];
 
 	has(entity: Entity): boolean;
-
-	ids: Id<any>[];
-
-	filter_with?: Id<any>[];
-
-	filter_without?: Id<any>[];
 } & Iter<T>;
 
 export class World {
