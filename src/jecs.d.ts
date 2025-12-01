@@ -36,8 +36,8 @@ export type InferComponent<E> = E extends Entity<infer D>
 	? D
 	: E extends Pair<infer P, infer O>
 	? P extends TagDiscriminator
-	? O
-	: P
+		? O
+		: P
 	: never;
 
 type FlattenTuple<T extends unknown[]> = T extends [infer U] ? U : LuaTuple<T>;
@@ -178,7 +178,7 @@ export class World {
 	 * @param entity The target entity.
 	 * @param component The component (or tag) to add.
 	 */
-	add<C>(entity: Entity, component: TagDiscriminator extends InferComponent<C> ? C : Id <TagDiscriminator>): void;
+	add<C>(entity: Entity, component: TagDiscriminator extends InferComponent<C> ? C : Id<TagDiscriminator>): void;
 
 	/**
 	 * Installs a hook on the given component.
