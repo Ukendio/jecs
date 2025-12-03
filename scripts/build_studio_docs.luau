@@ -1,75 +1,86 @@
 --!strict
--- Copies all docs related files into a dist folder where all `@jecs` aliases inside them are replaced with their relative require path to jecs source code
--- This script may break if there's ever a Luau module (`init.luau`) in the mix, as it just counts how deep the file is and prepends `../` to `jecs` that many times
+-- Copies all docs related files into a dist folder with all aliases resolved to relative require paths
 local fs = zune.fs
+local stdpath = fs.path
 local process = zune.process
+local alias_resolver = require("./alias_resolver")
 
-local text_files = { "README.md", "LICENSE" }
-local extension_whitelist = { ".luau", ".json" }
-local dirs = { "examples", "how_to", "modules" }
-local dist = "studio_docs"
-
-local function traverse(dir: string, fn: (path: string, depth: number, metadata: Metadata) -> (), depth: number?)
-	depth = depth or 0
-	for _, entry in fs.entries(dir) do
-		local path = `{dir}/{entry.name}`
-		local metadata = fs.metadata(path)
-		fn(path, depth, metadata)
-		if entry.kind == "directory" then
-			traverse(path, fn, depth + 1)
-		end
-	end
-end
-
-local function relativify(depth: number): string
-	return string.rep("../", depth) .. "jecs"
-end
-
-if fs.stat(dist).kind ~= "none" then
-	fs.deleteDir(dist, true)
-end
-fs.makeDir(dist)
-fs.copy("src/jecs.luau", `{dist}/jecs.luau`)
-
-for _, file in text_files do
-	local source = fs.readFile(file)
-	local scriptified_source = `--[\[\n{source}\n]\]`
-	local stem = fs.path.stem(file)
-	fs.writeFile(`{dist}/{stem}.server.luau`, scriptified_source)
-	fs.writeFile(
-		`{dist}/{stem}.meta.json`,
-		-- stylua: ignore
-		[[
+-- stylua: ignore
+local DISABLED_SCRIPT = [[
 {
     "properties": {
         "Disabled": true
     }
 }
-    ]]
-	)
+]]
+
+local text_files = { "README.md", "LICENSE" }
+local allowed_extensions = { ".luau", ".json" }
+local directories = { "examples", "how_to", "modules" }
+local output = "studio_docs"
+
+local function traverse(
+	dir: string,
+	fn: (name: string, path: string, local_path: string, metadata: Metadata) -> (),
+	start_name: string?
+)
+	local local_name = start_name or stdpath.basename(dir)
+
+	for _, entry in fs.entries(dir) do
+		local path = stdpath.join(dir, entry.name)
+		local child = fs.metadata(path)
+
+		local local_path = stdpath.join(local_name, entry.name)
+		fn(entry.name, path, local_path, child)
+		if child.kind == "directory" then
+			traverse(path, fn, local_path)
+		end
+	end
 end
 
-for _, dir in dirs do
-	fs.copy(dir, `{dist}/{dir}`)
+if fs.stat(output).kind ~= "none" then
+	fs.deleteDir(output, true)
+end
+fs.makeDir(output)
+fs.copy("src/jecs.luau", `{output}/jecs.luau`)
+
+for _, file in text_files do
+	local source = fs.readFile(file)
+	local luau_source = `--[\[\n{source}\n]\]`
+	local stem = fs.path.stem(file)
+	fs.writeFile(`{output}/{stem}.server.luau`, luau_source)
+	fs.writeFile(`{output}/{stem}.meta.json`, DISABLED_SCRIPT)
 end
 
-traverse(dist, function(path, depth, metadata)
-	if metadata.kind ~= "file" then
+for _, dir in directories do
+	fs.copy(dir, `{output}/{dir}`)
+end
+
+local vfs_root = alias_resolver.build_fs_tree(output)
+local resolve_alias = alias_resolver.build_resolver(vfs_root, { jecs = "jecs.luau", modules = "modules" })
+traverse(output, function(name, path, local_path, metadata)
+	local extension = stdpath.extension(path)
+	if name == "jecs.luau" or metadata.kind ~= "file" or not table.find(allowed_extensions, extension) then
 		return
 	end
+	local_path = string.gsub(local_path, "\\", "/") -- vindovs
 
-	-- whitelist instead of blacklist
-	local extension = fs.path.extension(path)
-	if not table.find(extension_whitelist, extension) then
-		fs.deleteFile(path)
-		return
+	local contents = fs.readFile(path)
+	local lines = string.split(contents, "\n")
+	for number, line in lines do
+		local require_path = string.match(line, 'require%("(@[^"]+)"%)')
+		if not require_path then
+			continue
+		end
+
+		local resolved_path = resolve_alias(require_path, local_path)
+		if not resolved_path then
+			continue
+		end
+		lines[number] = string.gsub(line, require_path, resolved_path)
 	end
-
-	local source = fs.readFile(path)
-	local relative_jecs_path = relativify(depth)
-	source = string.gsub(source, "@jecs", relative_jecs_path)
-	fs.writeFile(path, source)
-end)
+	fs.writeFile(path, table.concat(lines, "\n"))
+end, "")
 
 process.run(
 	"rojo",
