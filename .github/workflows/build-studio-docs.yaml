@@ -2,6 +2,8 @@ name: build-studio-docs
 
 on:
   push:
+  schedule:
+    - cron: "10 0 1 * *" # Artifacts expire every 90 days. Doesn't hurt to just run this workflow first day of every month at 00:10 UTC.
 
 jobs:
   studio-docs:
