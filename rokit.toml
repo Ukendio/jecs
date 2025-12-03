@@ -2,3 +2,4 @@
 wally = "upliftgames/wally@0.3.2"
 rojo = "rojo-rbx/rojo@7.4.4"
 luau = "luau-lang/luau@0.701"
+zune = "scythe-technology/zune@0.5.1"
