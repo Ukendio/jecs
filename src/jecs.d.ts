@@ -173,7 +173,7 @@ export class World {
 	 * @param value The hook callback.
 	 */
 	set<T>(component: Entity<T>, hook: HookWithData, value: (e: Entity, id: Id<T>, data: T) => void): void;
-	set<T>(component: Entity<T>, hook: HookWithDeleted, value: (e: Entity, id: Id<T>, deleted?: boolean) => void): void;
+	set<T>(component: Entity<T>, hook: HookWithDeleted, value: (e: Entity, id: Id<T>, deleted?: true) => void): void;
 	/**
 	 * Assigns a value to a component on the given entity.
 	 * @param entity The target entity.
@@ -277,7 +277,7 @@ export class World {
 
 	added<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, value: T) => void): () => void;
 	changed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, value: T) => void): () => void;
-	removed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, deleted?: boolean) => void): () => void;
+	removed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, deleted?: true) => void): () => void;
 }
 
 export function world(): World;
@@ -326,7 +326,7 @@ export function ECS_PAIR_SECOND(pair: Pair): number;
 type HookWithData = Entity<<T>(e: Entity<T>, id: Id<T>, data: T) => void> & {
 	readonly __nominal_HookWithData: unique symbol;
 };
-type HookWithDeleted = Entity<<T>(e: Entity<T>, id: Id<T>, deleted?: boolean) => void> & {
+type HookWithDeleted = Entity<<T>(e: Entity<T>, id: Id<T>, deleted?: true) => void> & {
 	readonly __nominal_HookWithDeleted: unique symbol;
 };
 
