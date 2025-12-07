@@ -173,7 +173,7 @@ export class World {
 	 * @param value The hook callback.
 	 */
 	set<T>(component: Entity<T>, hook: StatefulHook, value: (e: Entity, id: Id<T>, data: T) => void): void;
-	set<T>(component: Entity<T>, hook: StatelessHook, value: (e: Entity, id: Id<T>) => void): void;
+	set<T>(component: Entity<T>, hook: StatelessHook, value: (e: Entity, id: Id<T>, deleted?: boolean) => void): void;
 	/**
 	 * Assigns a value to a component on the given entity.
 	 * @param entity The target entity.
@@ -277,7 +277,7 @@ export class World {
 
 	added<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, value: T) => void): () => void;
 	changed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, value: T) => void): () => void;
-	removed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>) => void): () => void;
+	removed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, deleted?: boolean) => void): () => void;
 }
 
 export function world(): World;
@@ -326,7 +326,7 @@ export function ECS_PAIR_SECOND(pair: Pair): number;
 type StatefulHook = Entity<<T>(e: Entity<T>, id: Id<T>, data: T) => void> & {
 	readonly __nominal_StatefulHook: unique symbol;
 };
-type StatelessHook = Entity<<T>(e: Entity<T>, id: Id<T>) => void> & {
+type StatelessHook = Entity<<T>(e: Entity<T>, id: Id<T>, deleted?: boolean) => void> & {
 	readonly __nominal_StatelessHook: unique symbol;
 };
 
