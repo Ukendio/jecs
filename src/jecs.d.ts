@@ -172,8 +172,8 @@ export class World {
 	 * @param hook The hook to install.
 	 * @param value The hook callback.
 	 */
-	set<T>(component: Entity<T>, hook: StatefulHook, value: (e: Entity, id: Id<T>, data: T) => void): void;
-	set<T>(component: Entity<T>, hook: StatelessHook, value: (e: Entity, id: Id<T>, deleted?: boolean) => void): void;
+	set<T>(component: Entity<T>, hook: HookWithData, value: (e: Entity, id: Id<T>, data: T) => void): void;
+	set<T>(component: Entity<T>, hook: HookWithDeleted, value: (e: Entity, id: Id<T>, deleted?: boolean) => void): void;
 	/**
 	 * Assigns a value to a component on the given entity.
 	 * @param entity The target entity.
@@ -323,16 +323,16 @@ export function pair_second<P, O>(world: World, p: Pair<P, O>): Entity<O>;
 export function ECS_PAIR_FIRST(pair: Pair): number;
 export function ECS_PAIR_SECOND(pair: Pair): number;
 
-type StatefulHook = Entity<<T>(e: Entity<T>, id: Id<T>, data: T) => void> & {
-	readonly __nominal_StatefulHook: unique symbol;
+type HookWithData = Entity<<T>(e: Entity<T>, id: Id<T>, data: T) => void> & {
+	readonly __nominal_HookWithData: unique symbol;
 };
-type StatelessHook = Entity<<T>(e: Entity<T>, id: Id<T>, deleted?: boolean) => void> & {
-	readonly __nominal_StatelessHook: unique symbol;
+type HookWithDeleted = Entity<<T>(e: Entity<T>, id: Id<T>, deleted?: boolean) => void> & {
+	readonly __nominal_HookWithDeleted: unique symbol;
 };
 
-export declare const OnAdd: StatefulHook;
-export declare const OnRemove: StatelessHook;
-export declare const OnChange: StatefulHook;
+export declare const OnAdd: HookWithData;
+export declare const OnRemove: HookWithDeleted;
+export declare const OnChange: HookWithData;
 export declare const ChildOf: Tag;
 export declare const Component: Tag;
 export declare const Wildcard: Entity;
