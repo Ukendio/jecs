@@ -247,7 +247,7 @@ export type World = {
 	--- Gets the target of an relationship. For example, when a user calls
 	--- `world:target(id, ChildOf(parent), 0)`, you will obtain the parent entity.
 	target: <T, a>(self: World, id: Entity<T>, relation: ecs_entity_t<Component>, index: number?) -> Entity?,
-	--- Deletes an entity and all it's related components and relationships.
+	--- Deletes an entity and all its related components and relationships.
 	delete: <T>(self: World, id: Entity<T>) -> (),
 
 	--- Adds a component to the entity with no value

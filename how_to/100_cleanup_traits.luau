@@ -71,7 +71,7 @@ print(world:has(e1, T1))
 	Cascading deletion, dangerous.
 ]]
 
-world:add(T2, pair(jecs.OnDelete, jecs.Remove))
+world:add(T2, pair(jecs.OnDelete, jecs.Delete))
 
 local e2 = world:entity()
 world:add(e2, T2)
