@@ -3084,17 +3084,6 @@ local function world_new()
 
 		local archetype = record.archetype
 
-		if archetype then
-			for _, id in archetype.types do
-				local idr = component_index[id]
-				local on_remove = idr.on_remove
-				if on_remove then
-					on_remove(entity, id, true)
-				end
-			end
-			archetype_delete(world, record.archetype, record.row)
-		end
-
 		local component_index = world.component_index
 		local archetypes = world.archetypes
 		local tgt = ECS_PAIR(EcsWildcard, entity)
@@ -3163,6 +3152,7 @@ local function world_new()
 				local idr_t_archetype = archetypes[archetype_id]
 				local idr_t_types = idr_t_archetype.types
 				local entities = idr_t_archetype.entities
+				local will_delete_archetype = false
 
 				for _, id in idr_t_types do
 					if not ECS_IS_PAIR(id) then
@@ -3173,6 +3163,7 @@ local function world_new()
 					if object ~= entity then
 						continue
 					end
+					will_delete_archetype = true
 					local id_record = component_index[id]
 					local flags = id_record.flags
 					local flags_delete_mask = bit32.btest(flags, ECS_ID_DELETE)
@@ -3197,10 +3188,10 @@ local function world_new()
 						end
 					end
 				end
-			end
 
-			for archetype_id in archetype_ids do
-				archetype_destroy(world, archetypes[archetype_id])
+				if will_delete_archetype then
+					archetype_destroy(world, idr_t_archetype)
+				end
 			end
 		end
 
@@ -3252,6 +3243,16 @@ local function world_new()
 			end
 		end
 
+		if archetype then
+			for _, id in archetype.types do
+				local cr = component_index[id]
+				local on_remove = cr.on_remove
+				if on_remove then
+					on_remove(entity, id, true)
+				end
+			end
+			archetype_delete(world, record.archetype, record.row)
+		end
 
 		local dense = record.dense
 		local i_swap = entity_index.alive_count
