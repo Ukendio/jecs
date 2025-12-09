@@ -29,7 +29,7 @@ export type QueryInner = {
 	filter_with: { Component },
 	filter_without: { Component },
 	next: () -> (Entity, ...any),
-	world: World,
+	-- world: World,
 }
 
 type function ecs_entity_t(ty: type)
@@ -72,7 +72,7 @@ type function ecs_id_t(first: type, second: type)
 	return p
 end
 
-export type Entity<T = any> = { __T: T }
+export type Entity<T = nil> = { __T: T }
 export type Id<T = any> = { __T: T }
 export type Pair<First=any, Second=any> = ecs_pair_t<Entity<First>, Entity<Second>>
 export type Component<T=any> = { __T: T }
@@ -82,15 +82,12 @@ export type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 export type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
 export type CachedIter<T...> = (query: CachedQuery<T...>) -> () -> (Entity, T...)
 
-type TypePack<T...> = {
-	__phantomdata: () -> (T...)
-}
+type TypePack<T...> = (T...) -> never
 
 export type CachedQuery<T...> = typeof(setmetatable(
 	{} :: {
 		iter: CachedIter<T...>,
-		archetypes: (self: CachedQuery<T...>) -> { Archetype },
-		cached: (self: CachedQuery<T...>) -> CachedQuery<T...>,
+		archetypes: (CachedQuery<T...>) -> { Archetype },
 		has: (CachedQuery<T...>, Entity) -> boolean,
 		ids: { Id<any> },
 		filter_with: { Id<any> }?,
@@ -108,8 +105,8 @@ export type Query<T...> = typeof(setmetatable(
 		iter: Iter<T...>,
 		with: ((Query<T...>, ...Component) -> Query<T...>),
 		without: ((Query<T...>, ...Component) -> Query<T...>),
-		archetypes: (self: Query<T...>) -> { Archetype },
-		cached: (self: Query<T...>) -> CachedQuery<T...>,
+		archetypes: (Query<T...>) -> { Archetype },
+		cached: (Query<T...>) -> CachedQuery<T...>,
 		has: (Query<T...>, Entity) -> boolean,
 		ids: { Id<any> },
 		filter_with: { Id<any> }?,
@@ -246,14 +243,14 @@ export type World = {
 	component: <T>(self: World) -> Entity<T>,
 	--- Gets the target of an relationship. For example, when a user calls
 	--- `world:target(id, ChildOf(parent), 0)`, you will obtain the parent entity.
-	target: <T, a>(self: World, id: Entity<T>, relation: ecs_entity_t<Component>, index: number?) -> Entity?,
-	--- Deletes an entity and all its related components and relationships.
+	target: <T, a>(self: World, id: Entity<T>, relation: ecs_entity_t<Component>, index: number?) -> Entity<unknown>?,
+	--- Deletes an entity and all it's related components and relationships.
 	delete: <T>(self: World, id: Entity<T>) -> (),
 
 	--- Adds a component to the entity with no value
 	add: <a>(
 		self: World,
-		id: ecs_entity_t<Entity>,
+		id: ecs_entity_t<Entity<any>>,
 		component: Component<a>
 	) -> (),
 
@@ -267,10 +264,10 @@ export type World = {
 	--- Removes a component from the given entity
 	remove: <T, a>(self: World, id: Entity<T>, component: Component<a>) -> (),
 	--- Retrieves the value of up to 4 components. These values may be nil.
-	get: & (<T, a>(World, Entity<T>, Component<a>) -> a?)
-		& (<T, a, b>(World, Entity<T>, Component<a>, Component<b>) -> (a?, b?))
-		& (<T, a, b, c>(World, Entity<T>, Component<a>, Component<b>, Component<c>) -> (a?, b?, c?))
-		& (<T, a, b, c, d>(World, Entity<T>, Component<a>, Component<b>, Component<c>, Component<d>) -> (a?, b?, c?, d?)),
+	get: & (<T, a>(World, Entity<T> | number, Component<a>) -> a?)
+		& (<T, a, b>(World, Entity<T> | number, Component<a>, Component<b>) -> (a?, b?))
+		& (<T, a, b, c>(World, Entity<T> | number, Component<a>, Component<b>, Component<c>) -> (a?, b?, c?))
+		& (<T, a, b, c, d>(World, Entity<T> | number, Component<a>, Component<b>, Component<c>, Component<d>) -> (a?, b?, c?, d?)),
 
 	--- Returns whether the entity has the ID.
 	has: (<T, a>(World, Entity<T>, Component<a>) -> boolean)
@@ -1704,7 +1701,7 @@ local function query_cached(query: QueryInner)
 
 	local compatible_archetypes = archetypes :: { Archetype }
 
-	local world = query.world
+	local world = (query :: { world: World }).world
 	-- Only need one observer for EcsArchetypeCreate and EcsArchetypeDelete respectively
 	-- because the event will be emitted for all components of that Archetype.
 	local observable = world.observable
@@ -2128,7 +2125,7 @@ local function query_cached(query: QueryInner)
 end
 
 local function query_has(query: QueryInner, entity: i53)
-	local world = query.world :: world
+	local world = (query::any).world :: world
 	local r = entity_index_try_get(world.entity_index, entity)
 	if not r then
 		return false
@@ -3457,7 +3454,7 @@ return {
 	archetype_append_to_records = archetype_append_to_records,
 	id_record_ensure = id_record_ensure :: (World, Component) -> ComponentRecord,
 	component_record = id_record_get :: (World, Component) -> ComponentRecord?,
-	record = ecs_entity_record :: (World, Entity) -> Record,
+	record = ecs_entity_record :: (World, Entity<any>) -> Record,
 
 	archetype_create = archetype_create :: (World, { Component }, string) -> Archetype,
 	archetype_ensure = archetype_ensure :: (World, { Component }) -> Archetype,
