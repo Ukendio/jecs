@@ -4,7 +4,7 @@ local ECS_ID = jecs.ECS_ID
 local __ = jecs.Wildcard
 local pair = jecs.pair
 
-local prettify = require("@tools/entity_visualiser").prettify
+local prettify = require("@modules/entity_visualiser").prettify
 
 local pe = prettify
 
