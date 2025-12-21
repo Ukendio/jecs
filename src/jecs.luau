@@ -3119,13 +3119,12 @@ local function world_new()
 			in the opaque call stack. Essentially the entry is removed on a
 			first come first serve basis.
 
-			The solution is to hold onto the borrowed references of the
-			archetypes in the lexical scope and make assumptions that the data
-			itself is not invalidated until `archetype_destroy` is called on it.
-			This is done since it is the only efficient way of doing it, however
-			we must veer on the edge of incorrectness. This is mostly acceptable
-			because it is not generally observable in the user-land but it has
-			caused subtle when something goes wrong.
+			The solution is to separate processing from cleanup. We first iterate
+			over the archetypes to process entities (move them, call hooks, etc.),
+			but do not destroy the archetypes yet. Then we iterate again to destroy
+			the archetypes, but check if they still exist (archetypes[archetype_id]
+			is not nil) before destroying. This handles the case where recursive
+			world_delete calls have already destroyed some archetypes.
 
 										- Marcus
 		]]
@@ -3223,7 +3222,12 @@ local function world_new()
 					end
 				end
 
-				archetype_destroy(world, idr_t_archetype)
+			end
+			for archetype_id in archetype_ids do
+				local idr_t_archetype = archetypes[archetype_id]
+				if idr_t_archetype then
+					archetype_destroy(world, idr_t_archetype)
+				end
 			end
 		end
 
