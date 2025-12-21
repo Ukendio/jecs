@@ -3083,6 +3083,16 @@ local function world_new()
 		end
 
 		local archetype = record.archetype
+		if archetype then
+			for _, id in archetype.types do
+				local cr = component_index[id]
+				local on_remove = cr.on_remove
+				if on_remove then
+					on_remove(entity, id, true)
+				end
+			end
+			archetype_delete(world, record.archetype, record.row)
+		end
 
 		local component_index = world.component_index
 		local archetypes = world.archetypes
@@ -3243,16 +3253,7 @@ local function world_new()
 			end
 		end
 
-		if archetype then
-			for _, id in archetype.types do
-				local cr = component_index[id]
-				local on_remove = cr.on_remove
-				if on_remove then
-					on_remove(entity, id, true)
-				end
-			end
-			archetype_delete(world, record.archetype, record.row)
-		end
+
 
 		local dense = record.dense
 		local i_swap = entity_index.alive_count

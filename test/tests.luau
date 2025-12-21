@@ -24,7 +24,28 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@modules/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
-FOCUS()
+TEST("deleting t1's archetype before invoking its onremove hooks", function()
+    local pair = jecs.pair
+    local world = jecs.world()
+    local rel = world:component()
+
+    local t1 = world:entity()
+    local t2 = world:entity()
+
+    --[[
+    weirdly enough if i do this (only when adding childof relation after adding (rel, t2) to t1) it does not error. Probably a red herring
+
+    world:add(t2, pair(rel, t1))
+    world:add(t1, pair(rel, t2))
+    world:add(t2, pair(jecs.ChildOf, t1))
+    --]]
+
+    -- this causes world:delete to error
+    world:add(t2, pair(jecs.ChildOf, t1))
+    world:add(t1, pair(rel, t2))
+
+    world:delete(t1)
+end)
 TEST("reproduce idr_t nil archetype bug", function()
 	local world = jecs.world()
 
