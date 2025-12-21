@@ -3246,21 +3246,32 @@ local function world_new()
 				local records = idr_r.records
 				for archetype_id in archetype_ids do
 					local idr_r_archetype = archetypes[archetype_id]
-					local node = idr_r_archetype
+					-- local node = idr_r_archetype
 					local entities = idr_r_archetype.entities
 					local tr = records[archetype_id]
 					local tr_count = counts[archetype_id]
 					local idr_r_types = idr_r_archetype.types
+					local dst = table.clone(idr_r_types)
 					for i = tr, tr + tr_count - 1 do
 						local id = idr_r_types[i]
-						node = archetype_traverse_remove(world, id, node)
+						local at = table.find(dst, id)
+						if at then
+							table.remove(dst, at)
+						end
+						-- node = archetype_traverse_remove(world, id, node)
 						local on_remove = component_index[id].on_remove
 						if on_remove then
+							-- NOTE(marcus): Since hooks can move the entities
+							-- assumptions about which archetype it jumps to is
+							-- diminished. We assume that people who delete
+							-- relation will never have hooks on them.
 							for _, entity in entities do
 								on_remove(entity, id)
 							end
 						end
 					end
+
+					local node = archetype_ensure(world, dst)
 
 					for i = #entities, 1, -1 do
 						local e = entities[i]

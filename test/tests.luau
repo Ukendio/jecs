@@ -24,6 +24,59 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@modules/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
+TEST("optimize idr_r removal", function()
+
+	local pair = jecs.pair
+    local world = jecs.world()
+    local rel = world:component()
+    local A = world:component()
+    local B = world:component()
+
+    local t1 = world:entity()
+    local t2 = world:entity()
+
+    local entities = {} :: { jecs.Entity }
+
+    for i = 1, 10 do
+
+	    local e1 = world:entity()
+        local e2 = world:entity()
+
+        world:set(e1, A, true)
+        world:set(e2, A, true)
+        world:add(e1, pair(B, t1))
+        world:add(e1, pair(B, t2))
+        world:add(e2, pair(B, t1))
+        world:add(e2, pair(B, t2))
+
+        table.insert(entities, e1)
+        table.insert(entities, e2)
+    end
+
+    local e1 = world:entity()
+    local e2 = world:entity()
+
+    table.insert(entities, e1)
+	table.insert(entities, e2)
+
+    world:set(e1, A, true)
+    world:set(e2, A, true)
+    world:add(e1, pair(B, t1))
+    world:add(e1, pair(B, t2))
+    world:add(e2, pair(B, t1))
+    world:add(e2, pair(B, t2))
+
+    BENCH("delete B", function()
+    	world:delete(B)
+    end)
+
+    for _, e in entities do
+	    CHECK(world:has(e, A))
+        CHECK(not world:target(e, B))
+        CHECK(not world:target(e, B))
+    end
+
+end)
 TEST("deleting t1's archetype before invoking its onremove hooks", function()
     local pair = jecs.pair
     local world = jecs.world()
@@ -95,10 +148,6 @@ TEST("reproduce idr_t nil archetype bug", function()
 
 	        -- Removing this, but keeping Animator on the other 2 causes it to stop happening
 	        world:set(trackEntity1, cts.VelocitizeAnimationWeight, 0)
-
-									print("delete root")
-	        world:delete(root)
-									print("---")
 
 	        for entityId, info in trackedEntities do
 	            if world:contains(entityId) and not world:parent(entityId :: any) then
