@@ -3084,6 +3084,9 @@ local function world_new()
 
 		local archetype = record.archetype
 		if archetype then
+			-- NOTE(marcus): It is important to remove the data and invoke
+			-- the hooks before the archetype and certain component records are
+			-- invalidated or else it will have a nasty runtime error.
 			for _, id in archetype.types do
 				local cr = component_index[id]
 				local on_remove = cr.on_remove
@@ -3103,6 +3106,29 @@ local function world_new()
 		local idr = component_index[entity]
 		local idr_r = component_index[rel]
 
+		--[[
+			It is important to note that `world_delete` uses a depth-first
+			traversal that prunes the children of the entity before their
+			parents. archetypes can be destroyed and removed from component
+			records while we're still iterating over those records. The
+			recursive nature of this function entails that archetype ids can be
+			removed from component records (idr_t.records, idr.records and
+			idr_r.records) while that collection is still being iterated over.
+			If we try to look up an archetype by ID after it has been destroyed,
+			we get nil. This is hard to debug because the removal happens deep
+			in the opaque call stack. Essentially the entry is removed on a
+			first come first serve basis.
+
+			The solution is to hold onto the borrowed references of the
+			archetypes in the lexical scope and make assumptions that the data
+			itself is not invalidated until `archetype_destroy` is called on it.
+			This is done since it is the only efficient way of doing it, however
+			we must veer on the edge of incorrectness. This is mostly acceptable
+			because it is not generally observable in the user-land but it has
+			caused subtle when something goes wrong.
+
+										- Marcus
+		]]
 		if idr then
 			local flags = idr.flags
 			if (bit32.btest(flags, ECS_ID_DELETE) == true) then
@@ -3162,7 +3188,6 @@ local function world_new()
 				local idr_t_archetype = archetypes[archetype_id]
 				local idr_t_types = idr_t_archetype.types
 				local entities = idr_t_archetype.entities
-				local will_delete_archetype = false
 
 				for _, id in idr_t_types do
 					if not ECS_IS_PAIR(id) then
@@ -3173,7 +3198,6 @@ local function world_new()
 					if object ~= entity then
 						continue
 					end
-					will_delete_archetype = true
 					local id_record = component_index[id]
 					local flags = id_record.flags
 					local flags_delete_mask = bit32.btest(flags, ECS_ID_DELETE)
@@ -3199,9 +3223,7 @@ local function world_new()
 					end
 				end
 
-				if will_delete_archetype then
-					archetype_destroy(world, idr_t_archetype)
-				end
+				archetype_destroy(world, idr_t_archetype)
 			end
 		end
 
@@ -3245,10 +3267,8 @@ local function world_new()
 						local r = entity_index_try_get_unsafe(e) :: record
 						inner_entity_move(e, r, node)
 					end
-				end
 
-				for archetype_id in archetype_ids do
-					archetype_destroy(world, archetypes[archetype_id])
+					archetype_destroy(world, idr_r_archetype)
 				end
 			end
 		end

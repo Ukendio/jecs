@@ -96,7 +96,9 @@ TEST("reproduce idr_t nil archetype bug", function()
 	        -- Removing this, but keeping Animator on the other 2 causes it to stop happening
 	        world:set(trackEntity1, cts.VelocitizeAnimationWeight, 0)
 
+									print("delete root")
 	        world:delete(root)
+									print("---")
 
 	        for entityId, info in trackedEntities do
 	            if world:contains(entityId) and not world:parent(entityId :: any) then
@@ -105,7 +107,7 @@ TEST("reproduce idr_t nil archetype bug", function()
 	                print(`batch = {batch}, i = {i}`)
 	                print("==========================================")
 	                trackedEntities[entityId] = nil
-					world:deletee(entityId)
+					world:delete(entityId)
 	            end
 	        end
 	    end
