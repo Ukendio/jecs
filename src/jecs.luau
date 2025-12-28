@@ -2667,9 +2667,6 @@ local function ecs_bulk_remove(world: world, entity: i53, ids: { i53 })
 	end
 end
 
-type Context = {
-	debug: boolean?
-}
 local function world_new(DEBUG: boolean?)
 	local eindex_dense_array = {} :: { i53 }
 	local eindex_sparse_array = {} :: { record }
@@ -3844,7 +3841,7 @@ local function ecs_entity_record(world: world, entity: i53)
 end
 
 return {
-	world = world_new :: () -> World,
+	world = world_new :: (boolean?) -> World,
 	World = {
 		new = world_new
 	},

@@ -121,7 +121,7 @@ export class World {
 	/**
 	 * Creates a new World.
 	 */
-	private constructor();
+	private constructor(DEBUG?: boolean);
 
 	/**
 	 * Enforces a check for entities to be created within a desired range.
@@ -354,9 +354,9 @@ export type ComponentRecord = {
 export function component_record(world: World, id: Id): ComponentRecord;
 
 type TagToUndefined<T> = T extends TagDiscriminator ? undefined : T
-type TrimOptional<T extends unknown[]> = T extends [...infer L, infer R] 
-	? unknown extends R 
-		? L | T | TrimOptional<L> 
+type TrimOptional<T extends unknown[]> = T extends [...infer L, infer R]
+	? unknown extends R
+		? L | T | TrimOptional<L>
 		: R extends undefined
 			? L | T | TrimOptional<L>
 			: T
