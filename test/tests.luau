@@ -25,7 +25,7 @@ local entity_visualiser = require("@modules/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
 TEST("reproduce idr_t nil archetype bug", function()
-	local world = jecs.world()
+	local world = jecs.world(true)
 
 	local cts = {
 	    Humanoid = world:component(),
@@ -46,7 +46,9 @@ TEST("reproduce idr_t nil archetype bug", function()
 	    local src = r.archetype
 
 	    --REMOVING THIS jecs.archetype_traverse_remove CALL STOPS IT FROM HAPPENING
-	    -- local dst = src and jecs.archetype_traverse_remove(world, id, src)
+		CHECK_EXPECT_ERR(function()
+			world:remove(entity, cts.Humanoid)
+		end)
 	end)
 
 	local batchSize = 200

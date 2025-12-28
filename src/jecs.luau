@@ -1693,7 +1693,7 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 			local row = i_u
 			i_u -= 1
 
-			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], captured_g[row]
+			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row]
 		end
 	elseif not id8 then
 		function world_query_iter_next(): any
@@ -2288,7 +2288,7 @@ local function query_cached(query: QueryInner)
 			local row = i_u
 			i_u -= 1
 
-			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], captured_g[row]
+			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row]
 		end
 	elseif not id8 then
 		function world_query_iter_next(): any
@@ -3393,6 +3393,7 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local function world_delete(world: world, entity: i53)
+		DEBUG_DELETING_ENTITY = entity
 		local record = entity_index_try_get_unsafe(entity)
 		if not record then
 			return
@@ -3525,6 +3526,7 @@ local function world_new(DEBUG: boolean?)
 					else
 						local on_remove = id_record.on_remove
 
+						local to = archetype_traverse_remove(world, id, idr_t_archetype)
 						for i = #entities, 1, -1 do
 							local child = entities[i]
 							if on_remove then
@@ -3532,18 +3534,12 @@ local function world_new(DEBUG: boolean?)
 							end
 
 							local r = entity_index_try_get_unsafe(child) :: record
-							local to = archetype_traverse_remove(world, id, r.archetype)
 							inner_entity_move(child, r, to)
 						end
 					end
 				end
 
-			end
-			for archetype_id in archetype_ids do
-				local idr_t_archetype = archetypes[archetype_id]
-				if idr_t_archetype then
-					archetype_destroy(world, idr_t_archetype)
-				end
+				archetype_destroy(world, idr_t_archetype)
 			end
 		end
 
@@ -3707,16 +3703,33 @@ local function world_new(DEBUG: boolean?)
 		-- NOTE(marcus): Make it easy to grep the debug functions and
 		-- being able to read the specification, without having to look
 		-- at the implementation to understand invariants.
-		local function world_remove_checked(world: world, entity: i53, id: i53)
+
+		local DEBUG_DELETING_ENTITY
+		local function DEBUG_IS_DELETING_ENTITY(entity: i53)
+			if DEBUG_DELETING_ENTITY == entity then
+				error([[
+					Tried to make structural changes while the entity is in process
+					of being deleted. You called this function inside of the
+					OnRemove hook, but the entity is going to remove all of its
+					components making this operation moot.
+				]], 2)
+			end
+		end
+
+		local function DEBUG_IS_INVALID_ENTITY(entity: i53)
 			local entity_id = ECS_ID(entity)
-			local wrong_entity = eindex_sparse_array[entity_id] ~= entity_id
-			if wrong_entity then
+			local r = eindex_sparse_array[entity_id]
+			local canonical_entity = eindex_dense_array[r.dense]
+
+			if canonical_entity ~= entity then
 				error([[
 					This Entity handle has an outdated generation. You are
 					probably holding onto an entity that you got from outside the ECS
 				]], 2)
 			end
+		end
 
+		local function DEBUG_ID_IS_INVALID_PAIR(id: i53)
 			if ECS_ID_IS_WILDCARD(id) then
 				error([[
 					You tried to pass in a wildcard pair. This is strictly
@@ -3725,34 +3738,43 @@ local function world_new(DEBUG: boolean?)
 					targets to remove and use jecs.bulk_remove.
 				]], 2)
 			end
+		end
+
+		-- NOTE(marcus): I have to save the old function and overriding the
+		-- upvalue in order to actually allow cascaded deletions to also be
+		-- checked by our program because we use the world_delete ptr internally.
+		local canonical_world_delete = world_delete
+		local function world_delete_checked(world: world, entity: i53)
+			DEBUG_DELETING_ENTITY = entity
+			DEBUG_IS_INVALID_ENTITY(entity)
+			canonical_world_delete(world, entity, id)
+		end
+		world_delete = world_delete_checked
+
+		local function world_remove_checked(world: world, entity: i53, id: i53)
+			DEBUG_IS_DELETING_ENTITY(entity)
+			DEBUG_IS_INVALID_ENTITY(entity)
+			DEBUG_ID_IS_INVALID_PAIR(id)
 
 			world_remove(world, entity, id)
 		end
 		local function world_add_checked(world: world, entity: i53, id: i53)
-			local entity_id = ECS_ID(entity)
-			local wrong_entity = eindex_sparse_array[entity_id] ~= entity_id
-			if wrong_entity then
-				error([[
-					This Entity handle has an outdated generation. You are
-					probably holding onto an entity that you got from outside the ECS
-				]], 2)
-			end
+			DEBUG_IS_DELETING_ENTITY(entity)
+			DEBUG_IS_INVALID_ENTITY(entity)
+			DEBUG_ID_IS_INVALID_PAIR(id)
 
 			world_add(world, entity, id)
 		end
 		local function world_set_checked(world: world, entity: i53, id: i53, value: any)
-			local entity_id = ECS_ID(entity)
-			local wrong_entity = eindex_sparse_array[entity_id] ~= entity_id
-			if wrong_entity then
-				error([[
-					This Entity handle has an outdated generation. You are
-					probably holding onto an entity that you got from outside the ECS
-				]], 2)
-			end
+			DEBUG_IS_DELETING_ENTITY(entity)
+			DEBUG_IS_INVALID_ENTITY(entity)
+			DEBUG_ID_IS_INVALID_PAIR(id)
+
 			world_set(world, entity, id, value)
 		end
-		world.remove = world_remove_unchecked
+		world.remove = world_remove_checked
 		world.add = world_add_checked
+		world.set = world_set_checked
 	end
 
 	for i = 1, EcsRest do
