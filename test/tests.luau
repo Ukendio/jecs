@@ -24,81 +24,7 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@modules/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
-TEST("optimize idr_r removal", function()
-
-	local pair = jecs.pair
-    local world = jecs.world()
-    local rel = world:component()
-    local A = world:component()
-    local B = world:component()
-
-    local t1 = world:entity()
-    local t2 = world:entity()
-
-    local entities = {} :: { jecs.Entity }
-
-    for i = 1, 10 do
-
-	    local e1 = world:entity()
-        local e2 = world:entity()
-
-        world:set(e1, A, true)
-        world:set(e2, A, true)
-        world:add(e1, pair(B, t1))
-        world:add(e1, pair(B, t2))
-        world:add(e2, pair(B, t1))
-        world:add(e2, pair(B, t2))
-
-        table.insert(entities, e1)
-        table.insert(entities, e2)
-    end
-
-    local e1 = world:entity()
-    local e2 = world:entity()
-
-    table.insert(entities, e1)
-	table.insert(entities, e2)
-
-    world:set(e1, A, true)
-    world:set(e2, A, true)
-    world:add(e1, pair(B, t1))
-    world:add(e1, pair(B, t2))
-    world:add(e2, pair(B, t1))
-    world:add(e2, pair(B, t2))
-
-    BENCH("delete B", function()
-    	world:delete(B)
-    end)
-
-    for _, e in entities do
-	    CHECK(world:has(e, A))
-        CHECK(not world:target(e, B))
-        CHECK(not world:target(e, B))
-    end
-
-end)
-TEST("deleting t1's archetype before invoking its onremove hooks", function()
-    local pair = jecs.pair
-    local world = jecs.world()
-    local rel = world:component()
-
-    local t1 = world:entity()
-    local t2 = world:entity()
-
-    --[[
-    weirdly enough if i do this (only when adding childof relation after adding (rel, t2) to t1) it does not error. Probably a red herring
-
-    world:add(t2, pair(rel, t1))
-    world:add(t1, pair(rel, t2))
-    world:add(t2, pair(jecs.ChildOf, t1))
-    --]]
-
-    -- this causes world:delete to error
-    world:add(t2, pair(jecs.ChildOf, t1))
-    world:add(t1, pair(rel, t2))
-
-    world:delete(t1)
-end)
+FOCUS()
 TEST("reproduce idr_t nil archetype bug", function()
 	local world = jecs.world()
 
@@ -124,43 +50,56 @@ TEST("reproduce idr_t nil archetype bug", function()
 	    local dst = src and jecs.archetype_traverse_remove(world, id, src)
 	end)
 
-	local batches = 10
-	local batchSize = 20
+	local batchSize = 200
 
 	local trackedEntities: { [number]: { parentId: number? } } = {}
 
-	for batch = 1, batches do
-	    for i = 1, batchSize do
-	        local root = world:entity()
-	        world:add(root, jecs.pair(jecs.ChildOf, char))
+    for i = 1, batchSize do
 
-	        -- Removing animator from trackEntity1 causes it to stop happening
-	        local trackEntity1 = world:entity()
-	        world:set(trackEntity1, cts.Animator, 0)
-	        world:add(trackEntity1, jecs.pair(jecs.ChildOf, root))
-	        trackedEntities[trackEntity1] = { parentId = root }
+	    local root = world:entity()
+        -- world:add(root, jecs.pair(jecs.ChildOf, char))
 
-	        -- Removing animator from trackEntity2 causes it to happen less frequently
-	        local trackEntity2 = world:entity()
-	        world:set(trackEntity2, cts.Animator, 0)
-	        world:add(trackEntity2, jecs.pair(jecs.ChildOf, root))
-	        trackedEntities[trackEntity2] = { parentId = root }
+        -- Removing animator from trackEntity1 causes it to stop happening
+        local trackEntity1 = world:entity()
+        world:set(trackEntity1, cts.Animator, 0)
+        world:add(trackEntity1, jecs.pair(jecs.ChildOf, root))
+        world:set(trackEntity1, jecs.Name, "trackEntity1v"..i)
+        trackedEntities[trackEntity1] = { parentId = root }
 
-	        -- Removing this, but keeping Animator on the other 2 causes it to stop happening
-	        world:set(trackEntity1, cts.VelocitizeAnimationWeight, 0)
+        -- Removing animator from trackEntity2 causes it to happen less frequently
+        local trackEntity2 = world:entity()
+        world:set(trackEntity2, cts.Animator, 0)
+        world:add(trackEntity2, jecs.pair(jecs.ChildOf, root))
+        world:set(trackEntity2, jecs.Name, "trackEntity2v"..i)
+        trackedEntities[trackEntity2] = { parentId = root }
 
-	        for entityId, info in trackedEntities do
-	            if world:contains(entityId) and not world:parent(entityId :: any) then
-	                print(`bugged entity found: {entityId}`)
-	                print(`original parent: {info.parentId}`)
-	                print(`batch = {batch}, i = {i}`)
-	                print("==========================================")
-	                trackedEntities[entityId] = nil
-					world:delete(entityId)
-	            end
-	        end
-	    end
-	end
+        -- Removing this, but keeping Animator on the other 2 causes it to stop happening
+        world:set(trackEntity1, cts.VelocitizeAnimationWeight, 0)
+
+		local q = world:query(jecs.pair(jecs.ChildOf, jecs.w)):cached()
+
+
+		print("---- delete start root")
+		print("--- root", world:contains(root),  root, jecs.ECS_ID(root), jecs.ECS_GENERATION(root))
+        world:delete(root)
+        print("---- delete end root")
+
+		for entity in q do
+			local parent = world:parent(entity) :: jecs.Entity
+			print("--- root", world:contains(root), jecs.ECS_ID(root), jecs.ECS_GENERATION(root))
+			print(world:get(entity, jecs.Name), jecs.ECS_ID(parent), jecs.ECS_GENERATION(parent), "root ->", root)
+			CHECK(world:parent(entity) == nil)
+		end
+		for entityId, info in trackedEntities do
+            if world:contains(entityId) and not world:parent(entityId :: any) then
+                print(`bugged entity found: {entityId}`)
+                print(`original parent: {info.parentId}`)
+                print(`batch = {batch}, i = {i}`)
+                print("==========================================")
+                trackedEntities[entityId] = nil
+            end
+        end
+    end
 end)
 
 TEST("Ensure archetype edges get cleaned", function()
