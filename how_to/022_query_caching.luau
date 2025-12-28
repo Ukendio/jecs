@@ -79,6 +79,6 @@ end
 -- Cached query (faster for repeated use)
 local cached_query = world:query(Position, Velocity):cached()
 for entity, pos, vel in cached_query do
-	-- Process entities - this is faster for repeated iterations
+	-- Process entities. This is faster for repeated iterations.
 end
 

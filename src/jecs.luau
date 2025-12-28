@@ -3748,6 +3748,7 @@ local function world_new(DEBUG: boolean?)
 			DEBUG_DELETING_ENTITY = entity
 			DEBUG_IS_INVALID_ENTITY(entity)
 			canonical_world_delete(world, entity, id)
+			DEBUG_DELETING_ENTITY = nil
 		end
 		world_delete = world_delete_checked
 
