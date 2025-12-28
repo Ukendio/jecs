@@ -1468,7 +1468,7 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 			local row = i_u
 			i_u -= 1
 
-			return e, captured_a[row], captured_b[row]
+			return e, col0[row], col1[row]
 		end
 	elseif not id3 then
 		function world_query_iter_next(): any
@@ -1594,7 +1594,7 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 			local row = i_u
 			i_u -= 1
 
-			return e, captured_a[row], captured_b[row], captured_c[row], captured_d[row], captured_e[row]
+			return e, col0[row], col1[row], col2[row], col3[row], col4[row]
 		end
 	elseif not id6 then
 		function world_query_iter_next(): any
@@ -1642,7 +1642,7 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 			local row = i_u
 			i_u -= 1
 
-			return e, captured_a[row], captured_b[row], captured_c[row], captured_d[row], captured_e[row], captured_f[row]
+			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row]
 		end
 	elseif not id7 then
 		function world_query_iter_next(): any
@@ -1693,7 +1693,7 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 			local row = i_u
 			i_u -= 1
 
-			return e, captured_a[row], captured_b[row], captured_c[row], captured_d[row], captured_e[row], captured_f[row], captured_g[row]
+			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], captured_g[row]
 		end
 	elseif not id8 then
 		function world_query_iter_next(): any
@@ -1741,80 +1741,80 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 				col4_u = col4
 				col5_u = col5
 				col6_u = col6
-				col7_u = col7
-			end
-
-			local row = i_u
-			i_u -= 1
-
-			return e, captured_a[row], captured_b[row], captured_c[row], captured_d[row], captured_e[row], captured_f[row], captured_g[row], captured_h[row]
+			col7_u = col7
 		end
-	else
-		local output = {}
-		local ids_len = #ids
-		function world_query_iter_next(): any
-			local entities = entities_u
-			local e = entities[i_u]
-			local col0 = col0_u
-			local col1 = col1_u
-			local col2 = col2_u
-			local col3 = col3_u
-			local col4 = col4_u
-			local col5 = col5_u
-			local col6 = col6_u
-			local col7 = col7_u
-			local captured_ids = ids
-			local captured_columns_map = columns_map
 
-			while e == nil do
-				last_archetype_u += 1
-				local compatible_archetypes = compatible_archetypes_u
-				local archetype = compatible_archetypes[last_archetype_u]
-				archetype_u = archetype
+		local row = i_u
+		i_u -= 1
 
-				if not archetype then
-					return nil
-				end
-				entities = archetype.entities
-				i_u = #entities
-				if i_u == 0 then
-					continue
-				end
-				e = entities[i_u]
-				entities_u = entities
-				columns_map = archetype.columns_map
-				columns_map = captured_columns_map
-				col0 = columns_map[id0]
-				col1 = columns_map[id1]
-				col2 = columns_map[id2]
-				col3 = columns_map[id3]
-				col4 = columns_map[id4]
-				col5 = columns_map[id5]
-				col6 = columns_map[id6]
-				col7 = columns_map[id7]
-				col0_u = col0
-				col1_u = col1
-				col2_u = col2
-				col3_u = col3
-				col4_u = col4
-				col5_u = col5
-				col6_u = col6
-				col7_u = col7
-			end
-
-			local row = i_u
-			i_u -= 1
-
-			for i = 9, ids_len do
-				output[i - 8] = columns_map[ids[i]::any][row]
-			end
-
-			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row], col7[row], unpack(output)
-		end
+		return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row], col7[row]
 	end
+else
+	local output = {}
+	local ids_len = #ids_u
+	function world_query_iter_next(): any
+		local entities = entities_u
+		local e = entities[i_u]
+		local col0 = col0_u
+		local col1 = col1_u
+		local col2 = col2_u
+		local col3 = col3_u
+		local col4 = col4_u
+		local col5 = col5_u
+		local col6 = col6_u
+		local col7 = col7_u
+		local ids = ids_u
+		local columns_map = columns_map_u
 
-	query.next = world_query_iter_next
-	return world_query_iter_next
+		while e == nil do
+			last_archetype_u += 1
+			local compatible_archetypes = compatible_archetypes_u
+			local archetype = compatible_archetypes[last_archetype_u]
+			archetype_u = archetype
+
+			if not archetype then
+				return nil
+			end
+			entities = archetype.entities
+			i_u = #entities
+			if i_u == 0 then
+				continue
+			end
+			e = entities[i_u]
+			entities_u = entities
+			columns_map = archetype.columns_map
+			columns_map_u = columns_map
+			col0 = columns_map[id0]
+			col1 = columns_map[id1]
+			col2 = columns_map[id2]
+			col3 = columns_map[id3]
+			col4 = columns_map[id4]
+			col5 = columns_map[id5]
+			col6 = columns_map[id6]
+			col7 = columns_map[id7]
+			col0_u = col0
+			col1_u = col1
+			col2_u = col2
+			col3_u = col3
+			col4_u = col4
+			col5_u = col5
+			col6_u = col6
+			col7_u = col7
+		end
+
+		local row = i_u
+		i_u -= 1
+
+		for i = 9, ids_len do
+			output[i - 8] = columns_map[ids[i]::any][row]
+		end
+
+		return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row], col7[row], unpack(output)
+	end
+end
+
+query.next = world_query_iter_next
+return world_query_iter_next
 end
 
 local function query_iter(query): () -> (number, ...any)
@@ -1826,21 +1826,16 @@ local function query_iter(query): () -> (number, ...any)
 end
 
 local function query_cached(query: QueryInner)
-	local ids = query.ids
-	local last_archetype = 1
+	local ids_u = query.ids
 
-	local A, B, C, D, E, F, G, H, I = unpack(ids :: { Component })
+	local id0, id1, id2, id3, id4, id5, id6, id7, id8 = unpack(ids_u :: { Component })
 	if not id0 then
-		A = query.filter_with[1]
+		id0 = query.filter_with[1]
 	end
-	local a: Column, b: Column, c: Column, d: Column
-	local e: Column, f: Column, g: Column, h: Column
+	local col0_u: Column, col1_u: Column, col2_u: Column, col3_u: Column
+	local col4_u: Column, col5_u: Column, col6_u: Column, col7_u: Column
 
 	local world_query_iter_next
-	local entities: { Entity }
-	local i: number
-	local archetype: Archetype
-	local columns_map: { [Component]: Column }
 	local archetypes = query_archetypes(query :: any) :: { Archetype }
 	local archetypes_map = {}
 	query.archetypes_map = archetypes_map
@@ -1849,7 +1844,21 @@ local function query_cached(query: QueryInner)
 		archetypes_map[arche.id] = j
 	end
 
-	local compatible_archetypes = archetypes :: { Archetype }
+	local compatible_archetypes_u = archetypes :: { Archetype }
+	local last_archetype_u = 1
+	local archetype_u = compatible_archetypes_u[1]
+	local entities_u: { Entity }
+	local i_u: number
+	local columns_map_u: { [Component]: Column }
+	if not archetype_u then
+		entities_u = {}
+		i_u = 0
+		columns_map_u = {}
+	else
+		entities_u = archetype_u.entities
+		i_u = #entities_u
+		columns_map_u = archetype_u.columns_map
+	end
 
 	local world = (query :: { world: World }).world
 	-- Only need one observer for EcsArchetypeCreate and EcsArchetypeDelete respectively
@@ -1860,10 +1869,10 @@ local function query_cached(query: QueryInner)
 		on_create_action = {} :: Map<Component, { Observer }>
 		observable[EcsOnArchetypeCreate::any] = on_create_action
 	end
-	local query_cache_on_create: { Observer } = on_create_action[A]
+	local query_cache_on_create: { Observer } = on_create_action[id0]
 	if not query_cache_on_create then
 		query_cache_on_create = {}
-		on_create_action[A] = query_cache_on_create
+		on_create_action[id0] = query_cache_on_create
 	end
 
 	local on_delete_action = observable[EcsOnArchetypeDelete::any]
@@ -1871,10 +1880,10 @@ local function query_cached(query: QueryInner)
 		on_delete_action = {} :: Map<Component, { Observer }>
 		observable[EcsOnArchetypeDelete::any] = on_delete_action
 	end
-	local query_cache_on_delete: { Observer } = on_delete_action[A]
+	local query_cache_on_delete: { Observer } = on_delete_action[id0]
 	if not query_cache_on_delete then
 		query_cache_on_delete = {}
-		on_delete_action[A] = query_cache_on_delete
+		on_delete_action[id0] = query_cache_on_delete
 	end
 
 	local function on_create_callback(archetype: Archetype)
@@ -1902,60 +1911,61 @@ local function query_cached(query: QueryInner)
 	table.insert(query_cache_on_create, observer_for_create)
 	table.insert(query_cache_on_delete, observer_for_delete)
 
-	local function cached_query_iter()
-		last_archetype = 1
-		archetype = compatible_archetypes[last_archetype]
-		if not archetype then
+		local function cached_query_iter()
+		last_archetype_u = 1
+		local compatible_archetypes = compatible_archetypes_u
+		archetype_u = compatible_archetypes[last_archetype_u]
+		if not archetype_u then
 			return NOOP
 		end
-		entities = archetype.entities
-		i = #entities
-		columns_map = archetype.columns_map
+		entities_u = archetype_u.entities
+		i_u = #entities_u
+		columns_map_u = archetype_u.columns_map
 		if not id0 then
 		elseif not id1 then
-			a = columns_map[A]
+			col0_u = columns_map_u[id0]
 		elseif not id2 then
-			a = columns_map[A]
-			b = columns_map[B]
+			col0_u = columns_map_u[id0]
+			col1_u = columns_map_u[id1]
 		elseif not id3 then
-			a = columns_map[A]
-			b = columns_map[B]
-			c = columns_map[C]
+			col0_u = columns_map_u[id0]
+			col1_u = columns_map_u[id1]
+			col2_u = columns_map_u[id2]
 		elseif not id4 then
-			a = columns_map[A]
-			b = columns_map[B]
-			c = columns_map[C]
-			d = columns_map[D]
+			col0_u = columns_map_u[id0]
+			col1_u = columns_map_u[id1]
+			col2_u = columns_map_u[id2]
+			col3_u = columns_map_u[id3]
 		elseif not id5 then
-			a = columns_map[A]
-			b = columns_map[B]
-			c = columns_map[C]
-			d = columns_map[D]
-			e = columns_map[E]
+			col0_u = columns_map_u[id0]
+			col1_u = columns_map_u[id1]
+			col2_u = columns_map_u[id2]
+			col3_u = columns_map_u[id3]
+			col4_u = columns_map_u[id4]
 		elseif not id6 then
-			a = columns_map[A]
-			b = columns_map[B]
-			c = columns_map[C]
-			d = columns_map[D]
-			e = columns_map[E]
-			f = columns_map[F]
+			col0_u = columns_map_u[id0]
+			col1_u = columns_map_u[id1]
+			col2_u = columns_map_u[id2]
+			col3_u = columns_map_u[id3]
+			col4_u = columns_map_u[id4]
+			col5_u = columns_map_u[id5]
 		elseif not id7 then
-			a = columns_map[A]
-			b = columns_map[B]
-			c = columns_map[C]
-			d = columns_map[D]
-			e = columns_map[E]
-			f = columns_map[F]
-			g = columns_map[G]
+			col0_u = columns_map_u[id0]
+			col1_u = columns_map_u[id1]
+			col2_u = columns_map_u[id2]
+			col3_u = columns_map_u[id3]
+			col4_u = columns_map_u[id4]
+			col5_u = columns_map_u[id5]
+			col6_u = columns_map_u[id6]
 		else
-			a = columns_map[A]
-			b = columns_map[B]
-			c = columns_map[C]
-			d = columns_map[D]
-			e = columns_map[E]
-			f = columns_map[F]
-			g = columns_map[G]
-			h = columns_map[H]
+			col0_u = columns_map_u[id0]
+			col1_u = columns_map_u[id1]
+			col2_u = columns_map_u[id2]
+			col3_u = columns_map_u[id3]
+			col4_u = columns_map_u[id4]
+			col5_u = columns_map_u[id5]
+			col6_u = columns_map_u[id6]
+			col7_u = columns_map_u[id7]
 		end
 
 		return world_query_iter_next
@@ -1981,7 +1991,7 @@ local function query_cached(query: QueryInner)
 					continue
 				end
 				e = entities[i_u]
-				captured_entities = entities
+				entities_u = entities
 			end
 			i_u -= 1
 			return e
@@ -2053,7 +2063,7 @@ local function query_cached(query: QueryInner)
 			local row = i_u
 			i_u -= 1
 
-			return e, captured_a[row], captured_b[row]
+			return e, col0[row], col1[row]
 		end
 	elseif not id3 then
 		function world_query_iter_next(): any
@@ -2092,7 +2102,7 @@ local function query_cached(query: QueryInner)
 			local row = i_u
 			i_u -= 1
 
-			return e, captured_a[row], captured_b[row], captured_c[row]
+			return e, col0[row], col1[row], col2[row]
 		end
 	elseif not id4 then
 		function world_query_iter_next(): any
@@ -2121,20 +2131,20 @@ local function query_cached(query: QueryInner)
 				entities_u = entities
 				local columns_map = archetype.columns_map
 				columns_map_u = columns_map
-				captured_a = captured_columns_map[A]
-				captured_b = captured_columns_map[B]
-				captured_c = captured_columns_map[C]
-				captured_d = captured_columns_map[D]
-				a = captured_a
-				b = captured_b
-				c = captured_c
-				d = captured_d
+				col0 = columns_map[id0]
+				col1 = columns_map[id1]
+				col2 = columns_map[id2]
+				col3 = columns_map[id3]
+				col0_u = col0
+				col1_u = col1
+				col2_u = col2
+				col3_u = col3
 			end
 
 			local row = i_u
 			i_u -= 1
 
-			return e, captured_a[row], captured_b[row], captured_c[row], captured_d[row]
+			return e, col0[row], col1[row], col2[row], col3[row]
 		end
 	elseif not id5 then
 		function world_query_iter_next(): any
@@ -2179,7 +2189,7 @@ local function query_cached(query: QueryInner)
 			local row = i_u
 			i_u -= 1
 
-			return e, captured_a[row], captured_b[row], captured_c[row], captured_d[row], captured_e[row]
+			return e, col0[row], col1[row], col2[row], col3[row], col4[row]
 		end
 	elseif not id6 then
 		function world_query_iter_next(): any
@@ -2227,7 +2237,7 @@ local function query_cached(query: QueryInner)
 			local row = i_u
 			i_u -= 1
 
-			return e, captured_a[row], captured_b[row], captured_c[row], captured_d[row], captured_e[row], captured_f[row]
+			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row]
 		end
 	elseif not id7 then
 		function world_query_iter_next(): any
@@ -2278,7 +2288,7 @@ local function query_cached(query: QueryInner)
 			local row = i_u
 			i_u -= 1
 
-			return e, captured_a[row], captured_b[row], captured_c[row], captured_d[row], captured_e[row], captured_f[row], captured_g[row]
+			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], captured_g[row]
 		end
 	elseif not id8 then
 		function world_query_iter_next(): any
@@ -2332,11 +2342,11 @@ local function query_cached(query: QueryInner)
 			local row = i_u
 			i_u -= 1
 
-			return e, captured_a[row], captured_b[row], captured_c[row], captured_d[row], captured_e[row], captured_f[row], captured_g[row], captured_h[row]
+			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row], col7[row]
 		end
 	else
 		local output = {}
-		local ids_len = #ids
+		local ids_len = #ids_u
 		function world_query_iter_next(): any
 			local entities = entities_u
 			local e = entities[i_u]
@@ -2348,16 +2358,16 @@ local function query_cached(query: QueryInner)
 			local col5 = col5_u
 			local col6 = col6_u
 			local col7 = col7_u
-			local captured_ids = ids
-			local captured_columns_map = columns_map
+			local ids = ids_u
+			local columns_map = columns_map_u
 
 			while e == nil do
 				last_archetype_u += 1
-			local compatible_archetypes = compatible_archetypes_u
-			local archetype = compatible_archetypes[last_archetype_u]
-			archetype_u = archetype
+				local compatible_archetypes = compatible_archetypes_u
+				local archetype = compatible_archetypes[last_archetype_u]
+				archetype_u = archetype
 
-			if not archetype then
+				if not archetype then
 					return nil
 				end
 				entities = archetype.entities
@@ -2368,7 +2378,7 @@ local function query_cached(query: QueryInner)
 				e = entities[i_u]
 				entities_u = entities
 				columns_map = archetype.columns_map
-				columns_map = captured_columns_map
+				columns_map_u = columns_map
 				col0 = columns_map[id0]
 				col1 = columns_map[id1]
 				col2 = columns_map[id2]
@@ -2387,14 +2397,14 @@ local function query_cached(query: QueryInner)
 				col7_u = col7
 			end
 
-			local row = i
-			i -= 1
+			local row = i_u
+			i_u -= 1
 
 			for i = 9, ids_len do
-				output[i - 8] = captured_columns_map[captured_ids[i]::any][row]
+				output[i - 8] = columns_map[ids[i]::any][row]
 			end
 
-			return e, captured_a[row], captured_b[row], captured_c[row], captured_d[row], captured_e[row], captured_f[row], captured_g[row], captured_h[row], unpack(output)
+			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row], col7[row], unpack(output)
 		end
 	end
 

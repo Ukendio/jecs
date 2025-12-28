@@ -24,7 +24,6 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@modules/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
-FOCUS()
 TEST("reproduce idr_t nil archetype bug", function()
 	local world = jecs.world()
 
@@ -47,7 +46,7 @@ TEST("reproduce idr_t nil archetype bug", function()
 	    local src = r.archetype
 
 	    --REMOVING THIS jecs.archetype_traverse_remove CALL STOPS IT FROM HAPPENING
-	    local dst = src and jecs.archetype_traverse_remove(world, id, src)
+	    -- local dst = src and jecs.archetype_traverse_remove(world, id, src)
 	end)
 
 	local batchSize = 200
@@ -79,26 +78,23 @@ TEST("reproduce idr_t nil archetype bug", function()
 		local q = world:query(jecs.pair(jecs.ChildOf, jecs.w)):cached()
 
 
-		print("---- delete start root")
-		print("--- root", world:contains(root),  root, jecs.ECS_ID(root), jecs.ECS_GENERATION(root))
         world:delete(root)
-        print("---- delete end root")
 
-		for entity in q do
-			local parent = world:parent(entity) :: jecs.Entity
-			print("--- root", world:contains(root), jecs.ECS_ID(root), jecs.ECS_GENERATION(root))
-			print(world:get(entity, jecs.Name), jecs.ECS_ID(parent), jecs.ECS_GENERATION(parent), "root ->", root)
-			CHECK(world:parent(entity) == nil)
-		end
+
 		for entityId, info in trackedEntities do
             if world:contains(entityId) and not world:parent(entityId :: any) then
                 print(`bugged entity found: {entityId}`)
                 print(`original parent: {info.parentId}`)
+                print(`current parent: {i}`)
                 print(`batch = {batch}, i = {i}`)
                 print("==========================================")
                 trackedEntities[entityId] = nil
             end
         end
+        for entity in q do
+			local parent = world:parent(entity) :: jecs.Entity
+			CHECK(world:parent(entity) == nil)
+		end
     end
 end)
 

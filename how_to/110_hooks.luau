@@ -37,4 +37,9 @@ end)
 
 	When an entity graph contains cycles, order is undefined. This includes cycles
 	that can be formed using different relationships.
+
+	However an important note to make is that structural changes are not
+	necessarily always safe in OnRemove hooks. For instance, when an entity is
+	being deleted and invokes all of the OnRemove hooks on its components. It
+	can cause a lot of issues with moving entities
 ]]
