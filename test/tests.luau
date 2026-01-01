@@ -1683,6 +1683,45 @@ TEST("world:entity()", function()
 		local e2 = world:entity(399)
 		CHECK(world:contains(e2))
 	end
+
+	do CASE "desired id does not overwrite old entity id"
+		local world = jecs.world()
+		local ctype = world:component()
+		local id = world:entity()
+
+		local e = world:entity(id + 1)
+
+		CHECK(world:contains(id))
+		CHECK(world:contains(e))
+
+		-- also make sure that they don't share the same record
+
+		world:set(id, ctype, 1)
+		world:set(e, ctype, 2)
+
+		CHECK(world:get(id, ctype) == 1)
+		CHECK(world:get(e, ctype) == 2)
+	end
+	
+	do CASE "creating ids with a higher key first"
+		local world = jecs.world()
+		local ctype = world:component()
+
+		local e = world:entity(1000)
+		local id = world:entity(999)
+
+		CHECK(world:contains(id))
+		CHECK(world:contains(e))
+
+		-- also make sure that they don't share the same record
+
+		world:set(id, ctype, 1)
+		world:set(e, ctype, 2)
+
+		CHECK(world:get(id, ctype) == 1)
+		CHECK(world:get(e, ctype) == 2)
+	end
+
 	local N = 2^8
 
 	do CASE "unique IDs"
