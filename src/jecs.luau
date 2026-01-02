@@ -3497,13 +3497,13 @@ local function world_new(DEBUG: boolean?)
 		end
 		if idr_t then
 			local archetype_ids = idr_t.records
-            local to_remove = {}
+            local to_remove = {}:: { [i53]: componentrecord}
             
 			for archetype_id in archetype_ids do
 				local idr_t_archetype = archetypes[archetype_id]
 				local idr_t_types = idr_t_archetype.types
 				local entities = idr_t_archetype.entities
-                local should_delete = false
+                local deleted_any  = false
                 local remove_count = 0
 
 				for _, id in idr_t_types do
@@ -3519,7 +3519,11 @@ local function world_new(DEBUG: boolean?)
 					local flags = id_record.flags
 					local flags_delete_mask = bit32.btest(flags, ECS_ID_DELETE)
 					if flags_delete_mask then
-                        should_delete = true
+                        for i = #entities, 1, -1 do
+						    local child = entities[i]
+						    world_delete(world, child)
+					    end
+                        deleted_any = true
 						break
 					else
                         to_remove[id] = id_record
@@ -3527,44 +3531,55 @@ local function world_new(DEBUG: boolean?)
 					end
 				end
 
-                if should_delete then
-				    for i = #entities, 1, -1 do
-						local child = entities[i]
-						world_delete(world, child)
-					end
-                else
-                    if remove_count == 1 then
-                        local id, id_record = next(to_remove)
-                        local to = archetype_traverse_remove(world, id :: i53, idr_t_archetype)
-                        local on_remove = (id_record :: componentrecord).on_remove
-                        for i = #entities, 1, -1 do
-							local child = entities[i]
-							if on_remove then
-								on_remove(child, id :: i53)
-							end
+                if deleted_any then
+                    continue
+                end
+                
+                if remove_count == 1 then
+                    local id, id_record = next(to_remove)
+                    local to_u = archetype_traverse_remove(world, id :: i53, idr_t_archetype)
+                    local on_remove = id_record.on_remove
+                    for i = #entities, 1, -1 do
+                        local child = entities[i]
+                        local r = entity_index_try_get_unsafe(child) :: record
+                        local to = to_u
+                        if on_remove then
+                            on_remove(child, id :: i53)
+                            local src = r.archetype
+                            if src ~= idr_t_archetype then
+                                to = archetype_traverse_remove(world, id::i53, src)
+                            end
+                        end
 
-							local r = entity_index_try_get_unsafe(child) :: record
-							inner_entity_move(child, r, to)
-						end
-                    elseif remove_count > 1 then
-                        local dst_types = table.clone(idr_t_types)
-                        for id, record in to_remove do
-                            table.remove(dst_types, table.find(dst_types, id))
+                        inner_entity_move(child, r, to)
+                    end
+                elseif remove_count > 1 then
+                    local dst_types = table.clone(idr_t_types)
+                    for id, component_record in to_remove do
+                        table.remove(dst_types, table.find(dst_types, id))
+                    end
 
-                            local on_remove = record.on_remove
+                    local to_u = archetype_ensure(world, dst_types)
+                    for i = #entities, 1, -1 do
+                        local child = entities[i]
+                        local r = entity_index_try_get_unsafe(child) :: record
+
+                        local to = to_u
+                        for id, component_record in to_remove do
+                            local on_remove = component_record.on_remove
                             if on_remove then
-                                for _, child in entities do
-                                    on_remove(child, id :: i53)
+                                -- NOTE(marcus): We could be smarter with this and
+                                -- assume hooks are deterministic and that they will
+                                -- move to the same archetype. However users often are not reasonable people.
+                                on_remove(child, id)
+                                local src = r.archetype
+                                if src ~= idr_t_archetype then
+                                    to = archetype_traverse_remove(world, id, src)
                                 end
                             end
                         end
 
-                        local to = archetype_ensure(world, dst_types)
-                        for i = #entities, 1, -1 do
-		                    local child = entities[i]
-							local r = entity_index_try_get_unsafe(child) :: record
-							inner_entity_move(child, r, to)
-						end
+                        inner_entity_move(child, r, to)
                     end
                 end
 
