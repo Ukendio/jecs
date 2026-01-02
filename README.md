@@ -22,6 +22,7 @@ This repository includes a few subfolders that can help you get started with jec
 - examples:
   	These are larger programs that showcase real use cases and can help you understand how everything fits together.
 
+If you wish to view the documentation inside Roblox Studio, you can find an importable model file [here](https://nightly.link/Ukendio/jecs/workflows/build-studio-docs.yaml/main/studio_docs.zip).
 
 ### Benchmarks
 

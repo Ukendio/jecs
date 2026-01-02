@@ -1,0 +1,26 @@
+name: build-studio-docs
+
+on:
+  push:
+  schedule:
+    - cron: "10 0 1 * *" # Artifacts expire every 90 days. Doesn't hurt to just run this workflow first day of every month at 00:10 UTC.
+
+jobs:
+  studio-docs:
+    name: Build Studio Docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v4
+
+      - name: Install Rokit
+        uses: CompeyDev/setup-rokit@v0.1.2
+
+      - name: Build Studio Docs
+        run: zune run scripts/build_studio_docs
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio_docs
+          path: studio_docs.rbxm
