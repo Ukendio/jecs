@@ -1034,8 +1034,8 @@ local function world_range(world: world, range_begin: number, range_end: number?
 				dense = 0
 			} :: record
 		end
-		entity_index.max_id = range_begin - 1
-		entity_index.alive_count = range_begin - 1
+		entity_index.max_id = range_begin
+		entity_index.alive_count = range_begin
 	end
 end
 
@@ -3302,61 +3302,50 @@ local function world_new(DEBUG: boolean?)
 			if r then
 				local dense = r.dense
 
-				if not dense or r.dense == 0 then
-					r.dense = index
-					dense = index
-					local e_swap = eindex_dense_array[dense]
-					local r_swap = entity_index_try_get_any(e_swap) :: record
-
-					r_swap.dense = dense
+				-- If dense == 0, this is a pre-populated entry from world:range()
+				-- Just add the entity to the end of the dense array
+				if dense == 0 then
 					alive_count += 1
 					entity_index.alive_count = alive_count
 					r.dense = alive_count
-
-					eindex_dense_array[dense] = e_swap
 					eindex_dense_array[alive_count] = entity
 					return entity
 				end
 
-				local any = eindex_dense_array[dense]
-				if any ~= entity then
-					if alive_count <= dense then
-						local e_swap = eindex_dense_array[dense]
-						local r_swap = entity_index_try_get_any(e_swap) :: record
-
-						r_swap.dense = dense
-						alive_count += 1
-						entity_index.alive_count = alive_count
-						r.dense = alive_count
-
-						eindex_dense_array[dense] = e_swap
-						eindex_dense_array[alive_count] = entity
-					end
+				-- If dense > 0, check if there's an existing entity at that position
+				local existing_entity = eindex_dense_array[dense]
+				if existing_entity and existing_entity ~= entity then
+					alive_count += 1
+					entity_index.alive_count = alive_count
+					r.dense = alive_count
+					eindex_dense_array[alive_count] = entity
+					return entity
 				end
 
 				return entity
 			else
-				for i = entity_index.max_id + 1, index do
-					eindex_sparse_array[i] = { dense = i } :: record
-					eindex_dense_array[i] = i
-				end
-				entity_index.max_id = index
+				local max_id = entity_index.max_id
 
-				local e_swap = eindex_dense_array[alive_count]
-				local r_swap = eindex_sparse_array[alive_count]
-				r_swap.dense = index
+				if index > max_id then
+					-- Pre-populate all intermediate IDs to keep sparse_array as an array
+					for i = max_id + 1, index - 1 do
+						if not eindex_sparse_array[i] then
+							-- NOTE(marcus): We have to do this check to see if
+							-- they exist first because world:range() may have
+							-- pre-populated some slots already.
+						end
+
+						eindex_sparse_array[i] = { dense = 0 } :: record
+					end
+					entity_index.max_id = index
+				end
 
 				alive_count += 1
 				entity_index.alive_count = alive_count
-
-				r = eindex_sparse_array[index]
-
-				r.dense = alive_count
-
-				eindex_sparse_array[index] = r
-
-				eindex_dense_array[index] = e_swap
 				eindex_dense_array[alive_count] = entity
+
+				r = { dense = alive_count } :: record
+				eindex_sparse_array[index] = r
 
 				return entity
 			end
@@ -3390,7 +3379,6 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local function world_delete(world: world, entity: i53)
-		DEBUG_DELETING_ENTITY = entity
 		local record = entity_index_try_get_unsafe(entity)
 		if not record then
 			return
@@ -3744,7 +3732,7 @@ local function world_new(DEBUG: boolean?)
 		local function world_delete_checked(world: world, entity: i53)
 			DEBUG_DELETING_ENTITY = entity
 			DEBUG_IS_INVALID_ENTITY(entity)
-			canonical_world_delete(world, entity, id)
+			canonical_world_delete(world, entity)
 			DEBUG_DELETING_ENTITY = nil
 		end
 		world_delete = world_delete_checked
