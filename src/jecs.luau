@@ -3839,7 +3839,7 @@ return {
 	is_tag = (ecs_is_tag :: any) :: <T>(World, Component<T>) -> boolean,
 
     OnAdd = (EcsOnAdd :: any) :: Component<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
-	OnRemove = (EcsOnRemove :: any) :: Component<<T>(entity: Entity, id: Id<T>) -> ()>,
+	OnRemove = (EcsOnRemove :: any) :: Component<<T>(entity: Entity, id: Id<T>, delete: boolean?) -> ()>,
 	OnChange = (EcsOnChange :: any) :: Component<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
 	ChildOf = (EcsChildOf :: any) :: Entity<nil>,
 	Component = (EcsComponent :: any) :: Entity<nil>,
