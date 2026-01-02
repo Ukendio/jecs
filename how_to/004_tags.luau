@@ -16,8 +16,8 @@ local jecs = require("@jecs")
 --[[
 	There are two ways to create tags:
 
-	1. Using jecs.tag() - preregister a tag entity which will be allocated when you create the world.
-	2. Using world:entity() - creates a regular entity id
+	1. Using jecs.tag() to preregister a tag entity which will be allocated when you create the world.
+	2. Using world:entity() to create a regular entity id
 
 	The first method is the "proper" way to create tags but it hinges upon that
 	you do remember to create the world after declaring all of your

@@ -83,6 +83,9 @@ local function observers_new(
 				local tgt = jecs.ECS_PAIR_SECOND(term)
 				local wc = tgt == jecs.w
 				local onremoved = world:removed(rel, function(entity, id, delete: boolean?)
+					if delete then
+						return
+					end
 					if not wc and id ~= term then
 						return
 					end
@@ -98,7 +101,10 @@ local function observers_new(
 
 				table.insert(cleanup, onremoved)
 			else
-				local onremoved = world:removed(term, function(entity, id)
+				local onremoved = world:removed(term, function(entity, id, delete: boolean?)
+					if delete then
+						return
+					end
 					local r = jecs.record(world, entity)
 					local archetype = r.archetype
 					if archetype then

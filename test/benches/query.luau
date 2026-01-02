@@ -27,48 +27,11 @@ do
 			G: jecs.Id,
 			H: jecs.Id
 		)
-			BENCH("1 component", function()
-				for _ in world:query(A) do
-				end
-			end)
-
-			BENCH("2 component", function()
-				for _ in world:query(B, A) do
-				end
-			end)
-
 			BENCH("4 component", function()
 				for _ in world:query(D, C, B, A) do
 				end
 			end)
 
-			BENCH("8 component", function()
-				for _ in world:query(H, G, F, E, D, C, B, A) do
-				end
-			end)
-
-			local e = world:entity()
-			world:set(e, A, true)
-			world:set(e, B, true)
-			world:set(e, C, true)
-			world:set(e, D, true)
-			world:set(e, E, true)
-			world:set(e, F, true)
-			world:set(e, G, true)
-			world:set(e, H, true)
-
-			BENCH("Update Data", function()
-				for _ = 1, 100 do
-					world:set(e, A, false)
-					world:set(e, B, false)
-					world:set(e, C, false)
-					world:set(e, D, false)
-					world:set(e, E, false)
-					world:set(e, F, false)
-					world:set(e, G, false)
-					world:set(e, H, false)
-				end
-			end)
 		end
 
 		local D1 = ecs:component()
@@ -86,8 +49,9 @@ do
 
 		local added = 0
 		local archetypes = {}
-		for i = 1, 2 ^ 16 - 2 do
+		for i = 1, 2 ^ 12 - 2 do
 			local entity = ecs:entity()
+			ecs:add(entity, entity)
 
 			local combination = ""
 
@@ -153,46 +117,8 @@ do
 			G: jecs.Id,
 			H: jecs.Id
 		)
-			BENCH("1 component", function()
-				for _ in world:query(A) do
-				end
-			end)
-
-			BENCH("2 component", function()
-				for _ in world:query(B, A) do
-				end
-			end)
-
 			BENCH("4 component", function()
 				for _ in world:query(D, C, B, A) do
-				end
-			end)
-
-			BENCH("8 component", function()
-				for _ in world:query(H, G, F, E, D, C, B, A) do
-				end
-			end)
-
-			local e = world:entity()
-			world:set(e, A, true)
-			world:set(e, B, true)
-			world:set(e, C, true)
-			world:set(e, D, true)
-			world:set(e, E, true)
-			world:set(e, F, true)
-			world:set(e, G, true)
-			world:set(e, H, true)
-
-			BENCH("Update Data", function()
-				for _ = 1, 100 do
-					world:set(e, A, false)
-					world:set(e, B, false)
-					world:set(e, C, false)
-					world:set(e, D, false)
-					world:set(e, E, false)
-					world:set(e, F, false)
-					world:set(e, G, false)
-					world:set(e, H, false)
 				end
 			end)
 		end
@@ -207,13 +133,14 @@ do
 		local D8 = ecs:component()
 
 		local function flip()
-			return math.random() >= 0.15
+			return math.random() >= 0.5
 		end
 
 		local added = 0
 		local archetypes = {}
-		for i = 1, 2 ^ 16 - 2 do
+		for i = 1, 2 ^ 12 - 2 do
 			local entity = ecs:entity()
+			ecs:add(entity, entity)
 
 			local combination = ""
 
@@ -246,11 +173,9 @@ do
 				ecs:set(entity, D8, { value = true })
 			end
 
-			if #combination == 7 then
-				added += 1
+			if flip() then
 				ecs:set(entity, D1, { value = true })
 			end
-			archetypes[combination] = true
 		end
 
 		local a = 0
