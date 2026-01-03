@@ -3882,9 +3882,10 @@ return {
 	World = {
 		new = world_new
 	},
+	--- Create a preregistered ID (see more how_to/011_preregistering_components.luau)
 	component = (ECS_COMPONENT :: any) :: <T>() -> Entity<T>,
 	tag = (ECS_TAG :: any) :: () -> Entity<nil>,
-	--- Give the preregistered ID some data
+	--- Give the preregistered ID some data (see more how_to/011_preregistering_components.luau)
 	meta = (ECS_META :: any) :: <T, a>(id: Entity<T>, id: Component<a>, value: a?) -> Entity<T>,
 	--- Check if the ID is a tag
 	is_tag = (ecs_is_tag :: any) :: <T>(World, Component<T>) -> boolean,
