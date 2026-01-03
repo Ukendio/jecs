@@ -3486,7 +3486,7 @@ local function world_new(DEBUG: boolean?)
 		if idr_t then
 			local archetype_ids = idr_t.records
             local to_remove = {}:: { [i53]: componentrecord}
-            
+
 			for archetype_id in archetype_ids do
 				local idr_t_archetype = archetypes[archetype_id]
 				local idr_t_types = idr_t_archetype.types
@@ -3522,7 +3522,7 @@ local function world_new(DEBUG: boolean?)
                 if deleted_any then
                     continue
                 end
-                
+
                 if remove_count == 1 then
                     local id, id_record = next(to_remove)
                     local to_u = archetype_traverse_remove(world, id :: i53, idr_t_archetype)
@@ -3877,44 +3877,66 @@ local function ecs_entity_record(world: world, entity: i53)
 end
 
 return {
+	--- Create the world
 	world = world_new :: (boolean?) -> World,
 	World = {
 		new = world_new
 	},
 	component = (ECS_COMPONENT :: any) :: <T>() -> Entity<T>,
 	tag = (ECS_TAG :: any) :: () -> Entity<nil>,
+	--- Give the preregistered ID some data
 	meta = (ECS_META :: any) :: <T, a>(id: Entity<T>, id: Component<a>, value: a?) -> Entity<T>,
+	--- Check if the ID is a tag
 	is_tag = (ecs_is_tag :: any) :: <T>(World, Component<T>) -> boolean,
 
+	--- OnAdd Hook to detect added components (see more how_to/110_hooks.luau)
     OnAdd = (EcsOnAdd :: any) :: Component<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
-	OnRemove = (EcsOnRemove :: any) :: Component<<T>(entity: Entity, id: Id<T>, delete: boolean?) -> ()>,
+    --- OnRemove Hook to detect removed components (see more how_to/110_hooks.luau)
+	OnRemove = (EcsOnRemove :: any) :: Component<<T>(entity: Entity, id: Id<T>) -> ()>,
+	--- OnChange Hook to detect mutations (see more how_to/110_hooks.luau)
 	OnChange = (EcsOnChange :: any) :: Component<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
+	--- Relationship to define the parent of an entity
 	ChildOf = (EcsChildOf :: any) :: Entity<nil>,
+	--- This marks an ID as a component and can therefore have data (see more how_to/010_how_components_work.luau)
 	Component = (EcsComponent :: any) :: Entity<nil>,
+	--- Used for querying relationships of any target (see more how_to/041_entity_relationships.luau)
 	Wildcard = (EcsWildcard :: any) :: Component,
+	--- Alias for jecs.Wildcard
 	w = (EcsWildcard :: any) :: Component,
+	--- OnDelete Cleanup condition (see more 100_cleanup_traits)
 	OnDelete = (EcsOnDelete :: any) :: Entity<nil>,
+	--- OnDeleteTarget Cleanup condition (see more 100_cleanup_traits)
 	OnDeleteTarget = (EcsOnDeleteTarget :: any) :: Entity<nil>,
+	--- Delete Cleanup action (see more 100_cleanup_traits)
 	Delete = (EcsDelete :: any) :: Entity<nil>,
+	--- Remove Cleanup action (see more 100_cleanup_traits)
 	Remove = (EcsRemove :: any) :: Entity<nil>,
+	--- This can be used to name your components with, either as some discriminant or for debugging purposes
 	Name = (EcsName :: any) :: Component<string>,
+	--- Used to mark whether a relationship is exclusive or not (see more 041_entity_relationships.luau)
 	Exclusive = (EcsExclusive :: any) :: Entity<nil>,
 	ArchetypeCreate = (EcsOnArchetypeCreate :: any) :: Entity<nil>,
 	ArchetypeDelete = (EcsOnArchetypeDelete :: any) :: Entity<nil>,
 	Rest = (EcsRest :: any) :: Entity<nil>,
 
+	--- Create a pair between two components
 	pair = ECS_PAIR :: <P, O>(first: Entity<P>, second: Entity<O>) -> Pair<P, O>,
 
+	--- To check if a component is a pair
 	IS_PAIR = ECS_IS_PAIR :: (pair: Component) -> boolean,
 	ECS_PAIR_FIRST = ECS_PAIR_FIRST :: <P, O>(pair: Id<P>) -> Component<P>,
 	ECS_PAIR_SECOND = ECS_PAIR_SECOND :: <P, O>(pair: Id<P>) -> Component<O>,
+	--- Lookup the first element in a pair
 	pair_first = ecs_pair_first :: <P, O>(world: World, pair: Id<P>) -> Component<P>,
+	--- Lookup the second element in a pair
 	pair_second = ecs_pair_second :: <P, O>(world: World, pair: Id<P>) -> Component<O>,
 	entity_index_get_alive = entity_index_get_alive,
 
 	archetype_append_to_records = archetype_append_to_records,
 	id_record_ensure = id_record_ensure :: (World, Component) -> ComponentRecord,
+	--- Grabs metadata on the component
 	component_record = id_record_get :: (World, Component) -> ComponentRecord?,
+	--- Grabs metadata on the entity
 	record = ecs_entity_record :: (World, Entity<any>) -> Record,
 
 	archetype_create = archetype_create :: (World, { Component }, string) -> Archetype,
@@ -3925,7 +3947,9 @@ return {
 	create_edge_for_remove = create_edge_for_remove,
 	archetype_traverse_add = archetype_traverse_add :: (World, Component, Archetype) -> Archetype,
 	archetype_traverse_remove = archetype_traverse_remove :: (World, Component, Archetype) -> Archetype,
+	--- For bulk inserting components to an entity
 	bulk_insert = ecs_bulk_insert :: (World, Entity, { Component }, { any }) -> (),
+	--- For bulk removing components from an entity
 	bulk_remove = ecs_bulk_remove :: (World, Entity, { Component }) -> (),
 
 	entity_move = entity_move :: (EntityIndex, Entity, Record, Archetype) -> (),
