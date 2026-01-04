@@ -3864,11 +3864,16 @@ local function world_new(DEBUG: boolean?)
 	return world
 end
 
-local function ecs_is_tag(world: world, entity: i53): boolean
-	local idr = world.component_index[entity]
+local function ecs_is_tag(world: world, id: i53): boolean
+	local idr = world.component_index[id]
 	if idr then
 		return bit32.btest(idr.flags, ECS_ID_IS_TAG)
 	end
+    local entity = id
+    if ECS_IS_PAIR(id) then
+        entity = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id)) :: i53
+        if not entity then return false end
+    end
 	return not WORLD_HAS(world, entity, EcsComponent)
 end
 
