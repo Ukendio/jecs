@@ -30,7 +30,7 @@ world:entity(42)
 
 --]]
 
--- You can retrieve an entity's record by using one of jecs' functions:
+-- You can retrieve an entity's record by using one of the jecs function:
 
 local record = jecs.record(world, entity)
 print(record)
@@ -40,7 +40,7 @@ print(record)
 	Underneath the ECS the entity ID and its record will be stored in two separate arrays.
 	A dense array and a sparse array. Other than the fact that there is
 	two arrays is an unimportant implementation detail.
-	We just use these distinct terms to differentiate tnem. The format is:
+	We just use these distinct terms to differentiate them. The format is:
 
 		dense_array: { u53 }
 		sparse_array: { [u24]: record }
@@ -108,3 +108,4 @@ local recycled_entity = world:entity()
 print(`This is a huuuuge number {recycled_entity}`)
 print(`The recycled entity's generation incremented to {ECS_GENERATION(recycled_entity)} `)
 print(`However it retains the old index at {ECS_ID(recycled_entity)}`)
+
