@@ -3869,12 +3869,19 @@ local function ecs_is_tag(world: world, id: i53): boolean
 	if idr then
 		return bit32.btest(idr.flags, ECS_ID_IS_TAG)
 	end
-    local entity = id
-    if ECS_IS_PAIR(id) then
-        entity = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id)) :: i53
-        if not entity then return false end
-    end
-	return not WORLD_HAS(world, entity, EcsComponent)
+	if ECS_IS_PAIR(id) then
+		local relation = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id)) :: i53
+		if not relation then
+			return false
+		end
+		if WORLD_HAS(world, relation, EcsComponent) then
+			return false
+		end
+		local target = entity_index_get_alive(entity_index, ECS_PAIR_SECOND(id)) :: i53
+		if not target then return false end
+		return not WORLD_HAS(world, target, EcsComponent)
+	end
+	return not WORLD_HAS(world, id, EcsComponent)
 end
 
 local function ecs_entity_record(world: world, entity: i53)
