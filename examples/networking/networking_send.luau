@@ -9,9 +9,8 @@ local ty = require("./types")
 local components: { [string]: jecs.Id } = {}
 local ct = components
 
-
-return function(world: jecs.World)
-    local storages = {} :: { [jecs.Id]: {[jecs.Id]: any }}
+local function networking_send(world: jecs.World)
+    local storages = {} :: { [jecs.Entity]: {[jecs.Entity]: any }}
     local networked_components = {}
     local networked_pairs = {}
 
@@ -108,14 +107,14 @@ return function(world: jecs.World)
 
     return function(_, dt: number)
         local snapshot_lazy: ty.snapshot
-        local set_ids_lazy: { jecs.Id }
+        local set_ids_lazy: { jecs.Entity }
 
         -- In the future maybe it should be requested by the player instead when they
         -- are ready to receive the replication. Otherwise streaming could be complicated
         -- with intances references being nil.
 		for player in players_added do
 			if not snapshot_lazy then
-				snapshot_lazy, set_ids_lazy = {}::any, {}
+				snapshot_lazy, set_ids_lazy =  {}, {}
 
 				for component, storage in storages do
 					local set_values = {}
@@ -135,7 +134,7 @@ return function(world: jecs.World)
 						set_n += entities_len
 					end
 
-					local set = table.move(set_ids_lazy, 1, set_n, 1, {}::any)
+					local set = table.move(set_ids_lazy, 1, set_n, 1, {})
 
 					local map = {
 	                    set = if set_n > 0 then set else nil,
@@ -174,7 +173,7 @@ return function(world: jecs.World)
 		        if v ~= "jecs.Remove" then
 		            set_n += 1
 		            set_ids[set_n] = e
-		            set_values[set_n] = v or true
+		            set_values[set_n] = if is_tag then 0 else v
 		        elseif world:contains(e) then
 		            removed_n += 1
 		            removed_ids[removed_n] = e
@@ -216,9 +215,11 @@ return function(world: jecs.World)
 				snapshot[tostring(component)] = map
 	        end
         end
-        if next(snapshot::any) ~= nil then
+        if next(snapshot) ~= nil then
         	remotes.replication:FireAllClients(snapshot)
 			-- print(snapshot)
         end
     end
 end
+
+return networking_send
