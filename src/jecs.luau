@@ -241,9 +241,16 @@ export type World = {
 	--- Creates a new entity located in the first 256 ids.
 	--- These should be used for static components for fast access.
 	component: <T>(self: World) -> Entity<T>,
+
 	--- Gets the target of an relationship. For example, when a user calls
 	--- `world:target(id, ChildOf(parent), 0)`, you will obtain the parent entity.
-	target: <T, a>(self: World, id: Entity<T>, relation: ecs_entity_t<Component>, index: number?) -> Entity<unknown>?,
+	target: <T, a>(
+		self: World,
+		id: Entity<T> | number,
+		relation: ecs_entity_t<Component>,
+		index: number?
+	) -> Entity<unknown>?,
+
 	--- Deletes an entity and all it's related components and relationships.
 	delete: <T>(self: World, id: Entity<T>) -> (),
 
@@ -859,10 +866,10 @@ local function id_record_create(
 	if is_pair then
 		relation = entity_index_get_alive(entity_index, ECS_PAIR_FIRST(id)) :: i53
 		ecs_assert(relation and entity_index_is_alive(
-			entity_index, relation), ECS_INTERNAL_ERROR)
+			entity_index, relation), ECS_INTERNAL_ERROR_INVALID_ENTITIES)
 		target = entity_index_get_alive(entity_index, ECS_PAIR_SECOND(id)) :: i53
 		ecs_assert(target and entity_index_is_alive(
-			entity_index, target), ECS_INTERNAL_ERROR)
+			entity_index, target), ECS_INTERNAL_ERROR_INVALID_ENTITIES)
 
 		local cleanup_policy_target = WORLD_TARGET(world, relation, EcsOnDeleteTarget, 0)
 
@@ -3865,6 +3872,9 @@ local function world_new(DEBUG: boolean?)
 end
 
 local function ecs_is_tag(world: world, entity: i53): boolean
+	if ECS_IS_PAIR(entity) then
+		return ecs_is_tag(world, ecs_pair_first(world, entity)) or ecs_is_tag(world, ecs_pair_second(world, entity))
+	end
 	local idr = world.component_index[entity]
 	if idr then
 		return bit32.btest(idr.flags, ECS_ID_IS_TAG)
