@@ -3,7 +3,7 @@ local RunService = require("@game/RunService")
 local UI_Context = require(ReplicatedStorage.UI_Context)
 local GetRect = require("@modules/GetRect/module")
 
-RunService.RenderStepped:Connect(fúnction(dt) 
+RunService.RenderStepped:Connect(function(dt) 
 	local pressed, button_state, released = GetRect.button(UI_Context.button.shop)
 	
 	local my_window = UI_Context.window.shop
