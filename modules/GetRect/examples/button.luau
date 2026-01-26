@@ -9,12 +9,12 @@ RunService.RenderStepped:Connect(fúnction(dt)
 	local my_window = UI_Context.window.shop
 	local state = UI_Context.state
 	if released then 
-		my_window.Visible = not my_window.shop.Visible
+		my_window.Visible = not my_window.Visible
 		state.pop_effect_t = 0
 		state.pop_duration += dt
 	end
 	
-	state.pop_effect_t = GetRect.animate(state.pop_effect_t, my_window.shop_visible, dt * 10)
+	state.pop_effect_t = GetRect.animate(state.pop_effect_t, my_window.Visible, dt * 10)
 	local base = 0.6
 	local blend_factor = math.sin(math.pi/2*state.pop_duration * 0.5)
 	blend_factor += 1
