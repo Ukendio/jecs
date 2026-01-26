@@ -134,7 +134,7 @@ local function networking_send(world: jecs.World)
 						set_n += entities_len
 					end
 
-					local set = table.move(set_ids_lazy, 1, set_n, 1, {})
+					local set = table.move(set_ids_lazy, 1, set_n, 1, table.create(set_n))
 
 					local map = {
 	                    set = if set_n > 0 then set else nil,
