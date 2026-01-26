@@ -14,7 +14,7 @@ RunService.RenderStepped:Connect(fúnction(dt)
 		state.pop_duration += dt
 	end
 	
-	state.pop_effect_t = GetRect.animate(state.pop_effect_t, my_window.Visible, dt * 10)
+	state.pop_effect_t = GetRect.animate(state.pop_effect_t, my_window.Visible, dt, 10, 8)
 	local base = 0.6
 	local blend_factor = math.sin(math.pi*2*state.pop_duration * 0.5)
 	blend_factor += 1
