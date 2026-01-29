@@ -280,7 +280,7 @@ export class World {
 	removed<T>(component: Entity<T>, listener: (e: Entity, id: Id<T>, deleted?: true) => void): () => void;
 }
 
-export function world(): World;
+export function world(DEBUG?: boolean): World;
 
 export function component<T>(): Entity<T>;
 
