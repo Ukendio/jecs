@@ -323,6 +323,9 @@ export function pair_second<P, O>(world: World, p: Pair<P, O>): Entity<O>;
 export function ECS_PAIR_FIRST(pair: Pair): number;
 export function ECS_PAIR_SECOND(pair: Pair): number;
 
+export function ECS_ID(entity: Entity): number;
+export function ECS_GENERATION(entity: Entity): number;
+
 type HookWithData = Entity<<T>(e: Entity<T>, id: Id<T>, data: T) => void> & {
 	readonly __nominal_HookWithData: unique symbol;
 };
