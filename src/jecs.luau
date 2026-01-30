@@ -211,6 +211,23 @@ type world = {
 	removed: (world, i53, (e: i53, id: i53, delete: boolean?) -> ()) -> () -> (),
 }
 
+export type Type_Query<T...> = Query<T...>
+
+type function QueryBundle(t1: type)
+	assert(t1:is("function"))
+	local params = t1:returns()
+	local head = params.head
+	assert(head)
+	local newt = {}
+	for i = 1, #head do
+		if head[i] == types.unknown then 
+			continue
+		end
+		newt[i] = head[i]:readproperty(types.singleton("__T"))
+	end
+
+	return Type_Query(unpack(newt))
+end
 
 export type World = {
 	archetype_edges: Map<number, Map<Entity, Archetype>>,
@@ -296,35 +313,7 @@ export type World = {
 	children: <T>(self: World, id: Id<T>) -> () -> Entity,
 
 	--- Searches the world for entities that match a given query
-	query: ((World) -> Query<nil>)
-		& (<A>(World, Component<A>) -> Query<A>)
-		& (<A, B>(World, Component<A>, Component<B>) -> Query<A, B>)
-		& (<A, B, C>(World, Component<A>, Component<B>, Component<C>) -> Query<A, B, C>)
-		& (<A, B, C, D>(World, Component<A>, Component<B>, Component<C>, Component<D>) -> Query<A, B, C, D>)
-		& (<A, B, C, D, E>(World, Component<A>, Component<B>, Component<C>, Component<D>, Component<E>) -> Query<A, B, C, D, E>)
-		& (<A, B, C, D, E, F>(World, Component<A>, Component<B>, Component<C>, Component<D>, Component<E>, Component<F>) -> Query<A, B, C, D, E, F>)
-		& (<A, B, C, D, E, F, G>(
-			World,
-			Component<A>,
-			Component<B>,
-			Component<C>,
-			Component<D>,
-			Component<E>,
-			Component<F>,
-			Component<G>
-		) -> Query<A, B, C, D, E, F, G>)
-		& (<A, B, C, D, E, F, G, H>(
-			World,
-			Component<A>,
-			Component<B>,
-			Component<C>,
-			Component<D>,
-			Component<E>,
-			Component<F>,
-			Component<G>,
-			Component<H>,
-			...Component<any>
-		) -> Query<A, B, C, D, E, F, G, H>),
+	query: (<A, B, C, D, E, F, G, H>(World, A?, B?, C?, D?, E?, F?, G?, H?, ...Component<any>) -> QueryBundle<() -> (A, B, C, D, E, F, G, H)>),
 }
 
 export type Record = {
@@ -3229,7 +3218,7 @@ local function world_new(DEBUG: boolean?)
 
 		return function()
 			local n = #listeners
-			local i = table.find(listeners, fn)
+			local i = table.find(listeners, fn::Listener<any>)
 			listeners[i] = listeners[n]
 			listeners[n] = nil
 		end
