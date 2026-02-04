@@ -169,11 +169,12 @@ local function networking_send(world: jecs.World)
 		    local set_values = {} :: { any }
 		    local set_n = 0
 		    local removed_n = 0
+			local component_is_a_tag = jecs.is_tag(world, component)
 		    for e, v in storage do
 		        if v ~= "jecs.Remove" then
 		            set_n += 1
 		            set_ids[set_n] = e
-		            set_values[set_n] = if is_tag then 0 else v
+		            set_values[set_n] = if component_is_a_tag then 0 else v
 		        elseif world:contains(e) then
 		            removed_n += 1
 		            removed_ids[removed_n] = e
