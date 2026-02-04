@@ -43,6 +43,12 @@ world:add(entity, Dead) -- Adds the tag
 
 print(world:has(entity, Dead)) -- true
 
+-- jecs.is_tag(world, id) returns true if the id is a tag (no data).
+print(jecs.is_tag(world, Dead)) -- true
+
+local Position = world:component() :: jecs.Id<number>
+print(jecs.is_tag(world, Position)) -- false
+
 -- Tags are removed using world:remove(entity, component)
 
 world:remove(entity, Dead)
