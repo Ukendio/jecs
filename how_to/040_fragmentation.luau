@@ -1,9 +1,3 @@
-local jecs = require("@jecs")
-local pair = jecs.pair
-local world = jecs.world()
-
-local Likes = world:component()
-
 --[[
 	Fragmentation is a property of archetype-based ECS implementations where entities
 	are spread out over more archetypes as the number of different component combinations
@@ -30,19 +24,3 @@ local Likes = world:component()
 	pair(jecs.Wildcard, Apples) indices. For this reason, creating new archetypes
 	with relationships has a higher overhead than an archetype without relationships.
 ]]
-
-local alice = world:entity()
-local bob = world:entity()
-local charlie = world:entity()
-
-local e1 = world:entity()
-world:add(e1, pair(Likes, alice))  	-- Creates archetype [pair(Likes, alice)]
-
-local e2 = world:entity()
-world:add(e2, pair(Likes, bob))   	-- Creates archetype [pair(Likes, bob)]
-
-local e3 = world:entity()
-world:add(e3, pair(Likes, charlie)) -- Creates archetype [pair(Likes, charlie)]
-
--- Each different target creates a new archetype, leading to fragmentation
--- This is why relationships can increase archetype count significantly

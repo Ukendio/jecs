@@ -82,3 +82,23 @@ world:set(e1, Position, vector.create(10, 20, 30))
 	- [Position, Velocity] -> [Position] (for removing Velocity)
 
 ]]
+
+local pair = jecs.pair
+
+local Likes = world:component()
+local alice = world:entity()
+local bob = world:entity()
+local charlie = world:entity()
+
+local e2 = world:entity()
+world:add(e2, pair(Likes, alice))  	-- Creates archetype [pair(Likes, alice)]
+
+local e3 = world:entity()
+world:add(e3, pair(Likes, bob))   	-- Creates archetype [pair(Likes, bob)]
+
+local e4 = world:entity()
+world:add(e3, pair(Likes, charlie)) -- Creates archetype [pair(Likes, charlie)]
+world:add(e3, pair(Likes, bob)) 	-- Creates archetype [pair(Likes, bob), pair(Likes, charlie)]
+
+-- Each different target creates a new archetype, leading to fragmentation
+-- This is why relationships can increase archetype count significantly

@@ -70,7 +70,7 @@ end)
 local Health = world:component()
 local Dead = world:component()
 
-world:set(Health, jecs.OnRemove, function(entity, id, delete)
+world:set(Health, jecs.OnRemove, function(entity: jecs.Entity, id, delete)
 	if delete then
 		-- Entity is being deleted, don't try to clean up
 		return

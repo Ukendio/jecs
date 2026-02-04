@@ -211,24 +211,6 @@ type world = {
 	removed: (world, i53, (e: i53, id: i53, delete: boolean?) -> ()) -> () -> (),
 }
 
-export type Type_Query<T...> = Query<T...>
-
-type function QueryBundle(t1: type)
-	assert(t1:is("function"))
-	local params = t1:returns()
-	local head = params.head
-	assert(head)
-	local newt = {}
-	for i = 1, #head do
-		if head[i] == types.unknown then 
-			continue
-		end
-		newt[i] = head[i]:readproperty(types.singleton("__T"))
-	end
-
-	return Type_Query(unpack(newt))
-end
-
 export type World = {
 	archetype_edges: Map<number, Map<Entity, Archetype>>,
 	archetype_index: { [string]: Archetype },
@@ -313,7 +295,35 @@ export type World = {
 	children: <T>(self: World, id: Id<T>) -> () -> Entity,
 
 	--- Searches the world for entities that match a given query
-	query: (<A, B, C, D, E, F, G, H>(World, A?, B?, C?, D?, E?, F?, G?, H?, ...Component<any>) -> QueryBundle<() -> (A, B, C, D, E, F, G, H)>),
+	query: ((World) -> Query<nil>)
+		& (<A>(World, Component<A>) -> Query<A>)
+		& (<A, B>(World, Component<A>, Component<B>) -> Query<A, B>)
+		& (<A, B, C>(World, Component<A>, Component<B>, Component<C>) -> Query<A, B, C>)
+		& (<A, B, C, D>(World, Component<A>, Component<B>, Component<C>, Component<D>) -> Query<A, B, C, D>)
+		& (<A, B, C, D, E>(World, Component<A>, Component<B>, Component<C>, Component<D>, Component<E>) -> Query<A, B, C, D, E>)
+		& (<A, B, C, D, E, F>(World, Component<A>, Component<B>, Component<C>, Component<D>, Component<E>, Component<F>) -> Query<A, B, C, D, E, F>)
+		& (<A, B, C, D, E, F, G>(
+			World,
+			Component<A>,
+			Component<B>,
+			Component<C>,
+			Component<D>,
+			Component<E>,
+			Component<F>,
+			Component<G>
+		) -> Query<A, B, C, D, E, F, G>)
+		& (<A, B, C, D, E, F, G, H>(
+			World,
+			Component<A>,
+			Component<B>,
+			Component<C>,
+			Component<D>,
+			Component<E>,
+			Component<F>,
+			Component<G>,
+			Component<H>,
+			...Component<any>
+		) -> Query<A, B, C, D, E, F, G, H>),
 }
 
 export type Record = {
@@ -3696,18 +3706,18 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local function world_component(world: world): i53
-		max_component_id += 1
-		if max_component_id > HI_COMPONENT_ID then
+		if max_component_id + 1 > HI_COMPONENT_ID then
 			-- IDs are partitioned into ranges because component IDs are not nominal,
 			-- so it needs to error when IDs intersect into the entity range.
 			error("Too many components, consider using world:entity() instead to create components.")
 		end
+		max_component_id += 1
 		world.max_component_id = max_component_id
 		world_add(world, max_component_id, EcsComponent)
 
 		return max_component_id
 	end
-
+	
 	world.entity = world_entity
 	world.query = world_query :: any
 	world.remove = world_remove
@@ -3757,15 +3767,24 @@ local function world_new(DEBUG: boolean?)
 				]], 2)
 			end
 		end
-
-		local function DEBUG_ID_IS_INVALID_PAIR(id: i53)
-			if ECS_ID_IS_WILDCARD(id) then
-				error([[
-					You tried to pass in a wildcard pair. This is strictly
-					forbidden. You probably want to iterate the targets and
-					remove them one by one. You can also populate a list of
-					targets to remove and use jecs.bulk_remove.
-				]], 2)
+	
+		local function DEBUG_ID_IS_INVALID(id: number) 
+			if ECS_IS_PAIR(id) then 
+				if ECS_ID_IS_WILDCARD(id) then
+					error([[
+						You tried to pass in a wildcard pair. This is strictly
+						forbidden. You probably want to iterate the targets and
+						remove them one by one. You can also populate a list of
+						targets to remove and use jecs.bulk_remove.
+					]], 2)
+				end
+				local first = ecs_pair_first(world, id)
+				local second = ecs_pair_second(world, id)
+				
+				assert(world:contains(first), `The first element of the pair is invalid because it is not alive in the entity index. You might be holding onto an outdated handle or may have forward declared ids via jecs.component() and jecs.tag(). In the latter case, ensure that their calls precede jecs.world() or otherwise they will not register correctly`)
+				assert(world:contains(second), `The second element of the pair is invalid because it is not alive in the entity index. You might be holding onto an outdated handle or may have forward declared ids via jecs.component() and jecs.tag(). In the latter case, ensure that their calls precede jecs.world() or otherwise they will not register correctly`)
+			else
+				assert(world:contains(id), `The component in your parameters is invalid because it is not alive in the entity index. You might be holding onto an outdated handle or may have forward declared ids via jecs.component() and jecs.tag(). In the latter case, ensure that their calls precede jecs.world() or otherwise they will not register correctly`)
 			end
 		end
 
@@ -3784,21 +3803,21 @@ local function world_new(DEBUG: boolean?)
 		local function world_remove_checked(world: world, entity: i53, id: i53)
 			DEBUG_IS_DELETING_ENTITY(entity)
 			DEBUG_IS_INVALID_ENTITY(entity)
-			DEBUG_ID_IS_INVALID_PAIR(id)
+			DEBUG_ID_IS_INVALID(id)
 
 			world_remove(world, entity, id)
 		end
 		local function world_add_checked(world: world, entity: i53, id: i53)
 			DEBUG_IS_DELETING_ENTITY(entity)
 			DEBUG_IS_INVALID_ENTITY(entity)
-			DEBUG_ID_IS_INVALID_PAIR(id)
+			DEBUG_ID_IS_INVALID(id)
 
 			world_add(world, entity, id)
 		end
 		local function world_set_checked(world: world, entity: i53, id: i53, value: any)
 			DEBUG_IS_DELETING_ENTITY(entity)
 			DEBUG_IS_INVALID_ENTITY(entity)
-			DEBUG_ID_IS_INVALID_PAIR(id)
+			DEBUG_ID_IS_INVALID(id)
 
 			world_set(world, entity, id, value)
 		end
@@ -3875,7 +3894,98 @@ local function ecs_entity_record(world: world, entity: i53)
 	return entity_index_try_get(world.entity_index, entity)
 end
 
+local function entity_index_ensure(entity_index: entityindex, e: i53) 
+	local eindex_sparse_array = entity_index.sparse_array
+	local eindex_dense_array = entity_index.dense_array
+	local index = ECS_ID(e)
+	local alive_count = entity_index.alive_count
+	local r = eindex_sparse_array[index]
+	if r then
+		local dense = r.dense
+
+		if dense == 0 then
+			alive_count += 1
+			entity_index.alive_count = alive_count
+			r.dense = alive_count
+			eindex_dense_array[alive_count] = e
+			return e
+		end
+
+		-- If dense > 0, check if there's an existing entity at that position
+		local existing_entity = eindex_dense_array[dense]
+		if existing_entity and existing_entity ~= e then
+			alive_count += 1
+			entity_index.alive_count = alive_count
+			r.dense = alive_count
+			eindex_dense_array[alive_count] = e
+			return e
+		end
+
+		return e
+	else
+		local max_id = entity_index.max_id
+
+		if index > max_id then
+			for i = max_id + 1, index - 1 do
+				if not eindex_sparse_array[i] then
+					-- NOTE(marcus): We have to do this check to see if
+					-- they exist first because world:range() may have
+					-- pre-populated some slots already.
+				end
+
+				eindex_sparse_array[i] = { dense = 0 } :: record
+			end
+			entity_index.max_id = index
+		end
+
+		alive_count += 1
+		entity_index.alive_count = alive_count
+		eindex_dense_array[alive_count] = e
+
+		r = { dense = alive_count } :: record
+		eindex_sparse_array[index] = r
+
+		return e
+	end
+end
+
+local function new(world: world)
+	local e = ENTITY_INDEX_NEW_ID(world.entity_index)
+	return e
+end
+
+local function new_low_id(world: world) 
+	local entity_index = world.entity_index
+	
+	local e = 0
+	if world.max_component_id < HI_COMPONENT_ID then 
+		while true do 
+			world.max_component_id += 1
+			e = world.max_component_id
+			if not (entity_index_try_get_any(entity_index, e) ~= nil and e <= HI_COMPONENT_ID) then 
+				break
+			end
+		end
+	end
+	if e == 0 or e >= HI_COMPONENT_ID then 
+		e = ENTITY_INDEX_NEW_ID(entity_index)
+	else
+		entity_index_ensure(entity_index, e)
+	end
+	return e
+end
+
+local function new_w_id(world: world, id: i53) 
+	local e = ENTITY_INDEX_NEW_ID(world.entity_index)
+	world.add(world, e, id)
+	return e
+end
+
 return {
+	new = new,
+	new_w_id = new_w_id,
+	new_low_id = new_low_id,
+
 	--- Create the world
 	world = world_new :: (boolean?) -> World,
 	World = {
@@ -3892,7 +4002,7 @@ return {
 	--- OnAdd Hook to detect added components (see more how_to/110_hooks.luau)
     OnAdd = (EcsOnAdd :: any) :: Component<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
     --- OnRemove Hook to detect removed components (see more how_to/110_hooks.luau)
-	OnRemove = (EcsOnRemove :: any) :: Component<<T>(entity: Entity, id: Id<T>) -> ()>,
+	OnRemove = (EcsOnRemove :: any) :: Component<<T>(entity: Entity, id: Id<T>, delete: boolean?) -> ()>,
 	--- OnChange Hook to detect mutations (see more how_to/110_hooks.luau)
 	OnChange = (EcsOnChange :: any) :: Component<<T>(entity: Entity, id: Id<T>, data: T) -> ()>,
 	--- Relationship to define the parent of an entity
@@ -3959,6 +4069,7 @@ return {
 	entity_index_try_get_any = entity_index_try_get_any :: (EntityIndex, Entity) -> Record,
 	entity_index_is_alive = entity_index_is_alive :: (EntityIndex, Entity) -> boolean,
 	entity_index_new_id = ENTITY_INDEX_NEW_ID :: (EntityIndex) -> Entity,
+	entity_index_ensure = entity_index_ensure,
 
 	Query = Query,
 
@@ -3971,7 +4082,6 @@ return {
 
 	find_observers = find_observers :: (World, Component, Component) -> { Observer },
 
-	-- Inwards facing API for testing
 	ECS_ID = ECS_ENTITY_T_LO :: (Entity) -> number,
 	ECS_GENERATION_INC = ECS_GENERATION_INC :: (Entity) -> Entity,
 	ECS_GENERATION = ECS_GENERATION :: (Entity) -> number,
