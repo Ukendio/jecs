@@ -25,7 +25,13 @@ local function main(world: jecs.World)
 		:without(ct.TRANSFORM_PREDICTED)
 		:cached()
 
+	local predicted_transforms = world
+	    :query(ct.Transform, ct.Renderable)
+		:with(ct.TRANSFORM_PREDICTED)
+		:cached()
+
 	OB.observer(world:query(ct.PivotTo, ct.Renderable), pivots_added)
+
 
 	return function()
 		for entity, transform, renderable in authoritative_transforms do
@@ -55,7 +61,7 @@ local function main(world: jecs.World)
 	end
 end
 
-local w = jecs.world()
+local world = jecs.world()
 
 local entity = world:entity()
 local part = Instance.new("Part")
@@ -64,6 +70,5 @@ part.Parent = workspace
 world:set(entity, ct.Renderable, part)
 world:set(entity, ct.PivotTo, CFrame.new())
 
-local system = main(w)
+local system = main(world)
 system(1/60)
-
