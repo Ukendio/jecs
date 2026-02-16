@@ -3,7 +3,7 @@ local testkit = require("@modules/testkit")
 local test = testkit.test()
 local CASE, TEST, FINISH, CHECK = test.CASE, test.TEST, test.FINISH, test.CHECK
 local FOCUS = test.FOCUS
-local ob = require("@modules/ob")
+local ob = require("@modules/OB/module")
 
 TEST("modules/ob::observer", function()
 	local world = jecs.world()
@@ -292,6 +292,36 @@ end)
 TEST("modules/ob::monitor", function()
 	local world = jecs.world()
 
+	do CASE "same query can be used for multiple monitors without error (monitors use own cached proxy)"
+		local A = world:component()
+		local q = world:query(A)
+		local c1, c2 = 0, 0
+		ob.monitor(q).added(function() c1 += 1 end)
+		ob.monitor(q).added(function() c2 += 1 end)
+		local e = world:entity()
+		world:add(e, A)
+		CHECK(c1 == 1)
+		CHECK(c2 == 1)
+	end
+
+	do CASE [[Monitor should only report removed entities if it was previously
+	apart of it]]
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		
+		local count = 0
+		ob.monitor(world:query(A, C)).removed(function() 
+			count += 1
+		end)
+		
+		local e = world:entity()
+		jecs.bulk_insert(world, e, {A, B}, {0,0})
+		CHECK(count==0)
+		world:remove(e, A)
+		CHECK(count==0)
+	end
+	
 	do CASE [[should not invoke monitor.added callback multiple times in a bulk_move
 	]]
 		local A = world:component()
@@ -609,6 +639,74 @@ TEST("modules/ob::monitor", function()
 		CHECK(r==2)
 	end
 
+	-- Without-clause pair onremoved path: guards must stay or these fail.
+	-- Removing "if archetypes[dst.id]" would make this fail: we must only report added when dst matches the query.
+	do CASE "without(pair): removing one excluded pair only fires added when entity actually enters (dst matches query)"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local added_count = 0
+		local monitor = ob.monitor(world:query(A):without(jecs.pair(B, e1), jecs.pair(B, e2)))
+		monitor.added(function()
+			added_count += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, jecs.pair(B, e1))
+		world:add(e, jecs.pair(B, e2))
+		world:add(e, A)
+		CHECK(added_count == 0)
+
+		world:remove(e, jecs.pair(B, e1))
+		CHECK(added_count == 0)
+
+		world:remove(e, jecs.pair(B, e2))
+		CHECK(added_count == 1)
+	end
+
+	-- Removing "if delete then return" would make this fail: must not report added when removal is due to delete.
+	do CASE "without(pair): must not report added when pair is removed due to entity delete"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+
+		local added_count = 0
+		local monitor = ob.monitor(world:query(A):without(jecs.pair(B, e1)))
+		monitor.added(function()
+			added_count += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, A)
+		CHECK(added_count == 1)
+		world:add(e, jecs.pair(B, e1))
+		world:delete(e)
+		CHECK(added_count == 1)
+	end
+
+	-- Removing "if not wc and id ~= term then return" would make this fail: must only react to removal of the excluded term, not other pairs.
+	do CASE "without(pair): must not report added when a different pair (same relation) is removed"
+		local A = world:component()
+		local B = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local added_count = 0
+		local monitor = ob.monitor(world:query(A):without(jecs.pair(B, e1)))
+		monitor.added(function()
+			added_count += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, A)
+		CHECK(added_count == 1)
+		world:add(e, jecs.pair(B, e2))
+		world:remove(e, jecs.pair(B, e2))
+		CHECK(added_count == 1)
+	end
+
 	do CASE "Should enter monitor at query:without(pair(R, *)) when adding pair(R, t1)"
 		local A = world:component()
 		local B = world:component()
@@ -792,7 +890,206 @@ TEST("modules/ob::monitor", function()
 		CHECK(c == 2)
 	end
 
-	if true then return end
+	do CASE "entity about to leave (remove queried pair) reports to removed exactly once"
+		local A = world:component()
+		local e1 = world:entity()
+
+		local monitor = ob.monitor(world:query(jecs.pair(A, e1)))
+		local removed_count = 0
+		monitor.removed(function()
+			removed_count += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, jecs.pair(A, e1))
+		world:remove(e, jecs.pair(A, e1))
+		CHECK(removed_count == 1)
+	end
+
+	do CASE "removing non-queried pair (same relation, other target) must not report to removed"
+		local A = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local monitor = ob.monitor(world:query(jecs.pair(A, e1)))
+		local removed_count = 0
+		monitor.removed(function()
+			removed_count += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, jecs.pair(A, e2))
+		world:remove(e, jecs.pair(A, e2))
+		CHECK(removed_count == 0)
+	end
+
+	do CASE "about-to-leave reports to removed exactly once per exit; second removal (already out) must not report"
+		local A = world:component()
+		local e1 = world:entity()
+		local e2 = world:entity()
+
+		local monitor = ob.monitor(world:query(jecs.pair(A, e1), jecs.pair(A, e2)))
+		local removed_count = 0
+		monitor.removed(function()
+			removed_count += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, jecs.pair(A, e1))
+		world:add(e, jecs.pair(A, e2))
+		world:remove(e, jecs.pair(A, e1))
+		CHECK(removed_count == 1)
+		world:remove(e, jecs.pair(A, e2))
+		CHECK(removed_count == 1)
+	end
+
+	do CASE "pair term leave then re-enter gives one removed (about to leave) then one added (has entered)"
+		local A = world:component()
+		local e1 = world:entity()
+
+		local monitor = ob.monitor(world:query(jecs.pair(A, e1)))
+		local added_count = 0
+		local removed_count = 0
+		monitor.added(function()
+			added_count += 1
+		end)
+		monitor.removed(function()
+			removed_count += 1
+		end)
+
+		local e = world:entity()
+		world:add(e, jecs.pair(A, e1))
+		world:remove(e, jecs.pair(A, e1))
+		world:add(e, jecs.pair(A, e1))
+		CHECK(added_count == 2)
+		CHECK(removed_count == 1)
+	end
+
+	do CASE "bulk_insert causes added exactly once (entity has entered monitor)"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local monitor = ob.monitor(world:query(A, B, C))
+		local added_count = 0
+		monitor.added(function()
+			added_count += 1
+		end)
+
+		local e = world:entity()
+		jecs.bulk_insert(world, e, { A, B, C }, { 1, 2, 3 })
+		CHECK(added_count == 1)
+	end
+
+	do CASE "bulk_insert of multiple entities each reports to added once (each has entered)"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local monitor = ob.monitor(world:query(A, B, C))
+		local added_count = 0
+		monitor.added(function()
+			added_count += 1
+		end)
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+		local e3 = world:entity()
+		jecs.bulk_insert(world, e1, { A, B, C }, { 1, 2, 3 })
+		jecs.bulk_insert(world, e2, { A, B, C }, { 4, 5, 6 })
+		jecs.bulk_insert(world, e3, { A, B, C }, { 7, 8, 9 })
+		CHECK(added_count == 3)
+	end
+
+	do CASE "bulk_remove causes removed exactly once (entity about to leave monitor)"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local monitor = ob.monitor(world:query(A, B, C))
+		local added_count = 0
+		local removed_count = 0
+		monitor.added(function()
+			added_count += 1
+		end)
+		monitor.removed(function()
+			removed_count += 1
+		end)
+
+		local e = world:entity()
+		jecs.bulk_insert(world, e, { A, B, C }, { 1, 2, 3 })
+		CHECK(added_count == 1)
+		CHECK(removed_count == 0)
+
+		jecs.bulk_remove(world, e, { A, B, C })
+		CHECK(removed_count == 1)
+		CHECK(not world:has(e, A))
+		CHECK(not world:has(e, B))
+		CHECK(not world:has(e, C))
+	end
+
+	do CASE "bulk_remove of multiple entities each reports to removed once (each about to leave)"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local monitor = ob.monitor(world:query(A, B, C))
+		local removed_count = 0
+		monitor.removed(function()
+			removed_count += 1
+		end)
+
+		local e1 = world:entity()
+		local e2 = world:entity()
+		jecs.bulk_insert(world, e1, { A, B, C }, { 1, 2, 3 })
+		jecs.bulk_insert(world, e2, { A, B, C }, { 4, 5, 6 })
+
+		jecs.bulk_remove(world, e1, { A, B, C })
+		CHECK(removed_count == 1)
+		jecs.bulk_remove(world, e2, { A, B, C })
+		CHECK(removed_count == 2)
+	end
+
+	do CASE "bulk_remove only of query terms still reports to removed exactly once (entity about to leave)"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		local D = world:component()
+
+		local monitor = ob.monitor(world:query(A, B, C))
+		local removed_count = 0
+		monitor.removed(function()
+			removed_count += 1
+		end)
+
+		local e = world:entity()
+		jecs.bulk_insert(world, e, { A, B, C, D }, { 1, 2, 3, 4 })
+		jecs.bulk_remove(world, e, { A, B, C })
+		CHECK(removed_count == 1)
+		CHECK(world:has(e, D))
+	end
+
+	do CASE "bulk_insert then bulk_remove gives added once (entered) and removed once (about to leave)"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+
+		local monitor = ob.monitor(world:query(A, B, C))
+		local added_count = 0
+		local removed_count = 0
+		monitor.added(function()
+			added_count += 1
+		end)
+		monitor.removed(function()
+			removed_count += 1
+		end)
+
+		local e = world:entity()
+		jecs.bulk_insert(world, e, { A, B, C }, { 1, 2, 3 })
+		jecs.bulk_remove(world, e, { A, B, C })
+		CHECK(added_count == 1)
+		CHECK(removed_count == 1)
+	end
 
 	do CASE "monitor with pair should handle remove and re-add correctly"
 		local A = world:component()
@@ -888,7 +1185,6 @@ TEST("modules/ob::monitor", function()
 		local B = world:component()
 		local e1 = world:entity()
 		local e2 = world:entity()
-		local e3 = world:entity()
 
 		local monitor = ob.monitor(world:query(jecs.pair(A, e1), jecs.pair(A, e2)))
 		local c = 0
@@ -898,15 +1194,15 @@ TEST("modules/ob::monitor", function()
 
 		local e = world:entity()
 		world:add(e, jecs.pair(A, e1))
-		CHECK(c == 1)
+		CHECK(c == 0)
 		world:remove(e, jecs.pair(A, e1))
 		world:add(e, jecs.pair(A, e2))
-		CHECK(c == 2)
+		CHECK(c == 0)
 		world:remove(e, jecs.pair(A, e2))
 		world:add(e, jecs.pair(A, e1))
-		CHECK(c == 3)
+		CHECK(c == 0)
 		world:add(e, jecs.pair(A, e2))
-		CHECK(c == 4)
+		CHECK(c == 1)
 	end
 
 	do CASE "monitor with pair should handle set operations correctly"
@@ -929,12 +1225,13 @@ TEST("modules/ob::monitor", function()
 		CHECK(c == 1)
 		world:set(e, jecs.pair(A, e1), false)
 		CHECK(c == 1)
+		CHECK(r == 0)
 		world:set(e, jecs.pair(A, e1), true)
-		CHECK(c == 2)
+		CHECK(c == 1)
 		world:remove(e, jecs.pair(A, e1))
 		CHECK(r == 1)
 		world:set(e, jecs.pair(A, e1), true)
-		CHECK(c == 3)
+		CHECK(c == 2)
 	end
 
 	do CASE "monitor with pair query should handle non-matching pairs"

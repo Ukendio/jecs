@@ -47,6 +47,8 @@ end
 -- 	local tgt = tonumber(tokens[2]) :: jecs.Entity
 
 -- 	rel = ecs_ensure_entity(world, rel)
+-- 
+-- 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
 -- 	tgt = ecs_ensure_entity(world, tgt)
 
 -- 	return jecs.pair(rel, tgt)

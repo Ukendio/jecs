@@ -2146,6 +2146,20 @@ TEST("world:query()", function()
 			CHECK(not world:has(e1, B))
 		end
 	end
+	
+	do CASE "query:archetypes(override) should create new archetypes list" 
+		local world = jecs.world()
+		local A = world:component()
+		local B = world:component()
+		
+		local q = world:query(A, B)
+		local e = world:entity()
+		world:set(e, A, false)
+		world:set(e, B, true)
+		
+		CHECK(q:archetypes() == q:archetypes())
+		CHECK(q:archetypes() ~= q:archetypes(true))
+	end
 
 	do CASE "cached"
 		local world = jecs.world()

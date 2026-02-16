@@ -80,15 +80,17 @@ export type Id2<First, Second=nil> = ecs_id_t<First, Second>
 
 export type Item<T...> = (self: Query<T...>) -> (Entity, T...)
 export type Iter<T...> = (query: Query<T...>) -> () -> (Entity, T...)
-export type CachedIter<T...> = (query: CachedQuery<T...>) -> () -> (Entity, T...)
+export type Cached_Query_Iter<T...> = (query: Cached_Query<T...>) -> () -> (Entity, T...)
 
 type TypePack<T...> = (T...) -> never
 
-export type CachedQuery<T...> = typeof(setmetatable(
+export type Cached_Query<T...> = typeof(setmetatable(
 	{} :: {
-		iter: CachedIter<T...>,
-		archetypes: (CachedQuery<T...>) -> { Archetype },
-		has: (CachedQuery<T...>, Entity) -> boolean,
+		iter: Cached_Query_Iter<T...>,
+		archetypes: (Cached_Query<T...>) -> { Archetype },
+		has: (Cached_Query<T...>, Entity) -> boolean,
+		fini: (Cached_Query<T...>) -> (),
+		
 		ids: { Id<any> },
 		filter_with: { Id<any> }?,
 		filter_without: { Id<any> }?,
@@ -96,7 +98,7 @@ export type CachedQuery<T...> = typeof(setmetatable(
 		-- world: World
 	},
 	{} :: {
-		__iter: CachedIter<T...>,
+		__iter: Cached_Query_Iter<T...>,
 	})
 )
 
@@ -106,7 +108,7 @@ export type Query<T...> = typeof(setmetatable(
 		with: ((Query<T...>, ...Component) -> Query<T...>),
 		without: ((Query<T...>, ...Component) -> Query<T...>),
 		archetypes: (Query<T...>) -> { Archetype },
-		cached: (Query<T...>) -> CachedQuery<T...>,
+		cached: (Query<T...>) -> Cached_Query<T...>,
 		has: (Query<T...>, Entity) -> boolean,
 		ids: { Id<any> },
 		filter_with: { Id<any> }?,
@@ -1240,9 +1242,9 @@ end
 
 local function NOOP() end
 
-local function query_archetypes(query: query)
+local function query_archetypes(query: query, override: boolean?)
 	local compatible_archetypes = query.compatible_archetypes
-	if not compatible_archetypes then
+	if not compatible_archetypes or override then
 		compatible_archetypes = {}
 		query.compatible_archetypes = compatible_archetypes
 
@@ -1747,80 +1749,80 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 				col4_u = col4
 				col5_u = col5
 				col6_u = col6
-			col7_u = col7
-		end
-
-		local row = i_u
-		i_u -= 1
-
-		return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row], col7[row]
-	end
-else
-	local output = {}
-	local ids_len = #ids_u
-	function world_query_iter_next(): any
-		local entities = entities_u
-		local e = entities[i_u]
-		local col0 = col0_u
-		local col1 = col1_u
-		local col2 = col2_u
-		local col3 = col3_u
-		local col4 = col4_u
-		local col5 = col5_u
-		local col6 = col6_u
-		local col7 = col7_u
-		local ids = ids_u
-		local columns_map = columns_map_u
-
-		while e == nil do
-			last_archetype_u += 1
-			local compatible_archetypes = compatible_archetypes_u
-			local archetype = compatible_archetypes[last_archetype_u]
-			archetype_u = archetype
-
-			if not archetype then
-				return nil
+				col7_u = col7
 			end
-			entities = archetype.entities
-			i_u = #entities
-			if i_u == 0 then
-				continue
+	
+			local row = i_u
+			i_u -= 1
+	
+			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row], col7[row]
+		end
+	else
+		local output = {}
+		local ids_len = #ids_u
+		function world_query_iter_next(): any
+			local entities = entities_u
+			local e = entities[i_u]
+			local col0 = col0_u
+			local col1 = col1_u
+			local col2 = col2_u
+			local col3 = col3_u
+			local col4 = col4_u
+			local col5 = col5_u
+			local col6 = col6_u
+			local col7 = col7_u
+			local ids = ids_u
+			local columns_map = columns_map_u
+	
+			while e == nil do
+				last_archetype_u += 1
+				local compatible_archetypes = compatible_archetypes_u
+				local archetype = compatible_archetypes[last_archetype_u]
+				archetype_u = archetype
+	
+				if not archetype then
+					return nil
+				end
+				entities = archetype.entities
+				i_u = #entities
+				if i_u == 0 then
+					continue
+				end
+				e = entities[i_u]
+				entities_u = entities
+				columns_map = archetype.columns_map
+				columns_map_u = columns_map
+				col0 = columns_map[id0]
+				col1 = columns_map[id1]
+				col2 = columns_map[id2]
+				col3 = columns_map[id3]
+				col4 = columns_map[id4]
+				col5 = columns_map[id5]
+				col6 = columns_map[id6]
+				col7 = columns_map[id7]
+				col0_u = col0
+				col1_u = col1
+				col2_u = col2
+				col3_u = col3
+				col4_u = col4
+				col5_u = col5
+				col6_u = col6
+				col7_u = col7
 			end
-			e = entities[i_u]
-			entities_u = entities
-			columns_map = archetype.columns_map
-			columns_map_u = columns_map
-			col0 = columns_map[id0]
-			col1 = columns_map[id1]
-			col2 = columns_map[id2]
-			col3 = columns_map[id3]
-			col4 = columns_map[id4]
-			col5 = columns_map[id5]
-			col6 = columns_map[id6]
-			col7 = columns_map[id7]
-			col0_u = col0
-			col1_u = col1
-			col2_u = col2
-			col3_u = col3
-			col4_u = col4
-			col5_u = col5
-			col6_u = col6
-			col7_u = col7
+	
+			local row = i_u
+			i_u -= 1
+	
+			for i = 9, ids_len do
+				output[i - 8] = columns_map[ids[i]::any][row]
+			end
+	
+			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row], col7[row], unpack(output)
 		end
-
-		local row = i_u
-		i_u -= 1
-
-		for i = 9, ids_len do
-			output[i - 8] = columns_map[ids[i]::any][row]
-		end
-
-		return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row], col7[row], unpack(output)
 	end
-end
-
-query.next = world_query_iter_next
-return world_query_iter_next
+	
+	query.next = world_query_iter_next
+	return world_query_iter_next
 end
 
 local function query_iter(query): () -> (number, ...any)
@@ -1917,7 +1919,7 @@ local function query_cached(query: QueryInner)
 	table.insert(query_cache_on_create, observer_for_create)
 	table.insert(query_cache_on_delete, observer_for_delete)
 
-		local function cached_query_iter()
+	local function cached_query_iter()
 		last_archetype_u = 1
 		local compatible_archetypes = compatible_archetypes_u
 		archetype_u = compatible_archetypes[last_archetype_u]
@@ -2416,7 +2418,7 @@ local function query_cached(query: QueryInner)
 
 	local eindex = world.entity_index :: entityindex
 
-	local function cached_query_has(entity): boolean
+	local function cached_query_has(_, entity): boolean
 		local r = entity_index_try_get_fast(eindex, entity)
 		if not r then
 			return false
@@ -2429,12 +2431,31 @@ local function query_cached(query: QueryInner)
 
 		return archetypes_map[entityarchetype.id] ~= nil
 	end
+	
+	local function cached_query_fini()
+		local create_pos = table.find(query_cache_on_create, observer_for_create)
+		if create_pos then 
+			table.remove(query_cache_on_create, create_pos)
+		end
+		
+		local delete_pos = table.find(query_cache_on_delete, observer_for_delete)
+		if delete_pos then 
+			table.remove(query_cache_on_delete, delete_pos)
+		end
+		
+		compatible_archetypes_u = nil
+		-- NOTE(marcus): Maybe we have to be even more aggressive with cleaning
+		-- things up to ensure it the memory is free`d. But since most of it are
+		-- references we cannot be sure that someone is holding onto them making
+		-- it implausible to free the memory anyways
+	end
 
 	local cached_query = query :: any
 	cached_query.archetypes = query_archetypes
 	cached_query.__iter = cached_query_iter
 	cached_query.iter = cached_query_iter
 	cached_query.has = cached_query_has
+	cached_query.fini = cached_query_fini
 	setmetatable(cached_query, cached_query)
 	return cached_query
 end
