@@ -76,9 +76,11 @@ export type CachedQuery<T extends Id[]> = {
 	 * Returns the matched archetypes of the query
 	 * @returns An array of archetypes of the query
 	 */
-	archetypes(): Archetype<T>[];
+	archetypes(override?: boolean): Archetype<T>[];
 
 	has(entity: Entity): boolean;
+	
+	fini(): void
 } & Iter<T>;
 
 export type Query<T extends Id[]> = {

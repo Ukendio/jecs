@@ -87,7 +87,7 @@ type TypePack<T...> = (T...) -> never
 export type Cached_Query<T...> = typeof(setmetatable(
 	{} :: {
 		iter: Cached_Query_Iter<T...>,
-		archetypes: (Cached_Query<T...>) -> { Archetype },
+		archetypes: (Cached_Query<T...>, override: boolean?) -> { Archetype },
 		has: (Cached_Query<T...>, Entity) -> boolean,
 		fini: (Cached_Query<T...>) -> (),
 		
