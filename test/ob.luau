@@ -309,19 +309,19 @@ TEST("modules/ob::monitor", function()
 		local A = world:component()
 		local B = world:component()
 		local C = world:component()
-		
+
 		local count = 0
-		ob.monitor(world:query(A, C)).removed(function() 
+		ob.monitor(world:query(A, C)).removed(function()
 			count += 1
 		end)
-		
+
 		local e = world:entity()
 		jecs.bulk_insert(world, e, {A, B}, {0,0})
 		CHECK(count==0)
 		world:remove(e, A)
 		CHECK(count==0)
 	end
-	
+
 	do CASE [[should not invoke monitor.added callback multiple times in a bulk_move
 	]]
 		local A = world:component()
@@ -838,25 +838,45 @@ TEST("modules/ob::monitor", function()
 	do CASE "monitor with wildcard pair should handle bulk_insert"
 		local A = world:component()
 		local B = world:component()
-		local e1 = world:entity()
-		local e2 = world:entity()
-		local e3 = world:entity()
+		local C = world:component()
+		local Relation = world:component()
+		local entity1 = world:entity()
+		local entity = world:entity()
 
-		local monitor = ob.monitor(world:query(A, jecs.pair(B, jecs.w)))
+		local monitor = ob.monitor(world:query(A, B, C, jecs.pair(Relation, jecs.w)))
 		local c = 0
 		monitor.added(function()
 			c += 1
 		end)
 
-		local e = world:entity()
-		world:add(e, A)
-		CHECK(c == 0)
-		world:add(e, jecs.pair(B, e1))
+		jecs.bulk_insert(world, entity, { A, B, C, jecs.pair(Relation, entity1) }, { 1, 2, 3, 4 })
 		CHECK(c == 1)
-		world:add(e, jecs.pair(B, e2))
-		CHECK(c == 1)
-		world:add(e, jecs.pair(B, e3))
-		CHECK(c == 1)
+	end
+
+	do CASE "monitor with wildcard pair: bulk_remove reports removed exactly once"
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		local Relation = world:component()
+		local entity1 = world:entity()
+		local entity = world:entity()
+
+		local monitor = ob.monitor(world:query(A, B, C, jecs.pair(Relation, jecs.w)))
+		local added_count = 0
+		local removed_count = 0
+		monitor.added(function()
+			added_count += 1
+		end)
+		monitor.removed(function()
+			removed_count += 1
+		end)
+
+		jecs.bulk_insert(world, entity, { A, B, C, jecs.pair(Relation, entity1) }, { 1, 2, 3, 4 })
+		CHECK(added_count == 1)
+		CHECK(removed_count == 0)
+
+		jecs.bulk_remove(world, entity, { A, B, C, jecs.pair(Relation, entity1) })
+		CHECK(removed_count == 1)
 	end
 
 	do CASE "monitor with multiple pairs should handle separate operations correctly"

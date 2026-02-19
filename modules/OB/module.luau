@@ -9,7 +9,7 @@ local function duplicate(query: jecs.Query<...any>): jecs.CachedQuery<...any>
 	local world = (query :: jecs.Query<any> & { world: World }).world
 	local dup = world:query()
 	dup.filter_with = table.clone(query.filter_with)
-	if query.filter_without then 
+	if query.filter_without then
 		dup.filter_without = query.filter_without
 	end
 	return dup:cached()
@@ -152,11 +152,6 @@ local function monitors_new(query: jecs.Query<...any>): Monitor
 
 	local entity_index = world.entity_index :: any
 
-	local terms_lookup: { [jecs.Id<any>]: boolean } = {}
-	for _, term in terms do
-		terms_lookup[term] = true
-	end
-
 	local callback_added: ((jecs.Entity) -> ())?
 	local callback_removed: ((jecs.Entity) -> ())?
 
@@ -176,7 +171,7 @@ local function monitors_new(query: jecs.Query<...any>): Monitor
 		local r = jecs.entity_index_try_get_fast(
 			entity_index, entity :: any) :: jecs.Record
 		if not archetypes[oldarchetype.id] and archetypes[r.archetype.id] then
-			if last_old_archetype == oldarchetype and last_entity == entity and terms_lookup[id] then
+			if last_old_archetype == oldarchetype and last_entity == entity then
 				return
 			end
 
@@ -193,13 +188,13 @@ local function monitors_new(query: jecs.Query<...any>): Monitor
 		if callback_removed == nil then
 			return
 		end
-		
+
 		local r = jecs.record(world, entity)
 		if not r then return end
-		
+
 		local src = r.archetype
 		if not src then return end
-		
+
 		if not archetypes[src.id] then return end
 
 		if last_entity == entity and last_old_archetype == src then
@@ -232,7 +227,7 @@ local function monitors_new(query: jecs.Query<...any>): Monitor
 					entity_index, entity :: any) :: jecs.Record
 
 				if not archetypes[oldarchetype.id] and archetypes[r.archetype.id] then
-					if last_old_archetype == oldarchetype and last_entity == entity and terms_lookup[id] then
+					if last_old_archetype == oldarchetype and last_entity == entity then
 						return
 					end
 
@@ -253,10 +248,17 @@ local function monitors_new(query: jecs.Query<...any>): Monitor
 				end
 
 				local r = jecs.record(world, entity)
-				if archetypes[r.archetype.id] then
-					last_old_archetype = nil
-					callback_removed(entity)
+				local src = r.archetype
+
+				if last_entity == entity and last_old_archetype == src then
+					return
 				end
+				if not archetypes[src.id] then
+					return
+				end
+				last_entity = entity
+				last_old_archetype = src
+				callback_removed(entity)
 			end)
 			table.insert(cleanup, onadded)
 			table.insert(cleanup, onremoved)
@@ -294,7 +296,7 @@ local function monitors_new(query: jecs.Query<...any>): Monitor
 						callback_removed(entity)
 					end
 				end)
-				local onremoved = world:removed(rel, function(entity, id, delete)
+				local onremoved = world:removed(rel, function(entity: jecs.Entity, id: jecs.Id, delete)
 					if delete then
 						return
 					end
@@ -310,7 +312,7 @@ local function monitors_new(query: jecs.Query<...any>): Monitor
 					if not archetype then
 						return
 					end
-					if last_old_archetype == archetype and terms_lookup[id] then
+					if last_old_archetype == archetype then
 						return
 					end
 
