@@ -653,6 +653,71 @@ TEST("world:children()", function()
 	jecs.ECS_META_RESET()
 end)
 
+-- Arauser repro: many parents, only some have routes+checkpoints; delete all parents.
+-- With the bug: 1 checkpoint can remain and/or world:target returns non-alive parent.
+-- Scale and structure match arauser so the test FAILS when the bug is present.
+TEST("ChildOf cascade: world_target must not return non-alive parent", function()
+	local w = jecs.world(true)
+	local ParentTag = w:component()
+	local Anything = w:component()
+	local RouteTag = w:entity()
+	local CheckpointTag = w:entity()
+	local RouteOf = w:entity()
+
+	-- Like arauser: many parents (tiles) with two components, only a subset get routes + checkpoints
+	local nParents = 2000
+	local nWithChildren = 10
+	local parents = {}
+	for i = 1, nParents do
+		local p = w:entity()
+		w:set(p, ParentTag, {
+			row = math.floor((i - 1) / 50) + 1,
+			col = ((i - 1) % 50) + 1,
+		})
+		w:add(p, Anything)
+		parents[i] = p
+	end
+	local used = {}
+	local picked = 0
+	while picked < nWithChildren do
+		local idx = math.random(1, nParents)
+		if not used[idx] then
+			used[idx] = true
+			picked += 1
+			local p = parents[idx]
+			local route = w:entity()
+			w:add(route, RouteTag)
+			w:add(route, pair(ChildOf, p))
+			local checkpoint = w:entity()
+			w:add(checkpoint, CheckpointTag)
+			w:add(checkpoint, pair(ChildOf, p))
+			w:add(checkpoint, pair(RouteOf, route))
+		end
+	end
+
+	-- Delete all parents (collect first to avoid iterator invalidation)
+	local toDelete = {}
+	for e in w:query(ParentTag):iter() do
+		toDelete[#toDelete + 1] = e
+	end
+	for _, e in ipairs(toDelete) do
+		w:delete(e)
+	end
+
+	-- These must hold; with the bug one of them fails (checkpoint remains or parent not alive)
+	local count = 0
+	for checkpoint in w:query(CheckpointTag):iter() do
+		count += 1
+		CHECK(w:contains(checkpoint))
+		local parent = w:target(checkpoint, ChildOf)
+		if parent ~= nil then
+			CHECK(w:contains(parent))
+		end
+	end
+	CHECK(count == 0)
+	jecs.ECS_META_RESET()
+end)
+
 -- TEST("world:purge()", function()
 -- 	do CASE "should remove all instances of specified component"
 -- 		local world = jecs.world()
@@ -2146,17 +2211,17 @@ TEST("world:query()", function()
 			CHECK(not world:has(e1, B))
 		end
 	end
-	
-	do CASE "query:archetypes(override) should create new archetypes list" 
+
+	do CASE "query:archetypes(override) should create new archetypes list"
 		local world = jecs.world()
 		local A = world:component()
 		local B = world:component()
-		
+
 		local q = world:query(A, B)
 		local e = world:entity()
 		world:set(e, A, false)
 		world:set(e, B, true)
-		
+
 		CHECK(q:archetypes() == q:archetypes())
 		CHECK(q:archetypes() ~= q:archetypes(true))
 	end

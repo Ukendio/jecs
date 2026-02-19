@@ -90,7 +90,7 @@ export type Cached_Query<T...> = typeof(setmetatable(
 		archetypes: (Cached_Query<T...>, override: boolean?) -> { Archetype },
 		has: (Cached_Query<T...>, Entity) -> boolean,
 		fini: (Cached_Query<T...>) -> (),
-		
+
 		ids: { Id<any> },
 		filter_with: { Id<any> }?,
 		filter_without: { Id<any> }?,
@@ -533,7 +533,11 @@ end
 local function entity_index_get_alive(entity_index: entityindex, entity: i53): i53?
 	local r = entity_index_try_get_any(entity_index, entity :: number)
 	if r then
-		return entity_index.dense_array[r.dense]
+		local dense = r.dense
+		if dense > entity_index.alive_count then
+			return nil
+		end
+		return entity_index.dense_array[dense]
 	end
 	return nil
 end
@@ -1751,10 +1755,10 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 				col6_u = col6
 				col7_u = col7
 			end
-	
+
 			local row = i_u
 			i_u -= 1
-	
+
 			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row], col7[row]
 		end
 	else
@@ -1773,13 +1777,13 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 			local col7 = col7_u
 			local ids = ids_u
 			local columns_map = columns_map_u
-	
+
 			while e == nil do
 				last_archetype_u += 1
 				local compatible_archetypes = compatible_archetypes_u
 				local archetype = compatible_archetypes[last_archetype_u]
 				archetype_u = archetype
-	
+
 				if not archetype then
 					return nil
 				end
@@ -1809,18 +1813,18 @@ local function query_iter_init(query: QueryInner): () -> (number, ...any)
 				col6_u = col6
 				col7_u = col7
 			end
-	
+
 			local row = i_u
 			i_u -= 1
-	
+
 			for i = 9, ids_len do
 				output[i - 8] = columns_map[ids[i]::any][row]
 			end
-	
+
 			return e, col0[row], col1[row], col2[row], col3[row], col4[row], col5[row], col6[row], col7[row], unpack(output)
 		end
 	end
-	
+
 	query.next = world_query_iter_next
 	return world_query_iter_next
 end
@@ -2431,18 +2435,18 @@ local function query_cached(query: QueryInner)
 
 		return archetypes_map[entityarchetype.id] ~= nil
 	end
-	
+
 	local function cached_query_fini()
 		local create_pos = table.find(query_cache_on_create, observer_for_create)
-		if create_pos then 
+		if create_pos then
 			table.remove(query_cache_on_create, create_pos)
 		end
-		
+
 		local delete_pos = table.find(query_cache_on_delete, observer_for_delete)
-		if delete_pos then 
+		if delete_pos then
 			table.remove(query_cache_on_delete, delete_pos)
 		end
-		
+
 		compatible_archetypes_u = nil
 		-- NOTE(marcus): Maybe we have to be even more aggressive with cleaning
 		-- things up to ensure it the memory is free`d. But since most of it are
@@ -3510,12 +3514,17 @@ local function world_new(DEBUG: boolean?)
 				end
 			end
 		end
+
 		if idr_t then
 			local archetype_ids = idr_t.records
             local to_remove = {}:: { [i53]: componentrecord}
+            local did_cascade_delete = false
 
 			for archetype_id in archetype_ids do
 				local idr_t_archetype = archetypes[archetype_id]
+				if not idr_t_archetype then
+					continue
+				end
 				local idr_t_types = idr_t_archetype.types
 				local entities = idr_t_archetype.entities
                 local deleted_any  = false
@@ -3547,6 +3556,7 @@ local function world_new(DEBUG: boolean?)
 				end
 
                 if deleted_any then
+                    did_cascade_delete = true
                     continue
                 end
 
@@ -3583,9 +3593,6 @@ local function world_new(DEBUG: boolean?)
                         for id, component_record in to_remove do
                             local on_remove = component_record.on_remove
                             if on_remove then
-                                -- NOTE(marcus): We could be smarter with this and
-                                -- assume hooks are deterministic and that they will
-                                -- move to the same archetype. However users often are not reasonable people.
                                 on_remove(child, id)
                                 local src = r.archetype
                                 if src ~= idr_t_archetype then
@@ -3600,6 +3607,20 @@ local function world_new(DEBUG: boolean?)
 
                 table.clear(to_remove)
 				archetype_destroy(world, idr_t_archetype)
+			end
+
+			if did_cascade_delete then
+				for archetype_id in archetype_ids do
+					local idr_t_archetype = archetypes[archetype_id]
+					if not idr_t_archetype then
+						continue
+					end
+					local entities = idr_t_archetype.entities
+					for i = #entities, 1, -1 do
+						world_delete(world, entities[i])
+					end
+					archetype_destroy(world, idr_t_archetype)
+				end
 			end
 		end
 
@@ -3738,7 +3759,7 @@ local function world_new(DEBUG: boolean?)
 
 		return max_component_id
 	end
-	
+
 	world.entity = world_entity
 	world.query = world_query :: any
 	world.remove = world_remove
@@ -3788,9 +3809,9 @@ local function world_new(DEBUG: boolean?)
 				]], 2)
 			end
 		end
-	
-		local function DEBUG_ID_IS_INVALID(id: number) 
-			if ECS_IS_PAIR(id) then 
+
+		local function DEBUG_ID_IS_INVALID(id: number)
+			if ECS_IS_PAIR(id) then
 				if ECS_ID_IS_WILDCARD(id) then
 					error([[
 						You tried to pass in a wildcard pair. This is strictly
@@ -3801,7 +3822,7 @@ local function world_new(DEBUG: boolean?)
 				end
 				local first = ecs_pair_first(world, id)
 				local second = ecs_pair_second(world, id)
-				
+
 				assert(world:contains(first), `The first element of the pair is invalid because it is not alive in the entity index. You might be holding onto an outdated handle or may have forward declared ids via jecs.component() and jecs.tag(). In the latter case, ensure that their calls precede jecs.world() or otherwise they will not register correctly`)
 				assert(world:contains(second), `The second element of the pair is invalid because it is not alive in the entity index. You might be holding onto an outdated handle or may have forward declared ids via jecs.component() and jecs.tag(). In the latter case, ensure that their calls precede jecs.world() or otherwise they will not register correctly`)
 			else
@@ -3915,7 +3936,7 @@ local function ecs_entity_record(world: world, entity: i53)
 	return entity_index_try_get(world.entity_index, entity)
 end
 
-local function entity_index_ensure(entity_index: entityindex, e: i53) 
+local function entity_index_ensure(entity_index: entityindex, e: i53)
 	local eindex_sparse_array = entity_index.sparse_array
 	local eindex_dense_array = entity_index.dense_array
 	local index = ECS_ID(e)
@@ -3975,20 +3996,20 @@ local function new(world: world)
 	return e
 end
 
-local function new_low_id(world: world) 
+local function new_low_id(world: world)
 	local entity_index = world.entity_index
-	
+
 	local e = 0
-	if world.max_component_id < HI_COMPONENT_ID then 
-		while true do 
+	if world.max_component_id < HI_COMPONENT_ID then
+		while true do
 			world.max_component_id += 1
 			e = world.max_component_id
-			if not (entity_index_try_get_any(entity_index, e) ~= nil and e <= HI_COMPONENT_ID) then 
+			if not (entity_index_try_get_any(entity_index, e) ~= nil and e <= HI_COMPONENT_ID) then
 				break
 			end
 		end
 	end
-	if e == 0 or e >= HI_COMPONENT_ID then 
+	if e == 0 or e >= HI_COMPONENT_ID then
 		e = ENTITY_INDEX_NEW_ID(entity_index)
 	else
 		entity_index_ensure(entity_index, e)
@@ -3996,7 +4017,7 @@ local function new_low_id(world: world)
 	return e
 end
 
-local function new_w_id(world: world, id: i53) 
+local function new_w_id(world: world, id: i53)
 	local e = ENTITY_INDEX_NEW_ID(world.entity_index)
 	world.add(world, e, id)
 	return e
