@@ -4,6 +4,10 @@ on:
     push:
         tags: ["v*", "workflow_dispatch"]
 
+permissions:
+    id-token: write
+    contents: read
+
 jobs:
     build:
         name: Build
@@ -53,8 +57,8 @@ jobs:
                   files: |
                       jecs.rbxm
 
-    publish:
-        name: Publish
+    publish-wally:
+        name: Publish to Wally
         needs: [release]
         runs-on: ubuntu-latest
         steps:
@@ -69,3 +73,20 @@ jobs:
 
             - name: Publish
               run: wally publish
+
+    publish-npm:
+        name: Publish to NPM
+        needs: [release]
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Project
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "24"
+                  registry-url: "https://registry.npmjs.org"
+
+            - run: npm install
+            - run: npm publish
