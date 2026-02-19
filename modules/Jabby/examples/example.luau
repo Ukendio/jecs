@@ -1,7 +1,7 @@
 local RunService = game:GetService("RunService")
 
 local jecs = require("@jecs")
-local jabby = require("@modules/jabby")
+local jabby = require("@modules/Jabby/module")
 
 local world = jecs.world()
 
