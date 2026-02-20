@@ -5,8 +5,8 @@ type World = jecs.World
 
 type Id<T=any> = jecs.Id<any>
 
-local function duplicate(query: jecs.Query<...any>): jecs.CachedQuery<...any>
-	local world = (query :: jecs.Query<any> & { world: World }).world
+local function duplicate(query: jecs.Query<...any>): jecs.Cached_Query<...any>
+	local world = (query :: { world: World }).world
 	local dup = world:query()
 	dup.filter_with = table.clone(query.filter_with)
 	if query.filter_without then
