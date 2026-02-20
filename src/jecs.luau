@@ -3718,7 +3718,11 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local function world_exists(world: world, entity: i53): boolean
-		return entity_index_try_get_any(entity) ~= nil
+		local r = entity_index_try_get_any(entity)
+		if not r or r.dense == 0 then 
+			return false
+		end
+		return true
 	end
 
 	local function world_contains(world: world, entity: i53): boolean
