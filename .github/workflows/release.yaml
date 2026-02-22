@@ -1,92 +1,101 @@
 name: release
 
 on:
-    push:
-        tags: ["v*", "workflow_dispatch"]
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
 
 permissions:
-    id-token: write
-    contents: read
+  id-token: write
+  contents: read
 
 jobs:
-    build:
-        name: Build
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout Project
-              uses: actions/checkout@v4
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v4
 
-            - name: Install Rokit
-              uses: CompeyDev/setup-rokit@v0.1.2
+      - name: Install Rokit
+        uses: CompeyDev/setup-rokit@v0.1.2
 
-            - name: Install Dependencies
-              run: wally install
+      - name: Install Dependencies
+        run: wally install
 
-            - name: Build
-              run: rojo build --output build.rbxm default.project.json
+      - name: Build
+        run: rojo build --output build.rbxm default.project.json
 
-            - name: Upload Build Artifact
-              uses: actions/upload-artifact@v4
-              with:
-                  name: build
-                  path: build.rbxm
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: build.rbxm
 
-    release:
-        name: Release
-        needs: [build]
-        runs-on: ubuntu-latest
-        permissions:
-            contents: write
-        steps:
-            - name: Checkout Project
-              uses: actions/checkout@v4
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v4
 
-            - name: Download Jecs Build
-              uses: actions/download-artifact@v4
-              with:
-                  name: build
-                  path: build
+      - name: Download Build
+        uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: build
 
-            - name: Rename Build
-              run: mv build/build.rbxm jecs.rbxm
+      - name: Rename Build
+        run: mv build/build.rbxm jecs.rbxm
 
-            - name: Create Release
-              uses: softprops/action-gh-release@v1
-              with:
-                  name: Jecs ${{ github.ref_name }}
-                  files: |
-                      jecs.rbxm
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Jecs ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          files: jecs.rbxm
 
-    publish-wally:
-        name: Publish to Wally
-        needs: [release]
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout Project
-              uses: actions/checkout@v4
+  publish-wally:
+    name: Publish to Wally
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v4
 
-            - name: Install Rokit
-              uses: CompeyDev/setup-rokit@v0.1.2
+      - name: Install Rokit
+        uses: CompeyDev/setup-rokit@v0.1.2
 
-            - name: Wally Login
-              run: wally login --token ${{ secrets.WALLY_AUTH_TOKEN }}
+      - name: Wally Login
+        run: wally login --token ${{ secrets.WALLY_AUTH_TOKEN }}
 
-            - name: Publish
-              run: wally publish
+      - name: Publish
+        run: wally publish
 
-    publish-npm:
-        name: Publish to NPM
-        needs: [release]
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout Project
-              uses: actions/checkout@v4
+  publish-npm:
+    name: Publish to NPM
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Project
+        uses: actions/checkout@v4
 
-            - name: Setup Node
-              uses: actions/setup-node@v4
-              with:
-                  node-version: "24"
-                  registry-url: "https://registry.npmjs.org"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
 
-            - run: npm install
-            - run: npm publish
+      - name: Install
+        run: npm install
+
+      - name: Publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
