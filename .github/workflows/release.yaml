@@ -37,8 +37,6 @@ jobs:
     name: Release
     needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout Project
         uses: actions/checkout@v4
@@ -80,8 +78,6 @@ jobs:
     name: Publish to NPM
     needs: release
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: Checkout Project
         uses: actions/checkout@v4
@@ -97,5 +93,3 @@ jobs:
 
       - name: Publish
         run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
