@@ -5,7 +5,7 @@
 	"main": "src/jecs.luau",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/ukendio/jecs"
+		"url": "https://github.com/Ukendio/jecs"
 	},
 	"keywords": [],
 	"author": "Ukendio",
