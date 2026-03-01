@@ -19,7 +19,7 @@ about the code base is lost, ability to work on it at the same level of quality
 is lost. Over time code quality will decline as code size grows.
 
 - Tacit knowledge is very hard to recover by looking at a maze of code,
-and it takes
+and it takes a long time to do so.
 
 - You will often hear that "every semantic distinction deserves its own
 component or tag". Sometimes this is correct. A well chosen component boundary
