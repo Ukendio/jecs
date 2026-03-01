@@ -3927,7 +3927,7 @@ end
 
 local function ecs_is_tag(world: world, entity: i53): boolean
 	if ECS_IS_PAIR(entity) then
-		return ecs_is_tag(world, ecs_pair_first(world, entity)) or ecs_is_tag(world, ecs_pair_second(world, entity))
+		return ecs_is_tag(world, ecs_pair_first(world, entity)) and ecs_is_tag(world, ecs_pair_second(world, entity))
 	end
 	local idr = world.component_index[entity]
 	if idr then
