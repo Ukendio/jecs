@@ -24,6 +24,17 @@ type Id<T=unknown> = jecs.Id<T>
 local entity_visualiser = require("@modules/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
+-- FOCUS()
+TEST("e2 is nil", function() 
+	local world = jecs.world(true)
+	local e1 = world:entity(1000)
+	print("-----")
+	local e2 = world:entity()
+	print("-----")
+	
+    CHECK(e1 and world:contains(e1))
+    CHECK(e2 and world:contains(e2))
+end)
 TEST("reproduce idr_t nil archetype bug", function()
 	local world = jecs.world(true)
 

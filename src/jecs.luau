@@ -572,12 +572,14 @@ local function ENTITY_INDEX_NEW_ID(entity_index: entityindex): i53
 	local alive_count = entity_index.alive_count
 	local sparse_array = entity_index.sparse_array
 	local max_id = entity_index.max_id
+	local next_count = alive_count + 1
 
 	if alive_count < max_id then
-		alive_count += 1
-		entity_index.alive_count = alive_count
-		local id = dense_array[alive_count]
-		return id
+		local id = dense_array[next_count]
+		if id then 
+			entity_index.alive_count = next_count
+			return id
+		end
 	end
 
 	local id = max_id + 1
@@ -585,10 +587,9 @@ local function ENTITY_INDEX_NEW_ID(entity_index: entityindex): i53
 	ecs_assert(range_end == nil or id < range_end, ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
 
 	entity_index.max_id = id
-	alive_count += 1
-	entity_index.alive_count = alive_count
-	dense_array[alive_count] = id
-	sparse_array[id] = { dense = alive_count } :: record
+	entity_index.alive_count = next_count
+	dense_array[next_count] = id
+	sparse_array[id] = { dense = next_count } :: record
 
 	return id
 end
@@ -2702,12 +2703,12 @@ local function world_new(DEBUG: boolean?)
 	local eindex_dense_array = {} :: { i53 }
 	local eindex_sparse_array = {} :: { record }
 
-	local entity_index = {
+	local entity_index: entityindex = {
 		dense_array = eindex_dense_array,
 		sparse_array = eindex_sparse_array,
 		alive_count = 0,
 		max_id = 0,
-	} :: entityindex
+	}
 
 	-- NOTE(marcus): with the way the component index is accessed, we want to
 	-- ensure that components range has fast access.
@@ -2746,31 +2747,6 @@ local function world_new(DEBUG: boolean?)
 		observable = observable,
 		signals = signals,
 	} :: world
-
-
-	local function entity_index_new_id(entity_index: entityindex): i53
-		local alive_count = entity_index.alive_count
-		local max_id = entity_index.max_id
-
-		if alive_count < max_id then
-			alive_count += 1
-			entity_index.alive_count = alive_count
-			local id = eindex_dense_array[alive_count]
-			return id
-		end
-
-		local id = max_id + 1
-		local range_end = entity_index.range_end
-		ecs_assert(range_end == nil or id < range_end, ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
-
-		entity_index.max_id = id
-		alive_count += 1
-		entity_index.alive_count = alive_count
-		eindex_dense_array[alive_count] = id
-		eindex_sparse_array[id] = { dense = alive_count } :: record
-
-		return id
-	end
 
 	local ROOT_ARCHETYPE = archetype_create(world, {}, "")
 	world.ROOT_ARCHETYPE = ROOT_ARCHETYPE
@@ -3326,10 +3302,13 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local function world_entity(world: world, entity: i53?): i53
+		local sparse_array = eindex_sparse_array
+		local dense_array = eindex_dense_array
+		
 		if entity then
 			local index = ECS_ID(entity)
 			local alive_count = entity_index.alive_count
-			local r = eindex_sparse_array[index]
+			local r = sparse_array[index]
 			if r then
 				local dense = r.dense
 
@@ -3339,17 +3318,17 @@ local function world_new(DEBUG: boolean?)
 					alive_count += 1
 					entity_index.alive_count = alive_count
 					r.dense = alive_count
-					eindex_dense_array[alive_count] = entity
+					dense_array[alive_count] = entity
 					return entity
 				end
 
 				-- If dense > 0, check if there's an existing entity at that position
-				local existing_entity = eindex_dense_array[dense]
+				local existing_entity = dense_array[dense]
 				if existing_entity and existing_entity ~= entity then
 					alive_count += 1
 					entity_index.alive_count = alive_count
 					r.dense = alive_count
-					eindex_dense_array[alive_count] = entity
+					dense_array[alive_count] = entity
 					return entity
 				end
 
@@ -3360,28 +3339,46 @@ local function world_new(DEBUG: boolean?)
 				if index > max_id then
 					-- Pre-populate all intermediate IDs to keep sparse_array as an array
 					for i = max_id + 1, index - 1 do
-						if not eindex_sparse_array[i] then
-							-- NOTE(marcus): We have to do this check to see if
-							-- they exist first because world:range() may have
-							-- pre-populated some slots already.
-						end
+						-- if not sparse_array[i] then
+						-- 	-- NOTE(marcus): We have to do this check to see if
+						-- 	-- they exist first because world:range() may have
+						-- 	-- pre-populated some slots already.
+						-- end
 
-						eindex_sparse_array[i] = { dense = 0 } :: record
+						sparse_array[i] = { dense = 0 } :: record
 					end
 					entity_index.max_id = index
 				end
 
 				alive_count += 1
 				entity_index.alive_count = alive_count
-				eindex_dense_array[alive_count] = entity
+				dense_array[alive_count] = entity
 
 				r = { dense = alive_count } :: record
-				eindex_sparse_array[index] = r
+				sparse_array[index] = r
 
 				return entity
 			end
 		end
-		return entity_index_new_id(entity_index)
+
+		local alive_count = entity_index.alive_count
+		local max_id = entity_index.max_id
+		local next_count = alive_count + 1
+		if alive_count < max_id then
+			entity = dense_array[next_count]
+			if entity then 
+				entity_index.alive_count = next_count
+				return entity
+			end
+		end
+		local id = max_id + 1
+		local range_end = entity_index.range_end
+		ecs_assert(range_end == nil or id < range_end, ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
+		entity_index.max_id = id
+		entity_index.alive_count = next_count
+		dense_array[next_count] = id
+		sparse_array[id] = { dense = next_count } :: record
+		return id
 	end
 
 	local function world_remove(world: world, entity: i53, id: i53)
@@ -3873,7 +3870,7 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	for i = 1, EcsRest do
-		entity_index_new_id(entity_index)
+		ENTITY_INDEX_NEW_ID(entity_index)
 	end
 
 	for i = 1, max_component_id do
@@ -3909,7 +3906,7 @@ local function world_new(DEBUG: boolean?)
 	world_add(world, EcsOnDeleteTarget, EcsExclusive)
 
 	for i = EcsRest + 1, ecs_max_tag_id do
-		entity_index_new_id(entity_index)
+		ENTITY_INDEX_NEW_ID(entity_index)
 	end
 
 	for i, bundle in ecs_metadata do
