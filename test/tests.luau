@@ -25,6 +25,162 @@ local entity_visualiser = require("@modules/entity_visualiser")
 local dwi = entity_visualiser.stringify
 
 -- FOCUS()
+TEST("Stale to_remove", function()
+	local world = jecs.world()
+
+	local a = world:component()
+	local b = world:component()
+	local c = world:component()
+	local d = world:component()
+	local marker = world:component()
+
+	local target = world:entity()
+
+	local first = world:entity()
+	world:add(first, jecs.pair(a, target))
+	world:add(first, jecs.pair(b, target))
+	world:add(first, jecs.pair(jecs.ChildOf, target))
+
+	local second = world:entity()
+	world:add(second, jecs.pair(c, target))
+	world:add(second, jecs.pair(d, target))
+	world:add(second, marker)
+
+	print("-------")
+	world:delete(target)
+	print("-------")
+
+	CHECK(world:contains(second))
+	CHECK(world:has(second, marker))
+end)
+
+-- FOCUS()
+-- Exercises idr_t multi-remove path: entity has multiple pairs with same target (no cascade); delete target → both pairs removed, on_remove each called.
+TEST("Target delete: multi-remove path (removing_count > 1)", function()
+	local world = jecs.world()
+	local rel1 = world:entity()
+	local rel2 = world:entity()
+	local tag = world:component()
+	local target = world:entity()
+	local e = world:entity()
+	world:add(e, jecs.pair(rel1, target))
+	world:add(e, jecs.pair(rel2, target))
+	world:add(e, tag)
+	local removed_ids = {}
+	world:removed(rel1, function(_e, id) table.insert(removed_ids, id) end)
+	world:removed(rel2, function(_e, id) table.insert(removed_ids, id) end)
+	world:delete(target)
+	CHECK(world:contains(e))
+	CHECK(world:has(e, tag))
+	CHECK(not world:has(e, jecs.pair(rel1, target)))
+	CHECK(not world:has(e, jecs.pair(rel2, target)))
+	CHECK(#removed_ids == 2)
+end)
+
+-- FOCUS()
+TEST("repro 2", function()
+	local sessionDeletedCount = 0
+	local slotDeletedCount = 0
+
+	for i = 1, 100 do
+		local world = jecs.world(true);
+
+		-- randomness
+		for _ = 1, i % 40 do
+			world:entity()
+		end
+
+		local ofMatch = world:component()
+		local ofTeam = world:component()
+		local ofRound = world:component()
+		local ownedBy = world:component()
+		local nextTeam = world:component()
+		local activeRound = world:component()
+		local team = world:component()
+		local session = world:component()
+		local round = world:component()
+
+		world:add(ofTeam, jecs.Exclusive)
+		world:add(ownedBy, jecs.Exclusive)
+		world:add(nextTeam, jecs.Exclusive)
+		
+		world:add(activeRound, jecs.Exclusive)
+
+		local slotEntity = world:entity()
+		local matchEntity = world:entity()
+		world:add(matchEntity, jecs.pair(jecs.ChildOf, slotEntity))
+
+		local teams = {}
+		for t = 1, 2 do
+			local teamEntity = world:entity()
+			world:add(teamEntity, team)
+			world:add(teamEntity, jecs.pair(jecs.ChildOf, matchEntity))
+			world:add(teamEntity, jecs.pair(ofMatch, matchEntity))
+			table.insert(teams, teamEntity)
+		end
+		world:add(matchEntity, jecs.pair(nextTeam, teams[1]))
+
+		local roundEntity = world:entity()
+		world:add(roundEntity, round)
+		world:add(roundEntity, jecs.pair(jecs.ChildOf, matchEntity))
+
+		-- doing something as simple as adding this pair causes error rate to change. When this isn't here, sessionDeletedCount drops from 100% to 80%.
+		world:add(matchEntity, jecs.pair(activeRound, roundEntity))
+
+		local sessions = {}
+		for j = 1, #teams do
+			-- random number of players on team
+			for _ = 1, 1 + (i % 5) do
+				local player = world:entity()
+
+				local sessionEntity = world:entity()
+				world:add(sessionEntity, session)
+				world:add(sessionEntity, jecs.pair(ofMatch, matchEntity))
+				world:add(sessionEntity, jecs.pair(ofTeam, teams[j]))
+
+				-- not adding this next pair makes sessionDeletedCount to drop to 0%??
+				world:add(sessionEntity, jecs.pair(ownedBy, player))
+				world:add(sessionEntity, jecs.pair(ofRound, roundEntity))
+				table.insert(sessions, sessionEntity)
+			end
+		end
+
+		world:delete(matchEntity)
+
+		-- session should stay alive after match deletion
+		for _, entity in sessions do
+			if not world:contains(entity) then
+				sessionDeletedCount += 1
+				break
+			end
+		end
+
+		if not world:contains(slotEntity) then
+			slotDeletedCount += 1
+			break
+		end
+	end
+
+	CHECK(sessionDeletedCount == 0)
+	CHECK(slotDeletedCount == 0)
+
+	if (sessionDeletedCount + slotDeletedCount > 0)then
+		print(`repro 2 incorrect session deletion count: {sessionDeletedCount}`)
+
+		-- this has never been above 0, but it's the issue i'm having
+		print(`repro 2 incorrect slot deletion count: {slotDeletedCount}`)
+	end
+end)
+TEST("migrating to real records", function() 
+	local world = jecs.world(true)
+	local e1 = world:entity()
+	local e2 = world:entity()
+	print(jecs.record(world, e1).row)
+	world:add(e1, jecs.pair(jecs.ChildOf, e2))
+	world:set(e1, jecs.Name, "hello")
+	print(jecs.record(world, e1).row)
+	print(world:get(e1, jecs.Name), world:has(e1, jecs.pair(jecs.ChildOf, jecs.Wildcard)))
+end)
 TEST("e2 is nil", function() 
 	local world = jecs.world(true)
 	local e1 = world:entity(1000)
@@ -35,6 +191,7 @@ TEST("e2 is nil", function()
     CHECK(e1 and world:contains(e1))
     CHECK(e2 and world:contains(e2))
 end)
+-- FOCUS()
 TEST("reproduce idr_t nil archetype bug", function()
 	local world = jecs.world(true)
 
@@ -549,44 +706,6 @@ TEST("world:add()", function()
 		CHECK(world:has(e, pair(A, C)) == true)
 	end
 
-	do CASE "exclusive relations invoke on_remove hooks that should allow side effects"
-		local world = jecs.world()
-		local A = world:component()
-		local B = world:component()
-		local C = world:component()
-		local D = world:component()
-
-		world:add(A, jecs.Exclusive)
-		local call_count = 0
-		world:set(A, jecs.OnRemove, function(e, id)
-			call_count += 1
-			if call_count == 1 then
-				world:add(e, C)
-			else
-				world:add(e, D)
-			end
-		end)
-
-		local e = world:entity()
-		world:add(e, pair(A, B))
-		world:add(e, pair(A, C))
-
-		CHECK(world:has(e, pair(A, B)) == false)
-		CHECK(world:has(e, pair(A, C)) == true)
-		CHECK(world:has(e, C))
-
-
-		-- We have to ensure that it actually invokes hooks everytime it
-		-- traverses the archetype
-		e = world:entity()
-		world:add(e, pair(A, B))
-		world:add(e, pair(A, C))
-
-		CHECK(world:has(e, pair(A, B)) == false)
-		CHECK(world:has(e, pair(A, C)) == true)
-		CHECK(world:has(e, D))
-	end
-
 	do CASE "idempotent"
 		local world = jecs.world()
 		local d = dwi(world)
@@ -609,8 +728,8 @@ TEST("world:add()", function()
 		local e = world:entity()
 		-- An entity starts without an archetype or row
 		-- should therefore not need to copy over data
-		CHECK(d.tbl(e) == nil)
-		CHECK(d.row(e) == nil)
+		CHECK(d.tbl(e) == world.ROOT_ARCHETYPE)
+		CHECK(d.row(e) == 0)
 
 		local archetypes = #world.archetypes
 		-- This should create a new archetype
@@ -1042,24 +1161,6 @@ TEST("world:delete()", function()
 		CHECK(not world:contains(e2))
 		CHECK(B_OnAdd_called)
 		-- CHECK(B_OnRemove_called)
-	end
-
-	do CASE "idr_t//remove//on_remove//changed_archetype@3123..3126"
-		local world = jecs.world()
-		local A = world:component()
-		local B = world:component()
-		world:set(A, jecs.OnRemove, function(entity, id)
-			world:set(entity, B, true)
-		end)
-
-		local e1 = world:entity()
-		local e2 = world:entity()
-		world:add(e2, pair(A, e2))
-		world:set(e2, pair(A, e1), true)
-
-		world:delete(e1)
-
-		CHECK(not world:has(e2, pair(A, e1)))
 	end
 
 	do CASE "pair(OnDelete, Delete)"
@@ -1604,6 +1705,7 @@ TEST("world:added", function()
 	end
 end)
 
+-- FOCUS()
 TEST("world:range()", function()
 
 	do CASE "spawn entity under min range"
@@ -2911,43 +3013,6 @@ TEST("world:set()", function()
 		CHECK(world:has(e, pair(A, C)) == true)
 	end
 
-	do CASE "exclusive relations invoke on_remove hooks that should allow side effects"
-		local world = jecs.world()
-		local A = world:component()
-		local B = world:component()
-		local C = world:component()
-		local D = world:component()
-
-		world:add(A, jecs.Exclusive)
-		local call_count = 0
-		world:set(A, jecs.OnRemove, function(e, id)
-			call_count += 1
-			if call_count == 1 then
-				world:set(e, C, true)
-			else
-				world:set(e, D, true)
-			end
-		end)
-
-		local e = world:entity()
-		world:set(e, pair(A, B), true)
-		world:set(e, pair(A, C), true)
-
-		CHECK(world:has(e, pair(A, B)) == false)
-		CHECK(world:has(e, pair(A, C)) == true)
-		CHECK(world:has(e, C))
-
-
-		-- We have to ensure that it actually invokes hooks everytime it
-		-- traverses the archetype
-		e = world:entity()
-		world:set(e, pair(A, B), true)
-		world:set(e, pair(A, C), true)
-
-		CHECK(world:has(e, pair(A, B)) == false)
-		CHECK(world:has(e, pair(A, C)) == true)
-		CHECK(world:has(e, D))
-	end
 	do CASE "archetype move"
 		local world = jecs.world()
 
@@ -2958,8 +3023,8 @@ TEST("world:set()", function()
 		local e = world:entity()
 		-- An entity starts without an archetype or row
 		-- should therefore not need to copy over data
-		CHECK(d.tbl(e) == nil)
-		CHECK(d.row(e) == nil)
+		CHECK(d.tbl(e) == world.ROOT_ARCHETYPE)
+		CHECK(d.row(e) == 0)
 
 		local archetypes = #world.archetypes
 		-- This should create a new archetype since it is the first
@@ -3295,7 +3360,7 @@ TEST("Hooks", function()
 			local B = world:component()
 			local e = world:entity()
 
-			world:set(A, jecs.OnRemove, function(entity)
+			world:set(A, jecs.OnRemove, function(entity: jecs.Entity)
 				world:set(entity, B, true)
 				CHECK(world:get(entity, A))
 				CHECK(world:get(entity, B))

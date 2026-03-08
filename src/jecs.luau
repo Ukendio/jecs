@@ -156,6 +156,7 @@ type componentrecord = {
 	counts: { [i53]: number },
 	flags: number,
 	size: number,
+	cache: { number },
 
 	on_add: ((entity: i53, id: i53, value: any, oldarchetype: archetype) -> ())?,
 	on_change: ((entity: i53, id: i53, value: any, oldarchetype: archetype) -> ())?,
@@ -567,7 +568,9 @@ end
 
 local ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY = "Entity is outside range"
 
-local function ENTITY_INDEX_NEW_ID(entity_index: entityindex): i53
+local function ENTITY_INDEX_NEW_ID(world: world): i53
+	local entity_index = world.entity_index
+	local ROOT_ARCHETYPE = world.ROOT_ARCHETYPE
 	local dense_array = entity_index.dense_array
 	local alive_count = entity_index.alive_count
 	local sparse_array = entity_index.sparse_array
@@ -589,7 +592,7 @@ local function ENTITY_INDEX_NEW_ID(entity_index: entityindex): i53
 	entity_index.max_id = id
 	entity_index.alive_count = next_count
 	dense_array[next_count] = id
-	sparse_array[id] = { dense = next_count } :: record
+	sparse_array[id] = { dense = next_count, row = 0, archetype = ROOT_ARCHETYPE }
 
 	return id
 end
@@ -916,6 +919,7 @@ local function id_record_create(
 		records = {},
 		counts = {},
 		flags = flags,
+		cache = {},
 
 		on_add = on_add,
 		on_change = on_change,
@@ -953,6 +957,7 @@ local function archetype_append_to_records(
 		idr_records[archetype_id] = index
 		idr_counts[archetype_id] = 1
 		columns_map[id] = column
+		table.insert(idr.cache, archetype_id)
 	else
 		local max_count = idr_counts[archetype_id] + 1
 		idr_counts[archetype_id] = max_count
@@ -1044,8 +1049,10 @@ local function world_range(world: world, range_begin: number, range_end: number?
 		for i = max_id + 1, range_begin do
 			dense_array[i] = i
 			sparse_array[i] = {
-				dense = 0
-			} :: record
+				dense = 0,
+				row = 0,
+				archetype = world.ROOT_ARCHETYPE
+			}
 		end
 		entity_index.max_id = range_begin
 		entity_index.alive_count = range_begin
@@ -1085,10 +1092,11 @@ local function find_archetype_without(
 ): archetype
 	local id_types = node.types
 	local at = table.find(id_types, id)
-
+	if at == nil then
+		return node
+	end
 	local dst = table.clone(id_types)
 	table.remove(dst, at)
-
 	return archetype_ensure(world, dst)
 end
 
@@ -1209,6 +1217,13 @@ end
 
 local function archetype_destroy(world: world, archetype: archetype)
 	if archetype == world.ROOT_ARCHETYPE then
+		return
+	end
+	-- RAII / idempotent: already destroyed or still has entities → no-op
+	if world.archetypes[archetype.id] ~= archetype then
+		return
+	end
+	if #archetype.entities > 0 then
 		return
 	end
 
@@ -2562,7 +2577,7 @@ local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: 
 	end
 	local from = r.archetype
 	local component_index = world.component_index
-	if not from then
+	if from == world.ROOT_ARCHETYPE then
 		local dst_types = table.clone(ids)
 		table.sort(dst_types)
 
@@ -2650,6 +2665,8 @@ local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: 
 	end
 end
 
+local ON_REMOVE_STRUCTURAL_WARN = "jecs: on_remove must not perform structural changes (world:add/world:remove); this will be removed as a lint in future versions and can cause silent failures"
+
 local function ecs_bulk_remove(world: world, entity: i53, ids: { i53 })
 	local entity_index = world.entity_index
 	local r = entity_index_try_get(entity_index, entity)
@@ -2658,13 +2675,12 @@ local function ecs_bulk_remove(world: world, entity: i53, ids: { i53 })
 	end
 	local from = r.archetype
 	local component_index = world.component_index
-	if not from then
-		return
-	end
 
 	local remove: { [i53]: boolean } = {}
 
 	local columns_map = from.columns_map
+	
+	local dst_types = table.clone(from.types) :: { i53 }
 
 	for i, id in ids do
 		if not columns_map[id] then
@@ -2677,22 +2693,15 @@ local function ecs_bulk_remove(world: world, entity: i53, ids: { i53 })
 		local on_remove = idr.on_remove
 		if on_remove then
 			on_remove(entity, id)
+			if from ~= r.archetype then 
+				error(ON_REMOVE_STRUCTURAL_WARN)
+			end
 		end
-	end
-
-	local to = r.archetype
-	if from ~= to then
-		from = to
-	end
-
-	local dst_types = table.clone(from.types) :: { i53 }
-
-	for id in remove do
 		local at = table.find(dst_types, id)
 		table.remove(dst_types, at)
 	end
 
-	to = archetype_ensure(world, dst_types)
+	local to = archetype_ensure(world, dst_types)
 
 	if from ~= to then
 		entity_move(entity_index, entity, r, to)
@@ -2877,9 +2886,7 @@ local function world_new(DEBUG: boolean?)
 			return
 		end
 
-		local from: archetype = record.archetype
-		local ROOT_ARCHETYPE = ROOT_ARCHETYPE
-		local src = from or ROOT_ARCHETYPE
+		local src = record.archetype
 		local column = src.columns_map[id]
 		if column then
 			local idr = component_index[id]
@@ -2909,9 +2916,9 @@ local function world_new(DEBUG: boolean?)
 							local id_types = src.types
 							if on_remove then
 								on_remove(entity, id_types[cr])
-								src = record.archetype
-								id_types = src.types
-								cr = idr.records[src.id]
+								if src ~= record.archetype then
+									error(ON_REMOVE_STRUCTURAL_WARN)
+								end
 							end
 
 							to = exclusive_traverse_add(src, cr, id)
@@ -2934,11 +2941,8 @@ local function world_new(DEBUG: boolean?)
 							if cr then
 								local id_types = src.types
 								on_remove(entity, id_types[cr])
-								local arche = record.archetype
-								if src ~= arche then
-									id_types = arche.types
-									cr = idr.records[arche.id]
-									to = exclusive_traverse_add(arche, cr, id)
+								if src ~= record.archetype then
+									error(ON_REMOVE_STRUCTURAL_WARN)
 								end
 							end
 						end
@@ -2957,7 +2961,9 @@ local function world_new(DEBUG: boolean?)
 				idr = component_index[id]
 			end
 
-			if from then
+			local ROOT_ARCHETYPE = ROOT_ARCHETYPE
+			local src_is_root_archetype = src == ROOT_ARCHETYPE
+			if not src_is_root_archetype then
 				-- If there was a previous archetype, then the entity needs to move the archetype
 				inner_entity_move(entity, record, to)
 			else
@@ -2984,9 +2990,7 @@ local function world_new(DEBUG: boolean?)
 			return
 		end
 
-		local from = record.archetype
-		local ROOT_ARCHETYPE = ROOT_ARCHETYPE
-		local src = from or ROOT_ARCHETYPE
+		local src = record.archetype
 		if src.columns_map[id] then
 			return
 		end
@@ -3008,10 +3012,9 @@ local function world_new(DEBUG: boolean?)
 						local id_types = src.types
 						if on_remove then
 							on_remove(entity, id_types[cr])
-
-							src = record.archetype
-							id_types = src.types
-							cr = idr.records[src.id]
+							if src ~= record.archetype then 
+								error(ON_REMOVE_STRUCTURAL_WARN)
+							end
 						end
 
 						to = exclusive_traverse_add(src, cr, id)
@@ -3057,7 +3060,9 @@ local function world_new(DEBUG: boolean?)
 			idr = component_index[id]
 		end
 
-		if from then
+		local ROOT_ARCHETYPE = ROOT_ARCHETYPE
+		local src_is_root_archetype = src == ROOT_ARCHETYPE
+		if not src_is_root_archetype then
 			inner_entity_move(entity, record, to)
 		else
 			if #to.types > 0 then
@@ -3080,9 +3085,6 @@ local function world_new(DEBUG: boolean?)
 		end
 
 		local archetype = record.archetype
-		if not archetype then
-			return nil
-		end
 
 		local columns_map = archetype.columns_map
 		local row = record.row
@@ -3345,7 +3347,7 @@ local function world_new(DEBUG: boolean?)
 						-- 	-- pre-populated some slots already.
 						-- end
 
-						sparse_array[i] = { dense = 0 } :: record
+						sparse_array[i] = { dense = 0, row = 0, archetype = ROOT_ARCHETYPE }
 					end
 					entity_index.max_id = index
 				end
@@ -3354,7 +3356,7 @@ local function world_new(DEBUG: boolean?)
 				entity_index.alive_count = alive_count
 				dense_array[alive_count] = entity
 
-				r = { dense = alive_count } :: record
+				r = { dense = alive_count, row = 0, archetype = ROOT_ARCHETYPE }
 				sparse_array[index] = r
 
 				return entity
@@ -3377,7 +3379,7 @@ local function world_new(DEBUG: boolean?)
 		entity_index.max_id = id
 		entity_index.alive_count = next_count
 		dense_array[next_count] = id
-		sparse_array[id] = { dense = next_count } :: record
+		sparse_array[id] = { dense = next_count, row = 0, archetype = ROOT_ARCHETYPE }
 		return id
 	end
 
@@ -3387,10 +3389,6 @@ local function world_new(DEBUG: boolean?)
 			return
 		end
 		local from = record.archetype
-
-		if not from then
-			return
-		end
 
 		if from.columns_map[id] then
 			local idr = world.component_index[id]
@@ -3469,7 +3467,6 @@ local function world_new(DEBUG: boolean?)
 					for i = n, 1, -1 do
 						world_delete(world, entities[i])
 					end
-
 					archetype_destroy(world, idr_archetype)
 				end
 			else
@@ -3486,13 +3483,10 @@ local function world_new(DEBUG: boolean?)
 							local r = eindex_sparse_array[ECS_ID(e :: number)]
 							local from = r.archetype
 							if from ~= idr_archetype then
-								-- unfortunately the on_remove hook allows a window where `e` can have changed archetype
-								-- this is hypothetically not that expensive of an operation anyways
 								to = archetype_traverse_remove(world, entity, from)
 							end
 							inner_entity_move(e, r, to)
 						end
-
 						archetype_destroy(world, idr_archetype)
 					end
 				else
@@ -3505,7 +3499,6 @@ local function world_new(DEBUG: boolean?)
 							local e = entities[i]
 							entity_move(entity_index, e, eindex_sparse_array[ECS_ID(e :: number)], to)
 						end
-
 						archetype_destroy(world, idr_archetype)
 					end
 				end
@@ -3513,11 +3506,10 @@ local function world_new(DEBUG: boolean?)
 		end
 
 		if idr_t then
-			local archetype_ids = idr_t.records
-            local to_remove = {}:: { [i53]: componentrecord}
-            local did_cascade_delete = false
-
-			for archetype_id in archetype_ids do
+			local to_remove = {} :: { [i53]: componentrecord }
+			local cache = idr_t.cache
+			for i = #cache, 1, -1 do 
+				local archetype_id = cache[i]
 				local idr_t_archetype = archetypes[archetype_id]
 				if not idr_t_archetype then
 					continue
@@ -3531,20 +3523,14 @@ local function world_new(DEBUG: boolean?)
 					if not ECS_IS_PAIR(id) then
 						continue
 					end
-					local object = entity_index_get_alive(
-					    entity_index, ECS_PAIR_SECOND(id))
+					local object = entity_index_get_alive(entity_index, ECS_PAIR_SECOND(id))
 					if object ~= entity then
 						continue
 					end
 					local id_record = component_index[id]
-					local flags = id_record.flags
-					local flags_delete_mask = bit32.btest(flags, ECS_ID_DELETE)
-					if flags_delete_mask then
-                        for i = #entities, 1, -1 do
-						    local child = entities[i]
-						    world_delete(world, child)
-					    end
-                        deleted_any = true
+					local has_delete = bit32.btest(id_record.flags, ECS_ID_DELETE)
+					if has_delete then
+						deleted_any = true
 						break
 					else
                         to_remove[id] = id_record
@@ -3552,72 +3538,50 @@ local function world_new(DEBUG: boolean?)
 					end
 				end
 
-                if deleted_any then
-                    did_cascade_delete = true
-                    continue
-                end
-
-                if remove_count == 1 then
-                    local id, id_record = next(to_remove)
-                    local to_u = archetype_traverse_remove(world, id :: i53, idr_t_archetype)
-                    local on_remove = id_record.on_remove
-                    for i = #entities, 1, -1 do
-                        local child = entities[i]
-                        local r = entity_index_try_get_unsafe(child) :: record
-                        local to = to_u
-                        if on_remove then
-                            on_remove(child, id :: i53)
-                            local src = r.archetype
-                            if src ~= idr_t_archetype then
-                                to = archetype_traverse_remove(world, id::i53, src)
-                            end
-                        end
-
-                        inner_entity_move(child, r, to)
-                    end
-                elseif remove_count > 1 then
-                    local dst_types = table.clone(idr_t_types)
-                    for id, component_record in to_remove do
-                        table.remove(dst_types, table.find(dst_types, id))
-                    end
-
-                    local to_u = archetype_ensure(world, dst_types)
-                    for i = #entities, 1, -1 do
-                        local child = entities[i]
-                        local r = entity_index_try_get_unsafe(child) :: record
-
-                        local to = to_u
-                        for id, component_record in to_remove do
-                            local on_remove = component_record.on_remove
-                            if on_remove then
-                                on_remove(child, id)
-                                local src = r.archetype
-                                if src ~= idr_t_archetype then
-                                    to = archetype_traverse_remove(world, id, src)
-                                end
-                            end
-                        end
-
-                        inner_entity_move(child, r, to)
-                    end
-                end
-
-                table.clear(to_remove)
-				archetype_destroy(world, idr_t_archetype)
-			end
-
-			if did_cascade_delete then
-				for archetype_id in archetype_ids do
-					local idr_t_archetype = archetypes[archetype_id]
-					if not idr_t_archetype then
-						continue
+				if deleted_any then
+					for row = #entities, 1, -1 do
+						world_delete(world, entities[row])
 					end
-					local entities = idr_t_archetype.entities
-					for i = #entities, 1, -1 do
-						world_delete(world, entities[i])
+					archetype_destroy(world, idr_t_archetype)
+					continue
+				end
+				if remove_count == 1 then
+					local id, id_record = next(to_remove)
+					local to = archetype_traverse_remove(world, id::i53, idr_t_archetype)
+					local on_remove = id_record.on_remove
+					for row = #entities, 1, -1 do
+						local child = entities[row]
+						local r = entity_index_try_get_unsafe(child)::record
+						local dst = to
+						if on_remove then
+							on_remove(child, id :: i53)
+						end
+						inner_entity_move(child, r, dst)
+					end
+					archetype_destroy(world, idr_t_archetype)
+				else
+					local dst_types = table.clone(idr_t_archetype.types)
+					for id in to_remove do
+						table.remove(dst_types, table.find(dst_types, id))
+					end
+					
+					local dst = archetype_ensure(world, dst_types)
+					
+					for row = #entities, 1, -1 do
+						local child = entities[row]
+						local r = entity_index_try_get_unsafe(child) :: record
+						for id, component_record in to_remove do
+							local on_remove = component_record.on_remove
+							if on_remove then
+								on_remove(child, id)
+							end
+						end
+						inner_entity_move(child, r, dst)
 					end
 					archetype_destroy(world, idr_t_archetype)
 				end
+
+				table.clear(to_remove)
 			end
 		end
 
@@ -3672,13 +3636,10 @@ local function world_new(DEBUG: boolean?)
 						local r = entity_index_try_get_unsafe(e) :: record
 						inner_entity_move(e, r, node)
 					end
-
 					archetype_destroy(world, idr_r_archetype)
 				end
 			end
 		end
-
-
 
 		local dense = record.dense
 		local i_swap = entity_index.alive_count
@@ -3687,8 +3648,8 @@ local function world_new(DEBUG: boolean?)
 		local e_swap = eindex_dense_array[i_swap]
 		local r_swap = entity_index_try_get_any(e_swap) :: record
 		r_swap.dense = dense
-		record.archetype = nil :: any
-		record.row = nil :: any
+		record.archetype = ROOT_ARCHETYPE
+		record.row = 0
 		record.dense = i_swap
 
 		eindex_dense_array[dense] = e_swap
@@ -3710,8 +3671,8 @@ local function world_new(DEBUG: boolean?)
 			end
 		end
 		archetype_delete(world, record.archetype, record.row)
-		record.archetype = nil :: any
-		record.row = nil :: any
+		record.archetype = world.ROOT_ARCHETYPE
+		record.row = 0
 	end
 
 	local function world_exists(world: world, entity: i53): boolean
@@ -3870,7 +3831,7 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	for i = 1, EcsRest do
-		ENTITY_INDEX_NEW_ID(entity_index)
+		ENTITY_INDEX_NEW_ID(world)
 	end
 
 	for i = 1, max_component_id do
@@ -3906,7 +3867,7 @@ local function world_new(DEBUG: boolean?)
 	world_add(world, EcsOnDeleteTarget, EcsExclusive)
 
 	for i = EcsRest + 1, ecs_max_tag_id do
-		ENTITY_INDEX_NEW_ID(entity_index)
+		ENTITY_INDEX_NEW_ID(world)
 	end
 
 	for i, bundle in ecs_metadata do
@@ -3993,7 +3954,7 @@ local function entity_index_ensure(entity_index: entityindex, e: i53)
 end
 
 local function new(world: world)
-	local e = ENTITY_INDEX_NEW_ID(world.entity_index)
+	local e = ENTITY_INDEX_NEW_ID(world)
 	return e
 end
 
@@ -4011,7 +3972,7 @@ local function new_low_id(world: world)
 		end
 	end
 	if e == 0 or e >= HI_COMPONENT_ID then
-		e = ENTITY_INDEX_NEW_ID(entity_index)
+		e = ENTITY_INDEX_NEW_ID(world)
 	else
 		entity_index_ensure(entity_index, e)
 	end
@@ -4019,7 +3980,7 @@ local function new_low_id(world: world)
 end
 
 local function new_w_id(world: world, id: i53)
-	local e = ENTITY_INDEX_NEW_ID(world.entity_index)
+	local e = ENTITY_INDEX_NEW_ID(world)
 	world.add(world, e, id)
 	return e
 end

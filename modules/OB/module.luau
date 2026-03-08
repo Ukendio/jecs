@@ -193,7 +193,6 @@ local function monitors_new(query: jecs.Query<...any>): Monitor
 		if not r then return end
 
 		local src = r.archetype
-		if not src then return end
 
 		if not archetypes[src.id] then return end
 
@@ -287,9 +286,6 @@ local function monitors_new(query: jecs.Query<...any>): Monitor
 					end
 					local r = jecs.record(world, entity)
 					local archetype = r.archetype
-					if not archetype then
-						return
-					end
 
 					if archetypes[oldarchetype.id] and not archetypes[archetype.id] then
 						last_old_archetype = nil
@@ -309,9 +305,6 @@ local function monitors_new(query: jecs.Query<...any>): Monitor
 
 					local r = jecs.record(world, entity)
 					local archetype = r.archetype
-					if not archetype then
-						return
-					end
 					if last_old_archetype == archetype then
 						return
 					end
@@ -332,9 +325,6 @@ local function monitors_new(query: jecs.Query<...any>): Monitor
 					end
 					local r = jecs.record(world, entity)
 					local archetype = r.archetype
-					if not archetype then
-						return
-					end
 
 					if archetypes[oldarchetype.id] and not archetypes[archetype.id] then
 						callback_removed(entity)
@@ -349,9 +339,6 @@ local function monitors_new(query: jecs.Query<...any>): Monitor
 					end
 					local r = jecs.record(world, entity)
 					local archetype = r.archetype
-					if not archetype then
-						return
-					end
 					local dst = jecs.archetype_traverse_remove(world, id, archetype)
 
 					if archetypes[dst.id] then
