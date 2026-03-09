@@ -3142,7 +3142,8 @@ local function world_new(DEBUG: boolean?)
 		table.insert(listeners, fn)
 		return function()
 			local n = #listeners
-			local i = table.find(listeners, fn)
+			local i = table.find(listeners, fn::Listener<any>)
+			assert(i, "Listener not found, maybe you tried to disconnect it twice")
 			listeners[i] = listeners[n]
 			listeners[n] = nil
 		end
@@ -3187,7 +3188,8 @@ local function world_new(DEBUG: boolean?)
 		table.insert(listeners, fn)
 		return function()
 			local n = #listeners
-			local i = table.find(listeners, fn)
+			local i = table.find(listeners, fn::Listener<any>)
+			assert(i, "Listener not found, maybe you tried to disconnect it twice")
 			listeners[i] = listeners[n]
 			listeners[n] = nil
 		end
@@ -3232,6 +3234,7 @@ local function world_new(DEBUG: boolean?)
 		return function()
 			local n = #listeners
 			local i = table.find(listeners, fn::Listener<any>)
+			assert(i, "Listener not found, maybe you tried to disconnect it twice")
 			listeners[i] = listeners[n]
 			listeners[n] = nil
 		end
@@ -3339,14 +3342,7 @@ local function world_new(DEBUG: boolean?)
 				local max_id = entity_index.max_id
 
 				if index > max_id then
-					-- Pre-populate all intermediate IDs to keep sparse_array as an array
 					for i = max_id + 1, index - 1 do
-						-- if not sparse_array[i] then
-						-- 	-- NOTE(marcus): We have to do this check to see if
-						-- 	-- they exist first because world:range() may have
-						-- 	-- pre-populated some slots already.
-						-- end
-
 						sparse_array[i] = { dense = 0, row = 0, archetype = ROOT_ARCHETYPE }
 					end
 					entity_index.max_id = index

@@ -10,7 +10,6 @@ local mirror = require(ReplicatedStorage.mirror:Clone())
 return {
 	ParameterGenerator = function()
 		local ecs = jecs.world()
-		ecs:range(1000, 20000)
 		local mcs = mirror.World.new()
 		return ecs, mcs
 	end,
@@ -19,14 +18,14 @@ return {
 		Mirror = function(_, ecs, mcs)
 			for i = 1, 100 do
 
-				mcs:entity()
+				local _e = mcs:entity()
 			end
 		end,
 
 		Jecs = function(_, ecs, mcs)
 			for i = 1, 100 do
 
-				ecs:entity()
+				local _e = ecs:entity()
 			end
 		end,
 },
