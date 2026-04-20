@@ -3341,7 +3341,7 @@ local function world_new(DEBUG: boolean?)
 				return nil
 			end
 			local target = entity_index_get_alive(world.entity_index,
-		    	ECS_PAIR_SECOND(nth))
+		    	ECS_PAIR_SECOND(archetype.types[nth + idr.records[archetype_id]]))
 			nth += 1
 			return target
 		end
