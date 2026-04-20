@@ -194,6 +194,7 @@ type world = {
 	entity: (self: world, id: i53?) -> i53,
 	component: (self: world) -> i53,
 	target: (self: world, id: i53, relation: i53, index: number?) -> i53?,
+	targets: (self: world, id: i53, relation: i53) -> () -> i53?,
 	delete: (self: world, id: i53) -> (),
 	add: (self: world, id: i53, component: i53) -> (),
 	set: (self: world, id: i53, component: i53, data: any) -> (),
@@ -252,6 +253,13 @@ export type World = {
 		relation: ecs_entity_t<Component>,
 		index: number?
 	) -> Entity<unknown>?,
+
+	-- Gets an iterator for all viable targets of a relationship
+	targets: <T>(
+		self: World,
+		id: Entity<T> | number,
+		relation: ecs_entity_t<Component>
+	) -> () -> Id,
 
 	--- Deletes an entity and all it's related components and relationships.
 	delete: <T>(self: World, id: Entity<T>) -> (),
@@ -3302,6 +3310,43 @@ local function world_new(DEBUG: boolean?)
 		    ECS_PAIR_SECOND(nth))
 	end
 
+	local function world_targets(world: world, entity: i53, relation: i53): () -> i53?
+		local record = entity_index_try_get_unsafe(entity)
+		if not record then
+			return NOOP :: () -> i53
+		end
+
+		local archetype = record.archetype
+		if not archetype then
+			return NOOP :: () -> i53
+		end
+
+		local r = ECS_PAIR(relation, EcsWildcard)
+		local idr = world.component_index[r]
+
+		if not idr then
+			return NOOP :: () -> i53
+		end
+
+		local archetype_id = archetype.id
+		local count = idr.counts[archetype_id]
+		if not count then
+			return NOOP :: () -> i53
+		end
+
+		local nth = 0
+
+		return function(): i53?
+			if nth == count then
+				return nil
+			end
+			local target = entity_index_get_alive(world.entity_index,
+		    	ECS_PAIR_SECOND(nth))
+			nth += 1
+			return target
+		end
+	end
+
 	local function world_parent(world: world, entity: i53): i53?
 		return world_target(world, entity, EcsChildOf, 0)
 	end
@@ -3730,6 +3775,7 @@ local function world_new(DEBUG: boolean?)
 	world.get = world_get :: any
 	world.has = world_has :: any
 	world.target = world_target
+	world.targets = world_targets
 	world.parent = world_parent
 	world.contains = world_contains
 	world.exists = world_exists
