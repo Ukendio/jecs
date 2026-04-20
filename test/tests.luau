@@ -3179,7 +3179,7 @@ TEST("world:target()", function()
 end)
 
 TEST("world:targets()", function()
-	do CASE "can find single relation"
+	do CASE "should find single relation"
 		local world = jecs.world()
 
 		local Alice = world:entity()
@@ -3270,7 +3270,7 @@ TEST("world:targets()", function()
 
 		CHECK(count == 0)
 	end
-	do CASE "ignore deleted targets"
+	do CASE "should ignore deleted targets"
 		local world = jecs.world()
 
 		local ROOT = world:entity()
