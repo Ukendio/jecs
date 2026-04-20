@@ -3077,6 +3077,130 @@ TEST("world:set()", function()
 	end
 end)
 
+TEST("world:targets", function()
+	do CASE "can find single relation"
+		local world = jecs.world()
+
+		local Alice = world:entity()
+		local Bob = world:entity()
+		local Likes = world:entity()
+
+		world:add(Alice, jecs.pair(Likes, Bob))
+
+		local i = 0
+		for target in world:targets(Alice, Likes) do
+			i += 1
+			CHECK(target == Bob)
+		end
+		CHECK(i == 1)
+	end
+	do CASE "basic iteration"
+		local world = jecs.world()
+
+		local ROOT = world:entity()
+		local e1 = world:entity()
+		local targets = {}
+
+		for i = 1, 10 do
+			local target = world:entity()
+			targets[i] = target
+			world:add(e1, pair(ROOT, target))
+		end
+
+		local i = 0
+		for target in world:targets(e1, ROOT) do
+			i += 1
+			CHECK(targets[i] == target)
+		end
+
+		CHECK(i == 10)
+	end
+	do CASE "multiple iterations"
+		local world = jecs.world()
+
+		local ROOT = world:entity()
+		local OTHER = world:entity()
+
+		local e = world:entity()
+
+		local root_targets = {}
+		local other_targets = {}
+
+		for i = 1, 5 do
+			local t = world:entity()
+			root_targets[i] = t
+			world:add(e, pair(ROOT, t))
+		end
+
+		for i = 1, 3 do
+			local t = world:entity()
+			other_targets[i] = t
+			world:add(e, pair(OTHER, t))
+		end
+
+		local i = 0
+		for target in world:targets(e, ROOT) do
+			i += 1
+			CHECK(root_targets[i] == target)
+		end
+		CHECK(i == 5)
+
+		local j = 0
+		for target in world:targets(e, OTHER) do
+			j += 1
+			CHECK(other_targets[j] == target)
+		end
+		CHECK(j == 3)
+	end
+	do CASE "empty iterator"
+		local world = jecs.world()
+
+		local ROOT = world:entity()
+		local OTHER = world:entity()
+
+		local e = world:entity()
+
+		world:add(e, pair(ROOT, world:entity()))
+
+		local count = 0
+		for _ in world:targets(e, OTHER) do
+			count += 1
+		end
+
+		CHECK(count == 0)
+	end
+	do CASE "ignore deleted targets"
+		local world = jecs.world()
+
+		local ROOT = world:entity()
+		local e = world:entity()
+
+		local alive = {}
+		local dead = {}
+
+		for i = 1, 3 do
+			local t = world:entity()
+			alive[#alive + 1] = t
+			world:add(e, pair(ROOT, t))
+		end
+
+		for i = 1, 2 do
+			local t = world:entity()
+			dead[#dead + 1] = t
+			world:add(e, pair(ROOT, t))
+			world:delete(t)
+		end
+
+		local count = 0
+		for t in world:targets(e, ROOT) do
+			count += 1
+			CHECK(t ~= nil)
+		end
+
+		CHECK(count == #alive)
+	end
+end)
+
 TEST("world:target", function()
 	do CASE "nth index"
 		local world = jecs.world()
