@@ -3077,7 +3077,7 @@ TEST("world:set()", function()
 	end
 end)
 
-TEST("world:target", function()
+TEST("world:target()", function()
 	do CASE "nth index"
 		local world = jecs.world()
 		local A = world:component()
@@ -3178,7 +3178,7 @@ TEST("world:target", function()
 	end
 end)
 
-TEST("world:targets", function()
+TEST("world:targets()", function()
 	do CASE "can find single relation"
 		local world = jecs.world()
 
