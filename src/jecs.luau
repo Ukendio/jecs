@@ -3334,6 +3334,7 @@ local function world_new(DEBUG: boolean?)
 			return NOOP :: () -> i53
 		end
 
+		local idr_record = idr.records[archetype_id]
 		local nth = 0
 
 		return function(): i53?
@@ -3341,7 +3342,7 @@ local function world_new(DEBUG: boolean?)
 				return nil
 			end
 			local target = entity_index_get_alive(world.entity_index,
-		    	ECS_PAIR_SECOND(archetype.types[nth + idr.records[archetype_id]]))
+		    	ECS_PAIR_SECOND(archetype.types[nth + idr_record]))
 			nth += 1
 			return target
 		end
