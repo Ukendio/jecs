@@ -3077,6 +3077,107 @@ TEST("world:set()", function()
 	end
 end)
 
+TEST("world:target", function()
+	do CASE "nth index"
+		local world = jecs.world()
+		local A = world:component()
+		world:set(A, jecs.Name, "A")
+		local B = world:component()
+		world:set(B, jecs.Name, "B")
+		local C = world:component()
+		world:set(C, jecs.Name, "C")
+		local D = world:component()
+		world:set(D, jecs.Name, "D")
+		local E = world:component()
+		world:set(E, jecs.Name, "E")
+		local e = world:entity()
+
+		world:add(e, pair(A, B))
+		world:add(e, pair(A, C))
+		world:add(e, pair(A, D))
+		world:add(e, pair(A, E))
+		world:add(e, pair(B, C))
+		world:add(e, pair(B, D))
+		world:add(e, pair(C, D))
+
+		CHECK((pair(A, B) :: any) < (pair(A, C) :: any))
+		CHECK((pair(A, C) :: any) < (pair(A, D) :: any))
+		CHECK((pair(C, A) :: any) < (pair(C, D) :: any))
+
+		CHECK(jecs.pair_first(world, pair(B, C)) == B)
+		local r = (jecs.entity_index_try_get(world.entity_index :: any, e :: any) :: any) :: jecs.Record
+		local archetype = r.archetype
+		local function cdr(id)
+			return assert(jecs.component_record(world, id))
+		end
+		local idr_b_c = cdr(pair(B, C))
+		local idr_a_wc = cdr(pair(A, __))
+		local idr_a_e = cdr(pair(A, E))
+
+		CHECK(idr_a_wc.counts[archetype.id] == 4)
+		CHECK(idr_b_c.records[archetype.id] > idr_a_e.records[archetype.id])
+		CHECK(world:target(e, A, 0) == B)
+		CHECK(world:target(e, A, 1) == C)
+		CHECK(world:target(e, A, 2) == D)
+		CHECK(world:target(e, A, 3) == E)
+		CHECK(world:target(e, B, 0) == C)
+		CHECK(world:target(e, B, 1) == D)
+		CHECK(world:target(e, C, 0) == D)
+		CHECK(world:target(e, C, 1) == nil)
+
+		CHECK(cdr(pair(A, B)).records[archetype.id] == 1)
+		CHECK(cdr(pair(A, C)).records[archetype.id] == 2)
+		CHECK(cdr(pair(A, D)).records[archetype.id] == 3)
+		CHECK(cdr(pair(A, E)).records[archetype.id] == 4)
+
+		CHECK(world:target(e, C, 0) == D)
+		CHECK(world:target(e, C, 1) == nil)
+	end
+
+	do CASE "infer index when unspecified"
+		local world = jecs.world()
+		local A = world:component()
+		local B = world:component()
+		local C = world:component()
+		local D = world:component()
+		local e = world:entity()
+
+		world:add(e, pair(A, B))
+		world:add(e, pair(A, C))
+		world:add(e, pair(B, C))
+		world:add(e, pair(B, D))
+		world:add(e, pair(C, D))
+
+		CHECK(world:target(e, A) == world:target(e, A, 0))
+		CHECK(world:target(e, B) == world:target(e, B, 0))
+		CHECK(world:target(e, C) == world:target(e, C, 0))
+	end
+
+	do CASE "loop until no target"
+		local world = jecs.world()
+
+		local ROOT = world:entity()
+		local e1 = world:entity()
+		local targets = {}
+
+		for i = 1, 10 do
+			local target = world:entity()
+			targets[i] = target
+			world:add(e1, pair(ROOT, target))
+		end
+
+		local i = 0
+		local target = world:target(e1, ROOT, 0)
+		while target do
+			i += 1
+			CHECK(targets[i] == target)
+			target = world:target(e1, ROOT, i)
+		end
+
+		CHECK(i == 10)
+	end
+end)
+
 TEST("world:targets", function()
 	do CASE "can find single relation"
 		local world = jecs.world()
@@ -3198,107 +3299,6 @@ TEST("world:targets", function()
 		end
 
 		CHECK(count == #alive)
-	end
-end)
-
-TEST("world:target", function()
-	do CASE "nth index"
-		local world = jecs.world()
-		local A = world:component()
-		world:set(A, jecs.Name, "A")
-		local B = world:component()
-		world:set(B, jecs.Name, "B")
-		local C = world:component()
-		world:set(C, jecs.Name, "C")
-		local D = world:component()
-		world:set(D, jecs.Name, "D")
-		local E = world:component()
-		world:set(E, jecs.Name, "E")
-		local e = world:entity()
-
-		world:add(e, pair(A, B))
-		world:add(e, pair(A, C))
-		world:add(e, pair(A, D))
-		world:add(e, pair(A, E))
-		world:add(e, pair(B, C))
-		world:add(e, pair(B, D))
-		world:add(e, pair(C, D))
-
-		CHECK((pair(A, B) :: any) < (pair(A, C) :: any))
-		CHECK((pair(A, C) :: any) < (pair(A, D) :: any))
-		CHECK((pair(C, A) :: any) < (pair(C, D) :: any))
-
-		CHECK(jecs.pair_first(world, pair(B, C)) == B)
-		local r = (jecs.entity_index_try_get(world.entity_index :: any, e :: any) :: any) :: jecs.Record
-		local archetype = r.archetype
-		local function cdr(id)
-			return assert(jecs.component_record(world, id))
-		end
-		local idr_b_c = cdr(pair(B, C))
-		local idr_a_wc = cdr(pair(A, __))
-		local idr_a_e = cdr(pair(A, E))
-
-		CHECK(idr_a_wc.counts[archetype.id] == 4)
-		CHECK(idr_b_c.records[archetype.id] > idr_a_e.records[archetype.id])
-		CHECK(world:target(e, A, 0) == B)
-		CHECK(world:target(e, A, 1) == C)
-		CHECK(world:target(e, A, 2) == D)
-		CHECK(world:target(e, A, 3) == E)
-		CHECK(world:target(e, B, 0) == C)
-		CHECK(world:target(e, B, 1) == D)
-		CHECK(world:target(e, C, 0) == D)
-		CHECK(world:target(e, C, 1) == nil)
-
-		CHECK(cdr(pair(A, B)).records[archetype.id] == 1)
-		CHECK(cdr(pair(A, C)).records[archetype.id] == 2)
-		CHECK(cdr(pair(A, D)).records[archetype.id] == 3)
-		CHECK(cdr(pair(A, E)).records[archetype.id] == 4)
-
-		CHECK(world:target(e, C, 0) == D)
-		CHECK(world:target(e, C, 1) == nil)
-	end
-
-	do CASE "infer index when unspecified"
-		local world = jecs.world()
-		local A = world:component()
-		local B = world:component()
-		local C = world:component()
-		local D = world:component()
-		local e = world:entity()
-
-		world:add(e, pair(A, B))
-		world:add(e, pair(A, C))
-		world:add(e, pair(B, C))
-		world:add(e, pair(B, D))
-		world:add(e, pair(C, D))
-
-		CHECK(world:target(e, A) == world:target(e, A, 0))
-		CHECK(world:target(e, B) == world:target(e, B, 0))
-		CHECK(world:target(e, C) == world:target(e, C, 0))
-	end
-
-	do CASE "loop until no target"
-		local world = jecs.world()
-
-		local ROOT = world:entity()
-		local e1 = world:entity()
-		local targets = {}
-
-		for i = 1, 10 do
-			local target = world:entity()
-			targets[i] = target
-			world:add(e1, pair(ROOT, target))
-		end
-
-		local i = 0
-		local target = world:target(e1, ROOT, 0)
-		while target do
-			i += 1
-			CHECK(targets[i] == target)
-			target = world:target(e1, ROOT, i)
-		end
-
-		CHECK(i == 10)
 	end
 end)
 
