@@ -3348,7 +3348,7 @@ local function world_new(DEBUG: boolean?)
 			if nth == end_count then
 				return nil
 			end
-			local target = dense_array[sparse_array[ECS_ID(ECS_PAIR_SECOND(archetype_types[nth]))].dense]
+			local target = dense_array[sparse_array[ECS_PAIR_SECOND(archetype_types[nth])].dense]
 			nth += 1
 			return target
 		end
