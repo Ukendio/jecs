@@ -3334,15 +3334,18 @@ local function world_new(DEBUG: boolean?)
 			return NOOP :: () -> i53
 		end
 
-		local idr_record = idr.records[archetype_id]
-		local nth = 0
+		local nth = idr.records[archetype_id]
+		local end_count = nth + count
+
+		local entity_idx = world.entity_index
+		local archetype_types = archetype.types
 
 		return function(): i53?
-			if nth == count then
+			if nth == end_count then
 				return nil
 			end
-			local target = entity_index_get_alive(world.entity_index,
-		    	ECS_PAIR_SECOND(archetype.types[nth + idr_record]))
+			local target = entity_index_get_alive(entity_idx,
+		    	ECS_PAIR_SECOND(archetype_types[nth]))
 			nth += 1
 			return target
 		end
