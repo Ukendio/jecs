@@ -3300,6 +3300,81 @@ TEST("world:targets()", function()
 
 		CHECK(count == #alive)
 	end
+	do CASE "should properly handle rapid add/remove calls"
+		local world = jecs.world()
+
+		local ROOT = world:entity()
+		local e = world:entity()
+
+		local alive = {}
+		local all_targets = {} :: {Entity}
+
+		for i = 1, 100 do
+			local t = world:entity()
+			all_targets[#all_targets + 1] = t
+
+			world:add(e, jecs.pair(ROOT, t))
+			alive[t] = true
+		end
+
+		for i = 1, 500 do
+			local t: Entity
+			while t == nil do
+				t = all_targets[math.random(#all_targets)]
+			end
+
+			if math.random() < 0.5 then
+				world:remove(e, jecs.pair(ROOT, t))
+				alive[t] = nil
+			else
+				world:add(e, jecs.pair(ROOT, t))
+				alive[t] = true
+			end
+		end
+
+		local entity_index = world.entity_index
+		local function entity_index_check_alive(entity)
+			local r = entity_index.sparse_array[ECS_ID(entity)]
+
+			if not r or r.dense == 0 then
+				return false
+			end
+
+			local dense = r.dense
+			if dense > entity_index.alive_count then
+				return false
+			end
+			return true
+
+		end
+
+		for i=1, 10 do
+			local seen = {}
+			for t in world:targets(e, ROOT) do
+				CHECK(entity_index_check_alive(t))
+				CHECK(entity_index_check_alive(jecs.pair(ROOT, t)))
+
+				CHECK(alive[t] == true)
+
+				CHECK(seen[t] == nil)
+				seen[t] = true
+			end
+
+			for t, _ in pairs(alive) do
+				CHECK(seen[t] == true)
+			end
+
+			for t in world:targets(e, ROOT) do
+				if math.random() < 0.5 then
+					world:remove(e, jecs.pair(ROOT, t))
+					alive[t] = nil
+				else
+					world:add(e, jecs.pair(ROOT, t))
+					alive[t] = true
+				end
+			end
+		end
+	end
 end)
 
 TEST("#adding a recycled target", function()
