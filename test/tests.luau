@@ -3364,7 +3364,12 @@ TEST("world:targets()", function()
 				CHECK(seen[t] == true)
 			end
 
-			for t in world:targets(e, ROOT) do
+			for j = 1, #all_targets do
+				local t: Entity
+				while t == nil do
+					t = all_targets[j]
+				end
+
 				if math.random() < 0.5 then
 					world:remove(e, jecs.pair(ROOT, t))
 					alive[t] = nil
