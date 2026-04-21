@@ -3077,7 +3077,7 @@ TEST("world:set()", function()
 	end
 end)
 
-TEST("world:target", function()
+TEST("world:target()", function()
 	do CASE "nth index"
 		local world = jecs.world()
 		local A = world:component()
@@ -3175,6 +3175,207 @@ TEST("world:target", function()
 		end
 
 		CHECK(i == 10)
+	end
+end)
+
+TEST("world:targets()", function()
+	do CASE "should find single relation"
+		local world = jecs.world()
+
+		local Alice = world:entity()
+		local Bob = world:entity()
+		local Likes = world:entity()
+
+		world:add(Alice, jecs.pair(Likes, Bob))
+
+		local i = 0
+		for target in world:targets(Alice, Likes) do
+			i += 1
+			CHECK(target == Bob)
+		end
+		CHECK(i == 1)
+	end
+	do CASE "basic iteration"
+		local world = jecs.world()
+
+		local ROOT = world:entity()
+		local e1 = world:entity()
+		local targets = {}
+
+		for i = 1, 10 do
+			local target = world:entity()
+			targets[i] = target
+			world:add(e1, pair(ROOT, target))
+		end
+
+		local i = 0
+		for target in world:targets(e1, ROOT) do
+			i += 1
+			CHECK(targets[i] == target)
+		end
+
+		CHECK(i == 10)
+	end
+	do CASE "multiple iterations"
+		local world = jecs.world()
+
+		local ROOT = world:entity()
+		local OTHER = world:entity()
+
+		local e = world:entity()
+
+		local root_targets = {}
+		local other_targets = {}
+
+		for i = 1, 5 do
+			local t = world:entity()
+			root_targets[i] = t
+			world:add(e, pair(ROOT, t))
+		end
+
+		for i = 1, 3 do
+			local t = world:entity()
+			other_targets[i] = t
+			world:add(e, pair(OTHER, t))
+		end
+
+		local i = 0
+		for target in world:targets(e, ROOT) do
+			i += 1
+			CHECK(root_targets[i] == target)
+		end
+		CHECK(i == 5)
+
+		local j = 0
+		for target in world:targets(e, OTHER) do
+			j += 1
+			CHECK(other_targets[j] == target)
+		end
+		CHECK(j == 3)
+	end
+	do CASE "empty iterator"
+		local world = jecs.world()
+
+		local ROOT = world:entity()
+		local OTHER = world:entity()
+
+		local e = world:entity()
+
+		world:add(e, pair(ROOT, world:entity()))
+
+		local count = 0
+		for _ in world:targets(e, OTHER) do
+			count += 1
+		end
+
+		CHECK(count == 0)
+	end
+	do CASE "should ignore deleted targets"
+		local world = jecs.world()
+
+		local ROOT = world:entity()
+		local e = world:entity()
+
+		local alive = {}
+		local dead = {}
+
+		for i = 1, 3 do
+			local t = world:entity()
+			alive[#alive + 1] = t
+			world:add(e, pair(ROOT, t))
+		end
+
+		for i = 1, 2 do
+			local t = world:entity()
+			dead[#dead + 1] = t
+			world:add(e, pair(ROOT, t))
+			world:delete(t)
+		end
+
+		local count = 0
+		for t in world:targets(e, ROOT) do
+			count += 1
+			CHECK(t ~= nil)
+		end
+
+		CHECK(count == #alive)
+	end
+	do CASE "should properly handle rapid add/remove calls"
+		local world = jecs.world()
+
+		local ROOT = world:entity()
+		local e = world:entity()
+
+		local alive = {}
+		local all_targets = {} :: {Entity}
+
+		for i = 1, 100 do
+			local t = world:entity()
+			all_targets[#all_targets + 1] = t
+
+			world:add(e, jecs.pair(ROOT, t))
+			alive[t] = true
+		end
+
+		for i = 1, 500 do
+			local t: Entity
+			while t == nil do
+				t = all_targets[math.random(#all_targets)]
+			end
+
+			if math.random() < 0.5 then
+				world:remove(e, jecs.pair(ROOT, t))
+				alive[t] = nil
+			else
+				world:add(e, jecs.pair(ROOT, t))
+				alive[t] = true
+			end
+		end
+
+		local entity_index = world.entity_index
+		local function entity_index_check_alive(entity)
+			local r = entity_index.sparse_array[ECS_ID(entity)]
+
+			if not r or r.dense == 0 then
+				return false
+			end
+
+			local dense = r.dense
+			if dense > entity_index.alive_count then
+				return false
+			end
+			return entity_index.dense_array[dense] ~= nil
+
+		end
+
+		for i=1, 10 do
+			local seen = {}
+			for t in world:targets(e, ROOT) do
+				CHECK(entity_index_check_alive(t))
+				CHECK(entity_index_check_alive(jecs.pair(ROOT, t)))
+
+				CHECK(alive[t] == true)
+
+				CHECK(seen[t] == nil)
+				seen[t] = true
+			end
+
+			for t, _ in pairs(alive) do
+				CHECK(seen[t] == true)
+			end
+
+			for j = 1, #all_targets do
+				local t = all_targets[j]
+
+				if math.random() < 0.5 then
+					world:remove(e, jecs.pair(ROOT, t))
+					alive[t] = nil
+				else
+					world:add(e, jecs.pair(ROOT, t))
+					alive[t] = true
+				end
+			end
+		end
 	end
 end)
 
