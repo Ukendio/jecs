@@ -3365,10 +3365,7 @@ TEST("world:targets()", function()
 			end
 
 			for j = 1, #all_targets do
-				local t: Entity
-				while t == nil do
-					t = all_targets[j]
-				end
+				local t = all_targets[j]
 
 				if math.random() < 0.5 then
 					world:remove(e, jecs.pair(ROOT, t))
