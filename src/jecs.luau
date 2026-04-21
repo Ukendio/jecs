@@ -3310,9 +3310,9 @@ local function world_new(DEBUG: boolean?)
 		    ECS_PAIR_SECOND(nth))
 	end
 
+	local NOOP = NOOP :: () -> i53
+	
 	local function world_targets(world: world, entity: i53, relation: i53): () -> i53?
-		local NOOP = NOOP :: () -> i53
-
 		local record = entity_index_try_get_unsafe(entity)
 		if not record then
 			return NOOP
