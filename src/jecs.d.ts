@@ -156,6 +156,14 @@ export class World {
 	target(entity: Entity, relation: Entity, index?: number): Entity | undefined;
 
 	/**
+	 * Gets an iterator for all targets of a relationship.
+	 * Returns an empty iterator if no matches are found.
+	 * @param entity The entity using a relationship pair.
+	 * @param relation The "relationship" component/tag
+	 */
+	targets(entity: Entity, relation: Entity): Iter<Entity>
+
+	/**
 	 * Deletes an entity (and its components/relationships) from the world entirely.
 	 * @param entity The entity to delete.
 	 */

@@ -6,6 +6,10 @@
 	Use target when you have queried with a wildcard (e.g. pair(Eats, jecs.Wildcard))
 	and need the actual target entity for each result. Without an index, the
 	default is 0 (the first target).
+
+	world:targets(entity, relation) returns an iterator for all targets of a relation.
+	
+	Use targets when you need to get every possible target for all indexes.
 ]]
 
 local jecs = require("@jecs")
@@ -35,3 +39,8 @@ print(third == nil)  -- true
 -- Omitting the index is the same as index 0
 local default = world:target(bob, Eats)
 print(default == Apples)  -- true
+
+-- Iterates through all targets
+for target in world:targets(bob, Eats) do
+	print(target)
+end
