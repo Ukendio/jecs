@@ -3344,7 +3344,7 @@ TEST("world:targets()", function()
 			if dense > entity_index.alive_count then
 				return false
 			end
-			return true
+			return entity_index.dense_array[dense] ~= nil
 
 		end
 
