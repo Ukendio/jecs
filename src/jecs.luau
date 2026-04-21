@@ -3311,27 +3311,29 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local function world_targets(world: world, entity: i53, relation: i53): () -> i53?
+		local NOOP = NOOP :: () -> i53
+
 		local record = entity_index_try_get_unsafe(entity)
 		if not record then
-			return NOOP :: () -> i53
+			return NOOP
 		end
 
 		local archetype = record.archetype
 		if not archetype then
-			return NOOP :: () -> i53
+			return NOOP
 		end
 
 		local r = ECS_PAIR(relation, EcsWildcard)
 		local idr = world.component_index[r]
 
 		if not idr then
-			return NOOP :: () -> i53
+			return NOOP
 		end
 
 		local archetype_id = archetype.id
 		local count = idr.counts[archetype_id]
 		if not count then
-			return NOOP :: () -> i53
+			return NOOP
 		end
 
 		local nth = idr.records[archetype_id]
