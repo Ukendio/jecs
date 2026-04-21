@@ -3340,15 +3340,15 @@ local function world_new(DEBUG: boolean?)
 		local nth = idr.records[archetype_id]
 		local end_count = nth + count
 
-		local entity_idx = world.entity_index
 		local archetype_types = archetype.types
+		local sparse_array = entity_index.sparse_array
+		local dense_array = entity_index.dense_array
 
 		return function(): i53?
 			if nth == end_count then
 				return nil
 			end
-			local target = entity_index_get_alive(entity_idx,
-		    	ECS_PAIR_SECOND(archetype_types[nth]))
+			local target = dense_array[sparse_array[ECS_ID(ECS_PAIR_SECOND(archetype_types[nth]))].dense]
 			nth += 1
 			return target
 		end
