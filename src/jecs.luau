@@ -3311,7 +3311,7 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local NOOP = NOOP :: () -> i53
-	
+
 	local function world_targets(world: world, entity: i53, relation: i53): () -> i53?
 		local record = entity_index_try_get_unsafe(entity)
 		if not record then
@@ -3324,7 +3324,8 @@ local function world_new(DEBUG: boolean?)
 		end
 
 		local r = ECS_PAIR(relation, EcsWildcard)
-		local idr = world.component_index[r]
+		local ct_idx = world.component_index
+		local idr = ct_idx[r]
 
 		if not idr then
 			return NOOP
