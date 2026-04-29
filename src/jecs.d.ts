@@ -161,7 +161,7 @@ export class World {
 	 * @param entity The entity using a relationship pair.
 	 * @param relation The "relationship" component/tag
 	 */
-	targets(entity: Entity, relation: Entity): Iter<Entity>
+	targets(entity: Entity, relation: Entity): IterFn<[]>
 
 	/**
 	 * Deletes an entity (and its components/relationships) from the world entirely.
