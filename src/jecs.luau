@@ -254,7 +254,8 @@ export type World = {
 		index: number?
 	) -> Entity<unknown>?,
 
-	-- Gets an iterator for all viable targets of a relationship
+	-- Gets an iterator for all targets of a relationship.
+	-- Returns an empty iterator if no matches are found.
 	targets: <T>(
 		self: World,
 		id: Entity<T> | number,
