@@ -97,8 +97,8 @@ local e3 = world:entity()
 world:add(e3, pair(Likes, bob))   	-- Creates archetype [pair(Likes, bob)]
 
 local e4 = world:entity()
-world:add(e3, pair(Likes, charlie)) -- Creates archetype [pair(Likes, charlie)]
-world:add(e3, pair(Likes, bob)) 	-- Creates archetype [pair(Likes, bob), pair(Likes, charlie)]
+world:add(e4, pair(Likes, charlie)) -- Creates archetype [pair(Likes, charlie)]
+world:add(e4, pair(Likes, bob)) 	-- Creates archetype [pair(Likes, bob), pair(Likes, charlie)]
 
 -- Each different target creates a new archetype, leading to fragmentation
 -- This is why relationships can increase archetype count significantly
