@@ -201,6 +201,11 @@ type world = {
 
 	observable: Map<i53, Map<i53, { Observer }>>,
 
+	-- Low 24 bits of every entity referenced by a component id (as the id
+	-- itself, a pair relation, or a pair target) -> true. Lets world_delete
+	-- skip its component_index probes for ordinary entities.
+	entity_used_as: Map<i24, boolean>,
+
 	range: (self: world, range_begin: number, range_end: number?) -> (),
 	entity: (self: world, id: i53?) -> i53,
 	component: (self: world) -> i53,
@@ -950,6 +955,17 @@ local function id_record_create(
 
 	component_index[id] = idr
 
+	-- Mark the entities this id references so world_delete knows it must run
+	-- its component_index probes for them; unmarked entities (the vast
+	-- majority) skip that cleanup entirely. id_record_create is the only
+	-- producer of component_index entries, so a missing mark cannot happen;
+	-- a stale mark only costs the probes, exactly like before.
+	local entity_used_as = world.entity_used_as
+	entity_used_as[relation % ECS_ENTITY_MASK] = true
+	if is_pair then
+		entity_used_as[(target :: number) % ECS_ENTITY_MASK] = true
+	end
+
 	return idr
 end
 
@@ -1192,50 +1208,8 @@ local function archetype_traverse_add(
 	return to
 end
 
-local function archetype_fast_delete_last(columns: { Column }, column_count: number)
-	for i, column in columns do
-		if column ~= NULL_ARRAY then
-			column[column_count] = nil
-		end
-	end
-end
-
-local function archetype_fast_delete(columns: { Column }, column_count: number, row: number)
-	for i, column in columns do
-		if column ~= NULL_ARRAY then
-			column[row] = column[column_count]
-			column[column_count] = nil
-		end
-	end
-end
-
-local function archetype_delete(world: world, archetype: archetype, row: number)
-	local entity_index = world.entity_index
-	local columns = archetype.columns
-	local entities = archetype.entities
-	local column_count = #entities
-	local last = #entities
-	local move = entities[last]
-	-- We assume first that the entity is the last in the archetype
-
-	if row ~= last then
-		local record_to_move = entity_index_try_get_any(entity_index, move)
-		if record_to_move then
-			record_to_move.row = row
-		end
-
-		entities[row] = move
-	end
-
-	entities[last] = nil :: any
-
-	if row == last then
-		archetype_fast_delete_last(columns, column_count)
-	else
-		archetype_fast_delete(columns, column_count, row)
-	end
-end
-
+-- NOTE: the old archetype_delete/archetype_fast_delete helpers were inlined
+-- into world_delete and world_clear (their only callers) and removed.
 
 local function archetype_destroy(world: world, archetype: archetype)
 	if archetype == world.ROOT_ARCHETYPE then
@@ -1318,6 +1292,14 @@ local function query_archetypes(query: query, override: boolean?)
 			return compatible_archetypes
 		end
 
+		-- idr.size is an upper bound on how many archetypes can match, so
+		-- presizing avoids every growth reallocation of the result array
+		-- (~14 of them for a 16k-archetype wildcard record). Iteration order
+		-- over idr.records is unchanged.
+		compatible_archetypes = table.create(idr.size) :: { archetype }
+		query.compatible_archetypes = compatible_archetypes
+		local compatible_count = 0
+
 		local without = query.filter_without
 
 		for archetype_id in idr.records do
@@ -1346,7 +1328,8 @@ local function query_archetypes(query: query, override: boolean?)
 				continue
 			end
 
-			table.insert(compatible_archetypes, archetype)
+			compatible_count += 1
+			compatible_archetypes[compatible_count] = archetype
 		end
 	end
 	return compatible_archetypes
@@ -2732,6 +2715,8 @@ local function world_new(DEBUG: boolean?)
 	-- `world:component` will not pollute the global registration of components.
 	local max_component_id = ecs_max_component_id
 
+	local entity_used_as = {} :: Map<i24, boolean>
+
 	local world = {
 		archetype_edges = archetype_edges,
 
@@ -2746,6 +2731,7 @@ local function world_new(DEBUG: boolean?)
 
 		observable = observable,
 		signals = signals,
+		entity_used_as = entity_used_as,
 	} :: world
 
 	local ROOT_ARCHETYPE = archetype_create(world, {}, "")
@@ -3356,19 +3342,21 @@ local function world_new(DEBUG: boolean?)
 			return nil
 		end
 
+		-- records[aid] exists iff counts[aid] >= 1 (they are created and
+		-- removed strictly together), so the common index-0 lookup needs only
+		-- the records probe; counts is consulted for explicit indexes only.
 		local archetype_id = archetype.id
-		local count = idr.counts[archetype_id]
-		if not count then
+		local tr_start = idr.records[archetype_id]
+		if not tr_start then
 			return nil
 		end
 
 		local nth = index or 0
-
-		if nth >= count then
+		if nth ~= 0 and nth >= idr.counts[archetype_id] then
 			return nil
 		end
 
-		nth = archetype.types[nth + idr.records[archetype_id]]
+		nth = archetype.types[nth + tr_start]
 
 		if not nth then
 			return nil
@@ -3451,13 +3439,14 @@ local function world_new(DEBUG: boolean?)
 			return nil
 		end
 
-		local archetype_id = archetype.id
-		local count = idr.counts[archetype_id]
-		if not count then
+		-- records[aid] exists iff counts[aid] >= 1, and parent always wants
+		-- index 0, so the counts probe is skipped entirely.
+		local tr_start = idr.records[archetype.id]
+		if not tr_start then
 			return nil
 		end
 
-		local nth = archetype.types[idr.records[archetype_id]]
+		local nth = archetype.types[tr_start]
 		if not nth then
 			return nil
 		end
@@ -3680,13 +3669,24 @@ local function world_new(DEBUG: boolean?)
 		-- component_index/archetypes resolve to the world_new upvalues (the
 		-- same tables world.component_index/world.archetypes point at), and
 		-- the two wildcard probe ids are inlined ECS_PAIR calls.
+		--
+		-- Ordinary entities are never referenced by any component id (as the
+		-- id itself, a relation, or a pair target), so all three probes below
+		-- would miss. entity_used_as — maintained by id_record_create, the
+		-- only producer of component_index entries — tells us when the probes
+		-- can be skipped outright; the cleanup blocks then no-op on nil.
 		local entity_lo = entity % ECS_ENTITY_MASK
-		local tgt = entity_lo + EcsWildcard * ECS_ENTITY_MASK + ECS_PAIR_OFFSET
-		local rel = EcsWildcard + entity_lo * ECS_ENTITY_MASK + ECS_PAIR_OFFSET
+		local used = entity_used_as[entity_lo]
 
-		local idr_t = component_index[tgt]
-		local idr = component_index[entity]
-		local idr_r = component_index[rel]
+		local idr_t, idr, idr_r
+		if used then
+			local tgt = entity_lo + EcsWildcard * ECS_ENTITY_MASK + ECS_PAIR_OFFSET
+			local rel = EcsWildcard + entity_lo * ECS_ENTITY_MASK + ECS_PAIR_OFFSET
+
+			idr_t = component_index[tgt]
+			idr = component_index[entity]
+			idr_r = component_index[rel]
+		end
 
 		--[[
 			It is important to note that `world_delete` uses a depth-first
@@ -3895,6 +3895,12 @@ local function world_new(DEBUG: boolean?)
 			end
 		end
 
+		if used then
+			-- The cleanup above removed every component_index entry that
+			-- referenced this entity, so the next generation starts unmarked.
+			entity_used_as[entity_lo] = nil
+		end
+
 		local dense = record.dense
 		local i_swap = entity_index.alive_count
 		entity_index.alive_count = i_swap - 1
@@ -3917,8 +3923,8 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local function world_clear(world: world, entity: i53)
-		local record = entity_index_try_get_unsafe(entity)
-		if not record then
+		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
+		if not record or eindex_dense_array[record.dense] ~= entity then
 			return
 		end
 
@@ -3930,8 +3936,44 @@ local function world_new(DEBUG: boolean?)
 				on_remove(entity, id)
 			end
 		end
-		archetype_delete(world, record.archetype, record.row)
-		record.archetype = world.ROOT_ARCHETYPE
+
+		-- Inlined archetype_delete (mirrors world_delete); hooks may have
+		-- moved the entity, so re-read the archetype and row like the
+		-- original call did.
+		archetype = record.archetype
+		local row = record.row
+		local columns = archetype.columns
+		local entities = archetype.entities
+		local last = #entities
+		local move = entities[last]
+
+		if row ~= last then
+			local record_to_move = eindex_sparse_array[move % ECS_ENTITY_MASK]
+			if record_to_move and record_to_move.dense ~= 0 then
+				record_to_move.row = row
+			end
+
+			entities[row] = move
+		end
+
+		entities[last] = nil :: any
+
+		if row == last then
+			for _, column in columns do
+				if column ~= NULL_ARRAY then
+					column[last] = nil
+				end
+			end
+		else
+			for _, column in columns do
+				if column ~= NULL_ARRAY then
+					column[row] = column[last]
+					column[last] = nil
+				end
+			end
+		end
+
+		record.archetype = ROOT_ARCHETYPE
 		record.row = 0
 	end
 
