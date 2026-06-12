@@ -596,7 +596,9 @@ local function ENTITY_INDEX_NEW_ID(world: world): i53
 
 	local id = max_id + 1
 	local range_end = entity_index.range_end
-	ecs_assert(range_end == nil or id < range_end, ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
+	if range_end ~= nil and id >= range_end then
+		error(ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
+	end
 
 	entity_index.max_id = id
 	entity_index.alive_count = next_count
@@ -2774,17 +2776,22 @@ local function world_new(DEBUG: boolean?)
 		return r
 	end
 
-	local function inner_archetype_move(
+	-- Fused append + column move + record update. This is the per-entity hot
+	-- path for every archetype transition (set/add/remove), so the previous
+	-- new_entity/archetype_append/inner_archetype_move call chain is inlined
+	-- into a single function, and the duplicated dst_entities store is gone.
+	local function inner_entity_move(
 		entity: i53,
-		to: archetype,
-		dst_row: i24,
-		from: archetype,
-		src_row: i24
+		record: record,
+		to: archetype
 	)
-		local src_columns = from.columns
-		local dst_entities = to.entities
+		local src_row = record.row
+		local from = record.archetype
 		local src_entities = from.entities
+		local dst_entities = to.entities
+		local dst_row = #dst_entities + 1
 
+		local src_columns = from.columns
 		local last = #src_entities
 		local id_types = from.types
 		local columns_map = to.columns_map
@@ -2807,7 +2814,7 @@ local function world_new(DEBUG: boolean?)
 			local e2 = src_entities[last]
 			src_entities[src_row] = e2
 
-			local record2 = eindex_sparse_array[ECS_ENTITY_T_LO(e2)]
+			local record2 = eindex_sparse_array[e2 % ECS_ENTITY_MASK]
 			record2.row = src_row
 		else
 			for i, column in src_columns do
@@ -2828,17 +2835,6 @@ local function world_new(DEBUG: boolean?)
 		end
 		src_entities[last] = nil :: any
 		dst_entities[dst_row] = entity
-	end
-
-	local function inner_entity_move(
-		entity: i53,
-		record: record,
-		to: archetype
-	)
-		local sourceRow = record.row
-		local from = record.archetype
-		local dst_row = archetype_append(entity, to)
-		inner_archetype_move(entity, to, dst_row, from, sourceRow)
 		record.archetype = to
 		record.row = dst_row
 	end
@@ -2890,29 +2886,29 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local function world_set(world: world, entity: i53, id: i53, data): ()
-		local record = entity_index_try_get_unsafe(entity)
-		if not record then
+		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
+		if not record or eindex_dense_array[record.dense] ~= entity then
 			return
 		end
 
 		local src = record.archetype
 		local column = src.columns_map[id]
 		if column then
-			local idr = component_index[id]
 			column[record.row] = data
 
 			-- If the archetypes are the same it can avoid moving the entity
 			-- and just set the data directly.
-			local on_change = idr.on_change
+			local on_change = component_index[id].on_change
 			if on_change then
 				on_change(entity, id, data, src)
 			end
 		else
 			local to: archetype
 			local idr: componentrecord
-			if ECS_IS_PAIR(id) then
-				local first = ECS_PAIR_FIRST(id)
-				local wc = ECS_PAIR(first, EcsWildcard)
+			if id > ECS_PAIR_OFFSET then
+				-- Inlined ECS_PAIR(ECS_PAIR_FIRST(id), EcsWildcard): strip the
+				-- low 24 object bits from the pair id and substitute Wildcard.
+				local wc = id - ((id - ECS_PAIR_OFFSET) % ECS_ENTITY_MASK) + EcsWildcard
 				idr = component_index[wc]
 
 				local edge = archetype_edges[src.id]
@@ -2970,17 +2966,20 @@ local function world_new(DEBUG: boolean?)
 				idr = component_index[id]
 			end
 
-			local ROOT_ARCHETYPE = ROOT_ARCHETYPE
-			local src_is_root_archetype = src == ROOT_ARCHETYPE
-			if not src_is_root_archetype then
+			if src ~= ROOT_ARCHETYPE then
 				-- If there was a previous archetype, then the entity needs to move the archetype
 				inner_entity_move(entity, record, to)
 			else
-				new_entity(entity, record, to)
+				-- Inlined new_entity/archetype_append: fresh entities come from
+				-- the root archetype, which never has columns to move.
+				local dst_entities = to.entities
+				local dst_row = #dst_entities + 1
+				dst_entities[dst_row] = entity
+				record.archetype = to
+				record.row = dst_row
 			end
 
-			column = to.columns_map[id]
-			column[record.row] = data
+			to.columns_map[id][record.row] = data
 
 			local on_add = idr.on_add
 			if on_add then
@@ -2994,8 +2993,8 @@ local function world_new(DEBUG: boolean?)
 		entity: i53,
 		id: i53
 	): ()
-		local record = entity_index_try_get_unsafe(entity :: number)
-		if not record then
+		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
+		if not record or eindex_dense_array[record.dense] ~= entity then
 			return
 		end
 
@@ -3006,9 +3005,10 @@ local function world_new(DEBUG: boolean?)
 		local to: archetype
 		local idr: componentrecord
 
-		if ECS_IS_PAIR(id) then
-			local first = ECS_PAIR_FIRST(id)
-			local wc = ECS_PAIR(first, EcsWildcard)
+		if id > ECS_PAIR_OFFSET then
+			-- Inlined ECS_PAIR(ECS_PAIR_FIRST(id), EcsWildcard): strip the
+			-- low 24 object bits from the pair id and substitute Wildcard.
+			local wc = id - ((id - ECS_PAIR_OFFSET) % ECS_ENTITY_MASK) + EcsWildcard
 			idr = component_index[wc]
 
 			local edge = archetype_edges[src.id]
@@ -3069,14 +3069,17 @@ local function world_new(DEBUG: boolean?)
 			idr = component_index[id]
 		end
 
-		local ROOT_ARCHETYPE = ROOT_ARCHETYPE
-		local src_is_root_archetype = src == ROOT_ARCHETYPE
-		if not src_is_root_archetype then
+		if src ~= ROOT_ARCHETYPE then
 			inner_entity_move(entity, record, to)
-		else
-			if #to.types > 0 then
-				new_entity(entity, record, to)
-			end
+		elseif to ~= ROOT_ARCHETYPE then
+			-- Inlined new_entity/archetype_append; `to ~= ROOT_ARCHETYPE` is
+			-- equivalent to the old `#to.types > 0` check (the root archetype
+			-- is the only one with an empty type) without the length op.
+			local dst_entities = to.entities
+			local dst_row = #dst_entities + 1
+			dst_entities[dst_row] = entity
+			record.archetype = to
+			record.row = dst_row
 		end
 
 		local on_add = idr.on_add
@@ -3088,29 +3091,37 @@ local function world_new(DEBUG: boolean?)
 
 	local function world_get(world: world, entity: i53,
 		a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
-		local record = entity_index_try_get_unsafe(entity)
-		if not record then
+		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
+		if not record or eindex_dense_array[record.dense] ~= entity then
 			return nil
 		end
 
-		local archetype = record.archetype
-
-		local columns_map = archetype.columns_map
+		local columns_map = record.archetype.columns_map
 		local row = record.row
 
-		local va = fetch(a, columns_map, row)
-
+		-- fetch() inlined per component; branch on the column table, never on
+		-- the value (stored values may legitimately be `false`).
+		local ca = columns_map[a]
+		local va = if ca then ca[row] else nil
 		if not b then
 			return va
-		elseif not c then
-			return va, fetch(b, columns_map, row)
-		elseif not d then
-			return va, fetch(b, columns_map, row), fetch(c, columns_map, row)
-		elseif not e then
-			return va, fetch(b, columns_map, row), fetch(c, columns_map, row), fetch(d, columns_map, row)
-		else
-			error("args exceeded")
 		end
+		local cb = columns_map[b]
+		local vb = if cb then cb[row] else nil
+		if not c then
+			return va, vb
+		end
+		local cc = columns_map[c]
+		local vc = if cc then cc[row] else nil
+		if not d then
+			return va, vb, vc
+		end
+		local cd = columns_map[d]
+		local vd = if cd then cd[row] else nil
+		if not e then
+			return va, vb, vc, vd
+		end
+		error("args exceeded")
 	end
 
 	type Listener<T> =
@@ -3252,8 +3263,8 @@ local function world_new(DEBUG: boolean?)
 	local function world_has(world: World, entity: i53,
 		a: i53, b: i53?, c: i53?, d: i53?, e: i53?): boolean
 
-		local record = entity_index_try_get_unsafe(entity)
-		if not record then
+		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
+		if not record or eindex_dense_array[record.dense] ~= entity then
 			return false
 		end
 
@@ -3264,8 +3275,13 @@ local function world_new(DEBUG: boolean?)
 
 		local columns_map = archetype.columns_map
 
+		-- Fast path: the overwhelmingly common single-id check.
+		if b == nil then
+			return columns_map[a] ~= nil
+		end
+
 		return columns_map[a] ~= nil and
-			(b == nil or columns_map[b] ~= nil) and
+			columns_map[b] ~= nil and
 			(c == nil or columns_map[c] ~= nil) and
 			(d == nil or columns_map[d] ~= nil) and
 			(e == nil or error("args exceeded"))
@@ -3424,7 +3440,9 @@ local function world_new(DEBUG: boolean?)
 		end
 		local id = max_id + 1
 		local range_end = entity_index.range_end
-		ecs_assert(range_end == nil or id < range_end, ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
+		if range_end ~= nil and id >= range_end then
+			error(ECS_INTERNAL_ERROR_INCOMPATIBLE_ENTITY)
+		end
 		entity_index.max_id = id
 		entity_index.alive_count = next_count
 		dense_array[next_count] = id
@@ -3433,21 +3451,29 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local function world_remove(world: world, entity: i53, id: i53)
-		local record = entity_index_try_get_unsafe(entity)
-		if not record then
+		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
+		if not record or eindex_dense_array[record.dense] ~= entity then
 			return
 		end
 		local from = record.archetype
 
 		if from.columns_map[id] then
-			local idr = world.component_index[id]
-			local on_remove = idr.on_remove
+			local on_remove = component_index[id].on_remove
 
 			if on_remove then
 				on_remove(entity, id)
+				-- The hook may have moved the entity; refresh the source.
+				from = record.archetype
 			end
 
-			local to = archetype_traverse_remove(world, id, record.archetype)
+			-- Inlined archetype_traverse_remove using the captured upvalues.
+			local edge = archetype_edges[from.id]
+			local to = edge[id]
+			if to == nil then
+				to = find_archetype_without(world, from, id)
+				edge[id] = to
+				archetype_edges[to.id][id] = from
+			end
 
 			inner_entity_move(entity, record, to)
 		end
