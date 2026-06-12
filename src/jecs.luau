@@ -179,6 +179,11 @@ type record = {
 	archetype: archetype,
 	row: number,
 	dense: i24,
+	-- The canonical (generation-carrying) id this record currently belongs
+	-- to, maintained alongside dense_array so hot paths can validate a
+	-- handle with a single field compare instead of the dense_array load.
+	-- nil on records that were pre-populated but never made alive.
+	entity: i53?,
 }
 type entityindex = {
 	dense_array: Map<number, i53>,
@@ -619,7 +624,7 @@ local function ENTITY_INDEX_NEW_ID(world: world): i53
 	entity_index.max_id = id
 	entity_index.alive_count = next_count
 	dense_array[next_count] = id
-	sparse_array[id] = { dense = next_count, row = 0, archetype = ROOT_ARCHETYPE }
+	sparse_array[id] = { dense = next_count, row = 0, archetype = ROOT_ARCHETYPE, entity = id }
 
 	return id
 end
@@ -2923,7 +2928,7 @@ local function world_new(DEBUG: boolean?)
 
 	local function world_set(world: world, entity: i53, id: i53, data): ()
 		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
-		if not record or eindex_dense_array[record.dense] ~= entity then
+		if not record or record.entity ~= entity then
 			return
 		end
 
@@ -3030,7 +3035,7 @@ local function world_new(DEBUG: boolean?)
 		id: i53
 	): ()
 		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
-		if not record or eindex_dense_array[record.dense] ~= entity then
+		if not record or record.entity ~= entity then
 			return
 		end
 
@@ -3128,7 +3133,7 @@ local function world_new(DEBUG: boolean?)
 	local function world_get(world: world, entity: i53,
 		a: i53, b: i53?, c: i53?, d: i53?, e: i53?): ...any
 		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
-		if not record or eindex_dense_array[record.dense] ~= entity then
+		if not record or record.entity ~= entity then
 			return nil
 		end
 
@@ -3300,7 +3305,7 @@ local function world_new(DEBUG: boolean?)
 		a: i53, b: i53?, c: i53?, d: i53?, e: i53?): boolean
 
 		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
-		if not record or eindex_dense_array[record.dense] ~= entity then
+		if not record or record.entity ~= entity then
 			return false
 		end
 
@@ -3325,7 +3330,7 @@ local function world_new(DEBUG: boolean?)
 
 	local function world_target(world: world, entity: i53, relation: i53, index: number?): i53?
 		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
-		if not record or eindex_dense_array[record.dense] ~= entity then
+		if not record or record.entity ~= entity then
 			return nil
 		end
 
@@ -3378,7 +3383,7 @@ local function world_new(DEBUG: boolean?)
 
 	local function world_targets(world: world, entity: i53, relation: i53): () -> i53?
 		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
-		if not record or eindex_dense_array[record.dense] ~= entity then
+		if not record or record.entity ~= entity then
 			return NOOP
 		end
 
@@ -3425,7 +3430,7 @@ local function world_new(DEBUG: boolean?)
 	-- known, index is always 0, and parent lookups are a per-frame staple.
 	local function world_parent(world: world, entity: i53): i53?
 		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
-		if not record or eindex_dense_array[record.dense] ~= entity then
+		if not record or record.entity ~= entity then
 			return nil
 		end
 
@@ -3523,6 +3528,7 @@ local function world_new(DEBUG: boolean?)
 					alive_count += 1
 					entity_index.alive_count = alive_count
 					r.dense = alive_count
+					r.entity = entity
 					dense_array[alive_count] = entity
 					return entity
 				end
@@ -3533,6 +3539,7 @@ local function world_new(DEBUG: boolean?)
 					alive_count += 1
 					entity_index.alive_count = alive_count
 					r.dense = alive_count
+					r.entity = entity
 					dense_array[alive_count] = entity
 					return entity
 				end
@@ -3552,7 +3559,7 @@ local function world_new(DEBUG: boolean?)
 				entity_index.alive_count = alive_count
 				dense_array[alive_count] = entity
 
-				r = { dense = alive_count, row = 0, archetype = ROOT_ARCHETYPE }
+				r = { dense = alive_count, row = 0, archetype = ROOT_ARCHETYPE, entity = entity } :: record
 				sparse_array[index] = r
 
 				return entity
@@ -3577,13 +3584,13 @@ local function world_new(DEBUG: boolean?)
 		entity_index.max_id = id
 		entity_index.alive_count = next_count
 		dense_array[next_count] = id
-		sparse_array[id] = { dense = next_count, row = 0, archetype = ROOT_ARCHETYPE }
+		sparse_array[id] = { dense = next_count, row = 0, archetype = ROOT_ARCHETYPE, entity = id }
 		return id
 	end
 
 	local function world_remove(world: world, entity: i53, id: i53)
 		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
-		if not record or eindex_dense_array[record.dense] ~= entity then
+		if not record or record.entity ~= entity then
 			return
 		end
 		local from = record.archetype
@@ -3612,7 +3619,7 @@ local function world_new(DEBUG: boolean?)
 
 	local function world_delete(world: world, entity: i53)
 		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
-		if not record or eindex_dense_array[record.dense] ~= entity then
+		if not record or record.entity ~= entity then
 			return
 		end
 
@@ -3917,14 +3924,16 @@ local function world_new(DEBUG: boolean?)
 		-- to 0 at ECS_GENERATION_MASK. (The unified formula is exactly
 		-- equivalent to the original's two branches for every input.)
 		local next_gen = entity // ECS_ENTITY_MASK + 1
-		eindex_dense_array[i_swap] = if next_gen >= ECS_GENERATION_MASK
+		local bumped = if next_gen >= ECS_GENERATION_MASK
 			then entity_lo
 			else entity_lo + next_gen * ECS_ENTITY_MASK
+		eindex_dense_array[i_swap] = bumped
+		record.entity = bumped
 	end
 
 	local function world_clear(world: world, entity: i53)
 		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
-		if not record or eindex_dense_array[record.dense] ~= entity then
+		if not record or record.entity ~= entity then
 			return
 		end
 
@@ -3987,17 +3996,14 @@ local function world_new(DEBUG: boolean?)
 
 	local function world_contains(world: world, entity: i53): boolean
 		-- Inlined entity_index_is_alive -> entity_index_try_get: alive means
-		-- the sparse record exists, is allocated (dense ~= 0), sits within
-		-- the alive range, and the dense slot holds this exact generation.
+		-- the record currently belongs to this exact generation AND sits
+		-- within the alive range (record.entity matching implies dense ~= 0,
+		-- since only alive-making paths assign it).
 		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
-		if not record then
+		if not record or record.entity ~= entity then
 			return false
 		end
-		local dense = record.dense
-		if dense == 0 or dense > entity_index.alive_count then
-			return false
-		end
-		return eindex_dense_array[dense] == entity
+		return record.dense <= entity_index.alive_count
 	end
 
 	local function world_cleanup(world: world)
@@ -4225,6 +4231,7 @@ local function entity_index_ensure(entity_index: entityindex, e: i53)
 			alive_count += 1
 			entity_index.alive_count = alive_count
 			r.dense = alive_count
+			r.entity = e
 			eindex_dense_array[alive_count] = e
 			return e
 		end
@@ -4235,6 +4242,7 @@ local function entity_index_ensure(entity_index: entityindex, e: i53)
 			alive_count += 1
 			entity_index.alive_count = alive_count
 			r.dense = alive_count
+			r.entity = e
 			eindex_dense_array[alive_count] = e
 			return e
 		end
@@ -4260,7 +4268,7 @@ local function entity_index_ensure(entity_index: entityindex, e: i53)
 		entity_index.alive_count = alive_count
 		eindex_dense_array[alive_count] = e
 
-		r = { dense = alive_count } :: record
+		r = { dense = alive_count, entity = e } :: record
 		eindex_sparse_array[index] = r
 
 		return e
