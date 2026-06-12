@@ -3426,8 +3426,8 @@ local function world_new(DEBUG: boolean?)
 	local NOOP = NOOP :: () -> i53
 
 	local function world_targets(world: world, entity: i53, relation: i53): () -> i53?
-		local record = entity_index_try_get_unsafe(entity)
-		if not record then
+		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
+		if not record or eindex_dense_array[record.dense] ~= entity then
 			return NOOP
 		end
 
@@ -3436,9 +3436,9 @@ local function world_new(DEBUG: boolean?)
 			return NOOP
 		end
 
-		local r = ECS_PAIR(relation, EcsWildcard)
-		local ct_idx = world.component_index
-		local idr = ct_idx[r]
+		-- Inlined ECS_PAIR(relation, EcsWildcard).
+		local r = EcsWildcard + (relation % ECS_ENTITY_MASK) * ECS_ENTITY_MASK + ECS_PAIR_OFFSET
+		local idr = component_index[r]
 
 		if not idr then
 			return NOOP
@@ -3454,14 +3454,14 @@ local function world_new(DEBUG: boolean?)
 		local end_count = nth + count
 
 		local archetype_types = archetype.types
-		local sparse_array = entity_index.sparse_array
-		local dense_array = entity_index.dense_array
 
 		return function(): i53?
 			if nth == end_count then
 				return nil
 			end
-			local target = dense_array[sparse_array[ECS_PAIR_SECOND(archetype_types[nth])].dense]
+			-- Inlined ECS_PAIR_SECOND(archetype_types[nth]).
+			local target = eindex_dense_array[
+				eindex_sparse_array[(archetype_types[nth] - ECS_PAIR_OFFSET) % ECS_ENTITY_MASK].dense]
 			nth += 1
 			return target
 		end
@@ -3616,8 +3616,8 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local function world_delete(world: world, entity: i53)
-		local record = entity_index_try_get_unsafe(entity)
-		if not record then
+		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
+		if not record or eindex_dense_array[record.dense] ~= entity then
 			return
 		end
 
@@ -3633,13 +3633,50 @@ local function world_new(DEBUG: boolean?)
 					on_remove(entity, id, true)
 				end
 			end
-			archetype_delete(world, record.archetype, record.row)
+
+			-- Inlined archetype_delete (incl. the fast-delete loops and the
+			-- swapped record lookup); hooks may have moved the entity, so
+			-- re-read the archetype and row like the original call did.
+			archetype = record.archetype
+			local row = record.row
+			local columns = archetype.columns
+			local entities = archetype.entities
+			local last = #entities
+			local move = entities[last]
+
+			if row ~= last then
+				local record_to_move = eindex_sparse_array[move % ECS_ENTITY_MASK]
+				if record_to_move and record_to_move.dense ~= 0 then
+					record_to_move.row = row
+				end
+
+				entities[row] = move
+			end
+
+			entities[last] = nil :: any
+
+			if row == last then
+				for _, column in columns do
+					if column ~= NULL_ARRAY then
+						column[last] = nil
+					end
+				end
+			else
+				for _, column in columns do
+					if column ~= NULL_ARRAY then
+						column[row] = column[last]
+						column[last] = nil
+					end
+				end
+			end
 		end
 
-		local component_index = world.component_index
-		local archetypes = world.archetypes
-		local tgt = ECS_PAIR(EcsWildcard, entity)
-		local rel = ECS_PAIR(entity, EcsWildcard)
+		-- component_index/archetypes resolve to the world_new upvalues (the
+		-- same tables world.component_index/world.archetypes point at), and
+		-- the two wildcard probe ids are inlined ECS_PAIR calls.
+		local entity_lo = entity % ECS_ENTITY_MASK
+		local tgt = entity_lo + EcsWildcard * ECS_ENTITY_MASK + ECS_PAIR_OFFSET
+		local rel = EcsWildcard + entity_lo * ECS_ENTITY_MASK + ECS_PAIR_OFFSET
 
 		local idr_t = component_index[tgt]
 		local idr = component_index[entity]
@@ -3857,14 +3894,20 @@ local function world_new(DEBUG: boolean?)
 		entity_index.alive_count = i_swap - 1
 
 		local e_swap = eindex_dense_array[i_swap]
-		local r_swap = entity_index_try_get_any(e_swap) :: record
+		local r_swap = eindex_sparse_array[e_swap % ECS_ENTITY_MASK]
 		r_swap.dense = dense
 		record.archetype = ROOT_ARCHETYPE
 		record.row = 0
 		record.dense = i_swap
 
 		eindex_dense_array[dense] = e_swap
-		eindex_dense_array[i_swap] = ECS_GENERATION_INC(entity)
+		-- Inlined ECS_GENERATION_INC(entity): bump the generation, wrapping
+		-- to 0 at ECS_GENERATION_MASK. (The unified formula is exactly
+		-- equivalent to the original's two branches for every input.)
+		local next_gen = entity // ECS_ENTITY_MASK + 1
+		eindex_dense_array[i_swap] = if next_gen >= ECS_GENERATION_MASK
+			then entity_lo
+			else entity_lo + next_gen * ECS_ENTITY_MASK
 	end
 
 	local function world_clear(world: world, entity: i53)
