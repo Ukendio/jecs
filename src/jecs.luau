@@ -2559,43 +2559,6 @@ local function world_query(world: World, ...)
 
 	return q
 end
-local function world_each(world: world, id: i53): () -> i53
-	local idr = world.component_index[id]
-	if not idr then
-		return NOOP :: () -> i53
-	end
-
-	local records = idr.records
-	local archetypes = world.archetypes
-	local archetype_id = next(records, nil) :: number
-	local archetype = archetypes[archetype_id]
-	if not archetype then
-		return NOOP :: () -> i53
-	end
-
-	local entities = archetype.entities
-	local row = #entities
-
-	return function()
-		local entity = entities[row]
-		while not entity do
-			archetype_id = next(records, archetype_id) :: number
-			if not archetype_id then
-				return nil :: any
-			end
-			archetype = archetypes[archetype_id]
-			entities = archetype.entities
-			row = #entities
-			entity = entities[row]
-		end
-		row -= 1
-		return entity
-	end
-end
-
-local function world_children(world: world, parent: i53)
-	return world_each(world, ECS_PAIR(EcsChildOf, parent))
-end
 
 local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: { any })
 	local entity_index = world.entity_index
@@ -3511,12 +3474,55 @@ local function world_new(DEBUG: boolean?)
 		return eindex_dense_array[dense]
 	end
 
+	-- World-local: component_index/archetypes as upvalues instead of world
+	-- field reads per call. The iterator body is unchanged.
+	local function world_each(world: world, id: i53): () -> i53
+		local idr = component_index[id]
+		if not idr then
+			return NOOP :: () -> i53
+		end
+
+		local records = idr.records
+		local archetype_id = next(records, nil) :: number
+		local archetype = archetypes[archetype_id]
+		if not archetype then
+			return NOOP :: () -> i53
+		end
+
+		local entities = archetype.entities
+		local row = #entities
+
+		return function()
+			local entity = entities[row]
+			while not entity do
+				archetype_id = next(records, archetype_id) :: number
+				if not archetype_id then
+					return nil :: any
+				end
+				archetype = archetypes[archetype_id]
+				entities = archetype.entities
+				row = #entities
+				entity = entities[row]
+			end
+			row -= 1
+			return entity
+		end
+	end
+
+	-- The ChildOf pair base is constant: pair(ChildOf, parent) is just
+	-- parent's low bits plus this offset.
+	local childof_pair_base: i53 = EcsChildOf * ECS_ENTITY_MASK + ECS_PAIR_OFFSET
+
+	local function world_children(world: world, parent: i53)
+		return world_each(world, parent % ECS_ENTITY_MASK + childof_pair_base)
+	end
+
 	local function world_entity(world: world, entity: i53?): i53
 		local sparse_array = eindex_sparse_array
 		local dense_array = eindex_dense_array
-		
+
 		if entity then
-			local index = ECS_ID(entity)
+			local index = entity % ECS_ENTITY_MASK
 			local alive_count = entity_index.alive_count
 			local r = sparse_array[index]
 			if r then
@@ -3938,7 +3944,18 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local function world_contains(world: world, entity: i53): boolean
-		return entity_index_is_alive(entity_index, entity)
+		-- Inlined entity_index_is_alive -> entity_index_try_get: alive means
+		-- the sparse record exists, is allocated (dense ~= 0), sits within
+		-- the alive range, and the dense slot holds this exact generation.
+		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
+		if not record then
+			return false
+		end
+		local dense = record.dense
+		if dense == 0 or dense > entity_index.alive_count then
+			return false
+		end
+		return eindex_dense_array[dense] == entity
 	end
 
 	local function world_cleanup(world: world)
