@@ -141,13 +141,24 @@ export type observer = {
 	query: query,
 }
 
+-- Cached column-relocation plan for one (from -> to) archetype transition:
+-- parallel arrays of the source's data columns and their matching destination
+-- columns (false when the component is dropped by the transition). Column
+-- tables are stable for an archetype's lifetime and archetype ids are never
+-- reused, so a plan stays valid as long as both archetypes exist.
+type moveplan = {
+	srcs: { Column },
+	dsts: { any },
+}
+
 type archetype = {
 	id: number,
 	types: { i53 },
 	type: string,
 	entities: { i53 },
 	columns: { Column },
-	columns_map: { [i53]: Column }
+	columns_map: { [i53]: Column },
+	move_plans: Map<i53, moveplan>?,
 }
 
 type componentrecord = {
@@ -1244,6 +1255,12 @@ local function archetype_destroy(world: world, archetype: archetype)
 	for id, node in edges do
 		archetype_edges[node.id][id] = nil
 		edges[id] = nil
+		-- Drop neighbors' cached move plans into this archetype; this
+		-- archetype's own plans die with it.
+		local node_plans = node.move_plans
+		if node_plans then
+			node_plans[archetype.id] = nil
+		end
 	end
 
 	local archetype_id = archetype.id
@@ -2780,6 +2797,14 @@ local function world_new(DEBUG: boolean?)
 	-- path for every archetype transition (set/add/remove), so the previous
 	-- new_entity/archetype_append/inner_archetype_move call chain is inlined
 	-- into a single function, and the duplicated dst_entities store is gone.
+	--
+	-- Column relocation runs off a cached per-transition move plan (see the
+	-- moveplan type): the first move along a (from -> to) transition resolves
+	-- each source column's destination via columns_map once, every later move
+	-- replays the plan with plain array reads. Plans for transitions into a
+	-- destroyed archetype are dropped in archetype_destroy via its edges;
+	-- entries created by non-edge moves (delete cascades) die with the source
+	-- archetype, which those paths destroy immediately after.
 	local function inner_entity_move(
 		entity: i53,
 		record: record,
@@ -2790,49 +2815,111 @@ local function world_new(DEBUG: boolean?)
 		local src_entities = from.entities
 		local dst_entities = to.entities
 		local dst_row = #dst_entities + 1
-
-		local src_columns = from.columns
 		local last = #src_entities
-		local id_types = from.types
-		local columns_map = to.columns_map
+		local src_columns = from.columns
 
-		if src_row ~= last then
-			for i, column in src_columns do
-				if column == NULL_ARRAY then
-					continue
+		if #src_columns < 3 then
+			-- Small source archetype: the plan-cache fetch costs more than
+			-- the one or two columns_map lookups it would save.
+			local id_types = from.types
+			local columns_map = to.columns_map
+
+			if src_row ~= last then
+				for i, column in src_columns do
+					if column == NULL_ARRAY then
+						continue
+					end
+					local dst_column = columns_map[id_types[i]]
+
+					if dst_column then
+						dst_column[dst_row] = column[src_row]
+					end
+
+					column[src_row] = column[last]
+					column[last] = nil
 				end
-				local dst_column = columns_map[id_types[i]]
 
-				if dst_column then
-					dst_column[dst_row] = column[src_row]
+				local e2 = src_entities[last]
+				src_entities[src_row] = e2
+
+				local record2 = eindex_sparse_array[e2 % ECS_ENTITY_MASK]
+				record2.row = src_row
+			else
+				for i, column in src_columns do
+					if column == NULL_ARRAY then
+						continue
+					end
+					-- Destination may not exist, e.g. when removing.
+					local dst_column = columns_map[id_types[i]]
+
+					if dst_column then
+						dst_column[dst_row] = column[src_row]
+					end
+
+					column[last] = nil
 				end
-
-				column[src_row] = column[last]
-				column[last] = nil
+			end
+		else
+			local existing_plans = from.move_plans
+			local plans: Map<i53, moveplan>
+			if existing_plans then
+				plans = existing_plans
+			else
+				plans = {}
+				from.move_plans = plans
+			end
+			local plan = plans[to.id]
+			local plan_srcs: { Column }
+			local plan_dsts: { any }
+			if plan then
+				plan_srcs = plan.srcs
+				plan_dsts = plan.dsts
+			else
+				plan_srcs = {}
+				plan_dsts = {}
+				local id_types = from.types
+				local columns_map = to.columns_map
+				local n = 0
+				for i, column in src_columns do
+					if column == NULL_ARRAY then
+						continue
+					end
+					n += 1
+					plan_srcs[n] = column
+					-- Destination may not exist, e.g. when removing.
+					plan_dsts[n] = columns_map[id_types[i]] or false
+				end
+				plans[to.id] = { srcs = plan_srcs, dsts = plan_dsts }
 			end
 
-			local e2 = src_entities[last]
-			src_entities[src_row] = e2
+			if src_row ~= last then
+				for k, column in plan_srcs do
+					local dst_column = plan_dsts[k]
+					if dst_column then
+						dst_column[dst_row] = column[src_row]
+					end
 
-			local record2 = eindex_sparse_array[e2 % ECS_ENTITY_MASK]
-			record2.row = src_row
-		else
-			for i, column in src_columns do
-				if column == NULL_ARRAY then
-					continue
-				end
-				-- Retrieves the new column index from the source archetype's record from each component
-				-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
-				local dst_column = columns_map[id_types[i]]
-
-				-- Sometimes target column may not exist, e.g. when you remove a component.
-				if dst_column then
-					dst_column[dst_row] = column[src_row]
+					column[src_row] = column[last]
+					column[last] = nil
 				end
 
-				column[last] = nil
+				local e2 = src_entities[last]
+				src_entities[src_row] = e2
+
+				local record2 = eindex_sparse_array[e2 % ECS_ENTITY_MASK]
+				record2.row = src_row
+			else
+				for k, column in plan_srcs do
+					local dst_column = plan_dsts[k]
+					if dst_column then
+						dst_column[dst_row] = column[src_row]
+					end
+
+					column[last] = nil
+				end
 			end
 		end
+
 		src_entities[last] = nil :: any
 		dst_entities[dst_row] = entity
 		record.archetype = to
@@ -3288,8 +3375,8 @@ local function world_new(DEBUG: boolean?)
 	end
 
 	local function world_target(world: world, entity: i53, relation: i53, index: number?): i53?
-		local record = entity_index_try_get_unsafe(entity)
-		if not record then
+		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
+		if not record or eindex_dense_array[record.dense] ~= entity then
 			return nil
 		end
 
@@ -3298,8 +3385,9 @@ local function world_new(DEBUG: boolean?)
 			return nil
 		end
 
-		local r = ECS_PAIR(relation, EcsWildcard)
-		local idr = world.component_index[r]
+		-- Inlined ECS_PAIR(relation, EcsWildcard).
+		local r = EcsWildcard + (relation % ECS_ENTITY_MASK) * ECS_ENTITY_MASK + ECS_PAIR_OFFSET
+		local idr = component_index[r]
 
 		if not idr then
 			return nil
@@ -3323,8 +3411,16 @@ local function world_new(DEBUG: boolean?)
 			return nil
 		end
 
-		return entity_index_get_alive(world.entity_index,
-		    ECS_PAIR_SECOND(nth))
+		-- Inlined entity_index_get_alive(entity_index, ECS_PAIR_SECOND(nth)).
+		local tr = eindex_sparse_array[(nth - ECS_PAIR_OFFSET) % ECS_ENTITY_MASK]
+		if not tr then
+			return nil
+		end
+		local dense = tr.dense
+		if dense == 0 or dense > entity_index.alive_count then
+			return nil
+		end
+		return eindex_dense_array[dense]
 	end
 
 	local NOOP = NOOP :: () -> i53
@@ -3371,8 +3467,48 @@ local function world_new(DEBUG: boolean?)
 		end
 	end
 
+	-- The ChildOf wildcard pair id is a constant for the world's lifetime.
+	local childof_wildcard: i53 = ECS_PAIR(EcsChildOf, EcsWildcard)
+
+	-- Specialized world_target(world, entity, EcsChildOf, 0): the relation is
+	-- known, index is always 0, and parent lookups are a per-frame staple.
 	local function world_parent(world: world, entity: i53): i53?
-		return world_target(world, entity, EcsChildOf, 0)
+		local record = eindex_sparse_array[entity % ECS_ENTITY_MASK]
+		if not record or eindex_dense_array[record.dense] ~= entity then
+			return nil
+		end
+
+		local archetype = record.archetype
+		if not archetype then
+			return nil
+		end
+
+		local idr = component_index[childof_wildcard]
+		if not idr then
+			return nil
+		end
+
+		local archetype_id = archetype.id
+		local count = idr.counts[archetype_id]
+		if not count then
+			return nil
+		end
+
+		local nth = archetype.types[idr.records[archetype_id]]
+		if not nth then
+			return nil
+		end
+
+		-- Inlined entity_index_get_alive(entity_index, ECS_PAIR_SECOND(nth)).
+		local tr = eindex_sparse_array[(nth - ECS_PAIR_OFFSET) % ECS_ENTITY_MASK]
+		if not tr then
+			return nil
+		end
+		local dense = tr.dense
+		if dense == 0 or dense > entity_index.alive_count then
+			return nil
+		end
+		return eindex_dense_array[dense]
 	end
 
 	local function world_entity(world: world, entity: i53?): i53
