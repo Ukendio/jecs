@@ -2976,6 +2976,10 @@ local function world_new(DEBUG: boolean?)
 				-- If there was a previous archetype, then the entity needs to move the archetype
 				inner_entity_move(entity, record, to)
 			else
+				-- An entity moved back to root keeps a real slot in root.entities; remove it before the append, else a later delete of any root entity stomps this record's row.
+				if record.row ~= 0 then
+					archetype_delete(world, src, record.row)
+				end
 				new_entity(entity, record, to)
 			end
 
@@ -3074,6 +3078,10 @@ local function world_new(DEBUG: boolean?)
 		if not src_is_root_archetype then
 			inner_entity_move(entity, record, to)
 		else
+			-- An entity moved back to root keeps a real slot in root.entities; remove it before the append, else a later delete of any root entity stomps this record's row.
+			if record.row ~= 0 then
+				archetype_delete(world, src, record.row)
+			end
 			if #to.types > 0 then
 				new_entity(entity, record, to)
 			end
