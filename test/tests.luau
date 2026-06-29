@@ -3300,6 +3300,29 @@ TEST("world:targets()", function()
 
 		CHECK(count == #alive)
 	end
+	do CASE "should skip targets deleted after the iterator is created"
+		local world = jecs.world()
+
+		local ROOT = world:entity()
+		local e = world:entity()
+		local a, b, c = world:entity(), world:entity(), world:entity()
+		world:add(e, pair(ROOT, a))
+		world:add(e, pair(ROOT, b))
+		world:add(e, pair(ROOT, c))
+
+		local iter = world:targets(e, ROOT)
+		world:delete(b)
+
+		local seen = {}
+		for t in iter do
+			CHECK(world:contains(t))
+			seen[#seen + 1] = t
+		end
+
+		CHECK(#seen == 2)
+		CHECK(seen[1] == a)
+		CHECK(seen[2] == c)
+	end
 	do CASE "should properly handle rapid add/remove calls"
 		local world = jecs.world()
 

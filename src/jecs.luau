@@ -3342,16 +3342,16 @@ local function world_new(DEBUG: boolean?)
 		local end_count = nth + count
 
 		local archetype_types = archetype.types
-		local sparse_array = entity_index.sparse_array
-		local dense_array = entity_index.dense_array
 
 		return function(): i53?
-			if nth == end_count then
-				return nil
+			while nth ~= end_count do
+				local target = entity_index_get_alive(entity_index, ECS_PAIR_SECOND(archetype_types[nth]))
+				nth += 1
+				if target then
+					return target
+				end
 			end
-			local target = dense_array[sparse_array[ECS_PAIR_SECOND(archetype_types[nth])].dense]
-			nth += 1
-			return target
+			return nil
 		end
 	end
 
