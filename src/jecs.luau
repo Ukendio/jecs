@@ -649,70 +649,69 @@ end
 local function archetype_move(
 	entity_index: entityindex,
 	entity: i53,
-	to: archetype,
+	dst: archetype,
 	dst_row: i24,
-	from: archetype,
+	src: archetype,
 	src_row: i24
 )
-	local src_columns = from.columns
-	local dst_entities = to.entities
-	local src_entities = from.entities
+	local src_entities = src.entities
+	local src_columns = src.columns
+	local src_types = src.types
+	local dst_entities = dst.entities
+	local dst_columns = dst.columns
+	local dst_types = dst.types
 
-	local last = #src_entities
-	local id_types = from.types
-	local columns_map = to.columns_map
-
-	if src_row ~= last then
-		-- If the entity is the last row in the archetype then swapping it would be meaningless.
-
-		for i, column in src_columns do
-			if column == NULL_ARRAY then
+	local src_last = #src_entities
+	-- If the entity is the last row in the archetype then swapping it would be meaningless.
+	if src_row ~= src_last then
+		local dst_index = 1
+		for src_index, src_column in src_columns do
+			if table.isfrozen(src_column) then
 				continue
 			end
-			-- Retrieves the new column index from the source archetype's record from each component
-			-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
-			local dst_column = columns_map[id_types[i]]
-
-			-- Sometimes target column may not exist, e.g. when you remove a component.
-			if dst_column then
-				dst_column[dst_row] = column[src_row]
+			local src_id = src_types[src_index]
+			local dst_id = dst_types[dst_index]
+			while dst_id and dst_id < src_id do
+				dst_index += 1
+				dst_id = dst_types[dst_index]
 			end
-
-			-- Swap rempves columns to ensure there are no holes in the archetype.
-			column[src_row] = column[last]
-			column[last] = nil
+			if dst_id == src_id then
+				dst_columns[dst_index][dst_row] = src_column[src_row]
+			end
+			src_column[src_row] = src_column[src_last]
+			src_column[src_last] = nil
 		end
-
 
 		-- Move the entity from the source to the destination archetype.
 		-- Because we have swapped columns we now have to update the records
 		-- corresponding to the entities' rows that were swapped.
 
-		local e2 = src_entities[last]
+		local e2 = src_entities[src_last]
 		src_entities[src_row] = e2
 
 		local sparse_array = entity_index.sparse_array
 		local record2 = sparse_array[ECS_ID(e2)]
 		record2.row = src_row
 	else
-		for i, column in src_columns do
-			if column == NULL_ARRAY then
+		local dst_index = 1
+		for src_index, src_column in src_columns do
+			if table.isfrozen(src_column) then
 				continue
 			end
-			-- Retrieves the new column index from the source archetype's record from each component
-			-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
-			local dst_column = columns_map[id_types[i]]
-
-			-- Sometimes target column may not exist, e.g. when you remove a component.
-			if dst_column then
-				dst_column[dst_row] = column[src_row]
+			local src_id = src_types[src_index]
+			local dst_id = dst_types[dst_index]
+			while dst_id and dst_id < src_id do
+				dst_index += 1
+				dst_id = dst_types[dst_index]
 			end
-
-			column[last] = nil
+			if dst_id == src_id then
+				dst_columns[dst_index][dst_row] = src_column[src_row]
+			end
+			src_column[src_last] = nil
 		end
 	end
 
-	src_entities[last] = nil
+	src_entities[src_last] = nil
 	dst_entities[dst_row] = entity
 end
 
@@ -2776,57 +2775,69 @@ local function world_new(DEBUG: boolean?)
 
 	local function inner_archetype_move(
 		entity: i53,
-		to: archetype,
+		dst: archetype,
 		dst_row: i24,
-		from: archetype,
+		src: archetype,
 		src_row: i24
 	)
-		local src_columns = from.columns
-		local dst_entities = to.entities
-		local src_entities = from.entities
+		local src_entities = src.entities
+		local src_columns = src.columns
+		local src_types = src.types
+		local dst_entities = dst.entities
+		local dst_columns = dst.columns
+		local dst_types = dst.types
 
-		local last = #src_entities
-		local id_types = from.types
-		local columns_map = to.columns_map
-
-		if src_row ~= last then
-			for i, column in src_columns do
-				if column == NULL_ARRAY then
+		local src_last = #src_entities
+		-- If the entity is the last row in the archetype then swapping it would be meaningless.
+		if src_row ~= src_last then
+			local dst_index = 1
+			for src_index, src_column in src_columns do
+				if table.isfrozen(src_column) then
 					continue
 				end
-				local dst_column = columns_map[id_types[i]]
-
-				if dst_column then
-					dst_column[dst_row] = column[src_row]
+				local src_id = src_types[src_index]
+				local dst_id = dst_types[dst_index]
+				while dst_id and dst_id < src_id do
+					dst_index += 1
+					dst_id = dst_types[dst_index]
 				end
-
-				column[src_row] = column[last]
-				column[last] = nil
+				if dst_id == src_id then
+					dst_columns[dst_index][dst_row] = src_column[src_row]
+				end
+				src_column[src_row] = src_column[src_last]
+				src_column[src_last] = nil
 			end
 
-			local e2 = src_entities[last]
+			-- Move the entity from the source to the destination archetype.
+			-- Because we have swapped columns we now have to update the records
+			-- corresponding to the entities' rows that were swapped.
+
+			local e2 = src_entities[src_last]
 			src_entities[src_row] = e2
 
-			local record2 = eindex_sparse_array[ECS_ENTITY_T_LO(e2)]
+			local sparse_array = entity_index.sparse_array
+			local record2 = sparse_array[ECS_ID(e2)]
 			record2.row = src_row
 		else
-			for i, column in src_columns do
-				if column == NULL_ARRAY then
+			local dst_index = 1
+			for src_index, src_column in src_columns do
+				if table.isfrozen(src_column) then
 					continue
 				end
-				-- Retrieves the new column index from the source archetype's record from each component
-				-- We have to do this because the columns are tightly packed and indexes may not correspond to each other.
-				local dst_column = columns_map[id_types[i]]
-
-				-- Sometimes target column may not exist, e.g. when you remove a component.
-				if dst_column then
-					dst_column[dst_row] = column[src_row]
+				local src_id = src_types[src_index]
+				local dst_id = dst_types[dst_index]
+				while dst_id and dst_id < src_id do
+					dst_index += 1
+					dst_id = dst_types[dst_index]
 				end
-
-				column[last] = nil
+				if dst_id == src_id then
+					dst_columns[dst_index][dst_row] = src_column[src_row]
+				end
+				src_column[src_last] = nil
 			end
 		end
-		src_entities[last] = nil :: any
+
+		src_entities[src_last] = nil
 		dst_entities[dst_row] = entity
 	end
 
