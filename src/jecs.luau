@@ -1099,12 +1099,11 @@ local function find_archetype_without(
 	node: archetype,
 	id: i53
 ): archetype
-	local id_types = node.types
-	local at = table.find(id_types, id)
+	local at = world.component_index[id].records[node.id]
 	if at == nil then
 		return node
 	end
-	local dst = table.clone(id_types)
+	local dst = table.clone(node.types)
 	table.remove(dst, at)
 	return archetype_ensure(world, dst)
 end
