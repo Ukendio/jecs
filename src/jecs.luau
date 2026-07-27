@@ -289,7 +289,7 @@ export type World = {
 
 	--- Returns whether the entity has the ID.
 	has: (<T, a>(World, Entity<T>, Component<a>) -> boolean)
-		& (<T, a, b>(World, Entity<T>, Component<a>, Component<a>) -> boolean)
+		& (<T, a, b>(World, Entity<T>, Component<a>, Component<b>) -> boolean)
 		& (<T, a, b, c>(World, Entity<T>, Component<a>, Component<b>, Component<c>) -> boolean)
 		& <T, a, b, c, d>(World, Entity<T>, Component<a>, Component<b>, Component<c>, Component<d>) -> boolean,
 
