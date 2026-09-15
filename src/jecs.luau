@@ -1243,6 +1243,7 @@ local function archetype_destroy(world: world, archetype: archetype)
 		archetype_edges[node.id][id] = nil
 		edges[id] = nil
 	end
+	archetype_edges[archetype.id] = nil
 
 	local archetype_id = archetype.id
 	world.archetypes[archetype_id] = nil :: any
