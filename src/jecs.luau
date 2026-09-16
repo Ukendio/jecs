@@ -1247,15 +1247,33 @@ local function archetype_destroy(world: world, archetype: archetype)
 	local archetype_id = archetype.id
 	world.archetypes[archetype_id] = nil :: any
 	world.archetype_index[archetype.type] = nil :: any
+	archetype_edges[archetype_id] = nil :: any
 	local columns_map = archetype.columns_map
 
 	for id in columns_map do
 		local idr = component_index[id]
 		idr.records[archetype_id] = nil :: any
+		-- archetype_create bumps size once per matching column, so the (R, *) and
+		-- (*, T) records of an archetype with several such pairs were bumped more
+		-- than once; counts[archetype_id] holds exactly that number.
+		idr.size -= idr.counts[archetype_id]
 		idr.counts[archetype_id] = nil
-		idr.size -= 1
+		local cache = idr.cache
+		local cache_index = table.find(cache, archetype_id)
+		if cache_index then
+			local last = #cache
+			cache[cache_index] = cache[last]
+			cache[last] = nil
+		end
 		if idr.size == 0 then
 			component_index[id] = nil :: any
+			if ECS_IS_PAIR(id) then
+				local idr_r = component_index[ECS_PAIR(ECS_PAIR_FIRST(id), EcsWildcard)]
+				local wildcard_pairs = if idr_r then idr_r.wildcard_pairs else nil
+				if wildcard_pairs then
+					wildcard_pairs[id] = nil
+				end
+			end
 		end
 		local observer_list = find_observers(world, EcsOnArchetypeDelete, id)
 		if not observer_list then
