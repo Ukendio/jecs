@@ -40,7 +40,7 @@ print(record)
 	Underneath the ECS the entity ID and its record will be stored in two separate arrays.
 	A dense array and a sparse array. Other than the fact that there is
 	two arrays is an unimportant implementation detail.
-	We just use these distinct terms to differentiate tnem. The format is:
+	We just use these distinct terms to differentiate them. The format is:
 
 		dense_array: { u53 }
 		sparse_array: { [u24]: record }
