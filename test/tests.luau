@@ -288,19 +288,13 @@ TEST("Ensure archetype edges get cleaned", function()
 
 	world:delete(B)
 
+	-- [A, B] is empty and destroyed: its edge table is removed, not just emptied.
 	CHECK(edges[arch_a.id][B] == nil)
-	CHECK(edges[arch_ab.id][A] == nil)
-	for _ in edges[arch_ab.id] do
-		CHECK(false)
-	end
+	CHECK(edges[arch_ab.id] == nil)
 
 	world:delete(A)
 
-	CHECK(edges[arch_a.id][B] == nil)
-	CHECK(edges[arch_a.id][A] == nil)
-	for _ in edges[arch_a.id] do
-		CHECK(false)
-	end
+	CHECK(edges[arch_a.id] == nil)
 end)
 
 TEST("repeated entity cached query", function()
@@ -3749,6 +3743,150 @@ TEST("wildcard query", function()
 			counter += 1
 		end
 		CHECK(counter == 1)
+	end
+end)
+
+TEST("archetype_destroy releases every reference to the archetype", function()
+	local function count(map)
+		local n = 0
+		for _ in map do
+			n += 1
+		end
+		return n
+	end
+
+	local world = jecs.world()
+
+	local A = world:component()
+	local B = world:component()
+	local R = world:component()
+
+	local targets = {}
+	for i = 1, 100 do
+		targets[i] = world:entity()
+	end
+
+	-- Two entities keep [A], [A, (R, target_1)] and the (R, *) record alive for the whole run.
+	local keeper_a = world:entity()
+	world:set(keeper_a, A, 0)
+	local keeper_r = world:entity()
+	world:set(keeper_r, A, 0)
+	world:add(keeper_r, pair(R, targets[1]))
+
+	-- Reclaim the empty builtin archetypes first so the baseline is stable.
+	world:cleanup()
+	local archetypes_before = count(world.archetypes)
+	local edges_before = count(world.archetype_edges)
+	CHECK(edges_before == archetypes_before)
+
+	for i = 1, 100 do
+		local e = world:entity()
+		world:set(e, A, i) -- [A]                   (kept alive by keeper_a)
+		world:set(e, B, i) -- [A, B]                new archetype
+		world:add(e, pair(R, targets[i])) -- [A, B, (R, target_i)] new archetype, new pair record
+		world:delete(e)
+		world:cleanup() -- both new archetypes are empty and destroyed
+	end
+
+	do CASE "churn leaves no extra live archetypes"
+		CHECK(count(world.archetypes) == archetypes_before)
+	end
+
+	do CASE "archetype_edges keeps a table only for live archetypes"
+		CHECK(count(world.archetype_edges) == count(world.archetypes))
+		for archetype_id in world.archetype_edges do
+			CHECK(world.archetypes[archetype_id] ~= nil)
+		end
+	end
+
+	do CASE "component record caches contain only live archetypes"
+		local a_cache = world.component_index[A].cache
+		CHECK(#a_cache == 2)
+		for _, archetype_id in a_cache do
+			CHECK(world.archetypes[archetype_id] ~= nil)
+		end
+
+		-- [B] was never kept alive, so its record is gone entirely.
+		CHECK(world.component_index[B] == nil)
+
+		local r_wildcard = world.component_index[pair(R, __)]
+		CHECK(#r_wildcard.cache == 1)
+		CHECK(world.archetypes[r_wildcard.cache[1]] ~= nil)
+	end
+
+	do CASE "wildcard record forgets dead pair records"
+		local r_wildcard = world.component_index[pair(R, __)]
+		CHECK(count(r_wildcard.wildcard_pairs) == 1)
+		for id, record in r_wildcard.wildcard_pairs do
+			CHECK(world.component_index[id] == record)
+		end
+		CHECK(r_wildcard.wildcard_pairs[pair(R, targets[1])] ~= nil)
+	end
+
+	do CASE "world:delete still cleans up pairs targeting a deleted entity"
+		-- The (*, target) record cache is what world:delete walks; after the
+		-- churn above it must still find the live archetype.
+		local child = world:entity()
+		world:set(child, A, 1)
+		world:add(child, pair(R, targets[2]))
+		world:delete(targets[2])
+		CHECK(world:contains(child))
+		CHECK(not world:has(child, pair(R, targets[2])))
+		CHECK(world:has(child, A))
+	end
+end)
+
+TEST("archetype_destroy keeps wildcard record sizes in sync", function()
+	do CASE "(R, *) and (*, T) sizes return to zero and the records are dropped"
+		local world = jecs.world()
+		local R = world:entity()
+		local R2 = world:entity()
+		local t1 = world:entity()
+		local t2 = world:entity()
+
+		local e = world:entity()
+		world:add(e, pair(R, t1))
+		world:add(e, pair(R, t2)) -- two pairs with relation R in one archetype
+		world:add(e, pair(R2, t1)) -- two pairs with target t1 in one archetype
+
+		local idr_r = world.component_index[pair(R, __)]
+		local idr_t = world.component_index[pair(__, t1)]
+		CHECK(idr_r ~= nil and idr_t ~= nil)
+
+		world:delete(e)
+		world:cleanup()
+
+		CHECK(idr_r.size == 0)
+		CHECK(idr_t.size == 0)
+		CHECK(world.component_index[pair(R, __)] == nil)
+		CHECK(world.component_index[pair(__, t1)] == nil)
+	end
+
+	do CASE "a recycled relation index does not inherit the OnDelete policy of the dead relation"
+		local world = jecs.world()
+		local R = world:entity()
+		world:add(R, pair(jecs.OnDelete, jecs.Delete))
+		local t1 = world:entity()
+		local t2 = world:entity()
+
+		local e = world:entity()
+		world:add(e, pair(R, t1))
+		world:add(e, pair(R, t2))
+		world:delete(e)
+		world:cleanup()
+		world:delete(R)
+		CHECK(world.component_index[pair(R, __)] == nil)
+
+		local R2 = world:entity()
+		CHECK(ECS_ID(R2) == ECS_ID(R)) -- same index, so pair(R2, *) == pair(R, *)
+		CHECK(not world:has(R2, pair(jecs.OnDelete, jecs.Delete)))
+
+		local f = world:entity()
+		world:add(f, pair(R2, t1))
+		world:delete(R2)
+
+		CHECK(world:contains(f))
+		CHECK(not world:has(f, pair(R2, t1)))
 	end
 end)
 
