@@ -268,6 +268,32 @@ TEST("reproduce idr_t nil archetype bug", function()
     end
 end)
 
+TEST("get after root archetype churn and unrelated delete", function()
+	local world = jecs.world(true)
+	local C3 = world:component()
+	local C4 = world:component()
+
+	-- Entity a churns through root: gains C3, loses it (back to root), gains C4
+	local a = world:entity()
+	world:set(a, C3, 490494)
+	world:remove(a, C3)
+	world:set(a, C4, 892027)
+
+	-- Deleting any root-resident entity used to stomp a's record.row
+	local b = world:entity()
+	world:delete(b)
+
+	CHECK(world:get(a, C4) == 892027)
+	CHECK(world:has(a, C4))
+	local found
+	for e, v in world:query(C4) do
+		if e == a then
+			found = v
+		end
+	end
+	CHECK(found == 892027)
+end)
+
 TEST("Ensure archetype edges get cleaned", function()
 	local A = jecs.component()
 	local B = jecs.component()
