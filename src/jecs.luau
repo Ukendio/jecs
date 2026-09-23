@@ -3526,16 +3526,41 @@ local function world_new(DEBUG: boolean?)
 		if idr then
 			local flags = idr.flags
 			if (bit32.btest(flags, ECS_ID_DELETE) == true) then
-				for archetype_id in idr.records do
-					local idr_archetype = archetypes[archetype_id]
-
-					local entities = idr_archetype.entities
-					local n = #entities
-					for i = n, 1, -1 do
-						world_delete(world, entities[i])
+				--[[
+					NOTE: The recursive world_delete can also create
+					archetypes that contain `entity` (e.g. a target cleanup
+					moves an entity into "its type minus (R, child)"), which
+					inserts new keys into idr.records while we iterate it.
+					Adding keys during next() is undefined and skips entries,
+					so iterate a snapshot of the archetype ids and take a new
+					snapshot until a pass deletes nothing. Every pass that
+					repeats deleted at least one entity, so this terminates.
+				]]
+				local records = idr.records
+				local archetype_ids = {}
+				repeat
+					for archetype_id in records do
+						table.insert(archetype_ids, archetype_id)
 					end
-					archetype_destroy(world, idr_archetype)
-				end
+					local deleted_any = false
+					for _, archetype_id in archetype_ids do
+						local idr_archetype = archetypes[archetype_id]
+						if not idr_archetype then
+							continue
+						end
+
+						local entities = idr_archetype.entities
+						local n = #entities
+						for i = n, 1, -1 do
+							world_delete(world, entities[i])
+						end
+						if n > 0 then
+							deleted_any = true
+						end
+						archetype_destroy(world, idr_archetype)
+					end
+					table.clear(archetype_ids)
+				until not deleted_any
 			else
 				local on_remove = idr.on_remove
 				if on_remove then

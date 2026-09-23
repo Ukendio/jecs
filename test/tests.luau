@@ -1201,6 +1201,176 @@ TEST("world:delete()", function()
 
 	    CHECK(world:contains(e1))
 	end
+
+	do CASE "(OnDelete, Delete) deletes entities the cascade moves into new archetypes"
+		-- Deleting each c strips (R, c) from y, moving y into a new archetype
+		-- that still has e while world:delete(e) walks e's records. Several
+		-- layouts are tried so the result does not hinge on one hash order.
+		for _, config in { { 50, 23 }, { 64, 7 }, { 100, 3 }, { 33, 41 }, { 200, 0 } } do
+			local N, churn = config[1], config[2]
+			local world = jecs.world()
+			local R = world:entity()
+			local e = world:entity()
+			world:add(e, pair(jecs.OnDelete, jecs.Delete))
+
+			local cs, ys = {}, {}
+			for i = 1, N do
+				local c = world:entity()
+				world:add(c, e)
+				cs[i] = c
+			end
+			for i = 1, N do
+				for _ = 1, churn do
+					world:add(world:entity(), world:entity())
+				end
+				local F = world:entity()
+				local y = world:entity()
+				world:add(y, F)
+				world:add(y, pair(R, cs[i]))
+				world:add(y, e)
+				ys[i] = y
+			end
+
+			world:delete(e)
+
+			local alive = 0
+			for i = 1, N do
+				if world:contains(cs[i]) or world:contains(ys[i]) then
+					alive += 1
+				end
+			end
+			CHECK(alive == 0)
+			local matched = 0
+			for _ in world:query(e) do
+				matched += 1
+			end
+			CHECK(matched == 0)
+			CHECK(world.component_index[e] == nil)
+			CHECK(world:contains(R))
+		end
+	end
+
+	do CASE "(OnDelete, Delete) cascades through nested Delete policies"
+		local world = jecs.world()
+		local R = world:entity()
+		local A = world:entity()
+		world:add(A, pair(jecs.OnDelete, jecs.Delete))
+
+		local bs, xs, ys = {}, {}, {}
+		for i = 1, 40 do
+			-- b has A and is itself a component with (OnDelete, Delete)
+			local b = world:entity()
+			world:add(b, pair(jecs.OnDelete, jecs.Delete))
+			world:add(b, world:entity())
+			world:add(b, A)
+			bs[i] = b
+			local x = world:entity()
+			world:add(x, b)
+			xs[i] = x
+		end
+		for i = 1, 40 do
+			local y = world:entity()
+			world:add(y, world:entity())
+			world:add(y, pair(R, bs[i]))
+			world:add(y, A)
+			ys[i] = y
+		end
+		local bystander = world:entity()
+		world:add(bystander, R)
+
+		world:delete(A)
+
+		for i = 1, 40 do
+			CHECK(not world:contains(bs[i]))
+			CHECK(not world:contains(xs[i]))
+			CHECK(not world:contains(ys[i]))
+		end
+		CHECK(world:contains(bystander))
+		CHECK(world:has(bystander, R))
+		CHECK(world.component_index[A] == nil)
+	end
+
+	do CASE "(OnDelete, Remove) keeps entities the cascade moves and strips the id"
+		local world = jecs.world()
+		local R = world:entity()
+		local e = world:entity()
+		world:add(e, pair(jecs.OnDelete, jecs.Remove))
+
+		local cs, ys = {}, {}
+		for i = 1, 50 do
+			local c = world:entity()
+			world:add(c, e)
+			cs[i] = c
+		end
+		for i = 1, 50 do
+			local F = world:entity()
+			local y = world:entity()
+			world:add(y, F)
+			world:add(y, pair(R, cs[i]))
+			world:add(y, e)
+			ys[i] = y
+		end
+
+		world:delete(e)
+
+		for i = 1, 50 do
+			CHECK(world:contains(cs[i]))
+			CHECK(world:contains(ys[i]))
+			CHECK(not world:has(cs[i], e))
+			CHECK(not world:has(ys[i], e))
+			CHECK(world:has(ys[i], pair(R, cs[i])))
+		end
+		CHECK(world.component_index[e] == nil)
+	end
+
+	do CASE "(OnDeleteTarget, Delete) deletes every entity across many archetypes"
+		local world = jecs.world()
+		local Rel = world:entity()
+		world:add(Rel, pair(jecs.OnDeleteTarget, jecs.Delete))
+		local parent = world:entity()
+
+		local children = {}
+		for i = 1, 64 do
+			local child = world:entity()
+			world:add(child, world:entity())
+			world:add(child, pair(Rel, parent))
+			children[i] = child
+		end
+
+		world:delete(parent)
+
+		for i = 1, 64 do
+			CHECK(not world:contains(children[i]))
+		end
+		CHECK(world:contains(Rel))
+		CHECK(world.component_index[pair(__, parent)] == nil)
+	end
+
+	do CASE "(OnDelete, Delete) id with no dependents"
+		local world = jecs.world()
+		local e = world:entity()
+		world:add(e, pair(jecs.OnDelete, jecs.Delete))
+		local other = world:entity()
+		world:add(other, world:entity())
+
+		world:delete(e)
+		CHECK(not world:contains(e))
+		CHECK(world:contains(other))
+
+		-- only empty archetypes left in the record
+		local e2 = world:entity()
+		world:add(e2, pair(jecs.OnDelete, jecs.Delete))
+		local tmp = world:entity()
+		world:add(tmp, e2)
+		world:remove(tmp, e2)
+		CHECK(world.component_index[e2] ~= nil)
+
+		world:delete(e2)
+		CHECK(not world:contains(e2))
+		CHECK(world:contains(tmp))
+		CHECK(world.component_index[e2] == nil)
+	end
+
 	do CASE "remove (*, R) pairs when relationship is invalidated"
 		local world = jecs.world()
 		local e1 = world:entity()

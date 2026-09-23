@@ -11,6 +11,7 @@
 ### Fixed
 - `archetype_destroy` no longer keeps references to the destroyed archetype: its `archetype_edges` table, its id in every component record's `cache`, and dead pair records in the relation's `wildcard_pairs` are now removed. Worlds that repeatedly create and reclaim empty archetypes no longer grow unboundedly.
 - `archetype_destroy` now decrements the `size` of the `(R, *)` and `(*, T)` wildcard records by the number of matching pairs in the archetype, matching `archetype_create`. Previously a wildcard record whose archetypes all held several such pairs kept a positive `size` forever, was never dropped from `component_index`, and its flags (for example the `OnDelete` cascade policy) leaked onto a later entity that reused the relation's index.
+- `world:delete` of an id with the `(OnDelete, Delete)` cleanup trait no longer skips entities. The cascade can create archetypes that still contain the id (for example when deleting a dependent strips a pair from another entity that also has the id), which inserted keys into the component record while it was being traversed with `next()`, so some of those archetypes were never visited and their entities survived the delete.
 
 ## 0.8.0
 
