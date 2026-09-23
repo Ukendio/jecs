@@ -1250,6 +1250,54 @@ TEST("world:delete()", function()
 		end
 	end
 
+	do CASE "(OnDelete, Delete) on a relation deletes entities the cascade moves into new archetypes"
+		-- Deleting each c strips (S, c) from y, moving y into a new archetype
+		-- that still has (R, t) while world:delete(R) walks the (R, *) records.
+		for _, config in { { 50, 0 }, { 64, 0 }, { 100, 0 }, { 200, 0 }, { 64, 7 } } do
+			local N, churn = config[1], config[2]
+			local world = jecs.world()
+			local S = world:entity()
+			local R = world:entity()
+			world:add(R, pair(jecs.OnDelete, jecs.Delete))
+			local t = world:entity()
+
+			local cs, ys = {}, {}
+			for i = 1, N do
+				local c = world:entity()
+				world:add(c, pair(R, t))
+				cs[i] = c
+			end
+			for i = 1, N do
+				for _ = 1, churn do
+					world:add(world:entity(), world:entity())
+				end
+				local F = world:entity()
+				local y = world:entity()
+				world:add(y, F)
+				world:add(y, pair(S, cs[i]))
+				world:add(y, pair(R, t))
+				ys[i] = y
+			end
+
+			world:delete(R)
+
+			local alive = 0
+			for i = 1, N do
+				if world:contains(cs[i]) or world:contains(ys[i]) then
+					alive += 1
+				end
+			end
+			CHECK(alive == 0)
+			local matched = 0
+			for _ in world:query(pair(R, __)) do
+				matched += 1
+			end
+			CHECK(matched == 0)
+			CHECK(world.component_index[pair(R, __)] == nil)
+			CHECK(world:contains(S) and world:contains(t))
+		end
+	end
+
 	do CASE "(OnDelete, Delete) cascades through nested Delete policies"
 		local world = jecs.world()
 		local R = world:entity()

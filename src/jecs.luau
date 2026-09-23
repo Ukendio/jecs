@@ -3682,15 +3682,32 @@ local function world_new(DEBUG: boolean?)
 			local flags = idr_r.flags
 			local has_delete_policy = bit32.btest(flags, ECS_ID_DELETE)
 			if has_delete_policy then
-				for archetype_id in archetype_ids do
-					local idr_r_archetype = archetypes[archetype_id]
-					local entities = idr_r_archetype.entities
-					local n = #entities
-					for i = n, 1, -1 do
-						world_delete(world, entities[i])
+				-- NOTE: Same as the idr branch above: the cascade can create
+				-- archetypes with (entity, *) pairs, which inserts keys into
+				-- idr_r.records mid-traversal. Iterate snapshots instead.
+				local snapshot = {}
+				repeat
+					for archetype_id in archetype_ids do
+						table.insert(snapshot, archetype_id)
 					end
-					archetype_destroy(world, idr_r_archetype)
-				end
+					local deleted_any = false
+					for _, archetype_id in snapshot do
+						local idr_r_archetype = archetypes[archetype_id]
+						if not idr_r_archetype then
+							continue
+						end
+						local entities = idr_r_archetype.entities
+						local n = #entities
+						for i = n, 1, -1 do
+							world_delete(world, entities[i])
+						end
+						if n > 0 then
+							deleted_any = true
+						end
+						archetype_destroy(world, idr_r_archetype)
+					end
+					table.clear(snapshot)
+				until not deleted_any
 			else
 				local counts = idr_r.counts
 				local records = idr_r.records
