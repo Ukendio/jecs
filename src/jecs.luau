@@ -2677,16 +2677,20 @@ local function ecs_bulk_insert(world: world, entity: i53, ids: { i53 }, values: 
 			end
 		end
 	else
+		-- Observers must see the complete batch, even without an archetype move.
+		for i, id in ids do
+			local value = values[i] :: any
+			if value ~= nil then
+				r.archetype.columns_map[id][r.row] = value
+			end
+		end
+
 		for i, id in ids do
 			local value = values[i] :: any
 			local idr = component_index[id]
 			local on_change = idr.on_change
 			if on_change then
 				on_change(entity, id, value, from)
-			end
-
-			if value ~= nil then
-				r.archetype.columns_map[id][r.row] = value
 			end
 		end
 	end
