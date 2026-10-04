@@ -368,6 +368,72 @@ TEST("repeated pairs", function()
 	CHECK(world:each(p2)() == e2) -- Fails
 end)
 
+TEST("bulk insert change observers", function()
+	for _, moving in { false, true } do
+		CASE(if moving then "Should expose all updated values after moving" else "Should expose all updated values without moving")
+		local world = jecs.world()
+		local c1, c2, c3 = world:component(), world:component(), world:component()
+		local e = world:entity()
+		local from
+
+		local changed = {}
+		local function on_change(entity, id, value, old_archetype)
+			CHECK(entity == e)
+			CHECK(old_archetype == from)
+			CHECK(world:get(entity, id) == value)
+			CHECK(world:get(entity, c1) == 2)
+			CHECK(world:get(entity, c2) == false)
+			if moving then
+				CHECK(world:get(entity, c3) == 3)
+			end
+			changed[id] = (changed[id] or 0) + 1
+		end
+		world:set(c1, jecs.OnChange, on_change)
+		world:set(c2, jecs.OnChange, on_change)
+		world:set(c3, jecs.OnChange, on_change)
+		world:set(e, c1, 1)
+		world:set(e, c2, true)
+		from = jecs.record(world, e).archetype
+
+		local ids = { c2, c1 }
+		local values = { false, 2 }
+		if moving then
+			table.insert(ids, c3)
+			table.insert(values, 3)
+		end
+		jecs.bulk_insert(world, e, ids, values)
+
+		CHECK(changed[c1] == 1)
+		CHECK(changed[c2] == 1)
+		CHECK(changed[c3] == nil)
+		CHECK(world:get(e, c1) == 2)
+		CHECK(world:get(e, c2) == false)
+		CHECK((jecs.record(world, e).archetype ~= from) == moving)
+	end
+
+	do CASE "Should match world:set callback visibility"
+		local world = jecs.world()
+		local component = world:component()
+		local e = world:entity()
+		local from
+		local count = 0
+
+		world:set(component, jecs.OnChange, function(entity, id, value, old_archetype)
+			CHECK(entity == e)
+			CHECK(id == component)
+			CHECK(value == 2)
+			CHECK(world:get(entity, component) == value)
+			CHECK(old_archetype == from)
+			count += 1
+		end)
+
+		world:set(e, component, 1)
+		from = jecs.record(world, e).archetype
+		world:set(e, component, 2)
+		CHECK(count == 1)
+	end
+end)
+
 TEST("repro", function()
 	local world = jecs.world()
 	local data = world:component()
